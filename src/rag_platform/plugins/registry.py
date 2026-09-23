@@ -1,14 +1,17 @@
-"""Entry-point based `PluginRegistry`: discovery, `PluginMeta` validation, license gate.
+"""엔트리 포인트 기반 `PluginRegistry` — 탐색, `PluginMeta` 검증, 라이선스 게이트.
 
-Canon: design bible §5.7 (`ExtensionPoint` 14 values, `LicenseGrade`, `Linkage`, `IsolationMode`),
-§6.7 (entry point group name `rag_platform.{extension_point}`), §7.4 rule (1) (license gate);
-ADR-0032 (plugin SDK: entry points, `PluginMeta`, `license_gate`, `capabilities_check`);
-``schemas/plugin-meta.schema.json``.
-
-`PluginMeta` is validated as a plain mapping against ``schemas/plugin-meta.schema.json`` with
-`jsonschema` (Draft 2020-12 + a `urn:rag:schema:*` reference registry) rather than through the
-not-yet-generated `rag_platform.contracts.plugin_meta.PluginMeta` Pydantic model (see the
-`sdk/stage.py` module docstring for why the generated contracts package is not depended on here).
+역할: `rag_platform.{extension_point}` 엔트리 포인트로 플러그인을 탐색·등록하고, 로드 전 라이선스
+등급과 필요 역량(capabilities)을 검사한다.
+설계 근거: 바이블 §5.7(`ExtensionPoint` 14종, `LicenseGrade`, `Linkage`, `IsolationMode`), §6.7(엔트리
+포인트 그룹 `rag_platform.{extension_point}`), §7.4 규칙(1)(라이선스 게이트); ADR-0032(플러그인 SDK);
+`schemas/plugin-meta.schema.json`.
+구성: `entry_point_group` — 확장 지점 → 그룹 이름; `validate_plugin_meta` — jsonschema로 `PluginMeta`
+검증; `check_license`/`check_capabilities` — §7.4 규칙(1)/(2); `PluginRegistry` — 수동 등록 + 엔트리
+포인트 탐색을 합친 조회·빌드 API(`discover`/`meta`/`build_stage`/`build_port`).
+불변식: `PluginMeta`는 아직 생성되지 않은 Pydantic 모델 대신 `jsonschema`(Draft 2020-12)로 검증한다.
+`license_grade=X`는 항상 거부(D-02, ADR-0001); `plugin_id` 접두사는 반드시 `extension_point`와
+일치해야 한다.
+검증 계층: 1층(여기서 검증) — tests/unit/test_plugins_registry.py.
 """
 
 from __future__ import annotations

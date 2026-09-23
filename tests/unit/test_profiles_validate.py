@@ -1,4 +1,16 @@
-"""Unit tests for `rag_platform.profiles.validate` (bible §7.4 loading rules)."""
+"""`rag_platform.profiles.validate` 단위 테스트 — 프로파일 JSON 스키마 검증과 로딩 시 규칙(§7.4)을 검증한다.
+
+설계 근거: 바이블 §7.4(로딩 시 검증 규칙과 게이트 — 규칙 (3) `fusion.k` 필수, (10) `parse.router` 완전성,
+(11) `hydrate.top_n ≥ max(rerank.top_n_in, pack.k_max)`, (12) `deny_cidrs` 축소 불가), §5.3(기본 차단 CIDR 9종).
+
+구성:
+- `validate_schema` — 내장 5개 프로파일이 스키마를 통과함, 필수 필드 누락 거부.
+- `validate_loading_rules` — 내장 프로파일이 전 규칙을 통과함, 규칙 3/10/11/12 각각의 위반 케이스가
+  해당 규칙 번호를 담은 `ProfileInvalidError.issues`를 내는지 확인.
+- `SOURCE_FORMATS`/`DEFAULT_DENY_CIDRS` — 바이블 정본 값 개수(13종 원본 포맷, 9개 기본 차단 CIDR) 대조.
+
+검증 계층: 1층(여기서 검증).
+"""
 
 from __future__ import annotations
 

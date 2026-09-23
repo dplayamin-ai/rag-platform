@@ -1,4 +1,17 @@
-"""Smoke tests for the phase 6A package skeleton (bible §12 module map)."""
+"""6단계 A(phase 6A) 패키지 골격 스모크 테스트 — `src/rag_platform` 구조가 바이블 §12 모듈 맵과 일치하는지 검증한다.
+
+설계 근거: 바이블 §12(모듈/패키지 맵 정본), phase-6 계획서(§6A, 이전 레이아웃 `core`/`stages`/`workflows`/
+`observability` 폐기 결정).
+
+구성:
+- `BIBLE_PACKAGES`/`RETIRED_PACKAGES` — §12 정본 패키지 목록과 폐기된 옛 디렉터리 목록.
+- 각 §12 패키지가 임포트되고 docstring을 가짐, 최상위 패키지 집합이 정본과 정확히 일치함, 폐기 디렉터리가
+  부재함, 발견되는 모든 패키지가 docstring을 가짐, `py.typed` 존재, `__version__` 문자열, CLI `--version`/
+  미지정 인자 처리를 각각 확인하는 테스트 함수들.
+
+불변식: 이 파일은 골격(스캐폴드) 자체의 존재·구조만 확인하며 각 모듈의 동작은 검증하지 않는다.
+검증 계층: 1층(여기서 검증).
+"""
 
 from __future__ import annotations
 

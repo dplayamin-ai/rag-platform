@@ -1,8 +1,21 @@
-"""Profile YAML loader: `extends` single inheritance, deep merge, `profile_hash`.
+"""프로파일 YAML 로더 — `extends` 단일 상속 해석, 딥 머지(deep merge), `profile_hash` 계산.
 
-Canon: design bible §7.3 (`schemas/profile.schema.json` overview, `extends` single inheritance),
-§6.2 (`profile_hash = H("profile", canonical_json(resolved))`, `H` = `sdk.hashing.hash_of`);
-ADR-0031 (`extends` single inheritance, deep merge, arrays replaced wholesale, not concatenated).
+설계 근거: 바이블 §7.3(`schemas/profile.schema.json` 개요, `extends` 단일 상속),
+§6.2(`profile_hash = H("profile", canonical_json(resolved))`, `H` = `sdk.hashing.hash_of`);
+ADR-0031(`extends` 단일 상속, 딥 머지, 배열은 이어붙이지 않고 통째로 교체).
+
+구성:
+- `load_profile(profile_id, *, builtin_dir=BUILTIN_DIR)` — `extends` 조상 체인을 읽어 병합하고
+  `profile_hash`를 채운 `ResolvedProfile` 반환
+- `deep_merge(base, override)` — 딕셔너리는 키 단위 병합, 그 외 타입(배열 포함)은 통째로 교체
+- `canonical_json(data)` — 바이블 §6.2 정본 직렬화(정렬된 키, 공백 없음, `ensure_ascii=false`)
+- `profile_hash(resolved_without_hash)` — 이미 해석된 문서에 대해 해시만 재계산
+- `ResolvedProfile` — 해석 결과(`profile_id`, `chain`, `data`, `profile_hash`)
+
+불변식·주의: `canonical_json`은 RFC 8785(JCS)의 실용적 근사치일 뿐 완전한 구현이 아니다(Python
+기본 `float`/`int` `repr` 사용, ECMAScript `Number::toString` 미구현) — YAML 스칼라만 다루는 이
+로더에는 충분하다. `extends` 순환은 `ValueError`로 거부한다.
+검증 계층: 1층(여기서 검증) — `tests/unit/test_profiles_loader.py`.
 """
 
 from __future__ import annotations

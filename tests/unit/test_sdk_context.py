@@ -1,4 +1,18 @@
-"""Unit tests for `rag_platform.sdk.context` (bible §11.1 `PipelineContext`, §4.1 `StageContext`)."""
+"""`rag_platform.sdk.context` 단위 테스트 — `LocalContext`가 `PipelineContext`/`StageContext` 계약을 지키는지 검증한다.
+
+설계 근거: 바이블 §11.1(`PipelineContext` 프로토콜 4멤버, `LocalRunner`는 비내구), §4.1(`StageContext`가 테넌트
+스코프·계보·시각을 제공하고 스테이지는 I/O·시간을 직접 쓰지 않음).
+
+구성:
+- `_make_context` — 테스트용 `LocalContext` 생성 헬퍼(주입 가능한 `clock`).
+- `SecretsRef` — 원문 노출 없이 해석기(resolver)로 비밀 값을 푸는지 확인.
+- `LocalContext.now`/`sleep`/`emit`/`build_stage_context` — 주입된 시계 사용, 무해한 sleep/emit, 테넌트·컬렉션·
+  계보·`budget_ms` 기반 `remaining_ms`가 스테이지 컨텍스트에 올바르게 전달되는지 확인.
+- `DerivedArtifacts.put_source`/`put_derived` — 테넌트·종류(kind)별 오브젝트 키 바인딩 확인.
+- `PipelineContext` — `runtime_checkable` 프로토콜로 완전/불완전 구현을 판별하는지 확인.
+
+검증 계층: 1층(여기서 검증).
+"""
 
 from __future__ import annotations
 

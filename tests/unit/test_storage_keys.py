@@ -1,4 +1,16 @@
-"""Unit tests for `rag_platform.storage.keys` (bible §13.3 object key convention)."""
+"""`rag_platform.storage.keys` 단위 테스트 — 오브젝트 키 생성 함수가 바이블 §13.3 경로 규약을 그대로 따르는지 검증한다.
+
+설계 근거: 바이블 §13.3(오브젝트 키 규약 — 원본 `tenants/{t}/sources/{blake3[:2]}/{blake3}`, 산출물
+`tenants/{t}/artifacts/{schema_type_kebab}/{stage_key[:2]}/{stage_key}.json`, 파생물·LLM 보강 캐시 경로).
+
+구성:
+- `kebab_case` — PascalCase 계약 타입명 → kebab-case 변환과 비-PascalCase 입력 거부.
+- `source_key`/`artifact_key`/`artifact_key_by_hash`/`derived_key`/`llm_enrich_key` — 각 경로 형식이
+  정확히 규약과 일치하는지 확인.
+- 해시 인자 검증 — 짧거나 16진수가 아닌 값 거부.
+
+검증 계층: 1층(여기서 검증).
+"""
 
 from __future__ import annotations
 

@@ -1,15 +1,21 @@
-"""Minimal `Ledger` protocol: document, job and commit records (bible §13.1).
+"""`Ledger` 프로토콜 — `documents`/`jobs`/`index_commits` 세 테이블에 대한 최소 읽기/쓰기 계약.
 
-Canon: design bible §13.1 (PostgreSQL core tables — `documents`, `jobs`, `index_commits`, every
-table `tenant_id`-scoped with row level security `FORCE`). This is the read/write surface the
-conformance kit and unit tests exercise through `testing.doubles.InMemoryLedger`; the real
-PostgreSQL-backed implementation (`ledger/models.py`, `ledger/migrations/`) is a separate work
-package.
+역할: PostgreSQL 원장(ledger) 접근을 위한 `Protocol` 정의. 실제 구현 이전에도 conformance kit과
+단위 테스트가 `testing.doubles.InMemoryLedger`를 통해 이 인터페이스를 검증할 수 있게 한다.
+설계 근거: 바이블 §13.1(PostgreSQL 핵심 테이블 — 모든 테이블 `tenant_id` 스코프 + row level
+security `FORCE`).
 
-# DEFERRED: a real PostgreSQL-backed `Ledger` (asyncpg/SQLAlchemy, `SET LOCAL app.tenant_id`, RLS
-# `FORCE` policies, Alembic migrations under `ledger/migrations/`), verified against a live
-# PostgreSQL instance, is `needs_docker` (phase-6 plan §8 tier 2) and is not part of this work
-# package. Only the protocol and an in-memory double are provided here.
+구성:
+- `DocumentRecord` — `documents` 행 부분집합(식별자 + 현재 버전/세대)
+- `JobRecord` — `jobs` 행 부분집합(식별자, kind/state/stage, 재시도 횟수)
+- `CommitRecord` — `index_commits` 행 부분집합(식별자, 세대, 상태)
+- `Ledger` — 위 레코드에 대한 CRUD 프로토콜(항상 `tenant_id` 스코프)
+
+불변식·주의: 실 PostgreSQL 구현(`ledger/models.py`, `ledger/migrations/`)은 이 작업 범위 밖이며
+프로토콜과 인메모리 대역만 제공한다.
+검증 계층: 1층(여기서 검증) — `tests/unit/test_ledger_repo.py`.
+DEFERRED: 실 PostgreSQL 기반 `Ledger`(asyncpg/SQLAlchemy, `SET LOCAL app.tenant_id`, RLS `FORCE`,
+Alembic 마이그레이션)는 `needs_docker`(phase-6 계획 §8 tier 2).
 """
 
 from __future__ import annotations

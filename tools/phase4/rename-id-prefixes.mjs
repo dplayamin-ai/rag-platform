@@ -1,8 +1,8 @@
-// Phase 4 D4-1: resolve ID prefix collisions mechanically.
-//  - Glossary open-issue IDs  G-xx  -> GL-xx  (inside 03-glossary.md: all; elsewhere: only when the context refers to the glossary)
-//  - Glossary link keys      [P-xx] -> [PL-xx] (glossary-internal reference-style links)
-//  Vision goals G-xx (01-vision-and-goals.md and citations like "비전 G-10", "PB-06, G-04, KPI-11") are left untouched.
-// Usage: node tools/phase4/rename-id-prefixes.mjs [--apply]
+// ID 접두 충돌 정규식 치환기 — 용어집 미해결 이슈 `G-xx` → `GL-xx`(문맥상 용어집을 가리킬 때만; `03-glossary.md` 내부는 전부)와 용어집 링크 키 `[P-xx]` → `[PL-xx]`를 문서 전체(`docs/**/*.md`)에서 치환한다.
+// 설계 근거: 4·5단계 계획 `12-appendix/02-phase4-5-plan.md` §2.3 D4-1(ID 접두 충돌 해소 결정), 완전성 검토 `01-phase3-completeness-review.md`의 A4 ID 접두 사용 지도.
+// 구성: 파일별 치환 규칙 3분기 — `03-glossary.md`(전체 치환) / `06-adr`·`03-contracts`·바이블(문맥상 글로서리 참조로 간주) / 그 외(글로서리·용어집 언급 40자 이내 근접 문맥만 치환); 콘솔에 파일별 교체 건수와 잔여 `G-xx` 표본을 보고.
+// 불변식·주의: 비전 목표 `G-xx`(`00-vision/01-vision-and-goals.md`와 "비전 G-10" 같은 인용)는 건드리지 않는다 — 용어집 이슈 접두와 비전 목표 접두가 같은 `G-`를 공유하므로 오탐 방지가 이 스크립트의 핵심이다. 기본은 드라이런이며 `--apply` 없이는 파일을 쓰지 않는다.
+// 검증 계층: 1층(여기서 검증, 콘솔 리포트의 잔여 `G-xx` 표본으로 오탐 확인). 실행: `node tools/phase4/rename-id-prefixes.mjs [--apply]`
 import fs from 'node:fs'
 import path from 'node:path'
 const APPLY = process.argv.includes('--apply')

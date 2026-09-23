@@ -1,12 +1,19 @@
-"""`FakeEmbedder`: `sdk.ports.Embedder` double, deterministic hash vectors, no model weights.
+"""`FakeEmbedder` — `sdk.ports.Embedder` 대역(double). 결정적 해시 벡터를 생성하며 모델 가중치가 없다.
 
-Canon: 2026-09-23 user decision (no model downloads on the VDI) — embedding is verified with a
-deterministic fake; dimension and L2-normalization follow bible §5.6 `EmbeddedChunkSet` convention
-(`dim`, `normalized`) even though the vector itself carries no semantic content.
+역할: conformance kit과 단위 테스트가 실제 임베딩 모델 없이 `embed_documents`/`embed_query`
+호출부를 검증하도록 한다.
+설계 근거: 2026-09-23 사용자 결정(VDI에서 모델 가중치 다운로드 금지) — 임베딩은 결정적 대역으로만
+검증한다. 벡터 자체는 의미를 담지 않지만 차원(`dim`)과 L2 정규화(`normalized`)는 바이블
+§5.6 `EmbeddedChunkSet` 관례를 따른다.
 
-# DEFERRED: verify against a real served BGE-M3 (TEI/vLLM pooling) embedder — `needs_model`
-# (model weights) and `needs_network` (serving call). Track in
-# `docs/12-appendix/09-deferred-verification-ledger.md`.
+구성: `FakeEmbedder` — 같은 텍스트는 항상 같은 벡터를 내는 `sha256` 기반 결정적 유닛 벡터 생성기
+(`embed_documents`, `embed_query`).
+
+불변식·주의: 콘텐츠 주소화 키(`blake3_hex`)가 아니라 `hashlib.sha256`을 의도적으로 사용한다 —
+이 대역은 검증용 가짜 임베딩 공간이지 바이블 §6.2 해시 키 체계의 일부가 아니다.
+검증 계층: 1층(대역 자체는 여기서 검증) — `tests/unit/test_testing_doubles.py`.
+DEFERRED: 실 서빙 BGE-M3(TEI/vLLM pooling) 임베더 대상 검증은 `needs_model`(모델 가중치) +
+`needs_network`(서빙 호출) — `docs/12-appendix/09-deferred-verification-ledger.md`에서 추적.
 """
 
 from __future__ import annotations

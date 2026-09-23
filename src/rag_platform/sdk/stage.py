@@ -1,15 +1,17 @@
-"""`Stage[In, Out]` protocol, `StageError` and retry classification.
+"""`Stage[In, Out]` 프로토콜, `StageError` 예외, 재시도 분류.
 
-Canon: design bible §4.1 (stage signature), §5.3 (`StageError`), §5.7 (error code catalog,
-exact spelling), §11.3 (retry classification); ADR-0032 (plugin SDK, stage protocol, 5 members).
-
-The contract `StageError` Pydantic model (`rag_platform.contracts.common.StageError`, bible §12)
-is generated from ``schemas/stage-error.schema.json`` by a codegen step that has not run yet in
-this checkout. :class:`StageError` below is the SDK-side exception that stages and the shell raise;
-it mirrors the contract fields exactly (:meth:`StageError.to_payload` produces a contract-shaped
-mapping) so that once the generated model exists, wrapping it is a pure constructor call. Contract
-types referenced only for static typing are imported under ``TYPE_CHECKING`` so this module has no
-hard runtime dependency on the generated package.
+역할: 모든 단계(stage)가 구현해야 하는 5멤버 프로토콜과, 단계·셸이 던지는 예외 `StageError`,
+그리고 오류 코드 → 재시도 분류(`RetryClass`) 매핑을 정의한다.
+설계 근거: 바이블 §4.1(단계 시그니처), §5.3(`StageError`), §5.7(오류 코드 카탈로그, 철자 정본),
+§11.3(재시도 분류); ADR-0032(플러그인 SDK, 5멤버 단계 프로토콜).
+구성: `Stage` — `plugin_id`/`config_schema`/`capabilities()`/`fingerprint()`/`async run()`;
+`StageError`(+`to_payload`) — 계약 `StageError` 모양을 그대로 미러링하는 SDK측 예외;
+`RetryClass`/`CODE_CLASSIFICATION`/`classify_error` — §5.7 표를 코드로 옮긴 4분류; `is_valid_code` —
+`{stage}.{reason}` 철자 검사.
+불변식: `code`는 반드시 §5.7 카탈로그의 `{stage}.{reason}` 철자여야 한다(아니면 `ValueError`).
+미등록 코드는 안전하게 `NON_RETRYABLE`로 분류한다. 계약 `StageError` 모델은 `TYPE_CHECKING` 아래에서만
+참조해 런타임 의존성을 만들지 않는다.
+검증 계층: 1층(여기서 검증) — tests/unit/test_sdk_stage.py.
 """
 
 from __future__ import annotations

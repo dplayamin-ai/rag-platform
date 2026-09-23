@@ -1,9 +1,8 @@
-// Whole-docs mechanical audit for Phase 4 (2026-09-23). No LLM.
-// Checks A1 links, A2 frontmatter, A3 enum/type spelling & rejected names, A4 ID prefix map, A5 length, A6 status,
-//        A7 citation integrity (ADR/D/O/FR/NFR/UC/US), A8 "확인 필요" counts, A9 schema inventory vs bible §5.1.
-// Usage: node tools/audit-docs.mjs [--root <repo>] [--json out.json] [--md out.md] [--fix]
-//   --fix applies only safe edits: missing frontmatter version → 0.1.0; status review→active for docs whose last
-//   result JSON outcome is a completed review/fix (non-ADR); nothing else is modified.
+// 전 문서 기계 감사기 — `docs/**/*.md` 전체를 대상으로 링크·frontmatter·철자·ID 접두·길이·상태·인용 정합성·스키마 인벤토리를 검사한다(LLM 미사용).
+// 설계 근거: 4·5단계 계획 `12-appendix/02-phase4-5-plan.md` §2.1(A1~A9 감사 항목 정의), 완전성 검토 `12-appendix/01-phase3-completeness-review.md`(A9 스키마 인벤토리·A10 API 표면 대조의 근거).
+// 구성: A1 링크 존재, A2 frontmatter 필수 필드, A3 열거·기각 명칭 철자(REJECTED 표 기반), A4 ID 접두(`PB`/`G`/`GL` 등) 사용 지도, A5 900행 초과, A6 review/draft 상태, A7 `ADR`/`D`/`O`/`FR`/`NFR`/`UC`/`US` 인용 무결성, A8 "확인 필요" 집계, A9 스키마 인벤토리 대조, A10 바이블 §14 ↔ `openapi.yaml` 대조.
+// 불변식·주의: `--fix`는 안전한 편집만 한다 — frontmatter `version` 누락 시 `0.1.0` 추가, `results/*.json`의 마지막 결과가 완료(pass/verified 등)인 비-ADR 문서만 `status: review|draft` → `active`. 그 외에는 아무것도 고치지 않는다.
+// 검증 계층: 1층(여기서 검증). 실행: `node tools/audit-docs.mjs [--root <repo>] [--json out.json] [--md out.md] [--fix]`
 import fs from 'node:fs'
 import path from 'node:path'
 const argv = process.argv.slice(2)

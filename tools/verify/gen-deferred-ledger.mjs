@@ -1,14 +1,13 @@
-// Deferred-verification ledger generator (phase-6 plan §8; 2026-09-23).
-// Collects, deterministically from files on disk (no LLM):
-//   - `# DEFERRED: <...>` comment blocks under src/ and tests/ (module docstrings or inline comments)
-//   - pytest attribute markers `@pytest.mark.needs_docker` / `needs_model` / `needs_gpu` / `needs_network`
-//     attached to test functions under tests/
-// and writes docs/12-appendix/09-deferred-verification-ledger.md (location | tier | what | where/how to
-// verify | expected result | status). Every row starts as "미검증" (unverified) — a later run on a machine
-// with Docker/GPU/network updates the status by hand or by a follow-up script; this generator never
-// downgrades a status, it only regenerates the location/what/tier columns from source.
-//
-// Usage: node tools/verify/gen-deferred-ledger.mjs [--root C:\Workspaces\rag-platform] [--date 2026-09-23]
+// 보류 검증 원장 생성기 — src/tests 소스에서 검증을 미룬 항목을 모아 문서로 기계 생성한다(LLM 미사용, 결정적).
+// 설계 근거: `docs/12-appendix/05-phase6-implementation-kit-plan.md` §8(실행 환경 제약과 3층 검증 전략 —
+// 층 2 `needs_docker`/층 2b `needs_model`/층 3 `needs_gpu`/네트워크 `needs_network`, 상태는 항상 "미검증"으로 시작).
+// 구성: `walk()`로 `src/`·`tests/`의 `.py`를 모아, (1) `# DEFERRED: <...>` 주석 블록과 (2) 테스트 함수의
+// `@pytest.mark.needs_*` 마커를 각각 수집해 위치·마커·설명을 딴 뒤, 표로 렌더링해
+// `docs/12-appendix/09-deferred-verification-ledger.md`(위치|층|무엇|검증 방법|기대 결과|상태)로 저장한다.
+// 불변식: 상태 열은 이 스크립트가 절대 낮추지 않는다(항상 신규 행만 "미검증"으로 시작하고, 기존 검증 결과는
+// 사람이 손으로 갱신). 마커 없는 `# DEFERRED:`는 "미분류"로, 마커만 있고 인접 주석이 없으면 규약 위반으로 표시.
+// 검증 계층: 1층(여기서 검증) — 산출 문서는 `tools/audit-docs.mjs`로 별도 감사.
+// 실행: node tools/verify/gen-deferred-ledger.mjs [--root C:\Workspaces\rag-platform] [--date 2026-09-23]
 import fs from 'node:fs'
 import path from 'node:path'
 

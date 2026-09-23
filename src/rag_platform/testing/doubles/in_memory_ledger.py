@@ -1,8 +1,18 @@
-"""`InMemoryLedger`: `ledger.repo.Ledger` double, dict-backed, no PostgreSQL.
+"""`InMemoryLedger` — `ledger.repo.Ledger` 대역(double). 딕셔너리 기반, 실제 PostgreSQL 없음.
 
-# DEFERRED: verify against a real PostgreSQL-backed `Ledger` (RLS `FORCE`, `SET LOCAL
-# app.tenant_id`, Alembic migrations under `ledger/migrations/`) — `needs_docker`
-# (phase-6 plan §8 tier 2). Track in `docs/12-appendix/09-deferred-verification-ledger.md`.
+역할: 실 PostgreSQL 없이 `Ledger` 프로토콜(문서/잡/커밋 CRUD) 호출부를 검증하는 대역.
+설계 근거: 바이블 §13.1(모든 테이블 `tenant_id` + RLS `FORCE`) — `ledger.repo.Ledger`의
+conformance 대역이며 각 레코드를 `(tenant_id, id)` 키로 스코프해 RLS 의미를 근사한다.
+
+구성: `InMemoryLedger` — `upsert_document`/`get_document`, `upsert_job`/`get_job`/`list_jobs`,
+`upsert_commit`/`get_commit`.
+
+불변식·주의: 모든 레코드는 `(tenant_id, id)` 복합 키로 저장·조회되어 다른 테넌트 레코드가
+섞이지 않는다(바이블 §13.1 RLS와 동일한 격리 의도).
+검증 계층: 1층(대역 자체는 여기서 검증) — `tests/unit/test_testing_doubles.py`.
+DEFERRED: 실 PostgreSQL 기반 `Ledger`(RLS `FORCE`, `SET LOCAL app.tenant_id`, `ledger/migrations/`
+Alembic 마이그레이션) 대상 검증은 `needs_docker`(phase-6 계획 §8 tier 2) —
+`docs/12-appendix/09-deferred-verification-ledger.md`에서 추적.
 """
 
 from __future__ import annotations

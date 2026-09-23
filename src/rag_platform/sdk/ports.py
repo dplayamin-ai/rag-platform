@@ -1,12 +1,15 @@
-"""Small role-port protocols referenced by `StageContext` and the conformance kit fakes.
+"""`StageContext`와 정합성 키트 페이크가 참조하는 소규모 역할 포트(role port) 프로토콜 모음.
 
-Canon: design bible §4.1 (`ctx.token_counter`, `ctx.analyzer`), §12 (`sdk/` owns `TokenCounter`);
-02-architecture/02-component-architecture.md §2.3 (`RuntimeServices`, `ArtifactStore` neighbours).
-`Embedder` and `IndexBackend` are not part of the bible §4.1 `StageContext` surface — they are the
-role ports that `plugins.registry.build_port` returns for the `embedder` and `index_backend`
-extension points (ADR-0032). They are declared here, not in `storage/`, because `storage/` may not
-import adapter-shaped ports and both `plugins` and `testing` need a shared, dependency-free home for
-them (bible §12 dependency direction: `sdk` sits below `plugins`, `storage`, and `testing`).
+역할: `TokenCounter`/`KoreanAnalyzer`(바이블 §4.1 `ctx` 멤버)와, `embedder`/`index_backend` 확장
+지점을 위한 `Embedder`/`IndexBackend`(ADR-0032) 프로토콜을 정의한다.
+설계 근거: 바이블 §4.1(`ctx.token_counter`/`ctx.analyzer`), §12(`sdk/`가 `TokenCounter` 소유);
+02-architecture/02-component-architecture.md §2.3(`RuntimeServices`/`ArtifactStore` 이웃).
+구성: `TokenCounter.count` — 토크나이저 기준 개수; `KoreanAnalyzer.normalize`/`tokenize` — Kiwi/
+mecab-ko 정규화·형태소 분석; `Embedder.embed_documents`/`embed_query` — 밀집 벡터만 반환;
+`IndexBackend.upsert`/`search_dense`/`search_lexical` — 정합성 페이크가 필요한 최소 표면.
+불변식: `Embedder`/`IndexBackend`는 바이블 §4.1 `StageContext` 표면이 아니다 — `storage/`가 어댑터
+모양 포트를 import할 수 없으므로 `plugins`와 `testing`이 공유하는 의존성 없는 자리에 둔다(바이블 §12).
+검증 계층: 1층(여기서 검증) — tests/unit/test_sdk_ports.py.
 """
 
 from __future__ import annotations

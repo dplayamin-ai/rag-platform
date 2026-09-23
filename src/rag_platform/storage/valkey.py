@@ -1,15 +1,15 @@
-"""`KeyValueCache` protocol (Valkey-backed in production; bible §13.4 key conventions).
+"""`KeyValueCache` 프로토콜(운영에서는 Valkey 백엔드; 바이블 §13.4 키 규약).
 
-Canon: design bible §13.4 (Valkey key table: ``qemb:``, ``plan:``, ``tok:``, ``ptxt:``, ``rr:``,
-``idem:``, ``aclrev:``, ``rl:``, ``cursor:``, ``groups:``, ``collspec:``); §11.1 (`lite` uses a
-single Valkey instance); ADR-0011 (Valkey replaces Redis as the default KV, BSD-3).
-
-Only the protocol lives here. The real client (``valkey-py`` over the Valkey wire protocol) is a
-future work package; ``rag_platform.testing.doubles.InMemoryKV`` is the in-memory conformance
-double used to unit-test callers against this protocol today.
-
-# DEFERRED: a real Valkey-backed implementation of `KeyValueCache`, verified against a live Valkey
-# server, is `needs_docker` (phase-6 plan §8 tier 2) and is not part of this work package.
+역할: `plan`/`embed`/`rerank`/`pack`/`aclrev` 등이 쓰는 캐시 표면(`get`/`mget`/`set`/`delete`)을
+프로토콜로만 정의한다.
+설계 근거: 바이블 §13.4(Valkey 키 표 — `qemb:`/`plan:`/`tok:`/`ptxt:`/`rr:`/`idem:`/`aclrev:`/`rl:`/
+`cursor:`/`groups:`/`collspec:`), §11.1(`lite`는 단일 Valkey 인스턴스); ADR-0011(Valkey가 기본 KV로
+Redis를 대체, BSD-3).
+구성: `KeyValueCache` — `get`/`mget`/`set`/`delete` 4개 비동기 메서드로 이뤄진 프로토콜뿐이다.
+불변식: 여기 있는 것은 프로토콜뿐이다 — 실제 Valkey 클라이언트(`valkey-py`)는 아직 없고,
+`rag_platform.testing.doubles.InMemoryKV`가 오늘의 정합성 더블이다.
+검증 계층: 1층(프로토콜 자체는 여기서 검증 — tests/unit/test_storage_valkey.py). DEFERRED: 실제
+Valkey 서버로 검증하는 구현체는 needs_docker(phase-6 계획 §8 tier 2)이며 이 작업 범위 밖이다.
 """
 
 from __future__ import annotations

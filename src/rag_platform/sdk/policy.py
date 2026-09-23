@@ -1,14 +1,16 @@
-"""`StagePolicy` model and application helpers (backoff, retry decision).
+"""`StagePolicy` 모델과 적용 헬퍼(백오프, 재시도 판단).
 
-Canon: design bible §4.4 (`StagePolicy` table, `standard`), §5.3 (`StagePolicy` fields),
-§11.3 (retry classification); ``schemas/stage-policy.schema.json``.
-
-The contract `StagePolicy` Pydantic model is generated from the schema (bible §12); it does not
-exist yet in this checkout (see `sdk/stage.py` module docstring for the same situation with
-`StageError`). :class:`StagePolicy` here is the plain dataclass the local orchestrator applies;
-:meth:`StagePolicy.from_mapping` parses the same shape the JSON schema describes (durations as
-``"5m"``/``"30s"`` strings, bible §4.4), so a profile-loaded ``dict`` and a future generated model
-both work as input.
+역할: 프로파일이 선언하는 단계별 정책(큐, 타임아웃, 재시도 횟수, 백오프, 격리)을 파싱하고,
+`should_retry`/`compute_backoff_delay`로 실행기가 재시도 여부와 지연 시간을 판단하게 한다.
+설계 근거: 바이블 §4.4(`StagePolicy` 표, `standard`), §5.3(`StagePolicy` 필드), §11.3(재시도 분류);
+`schemas/stage-policy.schema.json`.
+구성: `parse_duration(value)` — 바이블 §5.3 `Duration`(짧은 표기/ISO 8601) 파싱; `BackoffPolicy` —
+`backoff` 하위 필드; `StagePolicy`(+`from_mapping`) — 스키마 모양의 매핑을 그대로 파싱;
+`compute_backoff_delay` — 지수 백오프; `should_retry` — 정책의 `non_retryable_error_codes`가 카탈로그
+기본 분류(`classify_error`)보다 항상 우선한다.
+불변식: 아직 생성되지 않은 계약 `StagePolicy` Pydantic 모델 대신 쓰는 평범한 dataclass이며,
+`from_mapping`은 프로파일 dict와 향후 생성 모델 양쪽을 같은 모양으로 받아들인다.
+검증 계층: 1층(여기서 검증) — tests/unit/test_sdk_policy.py.
 """
 
 from __future__ import annotations

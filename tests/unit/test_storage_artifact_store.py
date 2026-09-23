@@ -1,4 +1,18 @@
-"""Unit tests for `rag_platform.storage.artifact_store` (bible §13.3, ADR-0037)."""
+"""`rag_platform.storage.artifact_store` 단위 테스트 — `InMemoryArtifactStore`/`FileArtifactStore`의 키 규약과
+`ArtifactStore` 프로토콜 준수를 검증한다.
+
+설계 근거: 바이블 §13.3(오브젝트 키 규약 — 원본은 콘텐츠 해시, `stage_key` 있는 스테이지 산출물은 `stage_key`
+경로, `fetch`/`index`는 바이트 해시 경로, 이미 점유된 `stage_key` 경로는 덮어쓰지 않음), `ADR-0037`(캐시 스코프).
+
+구성:
+- `put_source`/`put_artifact`/`lookup_stage_key` — 콘텐츠 주소화, `stage_key` 유무에 따른 경로 분기,
+  캐시 조회가 첫 쓰기 이후에만 적중함을 확인.
+- `FileArtifactStore` — 실제 파일시스템 왕복, 점유된 `stage_key` 경로 불변, `compress=True`인데
+  `zstandard`가 없으면 `ImportError`.
+- `InMemoryArtifactStore`/`FileArtifactStore` 모두 `ArtifactStore` 프로토콜을 만족함을 확인.
+
+검증 계층: 1층(여기서 검증) — 실제 오브젝트 스토리지 백엔드는 `needs_docker` DEFERRED.
+"""
 
 from __future__ import annotations
 

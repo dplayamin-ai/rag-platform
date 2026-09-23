@@ -1,4 +1,17 @@
-"""Unit tests for `rag_platform.plugins.registry` (bible §5.7, §6.7; ADR-0032)."""
+"""`rag_platform.plugins.registry` 단위 테스트 — entry point 이름 규약, 라이선스/능력 게이트, 등록 표를 검증한다.
+
+설계 근거: 바이블 §5.7(`ExtensionPoint` 14종 정본, D-10), §6.7(entry point 그룹 `rag_platform.{extension_point}`),
+`ADR-0001`(라이선스 등급표 A/B/C/D/X), `ADR-0032`(플러그인 SDK `Stage` 프로토콜·적합성 키트).
+
+구성:
+- `entry_point_group` — 확장 지점 이름 → entry point 그룹 문자열 변환과 미지정 값 거부.
+- `validate_plugin_meta` — `PluginMeta` 스키마 검증(필수 필드 누락 거부).
+- `check_license`/`check_capabilities` — 등급 상한·`static_bundled` 링크 거부·지역 제한·능력 요구 대조.
+- `PluginRegistry` — 등록·조회(`discover`/`meta`)·`build_stage`, `plugin_id` 접두어 일치, 방어적 복사.
+
+불변식: `EXTENSION_POINTS`는 정확히 14개 값의 닫힌 집합이며, `plugin_id` 접두어는 `extension_point`와 일치해야 한다.
+검증 계층: 1층(여기서 검증).
+"""
 
 from __future__ import annotations
 

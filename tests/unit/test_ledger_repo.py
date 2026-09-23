@@ -1,4 +1,14 @@
-"""Unit tests for `rag_platform.ledger.repo` (bible §13.1 document/job/commit records)."""
+"""`rag_platform.ledger.repo` 단위 테스트 — 원장 레코드 기본값과 `Ledger` 프로토콜 준수 여부를 검증한다.
+
+설계 근거: 바이블 §13.1(`documents`/`jobs`/`index_commits` 등 PostgreSQL 정본 테이블과 대응하는
+`DocumentRecord`/`JobRecord`/`CommitRecord`).
+
+구성: `DocumentRecord`/`JobRecord`/`CommitRecord`의 기본 필드값 확인, `InMemoryLedger`가 `Ledger`
+프로토콜을 만족함(그리고 불완전 구현은 만족하지 않음)을 확인, `list_jobs`의 `document_id` 필터링 확인.
+
+불변식: `Ledger`는 `runtime_checkable` 프로토콜이므로 구조적 타이핑으로 검증한다.
+검증 계층: 1층(여기서 검증) — 실제 PostgreSQL 배킹은 `needs_docker` DEFERRED.
+"""
 
 from __future__ import annotations
 

@@ -1,14 +1,18 @@
-"""`ArtifactStore` protocol + `FileArtifactStore` (`file://`) + `InMemoryArtifactStore`.
+"""`ArtifactStore` 프로토콜 + `FileArtifactStore`(`file://`) + `InMemoryArtifactStore`.
 
-Canon: design bible §13.3 (object key convention, "already-occupied path is never overwritten"),
-§6.2 (`content_hash = blake3_hex(raw bytes)`, no domain label); ADR-0037 (cache classes: contract
-artifacts keyed by `stage_key`, envelope-free bytes keyed by content hash).
-
-``ArtifactRef`` here is a plain dataclass mirroring the bible §5.3 contract fields
-(``uri``, ``blake3``, ``media_type``, ``size_bytes``, ``schema_type``, ``schema_version``,
-``stage_key``). The generated Pydantic ``rag_platform.contracts.common.ArtifactRef`` (bible §12)
-does not exist yet in this checkout; once codegen lands, this dataclass's fields are exactly what
-the generated model needs so call sites do not change.
+역할: 봉투 없는(envelope-free) 원본·파생 바이트와 계약 아티팩트를 저장하는 비동기 바이트 스토어
+표면을 정의하고, 파일시스템·인메모리 두 구현을 제공한다.
+설계 근거: 바이블 §13.3(오브젝트 키 규약, "이미 있는 경로는 절대 덮어쓰지 않는다"), §6.2
+(`content_hash = blake3_hex(원본 바이트)`, 도메인 라벨 없음); ADR-0037(캐시 클래스: `stage_key` 키드
+계약 아티팩트 vs 콘텐츠 해시 키드 봉투 없는 바이트).
+구성: `ArtifactRef` — 바이블 §5.3 계약 필드를 그대로 미러링하는 dataclass(생성 모델 대체);
+`ArtifactStore` — `put_source`/`put_derived`/`put_artifact`/`get_bytes`/`exists`/`lookup_stage_key`
+프로토콜; `InMemoryArtifactStore`/`FileArtifactStore` — 각각 dict·`file://` 루트 구현(후자는
+`compress=True`일 때 선택적 `zstandard`로 압축).
+불변식: `put_*`는 콘텐츠 주소화 키에 대해 "없으면 쓰기"만 하는 멱등 연산이다(기존 객체를 덮어쓰지
+않는다). `ArtifactStore`는 `Stage.run`에 직접 노출되지 않는다 — 단계는 `sdk.context.DerivedArtifacts`
+를 대신 본다.
+검증 계층: 1층(여기서 검증) — tests/unit/test_storage_artifact_store.py.
 """
 
 from __future__ import annotations

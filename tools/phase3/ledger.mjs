@@ -1,8 +1,11 @@
-// Phase 3 record keeping (2026-09-23).
-// Generates, deterministically from files on disk (no LLM):
-//   docs/12-appendix/04-phase3-document-ledger.md   — per-document ledger: lines, status, version, final review outcome, serious issues, owned schemas
-//   docs/12-appendix/03-bible-amendment-triage-input.md — every open issue left by Phase 3 agents, tagged bible-related, grouped by bible section
-// Usage: node tools/phase3/ledger.mjs [--root C:\Workspaces\rag-platform] [--date 2026-09-23]
+// 3단계 기록 생성기 — 디스크의 파일만으로(LLM 없이) 결정론적으로 두 문서를 만든다: `docs/12-appendix/04-phase3-document-ledger.md`(문서별 행 수·status·version·최종 리뷰 결과·심각 이슈·소유 스키마)와 `docs/12-appendix/03-bible-amendment-triage-input.md`(3단계 에이전트가 남긴 미해결 이슈를 바이블 절별로 그룹화).
+// 설계 근거: 진행 보고서 `00-progress-report.md` §3(산출물 현황 — 이 원장이 근거 데이터)·§7.2b(3단계 기록 체계 정비), 4·5단계 계획 `02-phase4-5-plan.md` §2.3 D4-4(경량 수정분 표본 검증 대상 표시).
+// 구성:
+//   - 결과 JSON 수집 — `tools/phase3/results/*.json`을 재귀 순회해 리뷰 결과(`outcomes`)·미해결 이슈(`openIssues`)·계약 감사 정본 결정(`canonical`) 추출
+//   - `rows` — frontmatter·행 수·최종 리뷰 결과를 문서별 원장 행으로 구성
+//   - 원장·트리아지 입력 md 조립 — frontmatter 포함해 두 파일에 저장
+// 불변식·주의: 두 출력 모두 기계 생성 문서이며 사람이 편집하지 않는다(원장과 진행 보고서가 다르면 원장이 우선). 미해결 이슈는 앞 160자 동일 기준으로 중복 병합하고, "바이블 관련" 판정은 정규식 휴리스틱이라 4단계 트리아지에서 재분류될 수 있다.
+// 검증 계층: 1층(여기서 검증, 콘솔 요약으로 확인). 실행: `node tools/phase3/ledger.mjs [--root <repo>] [--date YYYY-MM-DD]`
 import fs from 'node:fs'
 import path from 'node:path'
 const argv = process.argv.slice(2)

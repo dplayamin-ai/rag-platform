@@ -1,4 +1,17 @@
-"""Unit tests for `rag_platform.contracts.versioning` (bible §6.4, §12; docs/03-contracts/14)."""
+"""`rag_platform.contracts.versioning` 단위 테스트 — `schema_version` 파싱·호환성 판정·업캐스터 레지스트리를 검증한다.
+
+설계 근거: `docs/03-contracts/14-schema-versioning-and-compatibility.md` §1.2(`schema_version` 형식·
+pre-release/build metadata 금지)·§4.2(생산자·소비자 호환 매트릭스 8행), 바이블 §6.4(콘텐츠 파생 키 규약).
+
+구성:
+- `SchemaVersion` 파싱·정렬, `compat_matcher` 범위 매칭 — 정상/기형 입력 각각 검증.
+- `TestJudgeCompat` — §4.2 매트릭스의 행(row)마다 하나씩(`reject`/`load`/`upcast`/`load_tolerant`).
+- `TestUpcasterRegistry` — 등록·`has_path`·중복 등록 거부.
+- `TestVersionedEnvelope` — `schema_type`/`schema_version` 불일치·pre-release·미지정 필드 거부.
+- `test_prune_unknown_*` — `additionalProperties` 여부에 따른 미지정 필드 정리(tolerant read) 동작.
+
+검증 계층: 1층(여기서 검증).
+"""
 
 from __future__ import annotations
 

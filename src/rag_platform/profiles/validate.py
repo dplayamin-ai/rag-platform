@@ -1,15 +1,21 @@
-"""Profile schema validation + a subset of the bible §7.4 loading-time rules.
+"""프로파일 스키마 검증 + 바이블 §7.4 로딩 시 검증 규칙의 부분 구현.
 
-Canon: design bible §7.4 ("로딩 시 검증 규칙과 게이트"), §5.7 `SourceFormat` (13 values);
-``schemas/profile.schema.json`` (jsonschema Draft 2020-12 + a `urn:rag:schema:*` reference
-registry, matching `plugins.registry`'s approach for `plugin-meta.schema.json`).
+설계 근거: 바이블 §7.4("로딩 시 검증 규칙과 게이트"), §5.7 `SourceFormat`(13종);
+`schemas/profile.schema.json`(jsonschema Draft 2020-12 + `urn:rag:schema:*` 참조 레지스트리 —
+`plugins.registry`가 `plugin-meta.schema.json`을 다루는 방식과 동일).
 
-Only the rules that need nothing beyond the resolved profile document are implemented here —
-rule (3) `fusion.k`, (10) the `parse.router` `SourceFormat` coverage check, (11) the hydrate/rerank/
-pack budget inequality and (12) the `deny_cidrs` floor. Rules that need a live `PluginRegistry`
-(license/`capabilities()` cross-checks, rules (1)/(2)/(4)/(5)/(6)/(8)/(9)) are `plugins.registry`'s
-job (`check_license`/`check_capabilities`) applied by the caller once plugins are resolved; they are
-out of scope for a pure "given this YAML document" validator.
+구성:
+- `validate_schema(profile, *, schemas_dir=...)` — `profile.schema.json` 대조 검증
+- `validate_loading_rules(profile)` — 규칙 (3)/(10)/(11)/(12) 적용, 위반 시 `ProfileInvalidError`
+- `ProfileInvalidError` — `profile.invalid`(바이블 §5.7), 위반 규칙 전체를 `.issues`에 담음
+- `SOURCE_FORMATS`, `DEFAULT_DENY_CIDRS` — §5.7/§5.3 정본 값
+
+불변식·주의: 해석된 프로파일 문서만으로 판정 가능한 규칙 (3) `fusion.k`, (10) `parse.router`의
+`SourceFormat` 커버리지, (11) hydrate/rerank/pack 예산 부등식, (12) `deny_cidrs` 하한만
+구현한다. 살아있는 `PluginRegistry`가 필요한 규칙 (1)/(2)/(4)/(5)/(6)/(8)/(9)(라이선스·
+`capabilities()` 교차 검증)는 `plugins.registry`의 `check_license`/`check_capabilities`가
+담당하며 이 검증기의 범위 밖이다.
+검증 계층: 1층(여기서 검증) — `tests/unit/test_profiles_validate.py`.
 """
 
 from __future__ import annotations

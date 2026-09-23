@@ -1,8 +1,14 @@
-"""Object key conventions (bible §13.3): pure functions, no I/O.
+"""오브젝트 키 규약(바이블 §13.3): 순수 함수, I/O 없음.
 
-Canon: design bible §13.3 (object key table), §6.2 (hash combination rules), §6.4 (`schema_type`
-is PascalCase; the object key uses its kebab-case form, "`schema_type_kebab`"); ADR-0037
-(`stage_key` scope and cache classes).
+역할: 테넌트별 소스·파생·아티팩트·LLM 보강 캐시 오브젝트의 저장 경로 문자열을 계산한다.
+설계 근거: 바이블 §13.3(오브젝트 키 표), §6.2(해시 조합 규칙), §6.4(`schema_type`은 PascalCase,
+오브젝트 키는 그 kebab-case 형인 `schema_type_kebab`); ADR-0037(`stage_key` 스코프와 캐시 클래스).
+구성: `kebab_case` — PascalCase → kebab-case; `source_key`/`derived_key` — 콘텐츠 해시 기반 키;
+`artifact_key`(`stage_key` 기반, 캐시 가능) / `artifact_key_by_hash`(바이트 해시 기반, 캐시 예외
+`fetch`/`index`); `llm_enrich_key` — LLM 보강 캐시 키.
+불변식: 모든 해시 인자는 소문자 hex여야 한다(`_require_hex`가 강제); 키는 첫 두 hex 문자로
+샤딩한다(`{hash[:2]}`).
+검증 계층: 1층(여기서 검증) — tests/unit/test_storage_keys.py.
 """
 
 from __future__ import annotations

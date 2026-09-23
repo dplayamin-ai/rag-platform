@@ -1,7 +1,13 @@
 #!/usr/bin/env node
-// validate-contracts.mjs — mechanical checks for RAG Platform contract docs + JSON Schemas.
-// Usage: node validate-contracts.mjs --root C:\Workspaces\rag-platform [--json report.json] [--quiet]
-// No dependencies (corporate proxy blocks npm). Implements a JSON Schema 2020-12 subset validator.
+// 계약 검증기 — `schemas/*.schema.json`과 `docs/03-contracts/*.md`를 대조해 스키마 문법·`$ref` 해결·열거 정합·예시 JSON 유효성·문서 구조를 검사한다.
+// 설계 근거: 계약 개요 `03-contracts/00-contract-overview.md` §10(계약 검증 시점과 계약 테스트), 바이블 §5.7(열거 정본)·§1.2(스키마 변경 절차), 브리프 §9.5(예시 완전성)·§9.10(이모지 금지).
+// 구성:
+//   - `resolveRef`/`resolvePointer` — `$ref`·JSON 포인터 해결
+//   - `validate` — JSON Schema 2020-12 부분집합 검증기(재귀)
+//   - `parseBibleEnums` — 바이블 §5.7 표를 파싱해 스키마 `$defs` 열거와 대조
+//   - `finish` — 리포트 출력·`--json` 저장·오류 유무로 종료 코드 결정
+// 불변식·주의: 바이블이 정본이므로 스키마 열거값이 바이블과 다르면 스키마 쪽 오류로 보고한다. 외부 의존성 없음(사내 프록시가 npm 설치를 막음) — ajv 대신 자체 구현.
+// 검증 계층: 1층(여기서 검증, 오류 0이 통과 기준). 실행: `node tools/validate-contracts.mjs --root <repo> [--json report.json] [--quiet]`
 import fs from 'node:fs'
 import path from 'node:path'
 

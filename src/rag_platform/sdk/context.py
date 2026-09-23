@@ -1,20 +1,16 @@
-"""`PipelineContext` / `StageContext` protocols and the `LocalContext` runtime helper.
+"""`PipelineContext`/`StageContext` 프로토콜과 로컬 실행기용 `LocalContext` 런타임 헬퍼.
 
-Canon: design bible §11.1 ("two runners, one definition"), §4.1 (`StageContext` members);
-ADR-0003 (orchestrator-neutral pipeline, non-durable `LocalRunner`);
-docs/04-pipelines/01-pipeline-framework.md §3.1 (`StageContext` member table), §4.1
-(`PipelineContext`/`QueryContext`).
-
-`sdk` sits at the bottom of the layer stack (bible §12: `contracts ← sdk ← plugins|adapters|...`)
-and must not import `storage`, `ledger`, `profiles` or `orchestration`. Where this module needs an
-artifact-store-shaped collaborator (`LocalContext.store`, `DerivedArtifacts`'s backing object) it
-declares a small structural protocol locally instead of importing `rag_platform.storage`; any
-object with matching methods (for example `storage.artifact_store.FileArtifactStore`) satisfies it
-by structural typing, no inheritance required.
-
-`LocalContext.clock` has no default: `datetime.now(UTC)` is banned everywhere except the
-shell/api layer (ruff banned-api, 10-development/03 §10.1); the caller assembling `LocalContext`
-(the shell, e.g. `orchestration.local.runner`, or a test) supplies the real clock explicitly.
+역할: 파이프라인·단계(stage) 실행이 보는 컨텍스트 타입을 정의하고, 비영속(non-durable) 로컬 실행에
+필요한 구체 구현(`LocalContext`, `_LocalStageContext`, `TenantBoundArtifacts`)을 제공한다.
+설계 근거: 바이블 §11.1("두 실행기, 하나의 정의"), §4.1(`StageContext` 멤버); ADR-0003(오케스트레이터
+중립 파이프라인, 비영속 `LocalRunner`); docs/04-pipelines/01-pipeline-framework.md §3.1/§4.1.
+구성: `DerivedArtifacts`/`TenantBoundArtifacts` — 테넌트 바운드 쓰기 전용 아티팩트 포트; `SecretsRef`
+— 참조만 들고 다니는 비밀값 핸들; `PipelineContext`/`StageContext` — 프로토콜; `LocalContext` —
+`StageContext`를 만들어 주는 비영속 런타임 홀더.
+불변식: `sdk`는 레이어 스택 최하단(바이블 §12)이라 `storage`/`ledger`/`profiles`/`orchestration`을
+import하지 않는다(구조적 프로토콜로 대체). `datetime.now(UTC)` 직접 호출은 셸/api 밖에서 금지 —
+호출자가 실제 `clock`을 명시적으로 주입한다.
+검증 계층: 1층(여기서 검증) — tests/unit/test_sdk_context.py.
 """
 
 from __future__ import annotations

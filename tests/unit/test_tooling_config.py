@@ -1,4 +1,18 @@
-"""Guards for the toolchain configuration and root development files (ADR-0035, phase-6 plan §8)."""
+"""툴체인 설정과 루트 개발 파일에 대한 가드 테스트 — `pyproject.toml`이 정본 값에서 벗어나지 않도록 감시한다.
+
+설계 근거: `ADR-0035`(Python 버전·툴체인 고정), 바이블 §12(모듈 의존 방향 → `BIBLE_LAYERS`),
+phase-6 계획서 §8(deferred 마커 4종·검증 계층 규약).
+
+구성:
+- `BIBLE_LAYERS` — 바이블 §12 계층 순서(최상위부터)를 하드코딩한 정본 대조표.
+- Python 버전 고정, 6개 extras 선언, 최소 런타임 의존성 집합, deferred 마커 4종 등록과 기본 제외,
+  import-linter 계층·금지 계약이 §12 방향과 일치함, 계층 모듈 실재, `pipelines`가 오케스트레이터/웹
+  프레임워크를 금지함, C등급 패키지(`fitz`/`pymupdf`/`hwp5`) 금지, mypy strict를 각각 확인.
+- `justfile`/`.pre-commit-config.yaml`/저장소 필수 디렉터리 존재 확인.
+
+불변식: 이 테스트가 실패하면 `pyproject.toml`이 바이블·ADR과 어긋난 것이지 테스트가 틀린 것이 아니다.
+검증 계층: 1층(여기서 검증).
+"""
 
 from __future__ import annotations
 

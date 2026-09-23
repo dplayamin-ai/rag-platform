@@ -1,7 +1,9 @@
 #!/usr/bin/env node
-// usage-report.mjs — per-agent token usage and wall-clock report from Claude Code session transcripts.
-// Usage: node tools/usage-report.mjs --out PAYMENT.MD
-// Reads <projects>/<session>.jsonl (orchestrator) and <projects>/<session>/subagents/workflows/<run>/{journal.jsonl,agent-*.jsonl}.
+// 에이전트별 토큰·시간 집계기 — Claude Code 세션 트랜스크립트(`<projects>/<session>.jsonl`와 `.../subagents/workflows/<run>/{journal.jsonl,agent-*.jsonl}`)를 읽어 루트 `PAYMENT.MD`를 생성한다.
+// 설계 근거: 진행 보고서 `docs/12-appendix/00-progress-report.md` §7.1(도구 표, `PAYMENT.MD` 재생성 절차) — 계약·바이블 대상 도구가 아니라 세션 운영 기록용 도구다.
+// 구성: `readJsonl`/`usageOf` — jsonl 파싱과 토큰(입력·캐시 쓰기·캐시 읽기·출력)·시간 집계; 본문 렌더링부 — 총계(§1)·워크플로우별 요약(§2)·에이전트별 상세(§3) 표 작성.
+// 불변식·주의: `RUN_NAMES`/`SESSION_NAMES`는 알려진 run·세션에만 사람이 읽을 이름을 붙이며, 미등재 run은 원본 ID로 표시한다(추측 이름 금지). 재시도로 중복 과금된 호출은 실제 청구와 차이가 날 수 있음을 §4에 명시한다.
+// 검증 계층: 1층(여기서 검증) — 출력 `PAYMENT.MD`를 사람이 대조한다. `running` 상태 에이전트는 재실행 시 갱신된다.
 import fs from 'node:fs'
 import path from 'node:path'
 

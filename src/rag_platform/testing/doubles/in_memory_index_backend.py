@@ -1,8 +1,20 @@
-"""`InMemoryIndexBackend`: `sdk.ports.IndexBackend` double, brute-force cosine, no Qdrant.
+"""`InMemoryIndexBackend` — `sdk.ports.IndexBackend` 대역(double). 무차별 대입 코사인 유사도, Qdrant 없음.
 
-# DEFERRED: verify against a real Qdrant cluster (gRPC, named vectors, payload filters,
-# `is_current`/`index_generation` flip, bible §11.4) — `needs_docker` (phase-6 plan §8 tier 2).
-# Track in `docs/12-appendix/09-deferred-verification-ledger.md`.
+역할: 실제 Qdrant 클러스터 없이 `upsert`/`search_dense`/`search_lexical` 호출부를 검증하는
+딕셔너리 기반 인덱스 대역.
+설계 근거: 바이블 §11.4(`is_current`/`index_generation` 플립을 포함한 인덱스 백엔드 계약)의
+검증 대역 — 실 백엔드는 phase-6 계획 §8 tier 2로 이관.
+
+구성:
+- `InMemoryIndexBackend` — `upsert(records)`로 `{id, tenant_id, vector?, text?}` 레코드 저장
+- `search_dense(tenant_id, vector, top_k)` — 코사인 유사도 상위 `top_k`
+- `search_lexical(tenant_id, query, top_k)` — 단어 겹침 개수 기반 상위 `top_k`
+
+불변식·주의: 모든 검색은 `tenant_id`로 스코프된다(다른 테넌트 레코드는 결과에서 제외).
+검증 계층: 1층(대역 자체는 여기서 검증) — `tests/unit/test_testing_doubles.py`.
+DEFERRED: 실 Qdrant 클러스터(gRPC, named vectors, payload 필터, `is_current`/`index_generation`
+플립) 대상 검증은 `needs_docker`(phase-6 계획 §8 tier 2) —
+`docs/12-appendix/09-deferred-verification-ledger.md`에서 추적.
 """
 
 from __future__ import annotations

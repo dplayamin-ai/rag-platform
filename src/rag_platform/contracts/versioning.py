@@ -1,23 +1,16 @@
-"""rag_platform.contracts.versioning — schema_version compatibility rules.
+"""GENERATED — 수정 금지. 재생성: `uv run python tools/contracts_gen.py`
 
-GENERATED — do not edit; run `uv run python tools/contracts_gen.py` to regenerate.
-
-Canon: design bible §6.4 ("schema_version semver: addition = minor, removal/semantic change =
-major"), §12 module map ("versioning.py(schema_version compatibility rules)"); worked out in full
-in docs/03-contracts/14-schema-versioning-and-compatibility.md (§1.2 schema_version rules, §4.1-4.3
-producer/consumer judgement matrix and contracts_compat grammar, §6.2 upcaster registry proposal).
-
-Unlike every other module in this package, this file has no schemas/*.schema.json counterpart: it
-is the code-level compatibility engine, not a contract data model, so datamodel-code-generator
-never runs on it. contracts_gen.py still owns its content (like __init__.py) so a human never
-hand-edits it, and the regex constants below are copied verbatim from
-schemas/common-types.schema.json at generation time so they can never drift from the
-$defs/Semver and $defs/SchemaTypeName patterns every other generated module already relies on.
-
-SchemaDiffReport and its nested types (CompatLevel, SchemaChangeKind, SchemaChange,
-GoldenExampleResult, EnumMismatch, EnumCheckResult) are declared in
-schemas/schema-diff-report.schema.json and are therefore already generated into
-schema_diff_report.py; they are not repeated here.
+역할: `schema_version` 호환성 엔진 — 스키마에서 생성한 데이터 모델이 아니라 버전 비교·업캐스팅 규칙을 담은
+코드 전용 모듈이다(`rag_platform.contracts.versioning`).
+설계 근거: 바이블 §6.4(`schema_version` semver 규칙 — 추가는 minor, 제거·의미 변경은 major), §12(모듈 맵의
+`versioning.py`), `docs/03-contracts/14-schema-versioning-and-compatibility.md` §1.2·§4.1~4.3·§6.2.
+구성: `SchemaVersion`(파싱·비교) · `compat_matcher`(`contracts_compat` 범위 판정) · `VersionedEnvelope`(봉투
+불변식을 검증하는 코드 전용 기반 클래스) · `UpcasterRegistry`/`judge_compat`(생산자·소비자 호환 매트릭스) ·
+`prune_unknown`(관용적 읽기 시안, 기본 동작 아님).
+불변식: `SEMVER_RE`/`SCHEMA_TYPE_RE`는 `schemas/common-types.schema.json`에서 생성 시점에 그대로 복사되므로
+스키마와 어긋날 수 없다; `SchemaDiffReport`는 `schema_diff_report.py`가 이미 생성하므로 여기서 반복하지 않는다;
+손으로 고친 내용은 다음 재생성 때 사라진다.
+검증 계층: 1층(여기서 검증) — `tests/unit/test_contracts_versioning.py`.
 """
 
 from __future__ import annotations

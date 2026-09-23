@@ -1,4 +1,17 @@
-"""Unit tests for `rag_platform.testing.doubles` (bible §12 `testing`, conformance kit fakes)."""
+"""`rag_platform.testing.doubles` 단위 테스트 — 적합성 키트 가짜(fake) 구현의 결정성과 테넌트 격리를 검증한다.
+
+설계 근거: 바이블 §12(`testing` 패키지 — 적합성 키트 가짜 구현), E17(콘텐츠 키·테넌트 스코프, 교차 테넌트
+유출 금지).
+
+구성:
+- `FakeEmbedder` — 결정적 임베딩, 정규화 옵션, 차원 준수, 0 이하 차원 거부.
+- `InMemoryIndexBackend` — 코사인 유사도 기반 밀집(dense) 검색 순위, `tenant_id` 스코프(E17), 용어 중복도
+  기반 어휘(lexical) 검색.
+- `InMemoryKV` — 모노토닉 시계 기반 TTL 만료.
+- `InMemoryLedger` — 문서/잡/커밋 레코드 왕복과 테넌트별 스코프(E17).
+
+검증 계층: 1층(여기서 검증) — 실제 백엔드(Qdrant/OpenSearch/Valkey/PostgreSQL) 대응은 `needs_docker` DEFERRED.
+"""
 
 from __future__ import annotations
 

@@ -1,8 +1,16 @@
-"""Unit tests for `rag_platform.orchestration.local.runner.LocalRunner` (bible §11.1; ADR-0003, ADR-0037).
+"""`rag_platform.orchestration.local.runner.LocalRunner` 단위 테스트 — 스테이지 체인·캐시 적중·실패 분류를 검증한다.
 
-Covers exactly the three scenarios this work package calls out: a two-dummy-stage chain, a
-`stage_key` cache hit (ADR-0037) and failure classification driving abort vs. partial vs. retry
-(bible §11.3).
+설계 근거: 바이블 §11.1(`PipelineContext`에만 의존하는 실행기), §11.3(실패 분류 → abort/partial/retry),
+`ADR-0037`(`stage_key` 캐시 스코프·구성, `fetch`/`index` 캐시 예외).
+
+구성:
+- `_UpperStage`/`_ReverseStage`/`_AlwaysFailsStage`/`_FailsTwiceThenSucceeds` — 테스트용 더미 `Stage` 구현.
+- `_make_runner()` — `InMemoryArtifactStore` 위에 `LocalRunner`를 구성하는 헬퍼.
+- 두 스테이지 순차 실행·`stage_key` 캐시 적중·`fetch`/`index` 캐시 예외·비재시도/재시도 실패 분류·
+  `FALLBACK` 분류가 이 최소 실행기에서는 `failed`로 강등됨(문서화된 동작)을 각각 검증하는 테스트 함수들.
+
+불변식: `fetch`/`index` 스테이지는 입력·지문이 같아도 항상 재실행한다(`ADR-0037` 캐시 예외).
+검증 계층: 1층(여기서 검증) — Temporal 실행기 경로는 이 파일의 범위 밖(별도 스위트).
 """
 
 from __future__ import annotations

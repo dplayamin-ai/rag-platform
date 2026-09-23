@@ -1,4 +1,18 @@
-"""Unit tests for `rag_platform.pipelines.ingest` (bible §11.1, §4.2 `STAGES`; ADR-0003, D-17)."""
+"""`rag_platform.pipelines.ingest` 단위 테스트 — 수집 파이프라인 스테이지 순서·재시작·오케스트레이터 중립성을 검증한다.
+
+설계 근거: 바이블 §4.2(수집 파이프라인 `STAGES` 정본 순서), §11.1·`ADR-0003`/결정 `D-17`(파이프라인 정의는
+`PipelineContext`에만 의존하고 `temporalio`를 임포트하지 않는다).
+
+구성:
+- `_RecordingPipelineContext` — 호출된 스테이지 이름을 기록하는 가짜 `PipelineContext`.
+- `_ProfileWithRecount`/`_ProfileWithoutRecount` — `recount` 스테이지 활성화 여부가 다른 가짜 프로파일.
+- `ingest.run`의 전체 순서·`recount` 생략·`from_stage` 재시작·미지정 `from_stage` 거부·최종 참조 반환을
+  각각 검증하는 테스트 함수, `ingest.STAGES` 상수 대조, 금지 모듈(`temporalio` 등) 미임포트 정적 검사.
+
+불변식: `ingest` 모듈은 `temporalio`/`fastapi`/`starlette`/`rag_platform.ledger`/`rag_platform.orchestration`을
+임포트하지 않는다(import-linter `pipelines-orchestrator-neutral` 계약의 방어적 단위 재확인).
+검증 계층: 1층(여기서 검증).
+"""
 
 from __future__ import annotations
 

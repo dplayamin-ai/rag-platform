@@ -257,6 +257,19 @@ RRF k=60 → convex 2단계(O-01), BGE-M3 sparse + lexical 유지(O-02), GraphRA
 
 남은 4단계 이슈(5·6단계로 이관): 감사기 A3 기각 명칭 휴리스틱 보강, 미인용 FR 140건 전수 판정, `FR-NRM-09`·`FR-PRS-19` 설계 결정, 4단계 중 6A 1차 실행이 남긴 CLAUDE.md §4 구 구조 서술(6A 2차 완료 후 갱신).
 
+### 7.2f 6A 레퍼런스 골격 완료(2026-09-23 19:00, Run `wf_8eef8c02-a6c`, 2시간 20분, 에이전트 6, 실패 0, 약 1.9B 토큰)
+
+| 단계 | 결과 |
+|------|------|
+| S1 기반(Opus) | 1차 실행의 구 구조 제거 후 바이블 §12 모듈 맵 35 패키지로 재구성. pyproject(uv, 3.12/3.13, ruff, mypy strict, pytest 마커 4종), import-linter 6계약(§12 계층 + 오케스트레이터 중립 + adapters-no-storage + contracts-pure + no-c-grade + testing 격리; 위반 탐지 실증), justfile·pre-commit·tools/dev.py. 72 테스트 |
+| S2 계약(Sonnet) | `tools/contracts_gen.py`: urn `$ref` 재작성 후 datamodel-code-generator로 35 스키마 → 38 모듈(StrEnum, versioning.py 포함), 재생성 바이트 동일. 계약 예시 80건 픽스처 추출 → 왕복 테스트(xfail 40: nullable 필드 null 보존 미구현 → 6B 선행 과제). ADR-0004 해시 벡터 테스트 통과 |
+| S3 코어(Sonnet) | sdk(stage 5멤버·context·policy·ports·hashing), storage(artifact_store file://·keys·valkey 포트), plugins/registry(14 확장 지점), profiles(loader·validate·builtin 5종), orchestration/local/runner(LocalRunner), pipelines/ingest, ledger/repo 포트, testing/doubles 4종(`# DEFERRED:` 6건). 220 테스트 |
+| S4 인계(Sonnet) | `.github/workflows/ci.yml`(6 잡 + 수동 deferred 잡), `HANDOFF.md`, `tools/verify/{gen-deferred-ledger.mjs, run-deferred.sh/.ps1}`, [09-deferred-verification-ledger.md](09-deferred-verification-ledger.md) 첫 생성(6건) |
+| S5 리뷰·수정 | 3건(심각 1: §12의 `contracts/versioning.py` 누락 → 생성기 확장으로 해결) |
+| 게이트(오케스트레이터 재실행) | ruff 통과, mypy 148파일 0, import-linter 6/6, **pytest 298 통과·40 xfail**. 커밋 완료 |
+
+미해결 이관: xfail 40건(6B 선행 수정), `compose.lite.yaml` 부재(6F), 바이블 §12 같은 층 내 의존(pipelines.query → retrieval·render 등)이 import-linter `|` 독립 해석과 충돌할 가능성(구현 시 계층 계약 조정 필요), CLAUDE.md §4 구 구조 서술(6B/6D 검증 단계에서 갱신). 이어서 헤더 주석 소급 적용(`wf-header-pass.js`) → 6B·6D(`wf-6bd.js`).
+
 ### 7.3 재개 절차(새 세션)
 
 1. 파일 상태를 먼저 본다: `docs/03-contracts/*.md`의 `status`(review = 리뷰 통과·미수정 또는 리뷰 대기, active = 수정 완료), `schemas/*.json` 수, `docs/06-adr/README.md` 존재 여부, `docs/04-pipelines/*.md` 수. `node tools/validate-contracts.mjs --root C:\Workspaces\rag-platform`로 오류 수를 확인.

@@ -1,4 +1,16 @@
-"""Unit tests for `rag_platform.profiles.loader` (bible §7.3, §6.2 `profile_hash`; ADR-0031)."""
+"""`rag_platform.profiles.loader` 단위 테스트 — 내장 프로파일의 `extends` 상속 병합과 `profile_hash` 계산을 검증한다.
+
+설계 근거: 바이블 §7(프로파일 상속 체인 `base → lite → standard → premium`, `korean-gov extends standard`),
+§6.2(`profile_hash` 해시 결합 규칙), `ADR-0031`(프로파일 스키마·`extends`·품질 게이트 — 배열은 교체, 딕셔너리는 병합).
+
+구성:
+- `load_profile` — 내장 5종 로딩, 상속 체인이 root→leaf 순서임을 확인, 순환 `extends`·미지정 `profile_id` 거부.
+- `deep_merge` — 배열은 통째로 교체하고 딕셔너리는 재귀 병합함을 확인.
+- `canonical_json`/`profile_hash` — 키 정렬·공백 없음, `profile_hash` 필드 자체는 해시에서 제외, 내용 변경 시 값 변경.
+- `BUILTIN_DIR` — 내장 YAML 파일 경로 상수.
+
+검증 계층: 1층(여기서 검증).
+"""
 
 from __future__ import annotations
 

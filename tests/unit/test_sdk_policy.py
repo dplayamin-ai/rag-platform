@@ -1,4 +1,16 @@
-"""Unit tests for `rag_platform.sdk.policy` (bible §4.4, §5.3, §11.3)."""
+"""`rag_platform.sdk.policy` 단위 테스트 — 기간 파싱, `StagePolicy` 역직렬화, 지수 백오프, 재시도 판정을 검증한다.
+
+설계 근거: 바이블 §4.4(`StagePolicy` 표 — 스테이지별 `task_queue`/`start_to_close`/`max_attempts`/
+`non_retryable_error_codes`), §5.3(`BackoffPolicy` 기본값), §11.3(재시도 분류 — 오류 코드가 재시도 가능 여부를 결정).
+
+구성:
+- `parse_duration` — 축약형(`30s`/`5m`/`1h`/`500ms`)과 ISO 8601(`PT5M`) 파싱, 기형 입력 거부.
+- `BackoffPolicy` 기본값, `StagePolicy.from_mapping` — 계약 스키마 모양의 매핑을 역직렬화.
+- `compute_backoff_delay` — 지수 증가 후 `backoff.max`에서 상한, `attempt < 1` 거부.
+- `should_retry` — 재시도 가능 오류·소진된 시도 횟수·프로파일이 코드를 비재시도로 재지정하는 경우를 판정.
+
+검증 계층: 1층(여기서 검증).
+"""
 
 from __future__ import annotations
 

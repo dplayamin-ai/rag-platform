@@ -1,10 +1,12 @@
-"""Contract models generated from ``schemas/*.schema.json`` (layer L0).
+"""GENERATED — 수정 금지. 재생성: `uv run python tools/contracts_gen.py`
 
-GENERATED — do not edit; run `uv run python tools/contracts_gen.py` to regenerate.
-
-Every module in this package is produced by ``uv run python tools/contracts_gen.py``
-and must not be edited by hand (bible §5.1, 10-development/01 §6). This package imports
-only pydantic and the standard library.
+역할: `schemas/*.schema.json`에서 생성한 계약 모델 패키지(계층 L0)의 공개 진입점 — 스키마별 대표 모델과
+`common_types`의 공유 타입·열거값을 재노출(re-export)한다.
+설계 근거: 바이블 §5.1(계약이 정본), §5.7(열거값은 `common_types`가 단일 출처), §12(레이어 지도),
+10-development/01 §6(생성 파일은 손으로 고치지 않는다).
+구성: 스키마별 대표 클래스(스키마 `title`) + `common_types`에 직접 정의된 공개 클래스를 재노출한다.
+불변식: 이 패키지는 pydantic과 표준 라이브러리만 import한다; 손으로 고친 내용은 다음 재생성 때 사라진다.
+검증 계층: 1층(여기서 검증) — tests/contracts, tools/validate-contracts.mjs.
 """
 
 from __future__ import annotations

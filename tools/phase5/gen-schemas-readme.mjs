@@ -1,5 +1,8 @@
-// Phase 5: generate schemas/README.md (schema file ↔ $id ↔ title ↔ owning contract doc ↔ bible §5.1 presence). No LLM.
-// Usage: node tools/phase5/gen-schemas-readme.mjs [--root <repo>] [--date YYYY-MM-DD]
+// 스키마 인덱스 생성기 — `schemas/README.md`를 기계 생성한다: 스키마 파일 ↔ `$id` ↔ `title` ↔ 소유 계약 문서(`docs/03-contracts/*.md`) ↔ 바이블 §5.1 등재 여부(LLM 없음).
+// 설계 근거: 4·5단계 계획 `12-appendix/02-phase4-5-plan.md` §3(5단계 할 일 — `schemas/README.md` 산출물), 바이블 §5.1(스키마 인벤토리 정본), 계약 개요 `03-contracts/00-contract-overview.md`(변경 절차·검증 명령 인용).
+// 구성: 스키마 파일 순회 후 소유 계약 문서(파일명 언급 여부로 추정) 탐색 → 바이블 §5.1 인벤토리(스키마 파일명 패턴 추출)와 대조 → 표 형태 md 조립·저장.
+// 불변식·주의: 수동 편집 금지 문서(재생성이 항상 덮어씀). 소유 문서 판정은 계약 문서 본문에 스키마 파일명이 등장하는지의 텍스트 포함 검사이므로 오탐 가능성이 있다 — 정확한 소유 관계는 계약 개요 §2 인벤토리가 정본이다.
+// 검증 계층: 1층(여기서 검증, 콘솔 출력의 "바이블 미등재" 목록으로 확인). 실행: `node tools/phase5/gen-schemas-readme.mjs [--root <repo>] [--date YYYY-MM-DD]`
 import fs from 'node:fs'
 import path from 'node:path'
 const argv = process.argv.slice(2)

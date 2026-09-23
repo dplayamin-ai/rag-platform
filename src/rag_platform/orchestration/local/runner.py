@@ -1,16 +1,21 @@
-"""`LocalRunner`: non-durable in-process stage executor (bible §11.1; ADR-0003, ADR-0037).
+"""`LocalRunner` — 비내구(non-durable) 인프로세스 스테이지 실행기.
 
-Canon: design bible §11.1 (`local` mode: "비내구, 개발·CI·평가 하네스, 프로덕션 금지"), §4.1
-(`stage_key` cache-hit skip), §11.3 (retry classification -> shell action); ADR-0037 (`stage_key`
-scope: cache-exempt stages `fetch`/`index` always run).
+역할: `Stage.run`을 순차 실행하며 `stage_key` 캐시 히트 스킵과 실패 분류(abort/partial/retry)를
+처리하는, 개발·CI·평가 하네스 전용 러너(프로덕션 금지).
+설계 근거: 바이블 §11.1(`local` 모드 — "비내구, 개발·CI·평가 하네스, 프로덕션 금지"),
+§4.1(`stage_key` 캐시 히트 스킵), §11.3(재시도 분류 -> shell 액션); ADR-0003(오케스트레이터
+중립 파이프라인), ADR-0037(캐시 제외 스테이지 `fetch`/`index`는 항상 재실행).
 
-This runner treats stage boundary payloads as opaque ``bytes`` rather than validated contract
-instances: the full shell (``orchestration/context.py``, `run_stage`, pipeline-framework.md §5.2)
-also loads/validates ``ArtifactRef -> Pydantic contract`` at points 2 and 3, which needs the
-generated ``rag_platform.contracts`` package (not part of this work package, see `sdk/stage.py`'s
-module docstring). `LocalRunner` still implements the parts that do not depend on it: serial
-execution of `Stage.run`, `stage_key` cache-hit skip, and failure classification driving
-abort-vs-partial-vs-retry (bible §11.3).
+구성:
+- `LocalRunner` — 직렬 실행 엔진(`run`), 캐시 조회·기록, 재시도/백오프(`_run_one`)
+- `StageSpec` — 스테이지 이름·`Stage`·`StagePolicy`·`schema_type` 묶음
+- `StageRunLog`/`RunResult` — 실행 로그와 최종 상태(`succeeded`/`partial`/`failed`)
+- `CACHE_EXEMPT` — 캐시 제외 스테이지 집합(`fetch`, `index`)
+
+불변식·주의: 스테이지 경계 페이로드를 검증된 계약 인스턴스가 아닌 불투명한 `bytes`로 취급한다.
+`ArtifactRef -> Pydantic` 계약 검증(포인트 2·3)은 생성된 `rag_platform.contracts` 패키지가
+필요해 이 작업 범위 밖이며 `orchestration/context.py`의 `run_stage`가 담당한다.
+검증 계층: 1층(여기서 검증) — `tests/unit/test_orchestration_local_runner.py`.
 """
 
 from __future__ import annotations

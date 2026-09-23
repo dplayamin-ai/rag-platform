@@ -1,4 +1,17 @@
-"""Unit tests for `rag_platform.sdk.stage` (bible §4.1, §5.7, §11.3; ADR-0032)."""
+"""`rag_platform.sdk.stage` 단위 테스트 — 오류 코드 철자 검증, 재시도 분류, `StageError`/`Stage` 프로토콜을 검증한다.
+
+설계 근거: 바이블 §4.1(`Stage[In, Out]` 프로토콜 5멤버), §5.7(오류 카탈로그 `stage.reason` 철자 정본),
+§11.3(재시도 분류 표 — retryable/non_retryable/partial/fallback), `ADR-0032`(적합성 키트).
+
+구성:
+- `is_valid_code` — `stage.reason` 형식·알려진 스테이지 접두어 검증.
+- `classify_error` — 코드 → `RetryClass`(§11.3 표 대조, 미지정 코드는 안전하게 `NON_RETRYABLE`).
+- `StageError` — 잘못된 코드 거부, 분류에 따른 기본 `retryable`, `to_payload()`가 RFC 9457 계약 모양과 일치,
+  중첩 `cause`가 페이로드에 왕복됨을 확인.
+- `_DummyStage`/`Stage` — 5멤버를 모두 갖춘 구현은 프로토콜을 만족하고 일부 누락 시 거부됨을 확인.
+
+검증 계층: 1층(여기서 검증).
+"""
 
 from __future__ import annotations
 

@@ -1,10 +1,14 @@
-"""Fixed key-derivation vectors from ADR-0004 (bible §6.2 ``H()``; 10-development/03 §10.2).
+"""고정 키 파생(key-derivation) 해시 벡터 — `ADR-0004`가 얼린 입력→출력 쌍으로 `rag_platform.sdk.hashing`을 검증한다.
 
-These inputs -> outputs are frozen by the ADR itself ("적합성 키트의 고정 벡터로 쓴다"): a change to
-``H()``, ``canonical_json``, the ``span`` format, ``str(level)``/``str(index_generation)``
-serialization, or the BLAKE3/``uuid5`` implementation must be caught here as a hash-vector
-mismatch, not discovered downstream. This module is the single hand-written test for
-``rag_platform.sdk.hashing`` (the task's S3 agent owns the rest of ``sdk/``).
+설계 근거: `ADR-0004`("적합성 키트의 고정 벡터로 쓴다"), 바이블 §6.2 `H()`, `10-development/03` §10.2 해시 벡터
+게이트. `canonical_json`·`span` 형식·`str(level)`/`str(index_generation)` 직렬화·BLAKE3/`uuid5` 구현 중 어느
+하나가 바뀌어도 이 테스트에서 즉시 불일치로 드러나야 하며, 하류에서 발견되어서는 안 된다.
+
+구성: `rag_platform.sdk.hashing`의 `hash_of`(`H()`)·`blake3_hex`·`block_id`·`chunk_id`·`record_id`·
+`point_id_for_record`와 `NAMESPACE_RAG_CHUNK`를 ADR-0004의 고정 벡터에 대입해 값을 비교하는 테스트 함수들.
+
+불변식: 벡터 값 자체를 바꾸지 않는다(ADR이 정본). `sdk.hashing`을 손으로 검증하는 유일한 모듈이다.
+검증 계층: 1층(여기서 검증).
 """
 
 from __future__ import annotations

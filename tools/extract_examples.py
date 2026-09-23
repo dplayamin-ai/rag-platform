@@ -1,35 +1,18 @@
-"""Extract golden ```json examples from ``docs/03-contracts/*.md`` into fixture files.
+"""`docs/03-contracts/*.md`의 골든 ```json 예시를 추출해 `tests/contracts/fixtures/`에 픽스처로 저장한다.
 
-Each ``docs/03-contracts/NN-*.md`` contract document ends with a ``## 예시`` section holding one
-or more ``### 예시 N ...`` headings, each followed by one or more fenced ```json blocks that are,
-per that document's own words, schema-validated golden instances (``00 §10.3``). This script finds
-those blocks, works out which ``schemas/*.schema.json`` (and, for common types, which ``$defs``
-entry within it) each one is an instance of, and writes them to
-``tests/contracts/fixtures/<schema>/<NN>.json`` plus a ``manifest.json`` that
-``tests/contracts/test_contract_roundtrip.py`` reads.
+설계 근거: `docs/03-contracts/00-contract-overview.md` §10.3(골든 예시 회귀 게이트 — 정본은 문서 자체),
+바이블 §6.5(CloudEvents `domain.entity.action` 모양 판정 규칙).
 
-Resolution heuristic per heading (documented here because there is no single markup convention
-across the 17 documents):
+구성:
+- `SchemaIndex` — 전체 `schemas/*.schema.json` 제목·`$defs` 이름 색인(공통 타입 포함).
+- `_candidates_for_heading`/`_candidates_from_schema_type`/`_doc_slug_default`/`_find_intro_default`
+  — 헤딩의 백틱 토큰 → CloudEvents 모양 → HTTP 상태 코드 → 문서 인트로 문단 순으로 스키마를 판정하는 4단계 휴리스틱.
+- `_iter_example_blocks`/`_extract_block`/`_write_fixture` — `## 예시` 절에서 펜스 블록을 찾아 픽스처 파일로 기록.
+- `extract(write=...)`/`main()` — 전체 추출 실행과 매니페스트 작성, `--check`로 변경 여부만 검사.
 
-1. Every backtick-quoted token on the heading line is a candidate; a token is a match if its
-   leading ``PascalCase`` prefix is a known schema title or ``$defs`` name (built once from every
-   ``schemas/*.schema.json``, common-types included). The first match wins.
-2. Failing that, a token matching the CloudEvents ``domain.entity.action`` shape (bible §6.5)
-   resolves to ``cloud-event-envelope`` (whose root schema is the discriminated union over every
-   event; jsonschema picks the right ``oneOf`` branch from the instance's own ``type``).
-3. Failing that, a 3-digit HTTP status in the heading resolves to ``ProblemDetails`` (every
-   status-coded example in these docs is a problem-details response body).
-4. Failing that, the document's own ``## 예시`` intro paragraph is searched for a
-   ``schemas/<name>.schema.json`` mention, which becomes the section-wide default.
-
-A heading that still resolves to nothing is skipped and printed, per the task brief ("판정 불가는
-건너뛰고 목록 출력") — a human decides whether it needs a manual fixture or a heuristic fix here.
-When a resolved name exists as both a common-types ``$def`` and a dedicated wrapper schema (the six
-pure-``$ref`` wrappers ``tools/contracts_gen.py`` already special-cases), the common-types location
-is used so the round-trip test parses the flat model, not the wrapper ``RootModel``.
-
-Run: ``uv run python tools/extract_examples.py`` (writes fixtures + manifest; use ``--check`` in CI
-to fail if the output would change without writing).
+불변식: 판정 불가한 헤딩은 예외를 내지 않고 건너뛰며 목록으로 출력한다(사람이 후속 처리). 공통 타입 `$def`와
+동명의 래퍼 스키마가 겹치면 공통 타입 쪽을 쓴다(`tools/contracts_gen.py`가 판(flat) 모델을 우선하므로).
+검증 계층: 1층(여기서 검증) — `tests/contracts/test_contract_roundtrip.py`가 출력을 읽는다.
 """
 
 from __future__ import annotations

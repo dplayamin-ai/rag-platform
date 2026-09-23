@@ -1,7 +1,12 @@
-// Requirements traceability matrix (Phase 4 completeness gap #4). Deterministic, no LLM.
-// Builds docs/12-appendix/06-traceability-matrix.md: every FR/NFR/UC/US ID defined in 01-requirements, with the documents that cite it
-// (design docs 02-11, excluding 01-requirements itself and 12-appendix), plus the epic/task mapping seeded from 11-roadmap/02.
-// Usage: node tools/traceability.mjs [--root <repo>] [--date YYYY-MM-DD]
+// 요구사항 추적 매트릭스 생성기 — `docs/12-appendix/06-traceability-matrix.md`를 결정론적으로(LLM 없이) 만든다. `01-requirements/`에 정의된 모든 `FR`/`NFR`/`UC`/`US` ID가 설계 문서(02~11, `01-requirements`·`12-appendix` 제외)에서 인용되는지와 `11-roadmap/02-epics-and-backlog.md`의 어느 태스크에 매핑되는지 집계한다.
+// 설계 근거: 완전성 검토 `12-appendix/01-phase3-completeness-review.md` §3 누락 #4(FR 74% 미인용), 4·5단계 계획 `02-phase4-5-plan.md` §2.3, 전파 지시서 `12-appendix/08-propagation-directives.md` §1(매 편집 시 frontmatter `version` patch 증가·`last_updated` 갱신).
+// 구성:
+//   - `defs` 수집 — 01-requirements 표 첫 열·제목에서 ID 정의 추출
+//   - `cites`/`undefinedRefs` 집계 — 설계 문서 본문에서 ID 언급 스캔
+//   - `epicOf` — 로드맵(11-roadmap/02)의 같은 행 태스크 ID 매핑
+//   - 본문(md) 조립·저장 — frontmatter 포함, 기존 버전에서 patch 증가
+// 불변식·주의: 이 매트릭스가 추적성의 정본이다 — 인용률을 올리기 위한 형식적 인용은 금지한다. 재생성은 항상 파일을 덮어쓴다(수동 편집 금지).
+// 검증 계층: 1층(여기서 검증, 콘솔 출력의 `undefinedRefs`·인용률로 확인). 실행: `node tools/traceability.mjs [--root <repo>] [--date YYYY-MM-DD]`
 import fs from 'node:fs'
 import path from 'node:path'
 const argv = process.argv.slice(2)

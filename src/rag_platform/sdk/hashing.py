@@ -1,18 +1,16 @@
-"""Deterministic content-addressed key derivation (bible §6.2 ``H()``; ADR-0004).
+"""결정적 콘텐츠 주소화 키 파생(바이블 §6.2 `H()`; ADR-0004).
 
-This is the *only* module in the codebase allowed to import ``blake3`` directly (ADR-0004
-"단일 구현 린트"; enforced by the ``ruff`` banned-api rule and this file's lone per-file
-``TID251`` exemption in ``pyproject.toml``). Every content-derived key in the platform —
-``block_id``, ``chunk_id``, ``stage_key``, ``record_id``, the Qdrant ``point_id``, and any
-``*_hash``/``fingerprint`` a stage computes — must go through :func:`hash_of` (the public name
-for the bible's ``H(label, *parts)``) or, for the two label-less content hashes
-(``SourceDocument.content_hash`` over raw bytes, ``Chunk.content_hash``/``IndexRecord.content_hash``
-over UTF-8 chunk text), :func:`blake3_hex`.
-
-Stages and the hot path (L0-L3) never import this module's ``blake3`` dependency themselves —
-they call :func:`hash_of`/:func:`blake3_hex` re-exported from ``rag_platform.sdk`` (10-development/03
-§10.2). This module has no knowledge of pipelines, stages, or storage; it is pure key-derivation
-math, so it can also be unit-tested against ADR-0004's fixed vectors in complete isolation.
+역할: `block_id`/`chunk_id`/`stage_key`/`record_id`/Qdrant `point_id`와 모든 `*_hash`/`fingerprint`가
+거쳐야 하는 단일 해시 조합 함수 `hash_of`(및 라벨 없는 콘텐츠 해시 `blake3_hex`)를 제공한다.
+설계 근거: 바이블 §6.2(`H(label, *parts)` 정의, 필드 구분자 U+001F); ADR-0004("단일 구현 린트" —
+`blake3`를 직접 import하는 유일한 모듈, `pyproject.toml`의 전용 `TID251` 예외로 강제).
+구성: `hash_of(label, *parts)` — `H()` 조합 해시; `blake3_hex(data)` — 라벨 없는 콘텐츠 해시
+(`content_hash` 전용); `block_id`/`chunk_id`/`stage_key`/`record_id`/`point_id_for_record` — 바이블
+§6.2 각 키 공식의 구체 구현.
+불변식: 단계(stage)와 L0-L3 핫패스는 이 모듈의 `blake3` 의존성을 직접 import하지 않고
+`rag_platform.sdk`가 재노출한 `hash_of`/`blake3_hex`만 호출한다(10-development/03 §10.2). `label`/
+`part`에 U+001F가 있으면 `ValueError`.
+검증 계층: 1층(여기서 검증) — ADR-0004 고정 벡터, tests/contracts/test_hash_vectors.py.
 """
 
 from __future__ import annotations

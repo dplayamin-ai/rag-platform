@@ -1,54 +1,21 @@
-"""Regenerate ``src/rag_platform/contracts/`` from ``schemas/*.schema.json``.
+"""`schemas/*.schema.json`에서 `src/rag_platform/contracts/`를 재생성하는 계약 빌드 스크립트 — 이 스크립트 자체는
+손으로 쓰지만 출력 패키지 전체는 빌드 산출물이며 손으로 고치지 않는다.
 
-GENERATED CONTRACTS BUILD SCRIPT — this script itself is hand-written and owned by the
-repository, but everything it writes under ``src/rag_platform/contracts/`` is a build product.
-Bible §5.1/§12: ``schemas/*.schema.json`` (JSON Schema 2020-12) is the source of truth for the
-contract models; the Pydantic v2 package is generated, never hand-edited.
+설계 근거: 바이블 §5.1(`schemas/*.schema.json`이 계약 정본, Pydantic v2 패키지는 생성물), §12(모듈 맵의
+`versioning.py`), `docs/03-contracts/14-schema-versioning-and-compatibility.md` §1.2·§4.2·§4.3·§6.2.
 
-Pipeline:
+구성:
+- `prepare_temp_schemas`/`_rewrite_node`/`_property_names_leaf` — `$ref`를 명시적 상대 경로로 재작성하고
+  datamodel-code-generator의 두 알려진 결함(`format`+`pattern` 충돌 `_FORMAT_PATTERN_CLASH`,
+  `propertyNames.$ref`가 해시 불가능한 클래스를 만드는 문제)을 스키마 복사본에서 우회한다.
+- `run_datamodel_codegen` — schema당 Pydantic v2 모듈 생성(`--use-specialized-enum` 등 CLI 플래그).
+- `write_init` — 스키마 `title`과 `common_types` 공개 클래스를 재노출하는 `__init__.py` 재생성.
+- `write_versioning` — 스키마가 없는 `schema_version` 호환 엔진 `versioning.py`를 고정 템플릿으로 생성.
+- `run_ruff` — 생성 패키지에만 `ruff check --fix`·`ruff format` 적용.
 
-1. Copy ``schemas/*.schema.json`` into a temporary directory as a parsed-JSON tree transform
-   (not text regex), rewriting every ``$ref`` (``urn:rag:schema:<name>:1#/$defs/X`` and bare
-   same-file ``#/$defs/X``) into an explicit relative reference ``<name>.json#/$defs/X`` against
-   the temp copy's own filename (``<name>`` is the schema's kebab-case stem with ``-`` replaced by
-   ``_``, matching the module name datamodel-code-generator derives from the file it is given).
-   Rewriting *all* refs to the explicit form — not just cross-file ones — works around a
-   datamodel-code-generator limitation where a bare ``#/$defs/X`` fragment pulled in through a
-   cross-file ``$ref`` is resolved against the *importing* file instead of the file that actually
-   defines it (reproduced with ``cloud-event-envelope.schema.json`` pulling ``CloudEventEnvelope``
-   out of ``common-types.schema.json``). The same pass drops a ``format`` keyword wherever a
-   sibling ``pattern`` also constrains the string (``_FORMAT_PATTERN_CLASH``): datamodel-code-
-   generator maps ``format: date-time``/``date``/``duration``/``uuid`` to a non-str Python type
-   and then, under ``--field-constraints``, tries to attach the sibling ``pattern`` to that same
-   type, which raises at validation time (``TypeError: Unable to apply constraint 'pattern' ...
-   for schema of type 'datetime'``) — every ``DateTime``/``Date``/``Uuid`` field, so every model
-   that carries one. ``pattern`` alone already fully constrains the string.
-2. Run datamodel-code-generator (``pydantic_v2.BaseModel``, one module per schema file;
-   ``common_types.py`` is the shared module every other module imports from) into
-   ``src/rag_platform/contracts/``.
-3. Regenerate ``src/rag_platform/contracts/__init__.py`` to re-export, by explicit
-   ``import X as X`` (required for mypy ``--no-implicit-reexport`` under ``strict = true``), the
-   top-level model named after each schema's ``title`` plus every remaining public class defined
-   directly in ``common_types`` (the shared bible §5.3 types and §5.7 enums) that no dedicated
-   per-schema module already claims (the wrapper schemas ``stage-error``, ``problem-details``,
-   ``capabilities``, ``stage-policy``, ``tiering-policy``, ``egress-policy`` and
-   ``cloud-event-envelope`` each ``$ref`` a same-named ``common-types`` ``$def``; the dedicated
-   module wins the name).
-4. Write ``src/rag_platform/contracts/versioning.py`` (bible §12 "``versioning.py``(schema_version
-   호환 규칙)"). This file has no ``schemas/*.schema.json`` counterpart — it is the code-level
-   ``schema_version`` compatibility engine (``SchemaVersion``, ``contracts_compat`` matching, the
-   producer/consumer judgement matrix, the upcaster registry skeleton), fully specified in
-   ``docs/03-contracts/14-schema-versioning-and-compatibility.md`` (§1.2, §4.2, §4.3, §6.2). Like
-   ``__init__.py`` it is hand-authored *by this script*, not by datamodel-code-generator, and never
-   hand-edited in the output package; its ``SEMVER_RE``/``SCHEMA_TYPE_RE`` regex constants are
-   copied verbatim from ``schemas/common-types.schema.json`` ``$defs/Semver``/``$defs/
-   SchemaTypeName`` at generation time (see ``_common_type_pattern``) so they cannot drift from the
-   schema every other generated module already relies on.
-5. Run ``ruff check --fix`` and ``ruff format`` over the generated package only.
-
-Run: ``uv run python tools/contracts_gen.py`` (add ``--keep-temp`` to inspect the rewritten
-schema copies, or ``--no-format`` to skip the ruff pass for faster iteration while debugging
-generator flags).
+불변식: 출력 파일은 이 스크립트만 쓴다 — 손으로 고친 내용은 다음 재생성 때 사라진다.
+검증 계층: 1층(여기서 검증) — `tests/contracts`, `tools/validate-contracts.mjs`. 실행: `uv run python
+tools/contracts_gen.py`(`--keep-temp`로 재작성된 스키마 사본 확인, `--no-format`으로 ruff 단계 생략).
 """
 
 from __future__ import annotations
@@ -67,14 +34,28 @@ SCHEMAS_DIR = ROOT / "schemas"
 OUTPUT_DIR = ROOT / "src" / "rag_platform" / "contracts"
 COMMON_MODULE = "common_types"
 
-GENERATED_NOTE = "GENERATED — do not edit; run `uv run python tools/contracts_gen.py` to regenerate."
+GENERATED_NOTE = "GENERATED — 수정 금지. 재생성: `uv run python tools/contracts_gen.py`"
 
 # `datamodel-code-generator` writes `--custom-file-header` verbatim at the top of every generated
 # file (it does not comment-prefix it), so this must already be valid Python — a triple-quoted
 # module docstring rather than `#` comments, so every generated (sub)package still has a non-empty
 # `__doc__` (tests/unit/test_scaffold.py walks every package under rag_platform and asserts this;
-# `from __future__ import annotations` is allowed to follow a module docstring).
-GENERATED_FILE_HEADER = f'"""{GENERATED_NOTE}\n\nSource of truth: schemas/*.schema.json (bible §5.1, §6.4, §12)."""'
+# `from __future__ import annotations` is allowed to follow a module docstring). The body is the
+# Korean header required by `tools/phase6/CODE-HEADER-RULE.md`; it is necessarily generic (one
+# string applies to every schema-derived module in a single batch run) rather than naming each
+# module's own class.
+GENERATED_FILE_HEADER = (
+    f'"""{GENERATED_NOTE}\n'
+    "\n"
+    "역할: `schemas/*.schema.json`의 계약 스키마 하나를 그대로 옮긴 Pydantic v2 모델(계층 L0) — 파이프라인 단계 간에 "
+    "주고받는 데이터의 타입을 정의한다.\n"
+    "설계 근거: 바이블 §5.1(계약이 정본), §6.4(kebab 스키마 이름 ↔ snake_case 모듈명), §12(레이어 지도).\n"
+    "구성: 클래스명은 스키마의 `title`(또는 `$defs`의 각 항목)과 동일하며, 필드는 스키마의 `properties`/`required`를 "
+    "그대로 반영한다.\n"
+    "불변식: `tools/contracts_gen.py`만 이 파일을 쓴다 — 손으로 고친 내용은 다음 재생성 때 사라진다.\n"
+    "검증 계층: 1층(여기서 검증) — tests/contracts, tools/validate-contracts.mjs.\n"
+    '"""'
+)
 
 # Matches a `$ref` string value in either form:
 #   "urn:rag:schema:<name>:1"            (whole-document ref, no fragment)
@@ -216,26 +197,19 @@ def _common_type_pattern(def_name: str) -> str:
     return pattern
 
 
-_VERSIONING_SOURCE = '''"""rag_platform.contracts.versioning — schema_version compatibility rules.
+_VERSIONING_SOURCE = '''"""{generated_note}
 
-{generated_note}
-
-Canon: design bible §6.4 ("schema_version semver: addition = minor, removal/semantic change =
-major"), §12 module map ("versioning.py(schema_version compatibility rules)"); worked out in full
-in docs/03-contracts/14-schema-versioning-and-compatibility.md (§1.2 schema_version rules, §4.1-4.3
-producer/consumer judgement matrix and contracts_compat grammar, §6.2 upcaster registry proposal).
-
-Unlike every other module in this package, this file has no schemas/*.schema.json counterpart: it
-is the code-level compatibility engine, not a contract data model, so datamodel-code-generator
-never runs on it. contracts_gen.py still owns its content (like __init__.py) so a human never
-hand-edits it, and the regex constants below are copied verbatim from
-schemas/common-types.schema.json at generation time so they can never drift from the
-$defs/Semver and $defs/SchemaTypeName patterns every other generated module already relies on.
-
-SchemaDiffReport and its nested types (CompatLevel, SchemaChangeKind, SchemaChange,
-GoldenExampleResult, EnumMismatch, EnumCheckResult) are declared in
-schemas/schema-diff-report.schema.json and are therefore already generated into
-schema_diff_report.py; they are not repeated here.
+역할: `schema_version` 호환성 엔진 — 스키마에서 생성한 데이터 모델이 아니라 버전 비교·업캐스팅 규칙을 담은
+코드 전용 모듈이다(`rag_platform.contracts.versioning`).
+설계 근거: 바이블 §6.4(`schema_version` semver 규칙 — 추가는 minor, 제거·의미 변경은 major), §12(모듈 맵의
+`versioning.py`), `docs/03-contracts/14-schema-versioning-and-compatibility.md` §1.2·§4.1~4.3·§6.2.
+구성: `SchemaVersion`(파싱·비교) · `compat_matcher`(`contracts_compat` 범위 판정) · `VersionedEnvelope`(봉투
+불변식을 검증하는 코드 전용 기반 클래스) · `UpcasterRegistry`/`judge_compat`(생산자·소비자 호환 매트릭스) ·
+`prune_unknown`(관용적 읽기 시안, 기본 동작 아님).
+불변식: `SEMVER_RE`/`SCHEMA_TYPE_RE`는 `schemas/common-types.schema.json`에서 생성 시점에 그대로 복사되므로
+스키마와 어긋날 수 없다; `SchemaDiffReport`는 `schema_diff_report.py`가 이미 생성하므로 여기서 반복하지 않는다;
+손으로 고친 내용은 다음 재생성 때 사라진다.
+검증 계층: 1층(여기서 검증) — `tests/unit/test_contracts_versioning.py`.
 """
 
 from __future__ import annotations
@@ -584,13 +558,15 @@ def write_init(titles: dict[str, str], thin_modules: set[str]) -> None:
         by_module.setdefault(module, []).append(name)
 
     lines = [
-        '"""Contract models generated from ``schemas/*.schema.json`` (layer L0).',
+        f'"""{GENERATED_NOTE}',
         "",
-        GENERATED_NOTE,
-        "",
-        "Every module in this package is produced by ``uv run python tools/contracts_gen.py``",
-        "and must not be edited by hand (bible §5.1, 10-development/01 §6). This package imports",
-        "only pydantic and the standard library.",
+        "역할: `schemas/*.schema.json`에서 생성한 계약 모델 패키지(계층 L0)의 공개 진입점 — 스키마별 대표 모델과",
+        "`common_types`의 공유 타입·열거값을 재노출(re-export)한다.",
+        "설계 근거: 바이블 §5.1(계약이 정본), §5.7(열거값은 `common_types`가 단일 출처), §12(레이어 지도),",
+        "10-development/01 §6(생성 파일은 손으로 고치지 않는다).",
+        "구성: 스키마별 대표 클래스(스키마 `title`) + `common_types`에 직접 정의된 공개 클래스를 재노출한다.",
+        "불변식: 이 패키지는 pydantic과 표준 라이브러리만 import한다; 손으로 고친 내용은 다음 재생성 때 사라진다.",
+        "검증 계층: 1층(여기서 검증) — tests/contracts, tools/validate-contracts.mjs.",
         '"""',
         "",
         "from __future__ import annotations",
