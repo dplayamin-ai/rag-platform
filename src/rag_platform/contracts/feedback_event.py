@@ -9,12 +9,14 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 
 
-class FeedbackEvent(BaseModel):
+class FeedbackEvent(ContractModel):
     """
     온라인 피드백 계약(바이블 §5.6, §14 POST /v1/feedback, ADR-0023). 한 ContextPack(pack_id)에 대한 다운스트림 신호 — LLM 응답이 인용한 cite_ids(cited), 사용자 평점(rated), 정정(corrected). cite_id 는 pack_id 의 인용 맵으로 chunk_id·record_id·document_id 에 역추적된다. feedback_id·tenant_id·created_at·pii_policy_applied 는 서버가 채운다(readOnly; 요청 본문에 오면 422, E1). comment 는 PII 정책 적용 후에만 저장된다(정책 원천은 미정 — 바이블 §13.1 tenants.policies 에 pii_policy 없음; 초안은 팩 컬렉션들의 CollectionSpec.policies.pii_policy 중 최엄격, 이 문서 §5.2·미해결 이슈 18). 정본은 PostgreSQL feedback_events 원장 행. 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md
     """

@@ -5,6 +5,7 @@
 구성: `InMemoryKV`가 `KeyValueCache` 프로토콜을 만족함(불완전 구현은 거부됨) 확인, `get`/`set`(TTL 포함)/
 `delete` 왕복, `mget`이 순서를 보존하고 미스는 `None`으로 채움을 확인.
 
+불변식: 테넌트 스코프 키는 항상 `{tenant}` 접두를 갖는다(§13.4).
 검증 계층: 1층(여기서 검증) — 실제 Valkey 백엔드 연동은 `needs_docker` DEFERRED.
 """
 

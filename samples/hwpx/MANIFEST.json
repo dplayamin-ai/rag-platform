@@ -1,0 +1,77 @@
+{
+  "description": "HWPX parser spike samples (04-pipelines/04 section 8 test corpus seed). Three KOGL Type 1 press releases downloaded from korea.kr on 2026-09-23 plus one synthetic document generated with python-hwpx to cover outline headings, footnotes, endnotes, merged cells, nested tables, captions, equations, hyperlinks, tracked changes and a second section.",
+  "retrieved_at": "2026-09-23",
+  "samples": [
+    {
+      "file": "kogl1-mohw-emergency-care-20260923.hwpx",
+      "kind": "public",
+      "title": "[보도참고자료] 추석연휴 앞두고 응급환자 이송체계와 중증응급환자 진료체계 점검",
+      "publisher": "보건복지부",
+      "source_page": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783142",
+      "download_url": "https://www.korea.kr/common/download.do?fileId=198559659&tblKey=GMN",
+      "license": "KOGL-Type1",
+      "license_text": "공공누리 제1유형(출처표시) — 출처를 표시하면 상업적 이용·변경 허용",
+      "attribution": "출처: 대한민국 정책브리핑(www.korea.kr), 보건복지부 보도참고자료(2026-09-23)",
+      "size_bytes": 145136,
+      "sha256": "621df14996304a79ed411096527bf3a274b2acab5b2df431491e813a76da6349",
+      "blake3": "f37dfc7143b2ced9177cd83b27e6a4d02f8ae09d97c3d40cd007f05456bb096b",
+      "features": ["bullet_markers", "click_here_field", "header_ctrl", "layout_tables", "pictures", "repeat_header_tables"]
+    },
+    {
+      "file": "kogl1-pipc-agentic-ai-20260923.hwpx",
+      "kind": "public",
+      "title": "[260923 16시보도] 에이전틱 AI와 개인정보보호, 민관협력을 통한 합리적 규율체계 모색(AI팀)",
+      "publisher": "개인정보보호위원회",
+      "source_page": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783143",
+      "download_url": "https://www.korea.kr/common/download.do?fileId=198559661&tblKey=GMN",
+      "license": "KOGL-Type1",
+      "license_text": "공공누리 제1유형(출처표시) — 출처를 표시하면 상업적 이용·변경 허용",
+      "attribution": "출처: 대한민국 정책브리핑(www.korea.kr), 개인정보보호위원회 보도자료(2026-09-23)",
+      "size_bytes": 345763,
+      "sha256": "1bde762d98e69c3450776ba8bcef862e624e41b46533d86124878d7950a91060",
+      "blake3": "246f571f26736c67e09a72c332a4270b054ad0111077f49a4aa81a12ff4d7dbf",
+      "features": ["bullet_markers", "merged_cells", "pictures", "schedule_table"]
+    },
+    {
+      "file": "kogl1-moef-oecd-outlook-20260923.hwpx",
+      "kind": "public",
+      "title": "260923 (보도자료) 경제협력개발기구(OECD) 중간 경제전망",
+      "publisher": "재정경제부",
+      "source_page": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156783154",
+      "download_url": "https://www.korea.kr/common/download.do?fileId=198559749&tblKey=GMN",
+      "license": "KOGL-Type1",
+      "license_text": "공공누리 제1유형(출처표시) — 출처를 표시하면 상업적 이용·변경 허용",
+      "attribution": "출처: 대한민국 정책브리핑(www.korea.kr), 재정경제부 보도참고자료(2026-09-23)",
+      "size_bytes": 172837,
+      "sha256": "e8866787daff22f344fe0024c78c1f740f3af561d0fe56045601ad784b36df2e",
+      "blake3": "4e5f2b83042b3186ddaf92b9e2928dc92c7577a41d835dc60ddc59a0b8477d8f",
+      "features": ["statistics_tables", "multi_row_header_merges", "pictures", "large_tables_27x9"]
+    },
+    {
+      "file": "synthetic-owpml-features.hwpx",
+      "kind": "synthetic",
+      "title": "정보보안 기본지침(합성 표본)",
+      "publisher": "rag-platform (generated)",
+      "license": "project-generated; no third-party content",
+      "size_bytes": 11739,
+      "sha256": "8a073de413ba9d746e9445da9ecb72a266e35631cc76c007dec7ef223c56b580",
+      "blake3": "5108c6e6f91e30ea0932e98d5075e9bee22552afce8ad815621a6bff6ebb89a4",
+      "generator": "python-hwpx==6.5.0 (HwpxDocument.new)",
+      "recipe": [
+        "doc.add_heading('정보보안 기본지침', level=1)",
+        "p = doc.add_paragraph('이 지침은 …', inherit_style=False); doc.notes.add_footnote('정보보안 기본지침(2026. 9. 1. 시행) 기준.', paragraph=p)",
+        "doc.add_heading('적용 범위', level=2); add_paragraph('□ …'), add_paragraph(' ○ …'), add_paragraph('첫째 번호 항목'), add_paragraph('둘째 번호 항목'), add_paragraph('글머리 항목')",
+        "t = doc.add_table(3, 3); t.set_cell_text(r, c, f'R{r}C{c}'); doc.tables.merge_cells(t, 'A1:B1'); doc.tables.merge_cells(t, 'C1:C2'); t.set_caption('<표 1> 적용 대상 구분', side='BOTTOM')",
+        "inner = t.cell(2, 1).add_table(1, 2); inner.set_cell_text(0, 0, '안쪽 가'); inner.set_cell_text(0, 1, '안쪽 나')",
+        "doc.add_heading('점검 절차', level=2); q = add_paragraph('점검 결과는 다음 식으로 산출한다.'); doc.shapes.add_equation('a over b', paragraph=q)",
+        "doc.add_picture(<1x1 PNG>, 'png')",
+        "h = add_paragraph('자세한 내용은 '); doc.refs.add_hyperlink('https://www.example.go.kr/guide', '보안 누리집', paragraph=h); doc.notes.add_endnote('미주 예시: 관련 법령 목록.', paragraph=h)",
+        "d = add_paragraph('원래 문장 삭제될 부분 끝'); doc.tracking.delete(d, match='삭제될 부분 '); doc.tracking.insert(d, '추가됨')",
+        "doc.page.set_header(text='정보보안 기본지침'); doc.page.set_footer(text='대외비 아님')",
+        "doc.styles.apply_list_format(paragraph_indexes=[6, 7], kind='number', level=1); doc.styles.apply_list_format(paragraph_index=8, kind='bullet', level=2, bullet_char='-')  # index 0 = section-definition paragraph",
+        "doc.add_section(); doc.add_paragraph('둘째 구역의 문단이다.', section_index=1); doc.to_bytes()"
+      ],
+      "features": ["outline_headings", "footnote", "endnote", "merged_cells", "nested_table", "caption_bottom", "equation", "picture", "hyperlink", "tracked_changes", "number_list", "bullet_list", "page_header_footer", "second_section"]
+    }
+  ]
+}

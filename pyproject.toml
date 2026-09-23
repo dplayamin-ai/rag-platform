@@ -19,9 +19,11 @@ classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Typing :: Typed",
 ]
-# Phase 6A minimal runtime set. Adapter dependencies (fastapi, semchunk, tiktoken, python-hwpx, mcp,
+# Phase 6A minimal runtime set. Adapter dependencies (fastapi, semchunk, tiktoken, mcp,
 # cloudevents, structlog, ...) are added by the work package that introduces the code importing them
 # (pin-and-bump, ADR-0035; a new dependency must be A-grade and support both 3.12 and 3.13).
+# python-hwpx, qdrant-client, fsspec, lxml, charset-normalizer, markdown-it-py, trafilatura and
+# pypdfium2 back the parse/normalize/index adapters named in bible sec. 7.1/7.3 (all A-grade).
 dependencies = [
   "pydantic>=2,<3",
   "pydantic-settings>=2,<3",
@@ -31,14 +33,29 @@ dependencies = [
   "jsonschema>=4.18",  # Draft 2020-12 validation with the `referencing` registry
   "httpx>=0.27,<1",
   "anyio>=4,<5",
+  "python-hwpx>=6.4,<7",
+  "qdrant-client>=1.19.1",
+  "fsspec>=2026.9.0",
+  "lxml>=6.1.3",
+  "charset-normalizer>=3.5.1",
+  "markdown-it-py>=4.2.0",
+  "trafilatura>=2.2.0",
+  "pypdfium2>=5.13.0",
 ]
 
 [project.optional-dependencies]
 # Bible sec. 6.7 extras (spelling is fixed). Contents are filled in by the work packages that add the
 # corresponding adapters; kept empty here so the single uv.lock resolves on every platform.
-# `[kiwi]` stays empty until an Apache-2.0 kiwipiepy>=0.24.0 wheel is confirmed on PyPI
-# (10-development/02 sec. 2.2, 01 open issue 15).
-kiwi = []
+# `[kiwi]`: kiwipiepy is B-grade (LGPL); allowed only as an opt-in extra, never a default/runtime
+# dependency (D-02 grade B). NOTE (open issue, see open_issues): bible sec. 7.1 records the PyPI
+# release actually resolved here, 0.23.2, as an LGPL statically-bundled wheel
+# (`linkage=static_bundled`) and gates promotion on an Apache-2.0 kiwipiepy>=0.24.0 wheel
+# (10-development/02 sec. 2.2, 01 open issue 15, issue #233), which is not yet on PyPI as of
+# 2026-09-23. A license reviewer must confirm 0.23.2 is acceptable as an opt-in extra under D-02 B
+# before this extra ships in a release.
+kiwi = [
+    "kiwipiepy>=0.23.2",
+]
 docling-chunker = []
 gpu = [] # CUDA/Paddle runtimes live in the sidecars/ocr-gpu image, never in the core package
 opensearch = []
@@ -53,6 +70,7 @@ dev = [
   "pytest>=8.3",
   "pytest-asyncio>=0.24",
   "hypothesis>=6.100",
+  "respx>=0.23.1", # httpx mock transport for fetcher/adapter tests (needs_network stays real HTTP)
   "ruff>=0.8",
   "mypy>=1.13",
   "import-linter>=2.1",
@@ -155,6 +173,10 @@ ignore = [
 "src/rag_platform/contracts/**" = [
   "TID251", "TID252", "TC", "D", "N815", "N999", "E501", "RUF", "UP", "A001", "A004", "S105",
 ]
+# Conformance kit test-mixin methods (`test_*`) are pytest assertions shipped as library code so
+# external plugins can inherit them (10-development/06 sec. 8.1) — same rationale as `tests/**`'s
+# S101/PLR2004 ignore, just scoped to this one package instead of the whole test tree.
+"src/rag_platform/testing/conformance/**" = ["S101", "PLR2004"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"

@@ -11,6 +11,7 @@
   `zstandard`가 없으면 `ImportError`.
 - `InMemoryArtifactStore`/`FileArtifactStore` 모두 `ArtifactStore` 프로토콜을 만족함을 확인.
 
+불변식: 이미 점유된 `stage_key` 경로는 어떤 백엔드에서도 덮어쓰지 않는다(§13.3).
 검증 계층: 1층(여기서 검증) — 실제 오브젝트 스토리지 백엔드는 `needs_docker` DEFERRED.
 """
 

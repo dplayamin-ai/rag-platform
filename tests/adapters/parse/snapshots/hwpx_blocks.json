@@ -1,0 +1,1581 @@
+{
+ "kogl1-mohw-emergency-care-20260923.hwpx": {
+  "quality": "full",
+  "genre": "form",
+  "has_tracked_changes": false,
+  "page_header_text": [],
+  "fields": [
+   [
+    "CLICK_HERE",
+    "본문"
+   ]
+  ],
+  "links": [],
+  "annotations": [],
+  "blocks": [
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[0]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 0,
+    "container": "body",
+    "text": "광\t보도참고자료\t",
+    "table": {
+     "n_rows": 1,
+     "n_cols": 3,
+     "role": "form",
+     "header_rows": [],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "figure",
+    "path": "/hp:sec[0]/hp:p[0]/hp:tbl[0]/hp:tr[0]/hp:tc[0]/hp:subList/hp:p[0]/hp:pic[0]",
+    "parent": 0,
+    "ordinal": 0,
+    "container": "table_cell",
+    "text": ""
+   },
+   {
+    "type": "figure",
+    "path": "/hp:sec[0]/hp:p[0]/hp:tbl[0]/hp:tr[0]/hp:tc[2]/hp:subList/hp:p[0]/hp:pic[0]",
+    "parent": 0,
+    "ordinal": 1,
+    "container": "table_cell",
+    "text": ""
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[1]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 1,
+    "container": "body",
+    "text": "보도시점\t배포 후 즉시 사용\t배포\t2026. 9. 23.(수)",
+    "table": {
+     "n_rows": 1,
+     "n_cols": 4,
+     "role": "data",
+     "header_rows": [],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[3]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 2,
+    "container": "body",
+    "text": "추석연휴 앞두고 응급환자 이송체계와 중증응급환자 진료체계 점검\n- 이형훈",
+    "table": {
+     "n_rows": 2,
+     "n_cols": 1,
+     "role": "data",
+     "header_rows": [
+      0
+     ],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[5]",
+    "parent": null,
+    "ordinal": 3,
+    "container": "body",
+    "text": "  보건복지부(장관 정은경)는 보건복지부 이형훈 제2차관이 9월 23일("
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[7]",
+    "parent": null,
+    "ordinal": 4,
+    "container": "body",
+    "text": "  광주·전라 광역응급의료상황실과 조선대병원은 지역소방본부와 함께 지난 "
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[9]",
+    "parent": null,
+    "ordinal": 5,
+    "container": "body",
+    "text": "  이번 현장점검은 먼저 광주·전라 광역응급의료상황실을 방문하여 신속한 "
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[11]",
+    "parent": null,
+    "ordinal": 6,
+    "container": "body",
+    "text": "  이어 조선대병원 응급실을 방문해 응급의료 및 타 진료과 인력과 병상 "
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[13]",
+    "parent": null,
+    "ordinal": 7,
+    "container": "body",
+    "text": "  이형훈 제2차관은 현장을 살피고 애로사항을 들으며 “추석 연휴 묵묵히"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[15]",
+    "parent": null,
+    "ordinal": 8,
+    "container": "body",
+    "text": "<붙임> 현장 점검 개요"
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[18]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 9,
+    "container": "body",
+    "text": "담당 부서\t공공보건정책관\t책임자\t과  장\t송영진 \t(044-202-265",
+    "table": {
+     "n_rows": 2,
+     "n_cols": 6,
+     "role": "data",
+     "header_rows": [
+      0
+     ],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[20]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 10,
+    "container": "body",
+    "text": "붙임\t\t 현장 점검 개요",
+    "table": {
+     "n_rows": 1,
+     "n_cols": 3,
+     "role": "form",
+     "header_rows": [],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[22]",
+    "parent": null,
+    "ordinal": 11,
+    "container": "body",
+    "text": "개요",
+    "level": 0,
+    "label": "□"
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[24]",
+    "parent": 13,
+    "ordinal": 0,
+    "container": "body",
+    "text": "(일시) ’26.9.23.(수) 16:00~17:00",
+    "level": 1,
+    "label": "○"
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[26]",
+    "parent": 13,
+    "ordinal": 1,
+    "container": "body",
+    "text": "(장소) 광주·전라 광역응급의료상황실, 조선대학교병원",
+    "level": 1,
+    "label": "○"
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[28]",
+    "parent": 13,
+    "ordinal": 2,
+    "container": "body",
+    "text": "(목적) 추석 비상 응급의료체계 점검 및 응급의료종사자 격려 ",
+    "level": 1,
+    "label": "○"
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[30]",
+    "parent": 13,
+    "ordinal": 3,
+    "container": "body",
+    "text": "(참석자)",
+    "level": 1,
+    "label": "○"
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[32]",
+    "parent": 17,
+    "ordinal": 0,
+    "container": "body",
+    "text": "(보건복지부) 이형훈 제2차관",
+    "level": 2,
+    "label": "-"
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[34]",
+    "parent": 17,
+    "ordinal": 1,
+    "container": "body",
+    "text": "(광역상황실) 중앙응급의료센터장, 광주·전라 광역응급의료상황실장",
+    "level": 2,
+    "label": "-"
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[36]",
+    "parent": 17,
+    "ordinal": 2,
+    "container": "body",
+    "text": "(조선대병원) 조선대병원장, 응급의료센터장 등",
+    "level": 2,
+    "label": "-"
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[38]",
+    "parent": null,
+    "ordinal": 12,
+    "container": "body",
+    "text": "세부 일정표",
+    "level": 0,
+    "label": "□"
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[40]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 13,
+    "container": "body",
+    "text": "시간\t주요내용\t비고\n16:00~16:10\t10‘\tㅇ 조선대학교 병원 방문",
+    "table": {
+     "n_rows": 5,
+     "n_cols": 4,
+     "role": "data",
+     "header_rows": [
+      0
+     ],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": [
+      [
+       0,
+       0,
+       1,
+       2
+      ]
+     ]
+    }
+   }
+  ]
+ },
+ "kogl1-pipc-agentic-ai-20260923.hwpx": {
+  "quality": "full",
+  "genre": "form",
+  "has_tracked_changes": false,
+  "page_header_text": [],
+  "fields": [],
+  "links": [],
+  "annotations": [],
+  "blocks": [
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[0]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 0,
+    "container": "body",
+    "text": "개인정보보호위원회\t보도자료\t",
+    "table": {
+     "n_rows": 1,
+     "n_cols": 3,
+     "role": "form",
+     "header_rows": [],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "figure",
+    "path": "/hp:sec[0]/hp:p[0]/hp:tbl[0]/hp:tr[0]/hp:tc[0]/hp:subList/hp:p[0]/hp:pic[0]",
+    "parent": 0,
+    "ordinal": 0,
+    "container": "table_cell",
+    "text": ""
+   },
+   {
+    "type": "figure",
+    "path": "/hp:sec[0]/hp:p[0]/hp:tbl[0]/hp:tr[0]/hp:tc[2]/hp:subList/hp:p[0]/hp:pic[0]",
+    "parent": 0,
+    "ordinal": 1,
+    "container": "table_cell",
+    "text": ""
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[1]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 1,
+    "container": "body",
+    "text": "보도시점\t2026.9.23.(수) 16:00\t배포\t2026.9.23.(수",
+    "table": {
+     "n_rows": 1,
+     "n_cols": 4,
+     "role": "data",
+     "header_rows": [],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[2]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 2,
+    "container": "body",
+    "text": "에이전틱 인공지능(Agentic AI)과 개인정보보호, \n민관 협력을 통",
+    "table": {
+     "n_rows": 2,
+     "n_cols": 1,
+     "role": "data",
+     "header_rows": [
+      0
+     ],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[4]",
+    "parent": null,
+    "ordinal": 3,
+    "container": "body",
+    "text": "  개인정보보호위원회(위원장 송경희, 이하 ‘개인정보위’)는 9월 23일"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[6]",
+    "parent": null,
+    "ordinal": 4,
+    "container": "body",
+    "text": "  인공지능 프라이버시 민·관 정책협의회(‘23.10~)는 인공지능 시대"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[7]",
+    "parent": null,
+    "ordinal": 5,
+    "container": "body",
+    "text": "  * (의장) 송경희 개인정보보호위원장, 권창환 수원지방법원 부장판사,"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[9]",
+    "parent": null,
+    "ordinal": 6,
+    "container": "body",
+    "text": "  이번 전체회의는 두 개의 주제 발표와 종합 토의로 진행했다."
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[11]",
+    "parent": null,
+    "ordinal": 7,
+    "container": "body",
+    "text": "  먼저 김병필 카이스트(KAIST) 교수가 ‘에이전틱 인공지능의 프라이"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[12]",
+    "parent": null,
+    "ordinal": 8,
+    "container": "body",
+    "text": "  * 인공지능의 입력에 악의적인 명령어를 주입하여 시스템이 의도하지 않"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[13]",
+    "parent": null,
+    "ordinal": 9,
+    "container": "body",
+    "text": "  이어서 최윤정 개인정보보호정책과장이 ‘인공지능 시대 개인정보 제도 혁"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[15]",
+    "parent": null,
+    "ordinal": 10,
+    "container": "body",
+    "text": "  이어진 종합 토의에서는 인공지능 데이터 확보·활용을 위한 처리근거 유"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[16]",
+    "parent": null,
+    "ordinal": 11,
+    "container": "body",
+    "text": "  * 가명·익명정보만으로는 인공지능 개발이 곤란하고, 공익·사회적 필요"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[18]",
+    "parent": null,
+    "ordinal": 12,
+    "container": "body",
+    "text": "  송경희 개인정보위 위원장은 “국민 편익을 가져오는 기술 발전은 충분히"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[20]",
+    "parent": null,
+    "ordinal": 13,
+    "container": "body",
+    "text": "  권창환 공동의장은 “스스로 과업을 수행하는 에이전틱 인공지능은 개인정"
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[21]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 14,
+    "container": "body",
+    "text": "담당 부서\t개인정보정책국\t책임자\t팀  장 \t주문호\t(02-2100-307",
+    "table": {
+     "n_rows": 7,
+     "n_cols": 6,
+     "role": "data",
+     "header_rows": [
+      0
+     ],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[22]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 15,
+    "container": "body",
+    "text": "\t\t",
+    "table": {
+     "n_rows": 1,
+     "n_cols": 3,
+     "role": "data",
+     "header_rows": [],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "figure",
+    "path": "/hp:sec[0]/hp:p[22]/hp:tbl[0]/hp:tr[0]/hp:tc[0]/hp:subList/hp:p[0]/hp:pic[0]",
+    "parent": 17,
+    "ordinal": 0,
+    "container": "table_cell",
+    "text": ""
+   },
+   {
+    "type": "figure",
+    "path": "/hp:sec[0]/hp:p[22]/hp:tbl[0]/hp:tr[0]/hp:tc[1]/hp:subList/hp:p[0]/hp:pic[0]",
+    "parent": 17,
+    "ordinal": 1,
+    "container": "table_cell",
+    "text": ""
+   },
+   {
+    "type": "figure",
+    "path": "/hp:sec[0]/hp:p[22]/hp:tbl[0]/hp:tr[0]/hp:tc[2]/hp:subList/hp:p[0]/hp:pic[0]",
+    "parent": 17,
+    "ordinal": 2,
+    "container": "table_cell",
+    "text": ""
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[23]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 16,
+    "container": "body",
+    "text": "붙 임\t\t 회의 개요",
+    "table": {
+     "n_rows": 1,
+     "n_cols": 3,
+     "role": "form",
+     "header_rows": [],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[25]",
+    "parent": null,
+    "ordinal": 17,
+    "container": "body",
+    "text": "개요(안)",
+    "level": 0,
+    "label": "□"
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[27]",
+    "parent": 22,
+    "ordinal": 0,
+    "container": "body",
+    "text": "(목적)「AI 프라이버시 민·관 정책협의회」2기 출범(‘26.2.2.) ",
+    "level": 1,
+    "label": "○"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[29]",
+    "parent": null,
+    "ordinal": 18,
+    "container": "body",
+    "text": "    * (1분과) 데이터 처리기준, (2분과) 리스크 관리, (3분과"
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[31]",
+    "parent": 22,
+    "ordinal": 1,
+    "container": "body",
+    "text": "(일시/장소) 9.23.(수) 15:00~17:00 / 은행회관 국제회의",
+    "level": 1,
+    "label": "○"
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[33]",
+    "parent": 22,
+    "ordinal": 2,
+    "container": "body",
+    "text": "(참석자) 개인정보위 위원장·사무처장·정책국장, 과기정통부, 행안부, 방",
+    "level": 1,
+    "label": "○"
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[35]",
+    "parent": 22,
+    "ordinal": 3,
+    "container": "body",
+    "text": "(주요내용) <1부>AI 프라이버시 주요 현안 발제 및 <2부>분과별 진",
+    "level": 1,
+    "label": "○"
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[37]",
+    "parent": null,
+    "ordinal": 19,
+    "container": "body",
+    "text": "세부계획                                    ",
+    "level": 0,
+    "label": "□"
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[38]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 20,
+    "container": "body",
+    "text": "시간\t행사 내용\t비 고\n1부\t15:00~15:02\t개회 및 회의 안내(2",
+    "table": {
+     "n_rows": 12,
+     "n_cols": 4,
+     "role": "data",
+     "header_rows": [
+      0
+     ],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": [
+      [
+       0,
+       0,
+       1,
+       2
+      ],
+      [
+       1,
+       0,
+       5,
+       1
+      ],
+      [
+       6,
+       2,
+       1,
+       2
+      ],
+      [
+       7,
+       0,
+       5,
+       1
+      ]
+     ]
+    }
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[39]",
+    "parent": null,
+    "ordinal": 21,
+    "container": "body",
+    "text": "* 패널 : 김병필 교수(1분과장), 최대선 교수(2분과장), 홍준호 교"
+   }
+  ]
+ },
+ "kogl1-moef-oecd-outlook-20260923.hwpx": {
+  "quality": "full",
+  "genre": "form",
+  "has_tracked_changes": false,
+  "page_header_text": [],
+  "fields": [],
+  "links": [],
+  "annotations": [],
+  "blocks": [
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[0]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 0,
+    "container": "body",
+    "text": "\t보도자료\t",
+    "table": {
+     "n_rows": 1,
+     "n_cols": 3,
+     "role": "data",
+     "header_rows": [],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "figure",
+    "path": "/hp:sec[0]/hp:p[0]/hp:tbl[0]/hp:tr[0]/hp:tc[0]/hp:subList/hp:p[0]/hp:pic[0]",
+    "parent": 0,
+    "ordinal": 0,
+    "container": "table_cell",
+    "text": ""
+   },
+   {
+    "type": "figure",
+    "path": "/hp:sec[0]/hp:p[0]/hp:tbl[0]/hp:tr[0]/hp:tc[2]/hp:subList/hp:p[0]/hp:pic[0]",
+    "parent": 0,
+    "ordinal": 1,
+    "container": "table_cell",
+    "text": ""
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[0]/hp:tbl[1]",
+    "parent": null,
+    "ordinal": 1,
+    "container": "body",
+    "text": "보도시점\t2026. 9. 23.(수) 17:00\t배포\t2026. 9. 2",
+    "table": {
+     "n_rows": 1,
+     "n_cols": 4,
+     "role": "data",
+     "header_rows": [],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[0]/hp:tbl[2]",
+    "parent": null,
+    "ordinal": 2,
+    "container": "body",
+    "text": "경제협력개발기구, 중간 경제전망 발표\n　-　’26·’27년 한국 경제성장",
+    "table": {
+     "n_rows": 2,
+     "n_cols": 1,
+     "role": "data",
+     "header_rows": [
+      0
+     ],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[1]",
+    "parent": null,
+    "ordinal": 3,
+    "container": "body",
+    "text": "  경제협력개발기구(Organization for Economic Coo"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[3]",
+    "parent": null,
+    "ordinal": 4,
+    "container": "body",
+    "text": "   * OECD 경제전망은 매년 2회(6월, 12월) 세계경제·회원국·"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[5]",
+    "parent": null,
+    "ordinal": 5,
+    "container": "body",
+    "text": "OECD 중간 경제전망 주요지표"
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[6]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 6,
+    "container": "body",
+    "text": "(%, %p)\t’26년\t’27년\n6월　전망\t9월　전망\t조정폭\t6월　전망\t",
+    "table": {
+     "n_rows": 7,
+     "n_cols": 8,
+     "role": "data",
+     "header_rows": [
+      0
+     ],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": [
+      [
+       0,
+       0,
+       2,
+       2
+      ],
+      [
+       0,
+       2,
+       1,
+       3
+      ],
+      [
+       0,
+       5,
+       1,
+       3
+      ],
+      [
+       2,
+       0,
+       3,
+       1
+      ],
+      [
+       5,
+       0,
+       2,
+       1
+      ]
+     ]
+    }
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[8]",
+    "parent": null,
+    "ordinal": 7,
+    "container": "body",
+    "text": "【세계경제】"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[10]",
+    "parent": null,
+    "ordinal": 8,
+    "container": "body",
+    "text": "  경제협력개발기구(OECD)는 상당한 규모의 원유 재고와 각국 정부의 "
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[12]",
+    "parent": null,
+    "ordinal": 9,
+    "container": "body",
+    "text": "  경제협력개발기구는 ’26년 4분기 이후 현재의 높은 국제 에너지가격이"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[13]",
+    "parent": null,
+    "ordinal": 10,
+    "container": "body",
+    "text": "  아울러, 기대 인플레이션 안정을 위한 통화정책, 선별적(well　-　"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[15]",
+    "parent": null,
+    "ordinal": 11,
+    "container": "body",
+    "text": "【한국경제】"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[17]",
+    "parent": null,
+    "ordinal": 12,
+    "container": "body",
+    "text": "  경제협력개발기구는 ’26년 한국 경제성장률을 3.7%(’26.6월 전"
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[19]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 13,
+    "container": "body",
+    "text": "G20 국가 ’26년 성장률 전망 조정폭(6월 전망 대비, %p)\n",
+    "table": {
+     "n_rows": 2,
+     "n_cols": 1,
+     "role": "data",
+     "header_rows": [
+      0
+     ],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "figure",
+    "path": "/hp:sec[0]/hp:p[19]/hp:tbl[0]/hp:tr[1]/hp:tc[0]/hp:subList/hp:p[0]/hp:pic[0]",
+    "parent": 15,
+    "ordinal": 0,
+    "container": "table_cell",
+    "text": ""
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[21]",
+    "parent": null,
+    "ordinal": 14,
+    "container": "body",
+    "text": "  물가상승률의 경우 올해와 내년 모두 G20 평균(’26년4.1%,　’"
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[25]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 15,
+    "container": "body",
+    "text": "담당 부서\n\t경제정책국\n경제분석과\t책임자\t과장\t임홍기\t(044-215-2",
+    "table": {
+     "n_rows": 2,
+     "n_cols": 6,
+     "role": "data",
+     "header_rows": [
+      0
+     ],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": [
+      [
+       0,
+       0,
+       2,
+       1
+      ],
+      [
+       0,
+       1,
+       2,
+       1
+      ]
+     ]
+    }
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[25]/hp:tbl[1]",
+    "parent": null,
+    "ordinal": 16,
+    "container": "body",
+    "text": "\t\t",
+    "table": {
+     "n_rows": 1,
+     "n_cols": 3,
+     "role": "data",
+     "header_rows": [],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "figure",
+    "path": "/hp:sec[0]/hp:p[25]/hp:tbl[1]/hp:tr[0]/hp:tc[0]/hp:subList/hp:p[0]/hp:pic[0]",
+    "parent": 19,
+    "ordinal": 0,
+    "container": "table_cell",
+    "text": ""
+   },
+   {
+    "type": "figure",
+    "path": "/hp:sec[0]/hp:p[25]/hp:tbl[1]/hp:tr[0]/hp:tc[1]/hp:subList/hp:p[0]/hp:pic[0]",
+    "parent": 19,
+    "ordinal": 1,
+    "container": "table_cell",
+    "text": ""
+   },
+   {
+    "type": "figure",
+    "path": "/hp:sec[0]/hp:p[25]/hp:tbl[1]/hp:tr[0]/hp:tc[2]/hp:subList/hp:p[0]/hp:pic[0]",
+    "parent": 19,
+    "ordinal": 2,
+    "container": "table_cell",
+    "text": ""
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[26]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 17,
+    "container": "body",
+    "text": "참고 1\t\t OECD 경제전망(성장률) ",
+    "table": {
+     "n_rows": 1,
+     "n_cols": 3,
+     "role": "form",
+     "header_rows": [],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[27]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 18,
+    "container": "body",
+    "text": "(%, %p)\t‘25년\t’26년 전망\t‘27년 전망\n전망시점\t’26.6월",
+    "table": {
+     "n_rows": 27,
+     "n_cols": 9,
+     "role": "data",
+     "header_rows": [
+      0
+     ],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": [
+      [
+       0,
+       0,
+       1,
+       2
+      ],
+      [
+       0,
+       2,
+       2,
+       1
+      ],
+      [
+       0,
+       3,
+       1,
+       3
+      ],
+      [
+       0,
+       6,
+       1,
+       3
+      ],
+      [
+       1,
+       0,
+       1,
+       2
+      ],
+      [
+       2,
+       0,
+       1,
+       2
+      ],
+      [
+       3,
+       0,
+       1,
+       2
+      ],
+      [
+       4,
+       0,
+       1,
+       2
+      ],
+      [
+       5,
+       0,
+       1,
+       2
+      ],
+      [
+       6,
+       0,
+       1,
+       2
+      ],
+      [
+       12,
+       0,
+       1,
+       2
+      ],
+      [
+       13,
+       0,
+       1,
+       2
+      ],
+      [
+       14,
+       0,
+       1,
+       2
+      ],
+      [
+       15,
+       0,
+       1,
+       2
+      ],
+      [
+       16,
+       0,
+       1,
+       2
+      ],
+      [
+       17,
+       0,
+       1,
+       2
+      ],
+      [
+       18,
+       0,
+       1,
+       2
+      ],
+      [
+       19,
+       0,
+       1,
+       2
+      ],
+      [
+       20,
+       0,
+       1,
+       2
+      ],
+      [
+       21,
+       0,
+       1,
+       2
+      ],
+      [
+       22,
+       0,
+       1,
+       2
+      ],
+      [
+       23,
+       0,
+       1,
+       2
+      ],
+      [
+       24,
+       0,
+       1,
+       2
+      ],
+      [
+       25,
+       0,
+       1,
+       2
+      ],
+      [
+       26,
+       0,
+       1,
+       2
+      ]
+     ]
+    }
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[28]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 19,
+    "container": "body",
+    "text": "참고 2\t\t OECD 경제전망(소비자물가) ",
+    "table": {
+     "n_rows": 1,
+     "n_cols": 3,
+     "role": "form",
+     "header_rows": [],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[29]/hp:tbl[0]",
+    "parent": null,
+    "ordinal": 20,
+    "container": "body",
+    "text": "(%, %p)\t‘25년\t’26년 전망\t‘27년 전망\n전망시점\t’26.6월",
+    "table": {
+     "n_rows": 26,
+     "n_cols": 9,
+     "role": "data",
+     "header_rows": [
+      0
+     ],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": [
+      [
+       0,
+       0,
+       1,
+       2
+      ],
+      [
+       0,
+       2,
+       2,
+       1
+      ],
+      [
+       0,
+       3,
+       1,
+       3
+      ],
+      [
+       0,
+       6,
+       1,
+       3
+      ],
+      [
+       1,
+       0,
+       1,
+       2
+      ],
+      [
+       2,
+       0,
+       1,
+       2
+      ],
+      [
+       3,
+       0,
+       1,
+       2
+      ],
+      [
+       4,
+       0,
+       1,
+       2
+      ],
+      [
+       5,
+       0,
+       1,
+       2
+      ],
+      [
+       11,
+       0,
+       1,
+       2
+      ],
+      [
+       12,
+       0,
+       1,
+       2
+      ],
+      [
+       13,
+       0,
+       1,
+       2
+      ],
+      [
+       14,
+       0,
+       1,
+       2
+      ],
+      [
+       15,
+       0,
+       1,
+       2
+      ],
+      [
+       16,
+       0,
+       1,
+       2
+      ],
+      [
+       17,
+       0,
+       1,
+       2
+      ],
+      [
+       18,
+       0,
+       1,
+       2
+      ],
+      [
+       19,
+       0,
+       1,
+       2
+      ],
+      [
+       20,
+       0,
+       1,
+       2
+      ],
+      [
+       21,
+       0,
+       1,
+       2
+      ],
+      [
+       22,
+       0,
+       1,
+       2
+      ],
+      [
+       23,
+       0,
+       1,
+       2
+      ],
+      [
+       24,
+       0,
+       1,
+       2
+      ],
+      [
+       25,
+       0,
+       1,
+       2
+      ]
+     ]
+    }
+   }
+  ]
+ },
+ "synthetic-owpml-features.hwpx": {
+  "quality": "full",
+  "genre": null,
+  "has_tracked_changes": true,
+  "page_header_text": [
+   "정보보안 기본지침"
+  ],
+  "fields": [],
+  "links": [
+   [
+    "https://www.example.go.kr/guide",
+    8,
+    14
+   ]
+  ],
+  "annotations": [
+   [
+    "tracked_change",
+    "삭제될 부분 "
+   ]
+  ],
+  "blocks": [
+   {
+    "type": "heading",
+    "path": "/hp:sec[0]/hp:p[1]",
+    "parent": null,
+    "ordinal": 0,
+    "container": "body",
+    "text": "정보보안 기본지침",
+    "level": 1,
+    "label": "1."
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[2]",
+    "parent": 0,
+    "ordinal": 0,
+    "container": "body",
+    "text": "이 지침은 소속 기관의 정보보안 업무에 필요한 사항을 정한다."
+   },
+   {
+    "type": "footnote",
+    "path": "/hp:sec[0]/hp:p[2]/hp:ctrl[0]/hp:footNote[0]",
+    "parent": 0,
+    "ordinal": 1,
+    "container": "footnote_body",
+    "text": "정보보안 기본지침(2026. 9. 1. 시행) 기준.",
+    "footnote": [
+     "footnote",
+     "1)",
+     34
+    ]
+   },
+   {
+    "type": "heading",
+    "path": "/hp:sec[0]/hp:p[3]",
+    "parent": 0,
+    "ordinal": 2,
+    "container": "body",
+    "text": "적용 범위",
+    "level": 2,
+    "label": "가."
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[4]",
+    "parent": 3,
+    "ordinal": 0,
+    "container": "body",
+    "text": "모든 소속 직원에게 적용한다.",
+    "level": 0,
+    "label": "□"
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[5]",
+    "parent": 4,
+    "ordinal": 0,
+    "container": "body",
+    "text": "외부 용역 인력을 포함한다.",
+    "level": 1,
+    "label": "○"
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[6]",
+    "parent": 3,
+    "ordinal": 1,
+    "container": "body",
+    "text": "첫째 번호 항목",
+    "level": 0,
+    "label": "1."
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[7]",
+    "parent": 3,
+    "ordinal": 2,
+    "container": "body",
+    "text": "둘째 번호 항목",
+    "level": 0,
+    "label": "2."
+   },
+   {
+    "type": "list_item",
+    "path": "/hp:sec[0]/hp:p[8]",
+    "parent": 7,
+    "ordinal": 0,
+    "container": "body",
+    "text": "글머리 항목",
+    "level": 1,
+    "label": "-"
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[9]/hp:tbl[0]",
+    "parent": 3,
+    "ordinal": 3,
+    "container": "body",
+    "text": "R0C0\tR0C2\nR1C0\tR1C1\nR2C0\tR2C1\n[table:f93",
+    "table": {
+     "n_rows": 3,
+     "n_cols": 3,
+     "role": "data",
+     "header_rows": [
+      0
+     ],
+     "header_inferred": true,
+     "merged_cells_preserved": true,
+     "spans": [
+      [
+       0,
+       0,
+       1,
+       2
+      ],
+      [
+       0,
+       2,
+       2,
+       1
+      ]
+     ]
+    }
+   },
+   {
+    "type": "table",
+    "path": "/hp:sec[0]/hp:p[9]/hp:tbl[0]/hp:tr[2]/hp:tc[1]/hp:subList/hp:p[1]/hp:tbl[0]",
+    "parent": 9,
+    "ordinal": 0,
+    "container": "table_cell",
+    "text": "안쪽 가\t안쪽 나",
+    "table": {
+     "n_rows": 1,
+     "n_cols": 2,
+     "role": "data",
+     "header_rows": [],
+     "header_inferred": false,
+     "merged_cells_preserved": true,
+     "spans": []
+    }
+   },
+   {
+    "type": "caption",
+    "path": "/hp:sec[0]/hp:p[9]/hp:tbl[0]/hp:caption[0]",
+    "parent": 3,
+    "ordinal": 4,
+    "container": "body",
+    "text": "<표 1> 적용 대상 구분"
+   },
+   {
+    "type": "heading",
+    "path": "/hp:sec[0]/hp:p[10]",
+    "parent": 0,
+    "ordinal": 3,
+    "container": "body",
+    "text": "점검 절차",
+    "level": 2,
+    "label": "나."
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[11]",
+    "parent": 12,
+    "ordinal": 0,
+    "container": "body",
+    "text": "점검 결과는 다음 식으로 산출한다."
+   },
+   {
+    "type": "formula",
+    "path": "/hp:sec[0]/hp:p[11]/hp:equation[0]",
+    "parent": 12,
+    "ordinal": 1,
+    "container": "body",
+    "text": "a over b"
+   },
+   {
+    "type": "figure",
+    "path": "/hp:sec[0]/hp:p[12]/hp:pic[0]",
+    "parent": 12,
+    "ordinal": 2,
+    "container": "body",
+    "text": ""
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[13]",
+    "parent": 12,
+    "ordinal": 3,
+    "container": "body",
+    "text": "자세한 내용은 보안 누리집"
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[0]/hp:p[14]",
+    "parent": 12,
+    "ordinal": 4,
+    "container": "body",
+    "text": "원래 문장 끝추가됨"
+   },
+   {
+    "type": "page_break",
+    "path": "/hp:sec[1]/hp:p[0]/hp:secPr[0]",
+    "parent": null,
+    "ordinal": 1,
+    "container": "body",
+    "text": ""
+   },
+   {
+    "type": "paragraph",
+    "path": "/hp:sec[1]/hp:p[1]",
+    "parent": 12,
+    "ordinal": 5,
+    "container": "body",
+    "text": "둘째 구역의 문단이다."
+   },
+   {
+    "type": "footnote",
+    "path": "/hp:sec[0]/hp:p[13]/hp:ctrl[2]/hp:endNote[0]",
+    "parent": null,
+    "ordinal": 2,
+    "container": "footnote_body",
+    "text": "미주 예시: 관련 법령 목록.",
+    "footnote": [
+     "endnote",
+     "1)",
+     14
+    ]
+   }
+  ]
+ }
+}

@@ -1,3 +1,10 @@
+// Phase 3 ADR 고속 리뷰 워크플로 — `build-adr-fast.mjs`가 조립한 산출물(일회성 도구, `Workflow` 하네스가 실행).
+// 설계 근거: `docs/12-appendix/00-progress-report.md` §7.2d(고속 ADR 사이클), ADR 0001-0013 사전 리뷰 병합
+// + 0014-0038 결합 고속 리뷰어(effort medium) 처리 결정.
+// 구성: `meta`(워크플로 메타데이터·단계 목록) 뒤에 ADR 목록 순회 로직(사전 리뷰 병합, 고속 리뷰, 수정, 색인 생성)이
+// 이어진다.
+// 불변식: Phase 3가 이미 완료·커밋되었으므로 이 워크플로는 재실행 대상이 아니다(기록 보존 목적).
+// 검증 계층: 1층(여기서 검증) — Phase 3 완료 시점에 이미 실행·검증되었다(`tools/phase3/results/`).
 export const meta = {
   name: 'rag-phase3-core-docs',
   description: 'RAG Platform Phase 3: write contracts + JSON Schemas, architecture, ADRs, pipelines, API, evaluation, operations, development, roadmap docs; each doc gets two-lens adversarial review, fix, verification; contract audit; OpenAPI; completeness critic',

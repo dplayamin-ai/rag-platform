@@ -11,12 +11,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import AnyUrl, BaseModel, ConfigDict, Field, RootModel
+from pydantic import AnyUrl, ConfigDict, Field, RootModel
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 
 
-class Input(BaseModel):
+class Input(ContractModel):
     """
     원본(sources/{blake3}) 또는 상류 파생물 참조. uri 스킴은 s3·file(개발)만(E16). media_type 은 원본 MIME
     """
@@ -45,7 +47,7 @@ class CredentialsRef(RootModel[str]):
     )
 
 
-class ConvertRequest(BaseModel):
+class ConvertRequest(ContractModel):
     """
     워커 → 변환 사이드카 POST /v1/convert 요청(바이블 §5.6·§14, ADR-0033). 본문은 ArtifactRef 참조만(원본 바이트·base64 인라인 금지), 비밀은 credentials_ref 간접 참조만. 사이드카(parser-workers·lo-sidecar·ocr-gpu)는 input.uri 를 자기 스토리지 자격 증명으로 직접 읽고 파생물을 tenants/{tenant_id}/derived/ 아래에 콘텐츠 주소화 저장한다. 공용 타입은 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md
     """

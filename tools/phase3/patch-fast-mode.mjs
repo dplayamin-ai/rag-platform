@@ -1,4 +1,10 @@
-// One-off patch (2026-09-23): add fast review mode (single reviewer, no verify) and rebuild wf-phase3-finish.js
+// `wf-finish-tail.js`에 고속 리뷰 모드(리뷰어 1명, verify 생략)를 추가하고 `wf-phase3-finish.js`를 재조립하는
+// 일회성 패치 스크립트(2026-09-23).
+// 설계 근거: 사용자 지시(2026-09-23) "ADR 제외하고 리뷰는 빠르게, 계속" — 비용 절감을 위한 고속 모드 추가.
+// 구성: `rep(anchor, replacement)` — 앵커 문자열이 없으면 예외를 던지는 안전한 텍스트 치환 헬퍼.
+// 불변식: 앵커가 정확히 일치하지 않으면 조용히 넘어가지 않고 실패한다; Phase 3가 이미 완료·커밋되었으므로
+// 재실행 대상이 아니다(기록 보존 목적).
+// 검증 계층: 1층(여기서 검증) — 산출물 `wf-phase3-finish.js`는 Phase 3 완료 시점에 이미 실행·검증되었다.
 import fs from 'node:fs'
 const dir = new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1') + '/'
 let t = fs.readFileSync(dir + 'wf-finish-tail.js', 'utf8')

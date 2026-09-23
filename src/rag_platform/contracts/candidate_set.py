@@ -11,7 +11,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import ConfigDict, Field, RootModel
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 
@@ -28,7 +30,7 @@ class IndexGenerationSeenItem(RootModel[int]):
     root: int = Field(..., ge=0)
 
 
-class PayloadSlim(BaseModel):
+class PayloadSlim(ContractModel):
     """
     IndexRecord payload의 슬림 투영(≤ 1KB). 융합·설명·사전 예산에 필요한 값만
     """
@@ -48,7 +50,7 @@ class PayloadSlim(BaseModel):
     text_source: common_types.BlockSource
 
 
-class Candidate(BaseModel):
+class Candidate(ContractModel):
     """
     개별 리트리버가 반환한 후보(브리프 §10 Candidate). 본문·인용 좌표·전체 ACL은 hydrate가 채운다
     """
@@ -75,7 +77,7 @@ class Candidate(BaseModel):
     graph_path: list[str] | None = Field(None, description="그래프 채널 설명(엔티티·관계 경로)", max_length=32)
 
 
-class ChannelRun(BaseModel):
+class ChannelRun(ContractModel):
     """
     채널 런 하나(채널 × 컬렉션 × 변형). 후보는 정확히 하나의 컬렉션에 속한다
     """
@@ -127,7 +129,7 @@ class ChannelRun(BaseModel):
     )
 
 
-class CandidateSet(BaseModel):
+class CandidateSet(ContractModel):
     """
     retrieve 스테이지의 출력(바이블 §5.5). 채널 × 컬렉션 × 질의 변형 단위의 채널 런(channel_runs[])과 각 런의 후보(원점수·순위·payload_slim)를 담는다. 소비자는 fuse. 봉투(질의 측)·공용 타입·열거는 urn:rag:schema:common-types:1의 $defs를 참조하며 재정의하지 않는다. 소유 문서: docs/03-contracts/10-candidate-set-and-ranked-set.md.
     """
@@ -177,7 +179,7 @@ class CandidateSet(BaseModel):
     total_latency_ms: int = Field(..., description="병렬 검색 전체 경과(max(took_ms) 이상)", ge=0)
 
 
-class FiltersApplied(BaseModel):
+class FiltersApplied(ContractModel):
     """
     백엔드에 실제 전송된 필터 트리(바이블 §5.5 filters_applied·§10.2 (a)(b)(c) 구분). security·strategy는 QueryPlan.filters와 동일(변경 불가), user·self_query는 page 변환·0건 완화를 반영한 전송 트리(원형은 QueryPlan.filters에 남음, 09 §5.4), effective_hash는 그 전송 트리의 해시. security·strategy 정의는 09 query-plan $defs의 사본(#/$defs/SecurityFilter·StrategyFilter)
     """

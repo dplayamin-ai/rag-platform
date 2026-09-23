@@ -12,7 +12,9 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 
@@ -47,7 +49,7 @@ class SchemaChangeKind(StrEnum):
     id_changed = "id_changed"
 
 
-class SchemaChange(BaseModel):
+class SchemaChange(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -63,7 +65,7 @@ class SchemaChange(BaseModel):
     after: Any | None = Field(None, description="head 값(선택; 임의 JSON)")
 
 
-class GoldenExampleResult(BaseModel):
+class GoldenExampleResult(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -75,7 +77,7 @@ class GoldenExampleResult(BaseModel):
     )
 
 
-class EnumMismatch(BaseModel):
+class EnumMismatch(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -84,7 +86,7 @@ class EnumMismatch(BaseModel):
     missing_in_bible: list[str]
 
 
-class EnumCheckResult(BaseModel):
+class EnumCheckResult(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -92,7 +94,7 @@ class EnumCheckResult(BaseModel):
     mismatches: list[EnumMismatch]
 
 
-class SchemaDiffReport(BaseModel):
+class SchemaDiffReport(ContractModel):
     """
     두 버전의 계약 JSON Schema를 비교해 변경을 분류하고 선언된 버전 증분(declared_level)이 계산된 등급(computed_level) 이상인지, 이전 minor 골든 예시가 새 스키마에 유효한지, 열거가 바이블 §5.7과 일치하는지를 기록하는 CI 도구 산출물. schemas/ 인벤토리에 속하지 않는다.
     """

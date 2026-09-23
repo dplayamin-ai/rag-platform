@@ -1,7 +1,10 @@
-"""Korean language resources (layer L1; bible §12 ``korean``).
+"""한국어 언어 자원 모음(계층 L1; 바이블 §12 `korean`).
 
-Generators from ``UserDictEntry`` to Kiwi, Nori and synonym dictionaries, and the token expansion
-ratio coefficients used by budget accounting.
+설계 근거: 바이블 §12(모듈 맵), §10.2(한국어 처리).
+구성: `UserDictEntry`에서 Kiwi·Nori·유의어 사전으로 변환하는 생성기, 예산 계산에 쓰이는 토큰 팽창비
+계수.
+불변식: 이 계층은 `contracts`·`sdk`에만 의존한다(§12 계층 지도).
+검증 계층: 1층(여기서 검증) — 각 생성기 구현 시 개별 단위 테스트로 검증.
 """
 
 from __future__ import annotations

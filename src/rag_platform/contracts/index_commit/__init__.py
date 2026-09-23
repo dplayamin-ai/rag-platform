@@ -12,13 +12,15 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, constr
+from pydantic import ConfigDict, Field, RootModel, constr
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from .. import common_types
 from .IndexCommit import backend_results as backend_results_1
 
 
-class BackendResult(BaseModel):
+class BackendResult(ContractModel):
     """
     바이블 §5.4 backend_results[] 한 항목. backend_id는 CollectionSpec.backends[].backend_id(플러그인 ID)
     """
@@ -59,7 +61,7 @@ class BackendResult(BaseModel):
     status: backend_results_1.Status
 
 
-class Source(BaseModel):
+class Source(ContractModel):
     """
     detect 출력 SourceDocument 산출물(media_type application/vnd.rag.source-document+json, schema_version 동반; 바이블 §5.2·§4.1 index requires_lineage). index가 acl·metadata를 읽는 원천. 원본 바이트(sources/{blake3})가 아니다
     """
@@ -80,7 +82,7 @@ class Source(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class Parsed(BaseModel):
+class Parsed(ContractModel):
     """
     오브젝트 스토리지 산출물 참조. 오케스트레이터 경계를 넘는 유일한 페이로드(바이블 §4.1, §5.3).
     """
@@ -101,7 +103,7 @@ class Parsed(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class Normalized(BaseModel):
+class Normalized(ContractModel):
     """
     오브젝트 스토리지 산출물 참조. 오케스트레이터 경계를 넘는 유일한 페이로드(바이블 §4.1, §5.3).
     """
@@ -122,7 +124,7 @@ class Normalized(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class ChunkSet(BaseModel):
+class ChunkSet(ContractModel):
     """
     오브젝트 스토리지 산출물 참조. 오케스트레이터 경계를 넘는 유일한 페이로드(바이블 §4.1, §5.3).
     """
@@ -143,7 +145,7 @@ class ChunkSet(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class Enriched(BaseModel):
+class Enriched(ContractModel):
     """
     오브젝트 스토리지 산출물 참조. 오케스트레이터 경계를 넘는 유일한 페이로드(바이블 §4.1, §5.3).
     """
@@ -164,7 +166,7 @@ class Enriched(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class Embedded(BaseModel):
+class Embedded(ContractModel):
     """
     오브젝트 스토리지 산출물 참조. 오케스트레이터 경계를 넘는 유일한 페이로드(바이블 §4.1, §5.3).
     """
@@ -185,7 +187,7 @@ class Embedded(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class CommitArtifactRefs(BaseModel):
+class CommitArtifactRefs(ContractModel):
     """
     바이블 §5.4 artifact_refs {source, parsed, normalized, chunk_set, enriched, embedded} — 재적재(replay) 복구 1순위. lineage_refs와 같은 키·같은 값. 여섯 키 모두 계약 산출물이며 키별 schema_type은 00 §3.2 대응표와 1:1(const). 원본 바이트는 source가 가리키는 SourceDocument.artifact(02) 또는 ParsedDocument.source_ref(03)로 도달한다
     """
@@ -219,7 +221,7 @@ class CommitArtifactRefs(BaseModel):
     )
 
 
-class CommitStats(BaseModel):
+class CommitStats(ContractModel):
     """
     바이블 §5.4 stats → usage_ledger(bytes_indexed, llm_tokens)·rag_index_bytes_total{vector}
     """
@@ -270,7 +272,7 @@ class DeletedCounts(RootModel[int]):
     root: int = Field(..., ge=0)
 
 
-class Compensation(BaseModel):
+class Compensation(ContractModel):
     """
     바이블 §5.4 compensation. 플립 전 실패(pending~lexical_written)는 새 세대 삭제만(restored_generation=null), 플립 후 실패(flipping_*)는 previous_commit_id 세대 복원 후 새 세대 삭제(restored_generation=이전 세대). 취소(reason=job_cancelled)는 다섯 전종결 상태 모두에서 가능하며 같은 모드 규칙을 따른다(§3 규칙 (6); 바이블 §11.5 cancelling → cancelled는 보상 완료 전제)
     """
@@ -299,7 +301,7 @@ class Compensation(BaseModel):
     completed_at: common_types.DateTime = Field(..., description="보상 절차 종료 시각(성공·실패 무관)")
 
 
-class IndexCommit(BaseModel):
+class IndexCommit(ContractModel):
     """
     index 사가의 출력이자 PostgreSQL index_commits 원장 행(바이블 §5.4·§11.4·§13.1, ADR-0026). 한 문서 세대(index_generation)의 색인 결과 단위로 9단 CommitStatus, 세대 관계(previous_commit_id·supersedes_commit_ids·superseded_by), 재현성 지문, commit_hash, 백엔드별 결과, 재적재용 artifact_refs, 보상 기록을 담는다. 정본은 원장 행이며 오브젝트 스토리지 산출물이 아니다. 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. embedding_space_ids는 urn:rag:schema:embedded-chunk-set:1#/$defs/EmbeddingSpaceIds 와 같은 정의의 사본을 자기 $defs에 둔다(계약 간 교차 $ref 회피 — 00 §2·15 결정; CI가 두 정의의 동치를 대조한다). artifact_refs.source·lineage_refs.source는 detect 출력 SourceDocument 산출물 참조다(원본 바이트가 아님; 00 §3.2 대응표). 소유 문서: docs/03-contracts/08-index-commit.md
     """

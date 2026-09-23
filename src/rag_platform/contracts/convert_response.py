@@ -9,12 +9,14 @@
 
 from __future__ import annotations
 
-from pydantic import AnyUrl, BaseModel, ConfigDict, Field
+from pydantic import AnyUrl, ConfigDict, Field
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 
 
-class Output(BaseModel):
+class Output(ContractModel):
     """
     오브젝트 스토리지 산출물 참조. 오케스트레이터 경계를 넘는 유일한 페이로드(바이블 §4.1, §5.3).
     """
@@ -34,7 +36,7 @@ class Output(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class DerivedItem(BaseModel):
+class DerivedItem(ContractModel):
     """
     오브젝트 스토리지 산출물 참조. 오케스트레이터 경계를 넘는 유일한 페이로드(바이블 §4.1, §5.3).
     """
@@ -54,7 +56,7 @@ class DerivedItem(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class Producer(BaseModel):
+class Producer(ContractModel):
     """
     plugin_id=사이드카 어댑터({extension_point}.{implementation}), plugin_version, config_hash, image_digest(sha256 digest, 비-null), model_ids(OCR 모델 등)
     """
@@ -71,7 +73,7 @@ class Producer(BaseModel):
     model_ids: list[common_types.ModelId] | None = Field(None, description="{model_id}@{revision} 목록")
 
 
-class ConvertResponse(BaseModel):
+class ConvertResponse(ContractModel):
     """
     변환 사이드카 → 워커 POST /v1/convert 200 응답(바이블 §5.6·§14, ADR-0033). 변환 실패는 200 + output=null + error(StageError, stage=parse); ProblemDetails 는 전송·검증 오류(400 contract.violation, 503 parse.sidecar_unavailable)에만 쓴다(13-error-model §6.4). output·derived[] 는 tenants/{tenant_id}/derived/{kind}/ 아래 콘텐츠 주소화 산출물이고 producer.image_digest 는 사이드카 자기 보고(비-null)다. 공용 타입은 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md
     """

@@ -11,7 +11,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import ConfigDict, Field, RootModel
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from .. import common_types
 from . import JobStatus as JobStatus_1
@@ -44,7 +46,7 @@ class IdempotencyKey(RootModel[str]):
     )
 
 
-class JobCost(BaseModel):
+class JobCost(ContractModel):
     """
     누적 비용(바이블 §5.6). usage_ledger의 원천
     """
@@ -58,7 +60,7 @@ class JobCost(BaseModel):
     gpu_seconds: float = Field(..., ge=0.0)
 
 
-class JobProgress(BaseModel):
+class JobProgress(ContractModel):
     """
     진행률 {done, total, unit}(바이블 §5.6). done ≤ total
     """
@@ -71,7 +73,7 @@ class JobProgress(BaseModel):
     unit: progress_1.Unit
 
 
-class JobStatus(BaseModel):
+class JobStatus(ContractModel):
     """
     PostgreSQL jobs 원장의 읽기 모델(바이블 §5.6·§11.5·§13.1, D-08, ADR-0017). 잡의 종류·상태·스테이지·진행률·시도·비용·오류·시각을 담는다. 봉투 계약이 아니며 산출물로 저장되지 않는다. 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """

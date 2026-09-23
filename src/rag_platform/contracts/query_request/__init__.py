@@ -9,13 +9,15 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from .. import common_types
 from .QueryRequest import conversation as conversation_1, target_model as target_model_1
 
 
-class RequestBudget(BaseModel):
+class RequestBudget(ContractModel):
     """
     요청 예산(프로파일 상한 내). 1개 이상 키.
     """
@@ -32,7 +34,7 @@ class RequestBudget(BaseModel):
     max_context_tokens: int | None = Field(None, description="→ pack.max_context_tokens = min(요청, 프로파일)", ge=1)
 
 
-class ConversationTurn(BaseModel):
+class ConversationTurn(ContractModel):
     """
     대화 한 턴. 재작성 입력만이며 팩·렌더에 포함되지 않는다.
     """
@@ -44,7 +46,7 @@ class ConversationTurn(BaseModel):
     text: str = Field(..., max_length=4000, min_length=1)
 
 
-class TargetModel(BaseModel):
+class TargetModel(ContractModel):
     """
     토큰 카운터·렌더러 선택(바이블 §5.5). pack.tokenizer{provider, model} 과 pack.renderer 기본값의 원천.
     """
@@ -61,7 +63,7 @@ class TargetModel(BaseModel):
     )
 
 
-class QueryRequest(BaseModel):
+class QueryRequest(ContractModel):
     """
     리트리벌 API 입력 계약(바이블 §5.5). 클라이언트가 POST /v1/query 또는 MCP search 로 제출한다. 봉투 없음: schema_version·collection_ids 만 갖고 tenant_id·as_of·security_context 는 본문에 없다(서버 SecurityContext 주입, ADR-0027; 본문에 있으면 거부). query_id 는 서버가 접수 시 발급한다(readOnly). filters 는 FilterNode DSL(공용 타입)이며 보안·전략 필터와 AND 로 결합된다. 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소비: plan. 소유 문서: docs/03-contracts/09-query-request-and-query-plan.md
     """

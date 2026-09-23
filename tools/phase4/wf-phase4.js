@@ -1,3 +1,11 @@
+// Phase 4 교차 일관성 워크플로 — 바이블 개정 요청 Opus 트리아지 → 바이블/브리프 개정 + 전파 지시 → Sonnet 그룹
+// 전파 → 오버사이즈 트리밍 → 고속 모드 수정 샘플 검증 → 잔여 정리(`Workflow` 하네스가 실행).
+// 설계 근거: `docs/12-appendix/02-phase4-5-plan.md`(D4-1~D4-4 결정), `docs/12-appendix/00-progress-report.md`
+// §7(Phase 4 실행 기록).
+// 구성: `meta`(워크플로 메타데이터·단계 목록: T1 트리아지, T2 바이블 개정, T3 스키마 동기화, P1 전파, P2 트림,
+// P3 샘플 검증, P4 잔여 정리).
+// 불변식: Phase 4가 이미 완료·커밋되었으므로 이 워크플로는 재실행 대상이 아니다(기록 보존 목적).
+// 검증 계층: 1층(여기서 검증) — Phase 4 완료 시점에 이미 실행·검증되었다(`tools/phase4/results/`).
 export const meta = {
   name: 'rag-phase4-cross-consistency',
   description: 'Phase 4: Opus triage of bible amendment requests → bible/brief revision + propagation directives → Sonnet propagation (grouped), oversize trimming, sampled verification of fast-mode fixes, residual cleanup',

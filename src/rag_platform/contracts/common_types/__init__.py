@@ -12,7 +12,9 @@ from __future__ import annotations
 from enum import IntEnum, StrEnum
 from typing import Any, Literal
 
-from pydantic import AnyUrl, BaseModel, ConfigDict, Field, RootModel, constr
+from pydantic import AnyUrl, ConfigDict, Field, RootModel, constr
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import TableCell as TableCell_1
 from .Block import figure as figure_1, footnote as footnote_1
@@ -1040,7 +1042,7 @@ class ErrorCodeCatalog(StrEnum):
     outbox_relay_failed = "outbox.relay_failed"
 
 
-class ArtifactRef(BaseModel):
+class ArtifactRef(ContractModel):
     """
     오브젝트 스토리지 산출물 참조. 오케스트레이터 경계를 넘는 유일한 페이로드(바이블 §4.1, §5.3).
     """
@@ -1060,7 +1062,7 @@ class ArtifactRef(BaseModel):
     stage_key: Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class Producer(BaseModel):
+class Producer(ContractModel):
     """
     재현성 지문. fingerprint = H("producer", plugin_id, plugin_version, config_hash, image_digest or "", ",".join(model_ids))(바이블 §6.2).
     """
@@ -1075,7 +1077,7 @@ class Producer(BaseModel):
     model_ids: list[ModelId] | None = Field(None, description="{model_id}@{revision} 목록")
 
 
-class Provenance(BaseModel):
+class Provenance(ContractModel):
     """
     원문 좌표(ADR-0002). char_*는 원문 Block.text 기준 0-based 유니코드 코드포인트, 끝 미포함.
     """
@@ -1100,7 +1102,7 @@ class Provenance(BaseModel):
     section_index: int | None = Field(None, description="HWPX 구역(secPr) 인덱스", ge=0)
 
 
-class Acl(BaseModel):
+class Acl(ContractModel):
     """
     문서 단위 ACL(모든 레벨 레코드가 상속, 바이블 §10.1). 거부가 허용보다 우선.
     """
@@ -1117,7 +1119,7 @@ class Acl(BaseModel):
     source_acl_hash: Hex64 | None = Field(None, description="원천 ACL 변경 감지")
 
 
-class SecurityContext(BaseModel):
+class SecurityContext(ContractModel):
     """
     서버 주입·읽기 전용. 클라이언트 입력 없음(ADR-0027, 바이블 §5.3).
     """
@@ -1146,7 +1148,7 @@ class SecurityContext(BaseModel):
     )
 
 
-class Principal(BaseModel):
+class Principal(ContractModel):
     """
     PrincipalResolver 출력(바이블 §8.1 1단계). SecurityContext.principals의 원천.
     """
@@ -1174,7 +1176,7 @@ class TokenCounts1(RootModel[dict[constr(pattern=r"^(hf|tiktoken|anthropic|gemin
     )
 
 
-class Warning(BaseModel):
+class Warning(ContractModel):
     """
     품질 삼중항 2. 콘텐츠 미포함.
     """
@@ -1192,7 +1194,7 @@ class Warning(BaseModel):
     page: int | None = Field(None, ge=1)
 
 
-class DegradedEntry(BaseModel):
+class DegradedEntry(ContractModel):
     """
     품질 삼중항 3(질의 측). 콘텐츠 미포함.
     """
@@ -1205,7 +1207,7 @@ class DegradedEntry(BaseModel):
     detail: str | None = None
 
 
-class ErrorLocation(BaseModel):
+class ErrorLocation(ContractModel):
     """
     StageError.location. 오류 위치 식별자만 담고 ACL·주체·콘텐츠는 담지 않는다(13-error-model §2.2 제안 하위 타입).
     """
@@ -1226,7 +1228,7 @@ class ErrorLocation(BaseModel):
     document_id: Ulid | None = None
 
 
-class CloudEventEnvelope(BaseModel):
+class CloudEventEnvelope(ContractModel):
     """
     CloudEvents 1.0.2 봉투(ADR-0017). data는 ID·해시·상태만, 콘텍스트 본문 금지.
     """
@@ -1250,7 +1252,7 @@ class CloudEventEnvelope(BaseModel):
     data: dict[str, Any] = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class ChannelScore(BaseModel):
+class ChannelScore(ContractModel):
     """
     채널 원점수·채널 내 순위·융합 기여분·적중 질의 변형.
     """
@@ -1264,7 +1266,7 @@ class ChannelScore(BaseModel):
     variant_ids: list[Ulid] = Field(..., description="적중 질의 변형(rewritten_queries[].variant_id)")
 
 
-class Boost(BaseModel):
+class Boost(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1272,7 +1274,7 @@ class Boost(BaseModel):
     delta: float
 
 
-class ScoreBreakdown(BaseModel):
+class ScoreBreakdown(ContractModel):
     """
     점수 원장(K3, ADR-0030). 불변식 Σ contribution(non-null 채널) = fused.
     """
@@ -1295,7 +1297,7 @@ class ScoreBreakdown(BaseModel):
     boosts: list[Boost] | None = None
 
 
-class FilterNode4(BaseModel):
+class FilterNode4(ContractModel):
     """
     사용자·self-query 필터 DSL. 논리 결합(and/or/not) 또는 리프(field, op, value) 택1. 깊이 ≤ 3, 절 ≤ 32(플래너 검증).
     """
@@ -1311,7 +1313,7 @@ class FilterNode4(BaseModel):
     )
 
 
-class Span(BaseModel):
+class Span(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1320,7 +1322,7 @@ class Span(BaseModel):
     char_end: int = Field(..., ge=0)
 
 
-class Entity(BaseModel):
+class Entity(ContractModel):
     """
     보강 엔티티(기본 GLiNER2).
     """
@@ -1336,7 +1338,7 @@ class Entity(BaseModel):
     extractor: EntityExtractor
 
 
-class Relation(BaseModel):
+class Relation(ContractModel):
     """
     그래프 플러그인 슬롯(ADR-0015).
     """
@@ -1351,7 +1353,7 @@ class Relation(BaseModel):
     evidence_chunk_ids: list[Hex64]
 
 
-class BlockRef(BaseModel):
+class BlockRef(ContractModel):
     """
     단일 좌표계(K1). char_*는 Chunk.text(display) 기준, original_char_*는 원문 Block.text 기준(offset_map 사상). Chunk·IndexRecord·RankedResult의 block_refs가 같은 구조.
     """
@@ -1370,7 +1372,7 @@ class BlockRef(BaseModel):
     section_index: int | None = Field(None, ge=0)
 
 
-class IndexBackendCapabilities(BaseModel):
+class IndexBackendCapabilities(ContractModel):
     """
     Capabilities.extra(index_backend 전용). 프로파일 로딩 검증·채널 구성의 근거.
     """
@@ -1389,7 +1391,7 @@ class IndexBackendCapabilities(BaseModel):
     supports_payload_only_points: bool | None
 
 
-class Backoff(BaseModel):
+class Backoff(ContractModel):
     """
     기본 {1s, 5m, 2.0}
     """
@@ -1402,7 +1404,7 @@ class Backoff(BaseModel):
     coefficient: float = Field(..., ge=1.0)
 
 
-class StagePolicy(BaseModel):
+class StagePolicy(ContractModel):
     """
     스테이지 실행 정책(바이블 §4.4 표의 한 행).
     """
@@ -1420,7 +1422,7 @@ class StagePolicy(BaseModel):
     isolation: IsolationMode | None = None
 
 
-class TieringPolicy(BaseModel):
+class TieringPolicy(ContractModel):
     """
     테넌트 격리 등급 승격 정책(E15, ADR-0028). 기본 {1000000, null, opt_in, 24h}.
     """
@@ -1442,7 +1444,7 @@ class AllowedPort(RootModel[int]):
     root: int = Field(..., ge=1, le=65535)
 
 
-class EgressPolicy(BaseModel):
+class EgressPolicy(ContractModel):
     """
     아웃바운드 egress 정책(E16, ADR-0038). 프로파일 정책 AND 테넌트 정책.
     """
@@ -1464,7 +1466,7 @@ class EgressPolicy(BaseModel):
     )
 
 
-class LineageRefs(BaseModel):
+class LineageRefs(ContractModel):
     """
     봉투 lineage_refs(바이블 §5.2). 상류 산출물 참조, 자기 자신 제외. IndexCommit.artifact_refs와 같은 키.
     """
@@ -1480,7 +1482,7 @@ class LineageRefs(BaseModel):
     embedded: ArtifactRef | None = None
 
 
-class TableCell(BaseModel):
+class TableCell(ContractModel):
     """
     표 앵커 셀(병합 셀은 앵커 1개). 0-based 좌표, span ≥ 1.
     """
@@ -1503,7 +1505,7 @@ class HeaderRowIndice(RootModel[int]):
     root: int = Field(..., ge=0)
 
 
-class Quality1(BaseModel):
+class Quality1(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1512,7 +1514,7 @@ class Quality1(BaseModel):
     structure_confidence: float | None = Field(None, ge=0.0, le=1.0)
 
 
-class TableData(BaseModel):
+class TableData(ContractModel):
     """
     셀 격자 무손실(HTML rowspan/colspan 재생성 가능).
     """
@@ -1530,7 +1532,7 @@ class TableData(BaseModel):
     html_ref: ArtifactRef | None = None
 
 
-class Figure(BaseModel):
+class Figure(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1541,7 +1543,7 @@ class Figure(BaseModel):
     caption_model: str | None = None
 
 
-class Formula(BaseModel):
+class Formula(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1549,7 +1551,7 @@ class Formula(BaseModel):
     latex: str | None = None
 
 
-class Footnote(BaseModel):
+class Footnote(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1559,14 +1561,14 @@ class Footnote(BaseModel):
     marker: str | None = None
 
 
-class Code(BaseModel):
+class Code(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
     language: str | None = None
 
 
-class PageBreak(BaseModel):
+class PageBreak(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1574,7 +1576,7 @@ class PageBreak(BaseModel):
     section_index: int | None = Field(None, ge=0)
 
 
-class Block(BaseModel):
+class Block(ContractModel):
     """
     ParsedDocument.blocks[] 요소. 문서 순서 평탄 리스트, 계층은 parent_block_id.
     """
@@ -1623,7 +1625,7 @@ class SubSpan(RootModel[list[SubSpanItem]]):
     root: list[SubSpanItem] = Field(..., min_length=2)
 
 
-class SentenceSpan(BaseModel):
+class SentenceSpan(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1632,7 +1634,7 @@ class SentenceSpan(BaseModel):
     sub_spans: list[SubSpan]
 
 
-class NormalizedBlock(BaseModel):
+class NormalizedBlock(ContractModel):
     """
     NormalizedDocument.blocks[] 요소. 원 Block과 block_id로 1:1. display_text NFC / lexical_text NFKC.
     """
@@ -1671,7 +1673,7 @@ class ColRangeItem(RootModel[int]):
     root: int = Field(..., ge=0)
 
 
-class TableRef(BaseModel):
+class TableRef(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1683,7 +1685,7 @@ class TableRef(BaseModel):
     html_ref: ArtifactRef | None
 
 
-class Window(BaseModel):
+class Window(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1691,7 +1693,7 @@ class Window(BaseModel):
     after_chunk_ids: list[Hex64]
 
 
-class ContextPrefix(BaseModel):
+class ContextPrefix(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1700,7 +1702,7 @@ class ContextPrefix(BaseModel):
     generated_by: ModelId | None
 
 
-class Chunk(BaseModel):
+class Chunk(ContractModel):
     """
     ChunkSet.chunks[] 요소. chunk_id = H("chunk", doc_version, chunker_config_hash, str(level), span)(ADR-0004). 3-텍스트 규칙: text는 접두어 미포함(ADR-0029). item_kind ↔ level 대응(바이블 §5.7 ChunkLevel; parent ⇔ 1, summary·community_report·entity ⇔ 2, 그 외 ⇔ 0; 05 C-5)은 allOf의 if/then 4개로 강제하며 IndexRecord와 같은 규칙이다.
     """
@@ -1739,7 +1741,7 @@ class Chunk(BaseModel):
     content_hash: Hex64 = Field(..., description="blake3_hex(utf8(text))")
 
 
-class StripOffsets(BaseModel):
+class StripOffsets(ContractModel):
     """
     strip() 대칭 보장
     """
@@ -1751,7 +1753,7 @@ class StripOffsets(BaseModel):
     text_start_in_index: int = Field(..., ge=0)
 
 
-class Keyword(BaseModel):
+class Keyword(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1764,7 +1766,7 @@ class PiiEntityCounts(RootModel[int]):
     root: int = Field(..., ge=0)
 
 
-class Enrichment(BaseModel):
+class Enrichment(ContractModel):
     """
     EnrichedChunkSet.enrichments[chunk_id]. embed_text = deterministic + "\\n" + (generated + "\\n")? + text; index_text = prefix(lexical) + "\\n" + lexical_text.
     """
@@ -1790,7 +1792,7 @@ class Enrichment(BaseModel):
     status: EnrichStatus
 
 
-class Dense(BaseModel):
+class Dense(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1803,7 +1805,7 @@ class Indice(RootModel[int]):
     root: int = Field(..., ge=0)
 
 
-class SparseLearned(BaseModel):
+class SparseLearned(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1813,7 +1815,7 @@ class SparseLearned(BaseModel):
     values: list[float]
 
 
-class SparseBm25(BaseModel):
+class SparseBm25(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1823,7 +1825,7 @@ class SparseBm25(BaseModel):
     values: list[float]
 
 
-class LateInteraction(BaseModel):
+class LateInteraction(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1833,7 +1835,7 @@ class LateInteraction(BaseModel):
     offset: int = Field(..., ge=0)
 
 
-class VectorBundle1(BaseModel):
+class VectorBundle1(ContractModel):
     """
     EmbeddedChunkSet.vectors[chunk_id]. 벡터 본문은 vectors_ref 안 오프셋. sparse_learned(standard) 또는 sparse_bm25(lite) 중 하나 이상.
     """
@@ -1852,7 +1854,7 @@ class VectorBundle1(BaseModel):
     truncated: bool = Field(..., description="토큰 초과 절단 여부")
 
 
-class SparseLearned1(BaseModel):
+class SparseLearned1(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1862,7 +1864,7 @@ class SparseLearned1(BaseModel):
     values: list[float]
 
 
-class SparseBm251(BaseModel):
+class SparseBm251(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1872,7 +1874,7 @@ class SparseBm251(BaseModel):
     values: list[float]
 
 
-class VectorBundle2(BaseModel):
+class VectorBundle2(ContractModel):
     """
     EmbeddedChunkSet.vectors[chunk_id]. 벡터 본문은 vectors_ref 안 오프셋. sparse_learned(standard) 또는 sparse_bm25(lite) 중 하나 이상.
     """
@@ -1898,7 +1900,7 @@ class VectorBundle(RootModel[VectorBundle1 | VectorBundle2]):
     )
 
 
-class Acl1(BaseModel):
+class Acl1(ContractModel):
     """
     IndexRecord.acl_* 역평탄화; pack.acl_recheck 입력
     """
@@ -1923,7 +1925,7 @@ class SentenceSpan2(RootModel[list[SentenceSpan2Item]]):
     root: list[SentenceSpan2Item] = Field(..., min_length=2)
 
 
-class RankedResult(BaseModel):
+class RankedResult(ContractModel):
     """
     RankedSet.results[] 요소. hydrated=true 조건 필수(text 등)는 RankedSet 스키마의 if/then이 강제한다.
     """
@@ -1993,7 +1995,7 @@ class RankedResult(BaseModel):
     explain: list[ExplainCode]
 
 
-class Header(BaseModel):
+class Header(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -2010,7 +2012,7 @@ class Header(BaseModel):
     doc_version_label: str | None = None
 
 
-class Segment(BaseModel):
+class Segment(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -2021,7 +2023,7 @@ class Segment(BaseModel):
     block_id: Hex32
 
 
-class Table(BaseModel):
+class Table(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -2034,7 +2036,7 @@ class Table(BaseModel):
     downgraded: bool
 
 
-class Figure1(BaseModel):
+class Figure1(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -2044,7 +2046,7 @@ class Figure1(BaseModel):
     image_ref: ArtifactRef | None = None
 
 
-class Parent(BaseModel):
+class Parent(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -2054,7 +2056,7 @@ class Parent(BaseModel):
     child_chunk_ids: list[Hex64]
 
 
-class ConflictsWithItem(BaseModel):
+class ConflictsWithItem(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -2063,7 +2065,7 @@ class ConflictsWithItem(BaseModel):
     note: str | None = None
 
 
-class Acl2(BaseModel):
+class Acl2(ContractModel):
     """
     반환 직전 재검증 증적(E9)
     """
@@ -2077,7 +2079,7 @@ class Acl2(BaseModel):
     source: AclCheckSource
 
 
-class ContextItem(BaseModel):
+class ContextItem(ContractModel):
     """
     ContextPack.items[] 요소. cite_id는 관련도순 불변, position은 렌더 위치. provenance는 block_refs에서 결정적으로 생성.
     """
@@ -2121,7 +2123,7 @@ class ContextItem(BaseModel):
     token_count: int = Field(..., description="budget.tokenizer 기준", ge=0)
 
 
-class SecurityFilter(BaseModel):
+class SecurityFilter(ContractModel):
     """
     보안 불변식(바이블 §10.2 (a), §5.1 1.3.0 공용 타입 승격 AM-35). 제거·완화 불가. 값은 security_context에서 복사.
     """
@@ -2138,7 +2140,7 @@ class SecurityFilter(BaseModel):
     classification_max: Classification
 
 
-class StrategyFilter(BaseModel):
+class StrategyFilter(ContractModel):
     """
     전략 필터(바이블 §10.2 (b), §5.1 1.3.0 공용 타입 승격 AM-35). strategy별 고정값(최상위 allOf가 const로 고정). 사용자 완화 불가.
     """
@@ -2158,7 +2160,7 @@ class ChannelRunId(RootModel[str]):
     )
 
 
-class EmbeddingSpaceIds1(BaseModel):
+class EmbeddingSpaceIds1(ContractModel):
     """
     바이블 §5.4 embedding_space_ids {dense, sparse_learned?, sparse_bm25?, late_interaction?}(§5.1 1.3.0 공용 타입 승격 AM-35). 키는 VectorName, 값은 H("space", model_id, revision, str(dim), str(normalized), prompt_hash, quantization, vocab_id or "")(§6.2). sparse_learned(standard) 또는 sparse_bm25(lite) 중 하나 이상. 모델·revision·차원·정규화·프롬프트·양자화·어휘 중 하나라도 바뀌면 다른 공간 = 재색인. visual-pages page_* 변형은 07 미해결 이슈 3 확정 후 minor로 추가(현재 미포함)
     """
@@ -2172,7 +2174,7 @@ class EmbeddingSpaceIds1(BaseModel):
     late_interaction: Hex64 | None = Field(None, description="선택 슬롯(기본 끔, ADR-0010)")
 
 
-class EmbeddingSpaceIds2(BaseModel):
+class EmbeddingSpaceIds2(ContractModel):
     """
     바이블 §5.4 embedding_space_ids {dense, sparse_learned?, sparse_bm25?, late_interaction?}(§5.1 1.3.0 공용 타입 승격 AM-35). 키는 VectorName, 값은 H("space", model_id, revision, str(dim), str(normalized), prompt_hash, quantization, vocab_id or "")(§6.2). sparse_learned(standard) 또는 sparse_bm25(lite) 중 하나 이상. 모델·revision·차원·정규화·프롬프트·양자화·어휘 중 하나라도 바뀌면 다른 공간 = 재색인. visual-pages page_* 변형은 07 미해결 이슈 3 확정 후 minor로 추가(현재 미포함)
     """
@@ -2193,7 +2195,7 @@ class EmbeddingSpaceIds(RootModel[EmbeddingSpaceIds1 | EmbeddingSpaceIds2]):
     )
 
 
-class TableRef1(BaseModel):
+class TableRef1(ContractModel):
     """
     Chunk.table_ref 구조(§5.1 1.3.0 공용 타입 승격 AM-35). row_range·col_range는 [start, end) 0-based.
     """
@@ -2244,7 +2246,7 @@ class ContractsCompat(RootModel[str]):
     )
 
 
-class StageError(BaseModel):
+class StageError(ContractModel):
     """
     스테이지 오류. RFC 9457 type = urn:rag:error:{code} 1:1(바이블 §4.1). 재시도 여부는 카탈로그가 결정. message·occurred_at·attempt·location·cause는 바이블 §5.3 미등재 선택 필드(13-error-model 제안, 00 미해결 이슈 U-12).
     """
@@ -2291,7 +2293,7 @@ class StageError(BaseModel):
     )
 
 
-class ProblemDetails(BaseModel):
+class ProblemDetails(ContractModel):
     """
     RFC 9457 Problem Details + 확장 멤버(code, retryable, trace_id, errors). retry_after·request_id는 바이블 §5.3 미등재 선택 필드(13-error-model 제안, 00 미해결 이슈 U-12).
     """
@@ -2335,7 +2337,7 @@ class ProblemDetails(BaseModel):
     request_id: Ulid | None = Field(None, description="요청 ID(바이블 §6.1)")
 
 
-class Capabilities(BaseModel):
+class Capabilities(ContractModel):
     """
     모든 Stage 공통 capabilities() 선언(ADR-0032).
     """
@@ -2358,7 +2360,7 @@ class Capabilities(BaseModel):
     )
 
 
-class FilterNode1(BaseModel):
+class FilterNode1(ContractModel):
     """
     사용자·self-query 필터 DSL. 논리 결합(and/or/not) 또는 리프(field, op, value) 택1. 깊이 ≤ 3, 절 ≤ 32(플래너 검증).
     """
@@ -2369,7 +2371,7 @@ class FilterNode1(BaseModel):
     and_: list[FilterNode] = Field(..., alias="and", max_length=32, min_length=1)
 
 
-class FilterNode2(BaseModel):
+class FilterNode2(ContractModel):
     """
     사용자·self-query 필터 DSL. 논리 결합(and/or/not) 또는 리프(field, op, value) 택1. 깊이 ≤ 3, 절 ≤ 32(플래너 검증).
     """
@@ -2380,7 +2382,7 @@ class FilterNode2(BaseModel):
     or_: list[FilterNode] = Field(..., alias="or", max_length=32, min_length=1)
 
 
-class FilterNode3(BaseModel):
+class FilterNode3(ContractModel):
     """
     사용자·self-query 필터 DSL. 논리 결합(and/or/not) 또는 리프(field, op, value) 택1. 깊이 ≤ 3, 절 ≤ 32(플래너 검증).
     """

@@ -10,6 +10,7 @@ pre-release/build metadata 금지)·§4.2(생산자·소비자 호환 매트릭�
 - `TestVersionedEnvelope` — `schema_type`/`schema_version` 불일치·pre-release·미지정 필드 거부.
 - `test_prune_unknown_*` — `additionalProperties` 여부에 따른 미지정 필드 정리(tolerant read) 동작.
 
+불변식: `pre-release`/`build metadata`가 붙은 `schema_version`은 항상 거부된다(§1.2).
 검증 계층: 1층(여기서 검증).
 """
 

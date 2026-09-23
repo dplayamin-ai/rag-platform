@@ -12,7 +12,9 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import ConfigDict, Field, RootModel
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from .. import common_types
 from .CollectionSpec import backends as backends_1
@@ -51,7 +53,7 @@ class TerritoryItem(RootModel[str]):
     root: str = Field(..., pattern="^[A-Z]{2}$")
 
 
-class LicensePolicy(BaseModel):
+class LicensePolicy(ContractModel):
     """
     바이블 §5.6 CollectionSpec.license_policy·Profile.license_policy. max_grade는 §5.7 나열 순 비교(A<B<C<D), X(사용 비허가)는 상한이 될 수 없다
     """
@@ -67,7 +69,7 @@ class LicensePolicy(BaseModel):
     )
 
 
-class CollectionStats(BaseModel):
+class CollectionStats(ContractModel):
     """
     바이블 §5.6 stats. 현재 세대(is_current=true) 기준
     """
@@ -87,7 +89,7 @@ class CollectionStats(BaseModel):
     bytes_lexical: int = Field(..., description="렉시컬 백엔드 저장 바이트. lite(Qdrant 단독)는 0", ge=0)
 
 
-class CollectionBackend(BaseModel):
+class CollectionBackend(ContractModel):
     """
     바이블 §5.6 backends[] 한 항목. IndexCommit.backend_results[].backend_id·physical_name·alias의 원천
     """
@@ -113,7 +115,7 @@ class CollectionBackend(BaseModel):
     )
 
 
-class CollectionPolicies(BaseModel):
+class CollectionPolicies(ContractModel):
     """
     바이블 §5.6 policies. tenants.policies와 AND로 판정
     """
@@ -143,7 +145,7 @@ class CollectionPolicies(BaseModel):
     )
 
 
-class CollectionSpec(BaseModel):
+class CollectionSpec(ContractModel):
     """
     컬렉션 레지스트리 행(바이블 §5.6). 관리 API가 생산하고 plan·index·프로파일 검증기가 소비한다. 컬렉션은 정확히 하나의 profile_hash·embedding_profile_hash·analyzer_id·dictionary_hash에 바인딩되며 값 변경은 blue/green 재색인이다. 렉시컬 백엔드가 있으면 lexical_profile_hash = H("lex", analyzer_id, dictionary_hash, mapping_version)(§6.2)와 그 입력 mapping_version 을 함께 기록한다(선택 N, 이 문서 추가). 봉투 없음. 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조하고, embedding_space_ids는 urn:rag:schema:embedded-chunk-set:1#/$defs/EmbeddingSpaceIds 와 같은 정의의 사본을 자기 $defs에 둔다(계약 간 교차 $ref 회피; CI가 두 정의의 동치를 대조한다). 소유 문서: docs/03-contracts/15-collection-profile-and-policy-contracts.md
     """

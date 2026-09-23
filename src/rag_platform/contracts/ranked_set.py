@@ -12,7 +12,9 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import ConfigDict, Field, RootModel
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 from .common_types import RankedResult
@@ -26,7 +28,7 @@ class RerankerId(RootModel[str]):
     )
 
 
-class FusionWeights(BaseModel):
+class FusionWeights(ContractModel):
     """
     채널 가중(키는 Channel 열거로 닫힘). 기본 dense:sparse:lexical = 1:1:1
     """
@@ -43,7 +45,7 @@ class FusionWeights(BaseModel):
     late_interaction: float | None = Field(None, ge=0.0)
 
 
-class FusionReport(BaseModel):
+class FusionReport(ContractModel):
     """
     실제 적용된 융합 설정과 결과 수(바이블 §5.5 fusion)
     """
@@ -68,7 +70,7 @@ class FusionReport(BaseModel):
     )
 
 
-class RerankReport(BaseModel):
+class RerankReport(ContractModel):
     """
     리랭크 적용 보고(바이블 §5.5 rerank). applied=false면 fused 순서 폴백 + results[].explain에 rerank_skipped
     """
@@ -92,7 +94,7 @@ class RerankReport(BaseModel):
     )
 
 
-class LateInteractionRerankReport(BaseModel):
+class LateInteractionRerankReport(ContractModel):
     """
     2단 리랭크 1단(MaxSim) 보고. 현재는 순서 필터(재융합 없음)
     """
@@ -107,7 +109,7 @@ class LateInteractionRerankReport(BaseModel):
     took_ms: int = Field(..., ge=0)
 
 
-class RelevanceGateReport(BaseModel):
+class RelevanceGateReport(ContractModel):
     """
     relevance_gate 결과. passed = (max_score >= tau)
     """
@@ -131,7 +133,7 @@ class RelevanceGateReport(BaseModel):
     )
 
 
-class PostprocessStepReport(BaseModel):
+class PostprocessStepReport(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -141,7 +143,7 @@ class PostprocessStepReport(BaseModel):
     took_ms: int = Field(..., ge=0)
 
 
-class PostprocessReport(BaseModel):
+class PostprocessReport(ContractModel):
     """
     실행된 단계 보고. 순서는 고정 순서 relevance_gate → dedup → mmr → parent_expand → dedup → sentence_window → compress의 부분 수열(생략된 옵션 단계는 기록하지 않음)
     """
@@ -156,7 +158,7 @@ class IndexGenerationSeenItem(RootModel[int]):
     root: int = Field(..., ge=0)
 
 
-class ChannelRunSummary(BaseModel):
+class ChannelRunSummary(ContractModel):
     """
     CandidateSet.channel_runs[]의 후보·오류 없는 요약(선택 필드 channel_runs의 원소)
     """
@@ -191,7 +193,7 @@ class Reason(StrEnum):
     hydrate_missing_1 = "hydrate_missing"
 
 
-class RankedOmittedEntry(BaseModel):
+class RankedOmittedEntry(ContractModel):
     """
     hydrate·postprocess가 results에서 제거한 항목. reason은 OmitReason의 부분집합(below_threshold, duplicate, parent_merged, hydrate_missing). 11-context-pack의 PackOmittedEntry(4필드)와 형태가 달라 이름을 구별한다; pack이 4필드로 투영하고 acl_denied·budget_exceeded·risk_flagged·item_kind_excluded를 더해 ContextPack.omitted를 만든다
     """
@@ -213,7 +215,7 @@ class RankedOmittedEntry(BaseModel):
     )
 
 
-class RankedSetStats(BaseModel):
+class RankedSetStats(ContractModel):
     """
     바이블 §5.5 stats
     """
@@ -231,7 +233,7 @@ class RankedSetStats(BaseModel):
     gate_passed: bool | None = Field(..., description="relevance_gate.passed의 사본. postprocessed 이전은 null")
 
 
-class TimingsMs(BaseModel):
+class TimingsMs(ContractModel):
     """
     스테이지별 경과(ms). 값이 없는 스테이지는 키를 생략
     """
@@ -264,7 +266,7 @@ class Result(RankedResult):
     pass
 
 
-class RankedSet(BaseModel):
+class RankedSet(ContractModel):
     """
     fuse(fused) → hydrate(fused, hydrated=true) → rerank(reranked) → postprocess(postprocessed)가 갱신하는 질의 측 계약(바이블 §5.5). 같은 타입이 stage로 구분되며 단계별 조건 필수는 if/then으로 표현한다. results[]는 RankedResult(common-types $defs), 점수 원장은 ScoreBreakdown(Σ contribution = fused). 소비자는 pack과 평가(TREC run). 소유 문서: docs/03-contracts/10-candidate-set-and-ranked-set.md.
     """

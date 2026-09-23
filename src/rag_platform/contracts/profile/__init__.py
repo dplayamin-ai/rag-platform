@@ -12,7 +12,9 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, constr
+from pydantic import ConfigDict, Field, RootModel, constr
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from .. import common_types
 from .Profile import observability as observability_1, runtime as runtime_1
@@ -52,7 +54,7 @@ class TerritoryItem(RootModel[str]):
     root: str = Field(..., pattern="^[A-Z]{2}$")
 
 
-class LicensePolicy(BaseModel):
+class LicensePolicy(ContractModel):
     """
     바이블 §5.6 Profile.license_policy. urn:rag:schema:collection-spec:1#/$defs/LicensePolicy 의 사본. max_grade는 §5.7 나열 순 비교(A<B<C<D), X(사용 비허가)는 상한이 될 수 없다
     """
@@ -77,7 +79,7 @@ class MetricKey(RootModel[str]):
     )
 
 
-class GateSpec1(BaseModel):
+class GateSpec1(ContractModel):
     """
     품질 게이트(바이블 §5.6 게이트 값 행, §7.4). metric 생략 = eval.gates의 ndcg@10, dataset 생략 = eval.datasets[0]. grid | min_delta | min_delta_pt | min_qrels | candidate | promote_to 중 하나 이상. 게이트가 붙은 값은 EvalReport.gate_result.passed와 ADR 없이 바꿀 수 없다
     """
@@ -110,7 +112,7 @@ class GateSpec1(BaseModel):
     )
 
 
-class GateSpec2(BaseModel):
+class GateSpec2(ContractModel):
     """
     품질 게이트(바이블 §5.6 게이트 값 행, §7.4). metric 생략 = eval.gates의 ndcg@10, dataset 생략 = eval.datasets[0]. grid | min_delta | min_delta_pt | min_qrels | candidate | promote_to 중 하나 이상. 게이트가 붙은 값은 EvalReport.gate_result.passed와 ADR 없이 바꿀 수 없다
     """
@@ -143,7 +145,7 @@ class GateSpec2(BaseModel):
     )
 
 
-class GateSpec3(BaseModel):
+class GateSpec3(ContractModel):
     """
     품질 게이트(바이블 §5.6 게이트 값 행, §7.4). metric 생략 = eval.gates의 ndcg@10, dataset 생략 = eval.datasets[0]. grid | min_delta | min_delta_pt | min_qrels | candidate | promote_to 중 하나 이상. 게이트가 붙은 값은 EvalReport.gate_result.passed와 ADR 없이 바꿀 수 없다
     """
@@ -176,7 +178,7 @@ class GateSpec3(BaseModel):
     )
 
 
-class GateSpec4(BaseModel):
+class GateSpec4(ContractModel):
     """
     품질 게이트(바이블 §5.6 게이트 값 행, §7.4). metric 생략 = eval.gates의 ndcg@10, dataset 생략 = eval.datasets[0]. grid | min_delta | min_delta_pt | min_qrels | candidate | promote_to 중 하나 이상. 게이트가 붙은 값은 EvalReport.gate_result.passed와 ADR 없이 바꿀 수 없다
     """
@@ -209,7 +211,7 @@ class GateSpec4(BaseModel):
     )
 
 
-class GateSpec5(BaseModel):
+class GateSpec5(ContractModel):
     """
     품질 게이트(바이블 §5.6 게이트 값 행, §7.4). metric 생략 = eval.gates의 ndcg@10, dataset 생략 = eval.datasets[0]. grid | min_delta | min_delta_pt | min_qrels | candidate | promote_to 중 하나 이상. 게이트가 붙은 값은 EvalReport.gate_result.passed와 ADR 없이 바꿀 수 없다
     """
@@ -242,7 +244,7 @@ class GateSpec5(BaseModel):
     )
 
 
-class GateSpec6(BaseModel):
+class GateSpec6(ContractModel):
     """
     품질 게이트(바이블 §5.6 게이트 값 행, §7.4). metric 생략 = eval.gates의 ndcg@10, dataset 생략 = eval.datasets[0]. grid | min_delta | min_delta_pt | min_qrels | candidate | promote_to 중 하나 이상. 게이트가 붙은 값은 EvalReport.gate_result.passed와 ADR 없이 바꿀 수 없다
     """
@@ -282,7 +284,7 @@ class GateSpec(RootModel[GateSpec1 | GateSpec2 | GateSpec3 | GateSpec4 | GateSpe
     )
 
 
-class GatedValue(BaseModel):
+class GatedValue(ContractModel):
     """
     게이트 보유 값 {value, gate}(바이블 §5.6)
     """
@@ -294,7 +296,7 @@ class GatedValue(BaseModel):
     gate: GateSpec
 
 
-class Backoff(BaseModel):
+class Backoff(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -303,7 +305,7 @@ class Backoff(BaseModel):
     coefficient: float = Field(..., ge=1.0)
 
 
-class StagePolicyPartial(BaseModel):
+class StagePolicyPartial(ContractModel):
     """
     프로파일 YAML 안의 부분 StagePolicy. 로더가 task_queue(runtime.queues[stage])·non_retryable_error_codes(§4.4 기본)·resumable(capabilities)·backoff{1s,5m,2.0}를 채워 완전한 StagePolicy(urn:rag:schema:common-types:1#/$defs/StagePolicy)로 만든다. 해소 결과는 그 스키마를 통과해야 한다
     """
@@ -321,7 +323,7 @@ class StagePolicyPartial(BaseModel):
     isolation: common_types.IsolationMode | None = None
 
 
-class PluginRef(BaseModel):
+class PluginRef(ContractModel):
     """
     플러그인 지정 + 폴백 + 플러그인 config_schema 필드(열린 객체)
     """
@@ -337,7 +339,7 @@ class Queues(RootModel[str]):
     root: str = Field(..., pattern="^[a-z][a-z0-9-]*$")
 
 
-class ConsistencyCheck(BaseModel):
+class ConsistencyCheck(ContractModel):
     """
     선택(N). §7.2 consistency_check 주기
     """
@@ -349,7 +351,7 @@ class ConsistencyCheck(BaseModel):
     full_every: common_types.Duration
 
 
-class Snapshot(BaseModel):
+class Snapshot(ContractModel):
     """
     선택(N). §7.2 snapshot 주기
     """
@@ -361,7 +363,7 @@ class Snapshot(BaseModel):
     replicate_region: bool | None = None
 
 
-class RuntimeConfig(BaseModel):
+class RuntimeConfig(ContractModel):
     """
     바이블 §5.6 runtime
     """
@@ -387,7 +389,7 @@ class RuntimeConfig(BaseModel):
     snapshot: Snapshot | None = Field(None, description="선택(N). §7.2 snapshot 주기")
 
 
-class RouteStep(BaseModel):
+class RouteStep(ContractModel):
     """
     parse.router 폴백 체인의 한 단계(§7.3). then = 변환 뒤 재라우팅할 SourceFormat
     """
@@ -510,7 +512,7 @@ class RouteTerminal(StrEnum):
     parse_unsupported_variant_1 = "parse.unsupported_variant"
 
 
-class PdfRoute(BaseModel):
+class PdfRoute(ContractModel):
     """
     PDF는 source_kind별 라우팅. mixed=page_route 는 페이지 단위로 born_digital/scanned 경로를 섞는다
     """
@@ -523,7 +525,7 @@ class PdfRoute(BaseModel):
     mixed: common_types.PluginId | Literal["page_route"]
 
 
-class SplitRoute(BaseModel):
+class SplitRoute(ContractModel):
     """
     컨테이너 분할 후 재라우팅(§7.3 json: split_hint=json_array 이면 멤버 분할 후 then 포맷으로)
     """
@@ -539,7 +541,7 @@ class RouteEntry(RootModel[RouteChain | RouteTerminal | PdfRoute | SplitRoute]):
     root: RouteChain | RouteTerminal | PdfRoute | SplitRoute
 
 
-class ParseRouter(BaseModel):
+class ParseRouter(ContractModel):
     """
     SourceFormat 13값 전부를 키로 가진다(검증 규칙 10; 누락 → profile.invalid)
     """
@@ -566,7 +568,7 @@ class LangItem(RootModel[str]):
     root: str = Field(..., min_length=1)
 
 
-class OcrOptions(BaseModel):
+class OcrOptions(ContractModel):
     """
     검증 규칙 6: plugin·lang·version·model 필수(O-08; RapidOCR 기본 PP-OCRv6 차단)
     """
@@ -584,7 +586,7 @@ class OcrOptions(BaseModel):
     model: str = Field(..., min_length=1)
 
 
-class PageTimeout(BaseModel):
+class PageTimeout(ContractModel):
     """
     페이지 단위 하트비트 타임아웃(O-08: CPU 60s / GPU 20s)
     """
@@ -596,7 +598,7 @@ class PageTimeout(BaseModel):
     gpu: common_types.Duration
 
 
-class ParseOptions(BaseModel):
+class ParseOptions(ContractModel):
     """
     파서 공통 옵션. pdf·page_timeout 외 키는 포맷별 파서 config_schema
     """
@@ -612,7 +614,7 @@ class ParseOptions(BaseModel):
     page_timeout: PageTimeout | None = Field(None, description="페이지 단위 하트비트 타임아웃(O-08: CPU 60s / GPU 20s)")
 
 
-class FetchConfig(BaseModel):
+class FetchConfig(ContractModel):
     model_config = ConfigDict(
         extra="allow",
     )
@@ -625,7 +627,7 @@ class FetchConfig(BaseModel):
     policy: StagePolicyPartial | None = None
 
 
-class ParseConfig(BaseModel):
+class ParseConfig(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -649,7 +651,7 @@ class RejectEntity(RootModel[str]):
     root: str = Field(..., pattern="^[A-Z][A-Z0-9_]*$")
 
 
-class PiiConfig(BaseModel):
+class PiiConfig(ContractModel):
     model_config = ConfigDict(
         extra="allow",
     )
@@ -669,7 +671,7 @@ class PiiConfig(BaseModel):
     )
 
 
-class NormalizeConfig(BaseModel):
+class NormalizeConfig(ContractModel):
     model_config = ConfigDict(
         extra="allow",
     )
@@ -687,7 +689,7 @@ class OverlapRatio(RootModel[float]):
     root: float = Field(..., ge=0.0, le=1.0)
 
 
-class Fallback(BaseModel):
+class Fallback(ContractModel):
     """
     구조가 없는 flat_text 폴백 청커
     """
@@ -701,7 +703,7 @@ class Fallback(BaseModel):
     sentence_window_n: int | None = Field(None, ge=0)
 
 
-class ChunkConfig(BaseModel):
+class ChunkConfig(ContractModel):
     model_config = ConfigDict(
         extra="allow",
     )
@@ -724,7 +726,7 @@ class ChunkConfig(BaseModel):
     policy: StagePolicyPartial | None = None
 
 
-class RecountConfig(BaseModel):
+class RecountConfig(ContractModel):
     model_config = ConfigDict(
         extra="allow",
     )
@@ -732,7 +734,7 @@ class RecountConfig(BaseModel):
     policy: StagePolicyPartial | None = None
 
 
-class GeneratedPrefix(BaseModel):
+class GeneratedPrefix(ContractModel):
     """
     LLM 접두어(O-05). 모든 프로파일 기본 false, 컬렉션 정책으로 켬
     """
@@ -745,7 +747,7 @@ class GeneratedPrefix(BaseModel):
     gate: GateSpec | None = None
 
 
-class ContextualDocSummary(BaseModel):
+class ContextualDocSummary(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -753,7 +755,7 @@ class ContextualDocSummary(BaseModel):
     plugin: common_types.PluginId | None = None
 
 
-class Budget(BaseModel):
+class Budget(ContractModel):
     """
     프로파일 기본 예산(ADR-0016). CollectionSpec.policies가 컬렉션 값을 가진다
     """
@@ -766,7 +768,7 @@ class Budget(BaseModel):
     queue: str | None = Field(None, pattern="^[a-z][a-z0-9-]*$")
 
 
-class EnrichConfig(BaseModel):
+class EnrichConfig(ContractModel):
     model_config = ConfigDict(
         extra="allow",
     )
@@ -788,7 +790,7 @@ class EnrichConfig(BaseModel):
     policy_llm: StagePolicyPartial | None = Field(None, description="enrich(LLM) 행(queues.enrich_llm)")
 
 
-class Dense(BaseModel):
+class Dense(ContractModel):
     model_config = ConfigDict(
         extra="allow",
     )
@@ -805,7 +807,7 @@ class Dense(BaseModel):
     quantization: str | None = Field(None, pattern="^[a-z0-9_]+$")
 
 
-class Sparse(BaseModel):
+class Sparse(ContractModel):
     """
     learned sparse(sparse_learned 벡터)
     """
@@ -821,7 +823,7 @@ class Sparse(BaseModel):
     )
 
 
-class SparseBm25(BaseModel):
+class SparseBm25(ContractModel):
     """
     lite 플랫폼 BM25(ADR-0012; k1=1.2, b=0.75 고정)
     """
@@ -834,7 +836,7 @@ class SparseBm25(BaseModel):
     b: float = Field(..., ge=0.0, le=1.0)
 
 
-class LateInteraction(BaseModel):
+class LateInteraction(ContractModel):
     """
     별도 슬롯(ADR-0010, 기본 끔). 백엔드 supports_multivector=false면 자동 비활성 + degraded
     """
@@ -849,7 +851,7 @@ class LateInteraction(BaseModel):
     dim: int | None = Field(None, ge=1)
 
 
-class EquivalenceGate(BaseModel):
+class EquivalenceGate(ContractModel):
     """
     같은 공간 안 서빙 교체 동등성 게이트(D-16)
     """
@@ -861,7 +863,7 @@ class EquivalenceGate(BaseModel):
     sample: int = Field(..., ge=1)
 
 
-class EmbedConfig1(BaseModel):
+class EmbedConfig1(ContractModel):
     """
     dense 필수 + sparse(sparse_learned) 또는 sparse_bm25(lite) 중 하나 이상(D-07 3-way)
     """
@@ -881,7 +883,7 @@ class EmbedConfig1(BaseModel):
     policy: StagePolicyPartial | None = None
 
 
-class EmbedConfig2(BaseModel):
+class EmbedConfig2(ContractModel):
     """
     dense 필수 + sparse(sparse_learned) 또는 sparse_bm25(lite) 중 하나 이상(D-07 3-way)
     """
@@ -908,7 +910,7 @@ class EmbedConfig(RootModel[EmbedConfig1 | EmbedConfig2]):
     )
 
 
-class IndexBackendConfig(BaseModel):
+class IndexBackendConfig(ContractModel):
     model_config = ConfigDict(
         extra="allow",
     )
@@ -926,7 +928,7 @@ class IndexBackendConfig(BaseModel):
     )
 
 
-class Commit(BaseModel):
+class Commit(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -939,7 +941,7 @@ class Commit(BaseModel):
     cleanup_delay: common_types.Duration
 
 
-class IndexConfig(BaseModel):
+class IndexConfig(ContractModel):
     model_config = ConfigDict(
         extra="allow",
     )
@@ -954,7 +956,7 @@ class IndexConfig(BaseModel):
     policy: StagePolicyPartial | None = None
 
 
-class IngestConfig(BaseModel):
+class IngestConfig(ContractModel):
     """
     바이블 §5.6 ingest {fetch, parse{router, options}, normalize, chunk, recount?, enrich, embed, index}
     """
@@ -972,7 +974,7 @@ class IngestConfig(BaseModel):
     index: IndexConfig
 
 
-class ChannelConfig(BaseModel):
+class ChannelConfig(ContractModel):
     model_config = ConfigDict(
         extra="allow",
     )
@@ -995,7 +997,7 @@ class Weights(RootModel[float]):
     root: float = Field(..., ge=0.0)
 
 
-class FusionConfig(BaseModel):
+class FusionConfig(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1006,7 +1008,7 @@ class FusionConfig(BaseModel):
     gate: GateSpec | None = None
 
 
-class HydrateConfig(BaseModel):
+class HydrateConfig(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1015,7 +1017,7 @@ class HydrateConfig(BaseModel):
     with_vectors: bool
 
 
-class RerankConfig(BaseModel):
+class RerankConfig(ContractModel):
     """
     enabled=false(lite 생략)면 나머지 키 선택. 그 외에는 plugin~normalization 필수
     """
@@ -1036,14 +1038,14 @@ class RerankConfig(BaseModel):
     gate: GateSpec | None = None
 
 
-class RelevanceGate(BaseModel):
+class RelevanceGate(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
     tau: float = Field(..., ge=0.0, le=1.0)
 
 
-class Minhash(BaseModel):
+class Minhash(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1053,7 +1055,7 @@ class Minhash(BaseModel):
     threshold: float = Field(..., ge=0.0, le=1.0)
 
 
-class Dedup(BaseModel):
+class Dedup(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1061,14 +1063,14 @@ class Dedup(BaseModel):
     minhash: Minhash
 
 
-class Mmr(BaseModel):
+class Mmr(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
     lambda_: float = Field(..., alias="lambda", ge=0.0, le=1.0)
 
 
-class ParentExpand(BaseModel):
+class ParentExpand(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1077,21 +1079,21 @@ class ParentExpand(BaseModel):
     text_store: parent_expand_1.TextStore
 
 
-class SentenceWindow(BaseModel):
+class SentenceWindow(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
     n: int = Field(..., ge=1)
 
 
-class Compress(BaseModel):
+class Compress(ContractModel):
     model_config = ConfigDict(
         extra="allow",
     )
     plugin: common_types.PluginId
 
 
-class PostprocessConfig(BaseModel):
+class PostprocessConfig(ContractModel):
     """
     order는 고정 순서 [relevance_gate, dedup, mmr, parent_expand, dedup, sentence_window, compress]의 부분 수열(D-07). reorder·citation_align은 pack 내부
     """
@@ -1108,7 +1110,7 @@ class PostprocessConfig(BaseModel):
     compress: Compress | None = None
 
 
-class Tokenizer(BaseModel):
+class Tokenizer(ContractModel):
     """
     팩 예산 토크나이저(대상 LLM으로 재계산, O-09). chunk.tokenizer와 카운터 일치 검증(규칙 4)
     """
@@ -1123,7 +1125,7 @@ class Tokenizer(BaseModel):
     safety_margin: float = Field(..., ge=0.0, le=1.0)
 
 
-class ConfidenceTiers(BaseModel):
+class ConfidenceTiers(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1131,7 +1133,7 @@ class ConfidenceTiers(BaseModel):
     medium: float = Field(..., ge=0.0, le=1.0)
 
 
-class PackConfig(BaseModel):
+class PackConfig(ContractModel):
     model_config = ConfigDict(
         extra="allow",
     )
@@ -1161,7 +1163,7 @@ class PackConfig(BaseModel):
     citation_style: common_types.CitationStyle | None = None
 
 
-class LatencyBudget(BaseModel):
+class LatencyBudget(ContractModel):
     """
     p95 목표(ms, 초안). 부분 예산 합 <= total
     """
@@ -1177,7 +1179,7 @@ class LatencyBudget(BaseModel):
     pack: int | None = Field(None, ge=0)
 
 
-class QueryConfig(BaseModel):
+class QueryConfig(ContractModel):
     """
     바이블 §5.6 query {transform, channels, fusion, hydrate, rerank, postprocess, pack, latency_budget_ms}
     """
@@ -1199,7 +1201,7 @@ class QueryConfig(BaseModel):
     latency_budget_ms: LatencyBudget
 
 
-class Authz(BaseModel):
+class Authz(ContractModel):
     """
     닫힌 객체(플랫폼 인프라 설정, 플러그인 config_schema 없음)
     """
@@ -1215,7 +1217,7 @@ class Authz(BaseModel):
     policy_version: str = Field(..., description="SecurityContext.policy_version 원천", min_length=1)
 
 
-class RateLimit(BaseModel):
+class RateLimit(ContractModel):
     """
     닫힌 객체(E3 인프라 설정)
     """
@@ -1227,7 +1229,7 @@ class RateLimit(BaseModel):
     fail_mode: rate_limit_1.FailMode
 
 
-class SecurityConfig(BaseModel):
+class SecurityConfig(ContractModel):
     """
     바이블 §5.6 security {authn, authz, rate_limit, tenant_isolation_tier, tiering: TieringPolicy}
     """
@@ -1248,7 +1250,7 @@ class SecurityConfig(BaseModel):
     )
 
 
-class ObservabilityConfig(BaseModel):
+class ObservabilityConfig(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1263,7 +1265,7 @@ class ObservabilityConfig(BaseModel):
     )
 
 
-class EvalGate(BaseModel):
+class EvalGate(ContractModel):
     """
     프로파일 전체 회귀 게이트(EvalReport.gate_result 판정 입력)
     """
@@ -1283,7 +1285,7 @@ class Dataset(RootModel[str]):
     root: str = Field(..., max_length=64, pattern="^[a-z0-9][a-z0-9-]*$")
 
 
-class EvalConfig(BaseModel):
+class EvalConfig(ContractModel):
     """
     바이블 §5.6 eval {datasets[], gates}
     """
@@ -1302,7 +1304,7 @@ class EvalConfig(BaseModel):
     )
 
 
-class Profile(BaseModel):
+class Profile(ContractModel):
     """
     파이프라인 구성 프리셋(바이블 §5.6 최상위 키, §7.3 YAML 정본). 운영자가 YAML로 생산하고 로더·검증기(§7.4)와 모든 스테이지가 소비한다. extends 단일 상속·깊은 병합(배열 교체)을 해소하고 StagePolicy 기본값을 채운 결과의 canonical_json BLAKE3가 profile_hash다. 이 스키마는 YAML 원본과 해소 결과 양쪽에 적용되며 default 키워드를 갖지 않는다(14 §8). 스테이지 값 객체는 {plugin, policy, 플러그인 config_schema 필드}라 열린 객체(additionalProperties: true)이고 나머지 필드는 플러그인 config_schema가 로딩 시 검증한다. ProfileId·LicensePolicy·Profile.ingest.index.backends.role 은 collection-spec 스키마의 같은 정의의 사본이다(계약 간 교차 $ref 회피; CI 동치 대조). 소유 문서: docs/03-contracts/15-collection-profile-and-policy-contracts.md
     """

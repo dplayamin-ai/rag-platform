@@ -10,6 +10,7 @@
 - `InMemoryKV` — 모노토닉 시계 기반 TTL 만료.
 - `InMemoryLedger` — 문서/잡/커밋 레코드 왕복과 테넌트별 스코프(E17).
 
+불변식: 어떤 대역도 다른 테넌트의 데이터를 교차 유출하지 않는다(E17).
 검증 계층: 1층(여기서 검증) — 실제 백엔드(Qdrant/OpenSearch/Valkey/PostgreSQL) 대응은 `needs_docker` DEFERRED.
 """
 

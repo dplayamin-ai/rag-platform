@@ -1,3 +1,11 @@
+// Phase 3 마감(finish) 워크플로 — `wf-head.js`(1-394행) + `wf-finish-tail.js`를 이어붙인 산출물(일회성 도구,
+// `Workflow` 하네스가 실행). 이전 세션에서 죽은 워크플로 이후 Phase 3를 완결하기 위해 조립했다.
+// 설계 근거: `docs/12-appendix/00-progress-report.md` §7.1·§7.3(재개 절차), Phase 3 완료 계획(잔여 문서 작성·
+// 리뷰 사이클 31문서·ADR 38종·`openapi.yaml`·완결성 비평).
+// 구성: `meta`(워크플로 메타데이터·단계 목록), 문서 작성·양면 적대적 리뷰·수정·검증 헬퍼 함수, ADR 리뷰 사이클,
+// 완결성 비평 단계.
+// 불변식: Phase 3가 이미 완료·커밋되었으므로 이 워크플로는 재실행 대상이 아니다(기록 보존 목적).
+// 검증 계층: 1층(여기서 검증) — Phase 3 완료 시점에 이미 실행·검증되었다(`tools/phase3/results/finish.json`).
 export const meta = {
   name: 'rag-phase3-core-docs',
   description: 'RAG Platform Phase 3: write contracts + JSON Schemas, architecture, ADRs, pipelines, API, evaluation, operations, development, roadmap docs; each doc gets two-lens adversarial review, fix, verification; contract audit; OpenAPI; completeness critic',

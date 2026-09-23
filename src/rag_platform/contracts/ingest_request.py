@@ -11,7 +11,9 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import AnyUrl, BaseModel, ConfigDict, Field, RootModel, constr
+from pydantic import AnyUrl, ConfigDict, Field, RootModel, constr
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 
@@ -80,7 +82,7 @@ class Event(StrEnum):
     index_commit_rolled_back_1 = "index.commit.rolled_back"
 
 
-class IngestCallback(BaseModel):
+class IngestCallback(ContractModel):
     """
     잡 단위 웹훅 콜백. webhook_url 은 테넌트의 등록 구독(subscriptions.webhook_url)과 일치해야 서명 키(secret_ref)를 해소할 수 있다.
     """
@@ -100,7 +102,7 @@ class IngestCallback(BaseModel):
     )
 
 
-class EnrichGeneratedPrefix(BaseModel):
+class EnrichGeneratedPrefix(ContractModel):
     """
     LLM 접두어 켬/끔. 켜려면 llm_enrichment_allowed 와 테넌트·컬렉션 정책이 모두 참이어야 한다(O-05)
     """
@@ -111,7 +113,7 @@ class EnrichGeneratedPrefix(BaseModel):
     enabled: bool
 
 
-class ProfileOverrides(BaseModel):
+class ProfileOverrides(ContractModel):
     """
     요청 단위 프로파일 오버라이드. 키는 프로파일 YAML 경로(점 구분). 허용 키 집합은 컬렉션 프로파일이 선언하며 스키마는 바이블 §5.4 의 두 예시 키만 형태를 고정한다. 허용 밖 키·값은 422 profile.invalid.
     """
@@ -152,7 +154,7 @@ class IdempotencyKey(RootModel[str]):
     )
 
 
-class IngestAccepted(BaseModel):
+class IngestAccepted(ContractModel):
     """
     POST /v1/ingest 202 응답 본문(D-08, 바이블 §14 {job_id, status_url, events_url}). request_id·document_id 는 선택(N; 바이블 §14 반영 제안). 같은 Idempotency-Key 재전송의 200 응답도 동일 본문.
     """
@@ -173,7 +175,7 @@ class IngestAccepted(BaseModel):
     events_url: common_types.Uri = Field(..., description="GET /v1/jobs/{job_id}/events SSE 절대 URL")
 
 
-class IngestBatchAccepted(BaseModel):
+class IngestBatchAccepted(ContractModel):
     """
     POST /v1/ingest/batch 202 응답 본문. jobs[i] 는 요청 배열 i 번째 항목의 접수 결과.
     """
@@ -184,7 +186,7 @@ class IngestBatchAccepted(BaseModel):
     jobs: list[IngestAccepted] = Field(..., max_length=100, min_length=1)
 
 
-class IngestMetadata(BaseModel):
+class IngestMetadata(ContractModel):
     """
     예약 메타데이터 키(바이블 §5.4). doc_date·doc_type·department·tags·language_hint(→lang)·genre 는 §5.7 FilterableField 와 정합. 정규화(01-ingest-request §6)는 스키마 검증 전에 수행되므로 uniqueItems·패턴·길이는 정규화된 저장 인스턴스에 대한 제약이다. canonical_json 크기 ≤ 16KB(바이블 §5.1). authors·tags·custom 상한은 02 SourceMetadata 와 동일.
     """
@@ -233,7 +235,7 @@ class IngestMetadata(BaseModel):
     )
 
 
-class IngestRequest(BaseModel):
+class IngestRequest(ContractModel):
     """
     수집 요청 계약(바이블 §5.4). 클라이언트가 POST /v1/ingest 로 제출하는 문서 위치(URI)·메타데이터·ACL·정책. tenant_id 는 본문에 없고(SecurityContext 에서 도출, E1) request_id 는 서버가 발급한다(readOnly). 비밀 값은 credentials_ref 간접 참조로만 받는다. 소비: fetch, API.
     """

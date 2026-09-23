@@ -1,3 +1,11 @@
+// Phase 6B(적합성 키트, Sonnet, 그룹 실행) + 6D(어댑터 스파이크 — HWPX 파서·Qdrant lite는 Opus, 임베더 인터페이스+
+// `FakeEmbedder`는 Sonnet) 병행 워크플로 — 의존성을 먼저 추가해 pyproject 충돌을 피한다(`Workflow` 하네스가 실행).
+// 설계 근거: `docs/12-appendix/05-phase6-implementation-kit-plan.md`(6B·6D 범위), 사용자 결정(2026-09-23, 모델
+// 가중치 다운로드 금지 — `FakeEmbedder`만 사용).
+// 구성: `meta`(워크플로 메타데이터·단계 목록: S0 Deps, 6B Conformance, 6D 어댑터 스파이크).
+// 불변식: 토큰 규율 — 구현 에이전트는 과제가 지정한 파일만 읽는다; Phase 6B/6D가 이미 완료·커밋되었으므로 이
+// 워크플로는 재실행 대상이 아니다(기록 보존 목적).
+// 검증 계층: 1층(여기서 검증) — Phase 6B/6D 완료 시점에 `uv run pytest`/`ruff`/`mypy`/`lint-imports`로 이미 검증.
 export const meta = {
   name: 'rag-phase6-6b-6d',
   description: 'Phase 6B conformance kit (Sonnet, grouped) in parallel with 6D adapter spikes (HWPX parser + Qdrant lite on Opus; embedder interface + FakeEmbedder on Sonnet); deps added first to avoid pyproject conflicts; token discipline: read only what the task names',

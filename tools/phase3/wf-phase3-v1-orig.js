@@ -1,3 +1,10 @@
+// Phase 3 워크플로의 v1 원본(v1-orig) — 이후 바이블 v1.2 개정에 맞춰 `build-wf.mjs`가 이 파일에서 아키텍처·
+// Wave B 개요를 추출·패치해 `wf-phase3.js`를 만든다(일회성 도구, 원본 보존용, 단독 실행 대상 아님).
+// 설계 근거: `docs/12-appendix/00-progress-report.md` §7.2d(v1 → 패치 이력).
+// 구성: `meta`(워크플로 메타데이터·단계 목록), 계약·아키텍처·ADR(Wave A) + 파이프라인/API/평가/운영/개발/로드맵
+// (Wave B) 문서별 개요.
+// 불변식: 이 파일 자체는 손으로 더 고치지 않는다 — 패치는 `build-wf.mjs`의 `patches` 목록에서만 한다(원본 보존).
+// 검증 계층: 1층(여기서 검증) — Phase 3 완료 시점에 이미 실행·검증되었다.
 export const meta = {
   name: 'rag-core-design-docs',
   description: 'Write contracts, architecture, ADRs (wave A), then pipelines/API/eval/ops/dev/roadmap (wave B), each with adversarial review and fix; contract consistency pass between waves',

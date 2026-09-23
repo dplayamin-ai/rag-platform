@@ -12,12 +12,14 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import ConfigDict, Field, RootModel
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 
 
-class QrelsRef(BaseModel):
+class QrelsRef(ContractModel):
     """
     eval/datasets/{dataset_id}/qrels.jsonl(바이블 §13.3). 행 = $defs/QrelsRecord. 계약 산출물이 아니므로 schema_type 없음
     """
@@ -41,7 +43,7 @@ class QrelsRef(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class AnswerSpansRef(BaseModel):
+class AnswerSpansRef(ContractModel):
     """
     eval/datasets/{dataset_id}/answer_spans.jsonl(바이블 §13.3). 행 = $defs/AnswerSpanRecord
     """
@@ -65,7 +67,7 @@ class AnswerSpansRef(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class TopicsRef(BaseModel):
+class TopicsRef(ContractModel):
     """
     선택(N). eval/datasets/{dataset_id}/topics.jsonl. 행 = $defs/TopicRecord(질의 본문). 바이블 §5.6·§13.3 미등재(미해결 이슈 2)
     """
@@ -89,7 +91,7 @@ class TopicsRef(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class EvalDataset(BaseModel):
+class EvalDataset(ContractModel):
     """
     평가 골든셋 등록 계약(바이블 §5.6, D-12, ADR-0023). 진실값은 TREC qrels(문서 단위 관련성)와 answer_spans(문서 ID + doc_version + element_path + 원문 코드포인트 구간)이며 둘은 JSON Lines 산출물(ArtifactRef)로만 참조한다. 정본은 PostgreSQL eval_datasets 원장 행(바이블 §13.1). 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md
     """
@@ -180,7 +182,7 @@ class Iteration(StrEnum):
     Q0 = "Q0"
 
 
-class QrelsRecord(BaseModel):
+class QrelsRecord(ContractModel):
     """
     qrels.jsonl 한 행. TREC qrels 텍스트 한 줄 `query_id iteration doc_id relevance` 와 1:1(무손실 변환, rag eval export --format trec)
     """
@@ -199,7 +201,7 @@ class QrelsRecord(BaseModel):
     )
 
 
-class AnswerSpanRecord(BaseModel):
+class AnswerSpanRecord(ContractModel):
     """
     answer_spans.jsonl 한 행. K1 좌표(바이블 §2.1·§6.3): element_path + 원문 Block.text 기준 0-based 유니코드 코드포인트, 끝 미포함. doc_version 으로 콘텐츠 버전에 고정되어 재청킹·재임베딩·프로파일 변경에 불변
     """
@@ -226,7 +228,7 @@ class AnswerSpanRecord(BaseModel):
     char_end: int = Field(..., description="끝 미포함; char_start 이상", ge=0)
 
 
-class TopicRecord(BaseModel):
+class TopicRecord(ContractModel):
     """
     topics.jsonl 한 행(질의 본문). TREC topic XML 대체(07-tech-landscape/09). 질의는 콘텐츠이므로 이벤트·로그·오류에 싣지 않는다
     """

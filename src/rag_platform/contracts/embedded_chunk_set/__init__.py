@@ -12,13 +12,15 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, constr
+from pydantic import ConfigDict, Field, RootModel, constr
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from .. import common_types
 from .EmbeddedChunkSet import vector_layout as vector_layout_1
 
 
-class Source(BaseModel):
+class Source(ContractModel):
     """
     detect 출력 SourceDocument 계약 산출물(00 §3.2 대응표·I-7). 원본 바이트가 아니다 — index가 requires_lineage로 로드해 acl_*·acl_hash·title·source_uri·metadata를 조립한다
     """
@@ -43,7 +45,7 @@ class Source(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class LineageRefs(BaseModel):
+class LineageRefs(ContractModel):
     """
     embed 출력의 상류 참조 {source, parsed, normalized, chunk_set, enriched}. 자기 자신(embedded) 금지. 각 키의 schema_type은 00 §3.2 대응표와 일치(I-7)
     """
@@ -62,7 +64,7 @@ class LineageRefs(BaseModel):
     embedded: common_types.ArtifactRef | None = None
 
 
-class EnrichedRef(BaseModel):
+class EnrichedRef(ContractModel):
     """
     입력 EnrichedChunkSet 산출물. lineage_refs.enriched와 blake3 동일
     """
@@ -114,7 +116,7 @@ class Shape2(RootModel[list[Shape2Item | Shape2Item1]]):
     )
 
 
-class Dense(BaseModel):
+class Dense(ContractModel):
     """
     dense 행렬 [rows, dim]; rows = stats.vectors_total; normalized는 항상 true(L2 정규화 완료, 바이블 §5.4)
     """
@@ -128,7 +130,7 @@ class Dense(BaseModel):
     shape: Shape2
 
 
-class LateInteraction(BaseModel):
+class LateInteraction(ContractModel):
     """
     토큰 벡터를 이어 붙인 [total_tokens, dim]; VectorBundle.late_interaction.offset·count가 행 구간
     """
@@ -141,7 +143,7 @@ class LateInteraction(BaseModel):
     shape: Shape2
 
 
-class VectorLayout(BaseModel):
+class VectorLayout(ContractModel):
     """
     선택(N). vectors_ref 파생물의 물리 배치. 소비자(index 어댑터)가 dtype·정규화 가정을 검증할 수 있게 한다
     """
@@ -160,7 +162,7 @@ class VectorLayout(BaseModel):
     )
 
 
-class EmbedStats(BaseModel):
+class EmbedStats(ContractModel):
     """
     바이블 §5.4 stats {vectors_total, bytes_dense, bytes_sparse, bytes_late_interaction} → rag_index_bytes_total{vector}·IndexCommit.stats
     """
@@ -183,7 +185,7 @@ class EmbedStats(BaseModel):
     )
 
 
-class EmbeddedChunkSet(BaseModel):
+class EmbeddedChunkSet(ContractModel):
     """
     embed 스테이지 출력(바이블 §5.4). 청크 본문·보강은 enriched_ref로 참조하고, 벡터 본문은 vectors_ref(npz/parquet 파생물)에 두며 vectors(object<chunk_id, VectorBundle>)는 이름별 오프셋·sparse 항목만 담는다. 색인 대상(level 0·2)만 포함하고 부모(level 1)는 임베딩하지 않는다. mode는 항상 document(const). 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/07-embedded-chunk-set-and-index-record.md
     """

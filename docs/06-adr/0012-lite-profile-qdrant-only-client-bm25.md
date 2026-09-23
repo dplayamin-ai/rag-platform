@@ -6,7 +6,7 @@ deciders: architecture
 priority: P1
 related: ["D-15"]
 owner: architecture
-version: 0.1.1
+version: 0.1.2
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -83,7 +83,7 @@ depends_on:
 | 공간 ID | `embedding_space_ids.sparse_bm25 = H("space", …, vocab_id)`; `IndexRecord.analyzer_id`·`dictionary_hash` 필수 | §5.4, §6.2 |
 | 질의 채널 | 항상 `channel=lexical`(`retriever.qdrant_sparse_bm25`, `fusion.weights.lexical`, `ScoreBreakdown.lexical`); `sparse`는 `sparse_learned`만 | §5.7 `Channel`, §8.1 7단계 |
 | 한국어 키워드 필터·부스트 | `lexical_terms` keyword 배열 payload(`keywords[].term`), payload 인덱스 등재; Qdrant `text` 인덱스 미사용 | §5.4, §13.4 |
-| 융합 | 단일 컬렉션 질의는 Qdrant `Fusion.RRF`(`k=60` 명시) 위임 가능(Qdrant `Fusion.RRF`의 `k` 파라미터 지원 여부는 확인 필요, as of 2026-09 — 아래 재검토 조건); 다중 컬렉션·`explain`은 플랫폼 `fuser`(`fusion.k` 필수). 위임 시에도 보안 사전 필터는 모든 prefetch에 포함(아래 준수 확인 "보안 불변식") | §3.2 O-01, §7.1, §10.2 |
+| 융합 | 단일 컬렉션 질의는 Qdrant `Fusion.RRF`(`k=60` 명시) 위임 가능(`k` 지정은 qdrant-client 1.19.1 `RrfQuery(rrf=Rrf(k, weights))`로 가능함을 2026-09-23 스파이크에서 확인 — [인덱싱](../04-pipelines/13-indexing.md) §6.1; 로컬 모드 점수는 순위 0 기준 `1/(k+rank0)`이라 등가성은 아래 준수 확인 `fuser_equivalence`로 확정); 다중 컬렉션·`explain`은 플랫폼 `fuser`(`fusion.k` 필수). 위임 시에도 보안 사전 필터는 모든 prefetch에 포함(아래 준수 확인 "보안 불변식") | §3.2 O-01, §7.1, §10.2 |
 | 검증 | `IndexBackendCapabilities.korean_analyzer=false`(Qdrant) 단독이면 플랫폼 측 `korean_analyzer` 필수; `lite`는 무조건 필수 | §5.3, §7.4 (2)·(9) |
 
 ```mermaid
@@ -135,7 +135,7 @@ flowchart LR
 - `avgdl` 정책(컬렉션 통계 주기 갱신 vs 청크 토큰 예산에서 유도한 프로파일 상수 — 06 §Qdrant 함정 (6))은 바이블이 확정하지 않았다. 두 안 모두 포화식은 같고 `avgdl` 원천만 다르다. 확정 문서는 `indices` 해시와 같이 `sparse_bm25`를 생산하는 `embed` 측 문서 04-pipelines/12로 통일하고(바이블 §12 `adapters/embed/sparse_bm25`), 04-pipelines/13이 골든셋 실측으로 검증한다 — 06 §미해결 이슈 7은 04-pipelines/15를 지정했으나 값 생성 위치(§12 embed)에 따라 12로 둔다. (b) 프로파일 상수안에서는 사용 값이 재색인 시에만 바뀌고, (a) 컬렉션 통계 갱신안의 갱신 주기·기존 벡터와의 정합성은 미정이다.
 - 질의 측 `sparse_bm25` 벡터의 `values` 규약과 `indices` 해시 함수는 이 ADR이 정하지 않는다. `indices` 해시는 04-pipelines/12가, 질의 측 `values` 규약은 `retriever.qdrant_sparse_bm25`를 소유하는 04-pipelines/15가 아래 준수 확인 (b) 통합 테스트를 만족하도록 확정한다. 제약은 하나다: 같은 `analyzer_id`로 색인·질의를 토큰화하고, bm25s 참조 점수·순위와 일치해야 한다. 04-pipelines/15 §3.5는 이 규약을 `values[t] = tf_q(t)`(질의 토큰 빈도)로 확정해 자기 문서·04-pipelines/13 §6이 초안으로 게시했던 `values = 1.0`(질의 TF 무시)을 대체 대상으로 표시했다(04-pipelines/12·13 patch 권고, 확정은 bm25s 일치 테스트로).
 - `sparse_learned`는 GPU 없이 생산 가능한 노드에서 `lite`에 추가될 수 있으며 그때도 `channel=sparse`로 별도 채널이다(바이블 §7.1). `sparse_bm25`와 병존해도 채널 열거는 겹치지 않는다.
-- Kiwi 승격(kiwipiepy 0.24.0 Apache-2.0 PyPI 공개 확인 필요, as of 2026-09)은 ADR-0021의 재검토 조건이며 `analyzer_id` 변경 → 렉시컬 재색인만 유발한다. 본 결정의 구조는 바뀌지 않는다.
+- Kiwi 승격(2026-09-23 PyPI 확인: 최신 kiwipiepy 0.23.2, LGPLv3 — 0.24.0 Apache-2.0은 미공개라 승격 조건 미충족)은 ADR-0021의 재검토 조건이며 `analyzer_id` 변경 → 렉시컬 재색인만 유발한다. 본 결정의 구조는 바뀌지 않는다.
 
 ## 준수 확인 방법
 
@@ -148,7 +148,7 @@ flowchart LR
 | 능력 선언 테스트 | `index_backend.qdrant`의 `capabilities().extra`는 `supports_server_bm25=false`, `korean_analyzer=false`를 선언한다. 적합성 키트가 선언과 실제 동작(서버 텍스트 BM25 호출 없음)을 대조 | 바이블 §5.3, ADR-0032 적합성 키트 |
 | 채널 매핑 테스트 | `retriever.qdrant_sparse_bm25`가 만든 `channel_runs[].channel`은 `lexical`이고 `sparse`가 아니다; `ScoreBreakdown.lexical`에 기록, `fusion.weights.lexical` 적용; `sparse_bm25` 질의를 `channel=sparse`로 보고하면 계약 위반 | 바이블 §5.7 `Channel`, §8.1 7단계, [후보·랭크 계약](../03-contracts/10-candidate-set-and-ranked-set.md) |
 | 토큰화 일관성 | 색인 `IndexRecord.analyzer_id`·`dictionary_hash`와 `QueryPlan.analyzer_id`·`dictionary_hash` 불일치 → `degraded{channel.lexical, analyzer_mismatch}`; `vocab_id` 불일치는 색인·질의 모두 `embed.space_mismatch`(비재시도) | 바이블 §3.2 O-02, §5.5 `QueryPlan` |
-| 서버 융합 조건 | 단일 컬렉션·`explain=false`에서만 `Fusion.RRF` 위임, 요청에 `k=60` 명시(Qdrant 기본 k=2 금지; Qdrant `Fusion.RRF`의 `k` 파라미터 지원 여부는 확인 필요, as of 2026-09 — 미확인·미지원이면 위임 경로를 켜지 않고 플랫폼 `fuser`만 쓴다); 다중 컬렉션 또는 `explain=true`면 채널별 `query_points` 호출 + 플랫폼 `fuser`. 적합성 키트 `fuser_equivalence`가 같은 런에 대해 서버 RRF와 플랫폼 RRF 순위 일치를 확인 | 바이블 §3.2 O-01, §12 `testing/`, [하이브리드 검색·융합](../04-pipelines/15-hybrid-search-and-fusion.md) |
+| 서버 융합 조건 | 단일 컬렉션·`explain=false`에서만 `Fusion.RRF` 위임, 요청에 `k` 명시(Qdrant 기본 k=2 금지; `k` 파라미터는 1.19.1에서 확인됨. 로컬 모드 실측은 순위 0 기준 `1/(k+rank0)`이므로 플랫폼 RRF가 1 기준 순위라면 `k=60`과 등가인 요청 값은 `k=61`이다. 서버 순위 기준은 `needs_docker`로 확인하며, `fuser_equivalence`가 통과하기 전까지 위임 경로를 켜지 않고 플랫폼 `fuser`만 쓴다); 다중 컬렉션 또는 `explain=true`면 채널별 `query_points` 호출 + 플랫폼 `fuser`. 적합성 키트 `fuser_equivalence`가 같은 런에 대해 서버 RRF와 플랫폼 RRF 순위 일치를 확인 | 바이블 §3.2 O-01, §12 `testing/`, [하이브리드 검색·융합](../04-pipelines/15-hybrid-search-and-fusion.md) |
 | 골든셋 게이트 | `lite` `eval.gates.ndcg@10.min 0.70 / recall@20.min 0.85`(초안 목표); 렉시컬 레그 단독 회귀(MIRACL-ko dev 213 질의)가 형태소 기준선 아래로 떨어지면 실패 | 바이블 §7.2, §7.4; [리트리벌 메트릭·하네스](../08-evaluation/02-retrieval-metrics-and-harness.md) |
 | 라이선스 게이트 | `korean_analyzer` 플러그인 `license_grade ≤ license_policy.max_grade`; `license_grade=B` + `linkage=static_bundled`(kiwipiepy 0.23.2) 거부 | 바이블 §7.4 (1), ADR-0001, ADR-0021 |
 | 코드 리뷰 항목 | (1) 한국어 키워드 조건에 Qdrant `text` payload 인덱스를 쓰지 않는가(`lexical_terms` keyword만) (2) `sparse_bm25`를 `modifier: none`으로 만들지 않는가 (3) `k1`·`b`는 프로파일/`CollectionSpec` 값에서, `avgdl`은 `avgdl_policy`(프로파일 상수 또는 컬렉션 통계)에 따라 읽으며 어느 쪽이든 코드 상수로 박지 않는가 — 키 경로는 미정(06 §미해결 이슈 9 `bm25_params{k1, b, avgdl_policy}` 제안; 03-contracts/15·04-pipelines/12가 확정) (4) 분석기·사전 변경이 `analyzer_id`·`dictionary_hash` 변경으로 이어지는가 (5) `fusion.k`가 요청에 명시되는가 (6) `Fusion.RRF` 위임 요청에서 보안 필터가 prefetch마다 복제되는가 | [CI/CD](../10-development/05-ci-cd.md) |
@@ -159,8 +159,8 @@ flowchart LR
 - kiwipiepy 0.24.0(Apache-2.0)의 PyPI 공개가 확인되어 ADR-0021이 개정되면 `analyzer_id` 기본값과 예시를 갱신한다(구조 불변, 재색인만).
 - 한국어 골든셋에서 `lite` 렉시컬 레그가 게이트를 통과하지 못하거나 bm25s 일치 테스트를 유지할 수 없으면 대안 4(Milvus 내장 BM25 + lindera ko-dic, pg_textsearch + textsearch_ko)를 `lite` 기본으로 재검토한다.
 - `avgdl` 정책 실측(04-pipelines/12 확정, 04-pipelines/13 검증)이 컬렉션 통계 갱신을 요구하면 `IndexCommit`·`CollectionSpec`에 기록 필드 추가(선택 필드, minor)를 ADR로 제안한다.
-- Qdrant `Fusion.RRF`의 `k` 파라미터가 지원되지 않는 것으로 확인되면(확인 필요, as of 2026-09) `lite` 단일 컬렉션 서버 융합 위임 허용을 재검토한다(그때까지 위임 경로는 켜지 않고 플랫폼 `fuser`가 유일한 경로; ADR-0013 재검토 조건 4와 정합).
-- Qdrant per-query IDF(테넌트 범위 IDF)의 API·성능이 확인 결과 기대와 다르면(확인 필요, as of 2026-09) IDF 범위를 컬렉션 전역으로 두는 대신 `index_per_tenant` 격리를 `lite` 옵션으로 검토한다.
+- Qdrant `Fusion.RRF`의 `k` 파라미터는 지원됨이 확인되었다(qdrant-client 1.19.1 `Rrf(k, weights)`, 2026-09-23). 서버 RRF의 순위 기준(로컬 모드 실측은 0 기준)을 `k` 보정으로도 플랫폼 RRF와 맞출 수 없어 `fuser_equivalence`가 실패하면 `lite` 단일 컬렉션 서버 융합 위임 허용을 재검토한다(그때까지 위임 경로는 켜지 않고 플랫폼 `fuser`가 유일한 경로; ADR-0013 재검토 조건 4와 정합).
+- Qdrant per-query IDF(테넌트 범위 IDF)의 서버 성능이 기대와 다르면(API `SearchParams.idf = IdfCorpusParams(corpus=Filter)`와 IDF 식 `ln(1 + (N − n + 0.5)/(n + 0.5))`의 코퍼스 범위 계산은 2026-09-23 로컬 모드에서 확인 — [인덱싱](../04-pipelines/13-indexing.md) §6.1; 서버 성능은 `needs_docker`) IDF 범위를 컬렉션 전역으로 두는 대신 `index_per_tenant` 격리를 `lite` 옵션으로 검토한다.
 - GPU 없는 노드에서 `sparse_learned` 생산이 기본 서빙에 포함되어 `lite`가 `dense`·`sparse`·`lexical` 3채널이 되면 §7.1·§7.2 채널 표를 갱신한다(본 결정의 `sparse_bm25` 계약은 유지).
 - Qdrant 서버 융합이 prefetch별 점수를 반환하게 되면 `explain` 시 플랫폼 fuser 강제 규칙을 완화할 수 있다.
 

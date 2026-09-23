@@ -11,6 +11,7 @@
 - `DerivedArtifacts.put_source`/`put_derived` — 테넌트·종류(kind)별 오브젝트 키 바인딩 확인.
 - `PipelineContext` — `runtime_checkable` 프로토콜로 완전/불완전 구현을 판별하는지 확인.
 
+불변식: 스테이지는 시각·비밀 값을 직접 얻지 않고 항상 `ctx`를 통해서만 얻는다(§4.1).
 검증 계층: 1층(여기서 검증).
 """
 

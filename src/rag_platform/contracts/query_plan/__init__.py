@@ -11,14 +11,16 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import ConfigDict, Field, RootModel
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from .. import common_types
 from .QueryPlan.pack import tokenizer as tokenizer_1
 from .QueryPlan.postprocess import parent_expand as parent_expand_1
 
 
-class RewrittenQuery(BaseModel):
+class RewrittenQuery(ContractModel):
     """
     질의 변형. original 은 weight 1.0·variant_id = query_id; 변형은 fusion.variant_query_weight. channels ⊆ enabled 채널(route≠no_retrieval 이면 1개 이상, no_retrieval 이면 빈 배열 — 최상위 allOf). 벡터 런 임베딩 입력은 original 이면 QueryPlan.dense_query_text, 그 외는 text.
     """
@@ -33,7 +35,7 @@ class RewrittenQuery(BaseModel):
     channels: list[common_types.Channel]
 
 
-class SubQuery(BaseModel):
+class SubQuery(ContractModel):
     """
     route=multi 분해 질의. sub_query_id 는 rewritten_queries[role=sub_query].variant_id 와 같다.
     """
@@ -46,7 +48,7 @@ class SubQuery(BaseModel):
     depends_on: list[common_types.Ulid]
 
 
-class LexicalTerm(BaseModel):
+class LexicalTerm(ContractModel):
     """
     형태소 키워드. 사용자 사전 가중 1.5.
     """
@@ -63,7 +65,7 @@ class LexicalTerm(BaseModel):
     )
 
 
-class ChannelPlan(BaseModel):
+class ChannelPlan(ContractModel):
     """
     채널 × 컬렉션 런 정의. enabled=false 항목도 유지(감사).
     """
@@ -99,7 +101,7 @@ class Weights(RootModel[float]):
     root: float = Field(..., ge=0.0)
 
 
-class FusionPlan(BaseModel):
+class FusionPlan(ContractModel):
     """
     융합 설정(ADR-0013). k 필수. weights 키 = enabled 채널 집합(route=no_retrieval 이면 빈 객체, 그 외 1개 이상 — 최상위 allOf).
     """
@@ -113,7 +115,7 @@ class FusionPlan(BaseModel):
     variant_query_weight: float = Field(..., gt=0.0, le=1.0)
 
 
-class HydratePlan(BaseModel):
+class HydratePlan(ContractModel):
     """
     fuse 뒤 payload 1회 배치 조회(ADR-0034). top_n ≥ max(rerank.top_n_in, pack.k_max).
     """
@@ -131,7 +133,7 @@ class HydratePlan(BaseModel):
     with_vectors: bool
 
 
-class RerankPlan(BaseModel):
+class RerankPlan(ContractModel):
     """
     크로스인코더 리랭크. enabled=false 여도 프로파일 값은 유지된다.
     """
@@ -157,7 +159,7 @@ class RerankPlan(BaseModel):
     )
 
 
-class LateInteractionRerankPlan(BaseModel):
+class LateInteractionRerankPlan(ContractModel):
     """
     2단 리랭크 1단(MaxSim), O-04 실험 슬롯(ADR-0010).
     """
@@ -171,14 +173,14 @@ class LateInteractionRerankPlan(BaseModel):
     top_n_out: int = Field(..., ge=1)
 
 
-class RelevanceGate(BaseModel):
+class RelevanceGate(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
     tau: float = Field(..., ge=0.0, le=1.0)
 
 
-class Minhash(BaseModel):
+class Minhash(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -188,7 +190,7 @@ class Minhash(BaseModel):
     threshold: float = Field(..., ge=0.0, le=1.0)
 
 
-class Dedup(BaseModel):
+class Dedup(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -196,14 +198,14 @@ class Dedup(BaseModel):
     minhash: Minhash
 
 
-class Mmr(BaseModel):
+class Mmr(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
     lambda_: float = Field(..., alias="lambda", ge=0.0, le=1.0)
 
 
-class SentenceWindow(BaseModel):
+class SentenceWindow(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -211,7 +213,7 @@ class SentenceWindow(BaseModel):
     n: int = Field(..., ge=0)
 
 
-class Compress(BaseModel):
+class Compress(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -219,7 +221,7 @@ class Compress(BaseModel):
     method: str | None = Field(..., min_length=1)
 
 
-class ConfidenceTiers(BaseModel):
+class ConfidenceTiers(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -227,7 +229,7 @@ class ConfidenceTiers(BaseModel):
     medium: float = Field(..., ge=0.0, le=1.0)
 
 
-class LatencyBudget(BaseModel):
+class LatencyBudget(ContractModel):
     """
     남은 지연 예산(ms). plan + retrieve + rerank + postprocess + pack ≤ total.
     """
@@ -243,7 +245,7 @@ class LatencyBudget(BaseModel):
     pack: int = Field(..., ge=0)
 
 
-class PlanBudget(BaseModel):
+class PlanBudget(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -251,7 +253,7 @@ class PlanBudget(BaseModel):
     llm_calls_allowed: bool
 
 
-class CacheKeys(BaseModel):
+class CacheKeys(ContractModel):
     """
     Valkey 키(바이블 §13.4). query_embedding 은 original 변형·첫 활성 벡터 채널 공간 기준이며 활성 벡터 채널이 없으면(no_retrieval, mode=lexical, 임베딩 불가) null. self_query 는 정규식 self-query 면 null.
     """
@@ -272,7 +274,7 @@ class CacheKeys(BaseModel):
     self_query: str | None = Field(..., pattern="^sq:[0-9A-HJKMNP-TV-Z]{26}:[0-9a-f]{64}$")
 
 
-class ParentExpand(BaseModel):
+class ParentExpand(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -282,7 +284,7 @@ class ParentExpand(BaseModel):
     text_store: parent_expand_1.TextStore
 
 
-class PostprocessPlan(BaseModel):
+class PostprocessPlan(ContractModel):
     """
     후처리 설정. order 는 고정 순서 relevance_gate → dedup → mmr → parent_expand → dedup → sentence_window → compress 의 부분열(Pydantic 검증).
     """
@@ -299,7 +301,7 @@ class PostprocessPlan(BaseModel):
     compress: Compress
 
 
-class Tokenizer(BaseModel):
+class Tokenizer(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -308,7 +310,7 @@ class Tokenizer(BaseModel):
     name: common_types.TokenizerId
 
 
-class PackPlan(BaseModel):
+class PackPlan(ContractModel):
     """
     패킹 설정. 내부 순서 acl_recheck → budget_cut → reorder → citation_align 은 고정(바이블 §8.2).
     """
@@ -334,7 +336,7 @@ class PackPlan(BaseModel):
     confidence_tiers: ConfidenceTiers
 
 
-class QueryPlan(BaseModel):
+class QueryPlan(ContractModel):
     """
     plan 스테이지 출력(바이블 §5.5). QueryRequest + 서버 주입 SecurityContext 로부터 만든 질의 이해 결과이며 retrieve·fuse·hydrate·rerank·postprocess·pack 은 이를 재해석하지 않는다. 질의 측 봉투(schema_version, schema_type, tenant_id, collection_ids, producer, warnings, degraded, created_at). filters 는 security(제거·완화 불가) ∧ strategy(플래너 결정) ∧ user ∧ self_query(relaxable_keys 순서로만 완화) 4묶음(바이블 §10.2). 인프로세스 값이며 산출물로 저장하지 않는다(explain 시 응답 포함, ≤ 32KB). 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/09-query-request-and-query-plan.md
     """
@@ -463,7 +465,7 @@ class QueryPlan(BaseModel):
     )
 
 
-class PlanFilters(BaseModel):
+class PlanFilters(ContractModel):
     """
     필터 4묶음. security ∧ strategy ∧ user ∧ self_query. relaxable_keys 는 FilterableField 타입이므로 보안·전략 키를 담을 수 없다(E6).
     """

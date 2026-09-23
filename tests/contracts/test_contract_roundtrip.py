@@ -8,8 +8,8 @@
 구성:
 - `_retrieve`/`_REGISTRY` — `urn:rag:schema:<name>:1` → `schemas/<name>.schema.json` 지연 로딩 레지스트리.
 - `_validator_for`/`_model_class` — 스키마(또는 `$defs` 항목) 검증기와 대응 `rag_platform.contracts` 모델 클래스 조회.
-- `_roundtrip(entry, instance)` — 스키마 검증 → Pydantic 파싱 → `model_dump(mode="json", by_alias=True,
-  exclude_none=True)` 재직렬화 후 원본과 비교(키 순서는 비교하지 않음).
+- `_roundtrip(entry, instance)` — `rag_platform.testing.contract_roundtrip.assert_contract_roundtrip`에
+  위임(스키마 검증 → Pydantic 파싱 → `dump_contract()` 재직렬화 → 원본과 비교, 계약 개요 §8.1의 null·생략 규칙).
 - `test_fixtures_extracted`/`test_contract_roundtrip` — 매니페스트 존재 확인, 픽스처별 파라미터화 검증.
 
 불변식·주의: 문서가 스키마와 어긋나 있을 수 있으므로(문서를 고치는 스위트가 아님) 각 단계 실패는 예외를 올리지
@@ -28,6 +28,8 @@ import pytest
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
+
+from rag_platform.testing.contract_roundtrip import assert_contract_roundtrip
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
@@ -83,13 +85,9 @@ def _model_class(schema_kebab: str, def_name: str | None) -> type[BaseModel]:
 
 
 def _roundtrip(entry: dict[str, Any], instance: Any) -> None:
-    _validator_for(entry["schema"], entry["def_name"]).validate(instance)
+    validator = _validator_for(entry["schema"], entry["def_name"])
     model_cls = _model_class(entry["schema"], entry["def_name"])
-    parsed = model_cls.model_validate(instance)
-    dumped = parsed.model_dump(mode="json", by_alias=True, exclude_none=True)
-    if dumped != instance:
-        msg = f"round-trip mismatch: original={instance!r} dumped={dumped!r}"
-        raise AssertionError(msg)
+    assert_contract_roundtrip(model_cls, instance, validate=validator.validate)
 
 
 def test_fixtures_extracted() -> None:

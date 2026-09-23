@@ -9,6 +9,7 @@
   해당 규칙 번호를 담은 `ProfileInvalidError.issues`를 내는지 확인.
 - `SOURCE_FORMATS`/`DEFAULT_DENY_CIDRS` — 바이블 정본 값 개수(13종 원본 포맷, 9개 기본 차단 CIDR) 대조.
 
+불변식: `deny_cidrs`는 기본 9종에서 축소될 수 없다(규칙 12) — 프로파일은 추가만 할 수 있다.
 검증 계층: 1층(여기서 검증).
 """
 

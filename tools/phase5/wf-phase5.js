@@ -1,3 +1,10 @@
+// Phase 5 마감 워크플로 — 루트 `README.md`(한글 + 영문 요약)·구현 세션용 `CLAUDE.md` 작성, 리뷰 1회 + 수정
+// (`Workflow` 하네스가 실행).
+// 설계 근거: `docs/12-appendix/02-phase4-5-plan.md`(Phase 5 산출물 계획).
+// 구성: `meta`(워크플로 메타데이터·단계 목록: Write, Review).
+// 불변식: Phase 5가 이미 완료·커밋되었으므로 이 워크플로는 재실행 대상이 아니다(기록 보존 목적) — 이후 CLAUDE.md/
+// README.md 갱신은 손으로 한다.
+// 검증 계층: 1층(여기서 검증) — Phase 5 완료 시점에 이미 실행·검증되었다.
 export const meta = {
   name: 'rag-phase5-finalize',
   description: 'Phase 5: root README (ko + en summary), CLAUDE.md for implementation sessions, one review pass and fix (Sonnet)',

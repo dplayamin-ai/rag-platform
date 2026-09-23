@@ -1,3 +1,10 @@
+// Phase 3 본 워크플로의 앞부분 조각(fragment) — `build-wf.mjs`가 이 파일 + 패치된 v1 개요 + `wf-tail.js`를
+// 이어붙여 `wf-phase3.js`를 만든다(일회성 도구, 단독 실행 대상 아님).
+// 설계 근거: `docs/12-appendix/00-progress-report.md` §7.2d(계약·아키텍처·ADR·파이프라인·API·평가·운영·개발·
+// 로드맵 문서 작성 계획).
+// 구성: `meta`(워크플로 메타데이터·단계 목록), 문서별 작성·양면 적대적 리뷰·수정·검증 헬퍼 함수들.
+// 불변식: Phase 3가 이미 완료·커밋되었으므로 이 조각은 재실행 대상이 아니다(기록 보존 목적).
+// 검증 계층: 1층(여기서 검증) — 조립된 `wf-phase3.js`는 Phase 3 완료 시점에 이미 실행·검증되었다.
 export const meta = {
   name: 'rag-phase3-core-docs',
   description: 'RAG Platform Phase 3: write contracts + JSON Schemas, architecture, ADRs, pipelines, API, evaluation, operations, development, roadmap docs; each doc gets two-lens adversarial review, fix, verification; contract audit; OpenAPI; completeness critic',

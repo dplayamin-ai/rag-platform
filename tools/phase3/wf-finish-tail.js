@@ -1,6 +1,14 @@
 
 // ---------------------------------------------------------------- Finish (2026-09-23): complete Phase 3 after the previous session's workflows died
 // Built into wf-phase3-finish.js by: node -e "..." (see tools/phase3/README or progress report §7.1). Uses head prompts/schemas + WAVE_B outlines.
+//
+// Phase 3 마감(finish) 조각 — `wf-phase3-finish.js`의 뒷부분으로, 이전 세션에서 죽은 워크플로 이후 Phase 3를
+// 완결하는 잔여 문서 작성·리뷰·ADR 사이클·완결성 비평 로직을 담는다(일회성 도구, 단독 실행 대상 아님).
+// 설계 근거: `docs/12-appendix/00-progress-report.md` §7.1(잔여 작업 목록), §7.3(재개 절차).
+// 구성: `EXTRA`/`byPath`/`pick` — `wf-head.js`가 정의한 `WAVE_B` 개요에서 문서를 골라 마감 실행 함수에 넘기는
+// 헬퍼.
+// 불변식: Phase 3가 이미 완료·커밋되었으므로 이 조각은 재실행 대상이 아니다(기록 보존 목적).
+// 검증 계층: 1층(여기서 검증) — 조립된 `wf-phase3-finish.js`는 Phase 3 완료 시점에 이미 실행·검증되었다.
 const EXTRA = `${W('03-contracts/00-contract-overview.md')} (계약 인벤토리·공통 타입·명명 요약)`
 const byPath = Object.fromEntries(WAVE_B.map((d) => [d.path, d]))
 const pick = (paths) => paths.map((p) => { if (!byPath[p]) throw new Error('unknown doc ' + p); return byPath[p] })

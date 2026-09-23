@@ -11,7 +11,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import ConfigDict, Field, RootModel
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 
@@ -29,7 +31,7 @@ class ChunkerId(RootModel[str]):
     )
 
 
-class ChunkSetStats(BaseModel):
+class ChunkSetStats(ContractModel):
     """
     세트 통계(바이블 §5.4 stats). 각 값은 chunks[]에서 재계산한 값과 같아야 한다(불변식 C-7)
     """
@@ -48,7 +50,7 @@ class ChunkSetStats(BaseModel):
     )
 
 
-class TokenBudgets(BaseModel):
+class TokenBudgets(ContractModel):
     """
     청킹에 적용된 토큰 예산(primary_tokenizer_id 기준). 프로파일 ingest.chunk.* 값의 스냅숏
     """
@@ -78,7 +80,7 @@ class TokenBudgets(BaseModel):
     )
 
 
-class LineageRefs(BaseModel):
+class LineageRefs(ContractModel):
     """
     상류 산출물 참조 {source, parsed, normalized}. 자기 자신(chunk_set)과 하류 키(enriched, embedded) 미포함(C-1, 00 I-7); recount 출력은 입력 그대로
     """
@@ -94,7 +96,7 @@ class LineageRefs(BaseModel):
     embedded: common_types.ArtifactRef | None = None
 
 
-class NormalizedRef(BaseModel):
+class NormalizedRef(ContractModel):
     """
     입력 NormalizedDocument 산출물. lineage_refs.normalized와 같은 blake3
     """
@@ -115,7 +117,7 @@ class NormalizedRef(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class ChunkSet(BaseModel):
+class ChunkSet(ContractModel):
     """
     chunk·recount 스테이지의 출력(바이블 §5.4). 한 문서 버전의 리프(level 0)·부모(level 1)·상위 파생(level 2) 청크를 한 세트에 담는다. Chunk·BlockRef·TokenCounts·ArtifactRef·Producer·Warning·LineageRefs와 모든 열거는 urn:rag:schema:common-types:1의 $defs를 참조하며 재정의하지 않는다. 소유 문서: docs/03-contracts/05-chunk-set.md.
     """

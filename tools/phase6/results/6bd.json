@@ -1,0 +1,75 @@
+{
+ "s0": "Added the requested Phase-6A dependency set to C:\\Workspaces\\rag-platform\\pyproject.toml via `uv add`/`uv add --optional kiwi`/`uv add --dev` (no hand-editing of version resolution — uv wrote the pins). Runtime: python-hwpx>=6.4,<7, qdrant-client>=1.19.1, fsspec>=2026.9.0, lxml>=6.1.3, charset-normalizer>=3.5.1, markdown-it-py>=4.2.0, trafilatura>=2.2.0, pypdfium2>=5.13.0 (httpx was already present at >=0.27,<1, left untouched). Extra: kiwi = [\"kiwipiepy>=0.23.2\"] (hypothesis was already in the dev group, so only respx>=0.23.1 was added to dev for httpx mocking). All packages resolved prebuilt Windows wheels — nothing had to be dropped. `uv sync --all-extras` and `uv lock --check` both succeed cleanly.\n\nUpdated pyproject.toml comments: removed python-hwpx from the \"not yet added\" adapter-dependency list and documented the new runtime deps' provenance (bible sec. 7.1/7.3); rewrote the `[kiwi]` comment to state the actual situation — the resolved kiwipiepy 0.23.2 is the LGPL statically-bundled wheel the bible sec. 7.1 says gates promotion behind an Apache-2.0 kiwipiepy>=0.24.0 release (not yet on PyPI as of 2026-09-23, confirmed via PyPI JSON API — releases only go up to 0.23.2), while the task instruction classified kiwi as an acceptable B-grade LGPL dynamic-link opt-in extra. I did not resolve this discrepancy myself (out of scope for a dependency-only task); flagged it in open_issues for a license reviewer.\n\nAlso updated tests/unit/test_tooling_config.py::test_minimal_runtime_dependencies, which hard-asserted the exact runtime dependency name set — added the 8 new package names to its expected set (it only checks bare names via string splitting, not full version specs, so no other test logic changed).\n\nVerification: `uv run ruff check .` → all checks passed. `uv run mypy src` → success, no issues in 148 source files. `uv run pytest -q` → 298 passed, 40 xfailed, 0 failed (needs_docker/needs_model/needs_gpu/needs_network tiers excluded by default addopts, as designed). Pytest was run twice: first run surfaced the one pre-existing test now made stale by the new deps (test_minimal_runtime_dependencies), fixed it, second run was clean.\n\nOnly 3 files touched (within budget): pyproject.toml, uv.lock (uv-managed, not hand-edited), tests/unit/test_tooling_config.py. No commits made (git status shows 3 modified, unstaged files). No emojis. Did not read any docs beyond the specified bible sec. 6.7/7.1 (grepped then offset-read) and the 3 files edited/verified.",
+ "b": [
+  {
+   "passed": 476,
+   "failed": 0,
+   "deferred": 4
+  },
+  {
+   "passed": 33,
+   "failed": 0,
+   "deferred": 0
+  },
+  {
+   "passed": 45,
+   "failed": 0,
+   "deferred": 0
+  }
+ ],
+ "d": [
+  {
+   "tests": {
+    "passed": 28,
+    "failed": 0,
+    "deferred": 3
+   },
+   "docs": 20,
+   "issues": [
+    "The contract makes `Figure.artifact` required, but §3.1 says to omit `figure.artifact` when an image exceeds `max_bindata_bytes`. Both cannot hold. The adapter currently drops the figure block, sets quality=degraded and records it in vendor_json. Needs a contract or doc decision.",
+    "The source-bytes port `ctx.source_bytes()` is not in the sdk `StageContext` protocol (proposal in 04 open issue 18). `run()` looks it up with getattr and raises `parse.conversion_failed` if it is missing.",
+    "`repeatHeader=\"1\"` is the Hancom default (24 of 24 tables), so under the spec rule almost every multi-row table gets header row 0 with `header_inferred=false`. Needs a decision on whether to treat it as inferred instead.",
+    "`opf:title` is junk in 공문 templates (\"3\", \"□ 포럼개요\") yet becomes `metadata.title`, the fallback title source. Needs a trust policy.",
+    "Genre and table-role heuristics misfire on the press releases. All three are classified genre=form because their 1×3 banner tables satisfy n_form_tbl≥1 and n_body≤20, and the 1×3 banner tables themselves get role=form. The TOC rule was tightened beyond the spec (it now requires dot leaders or a page-number column), so §3.6 needs updating and golden-set tuning.",
+    "Not implemented in the spike: promoting adjacent \"<표 N>\" or \"그림 N\" paragraphs to captions; the header_kind=row rule; TOC-style blocks; memo anchors (memos are attached to the preceding block at offset 0); fields inside table cells (only counted); footnotes in cells use the cell start as offset; the figure_ocr, formula_latex and page_map_render options; checks on real dutmal/compose content.",
+    "Merged caption blocks use the `element_path` `.../hp:caption[0]`. The §3.3 grammar only defines caption paragraph paths, so this needs confirming.",
+    "Text boxes (rect/drawText) and shape groups (hp:container) are implemented but not covered by any sample. A Hancom-saved sample with text boxes, tracked changes, memos, hyperlinks and encryption is needed.",
+    "Encryption detection uses the ODF convention element `encryption-data`, which is an assumption. It is unverified because no encrypted HWPX sample was available.",
+    "`config_hash` is approximated with `json.dumps(sort_keys)` because the sdk has no `canonical_json`. `PLUGIN_VERSION` is hard-coded to 0.1.0.",
+    "'ㅇ' (Hangul jamo) is common as a bullet in 공문 but is not in the §3.4/§3.5 marker set."
+   ]
+  },
+  {
+   "tests": {
+    "passed": 12,
+    "failed": 0,
+    "deferred": 1
+   },
+   "docs": 2,
+   "issues": [
+    "Server-mode checks not run (needs_docker): payload index effects (is_tenant subgraph, prefix index size and latency, #65), per-query IDF performance, payload-only points and insert-only behaviour on the server, server vector-size limit, server RRF rank base. The one-time Windows qdrant.exe v1.19.1 run was blocked by the permission policy on running external binaries.",
+    "RRF rank base: local Qdrant scores 1/(k+rank0). If platform fuser.rrf ranks from 1 (bible §8.1), the equivalent server request is k=61; confirm with fuser_equivalence before enabling server fusion.",
+    "filters.py copies the doc 13 §4.3 example for the ACL condition: acl_visibility IN visible_set OR acl_allow match. If visible_set can include 'restricted', restricted records would pass without an acl_allow entry; the policy owner (bible §10.2) should confirm.",
+    "QdrantIndexBackend does not implement the sdk.ports.IndexBackend Protocol (tenant-only search signature with no ACL); aligning the port with the doc 13 §2.1 signatures is open issue 1 in doc 13.",
+    "The bm25s top-k rank match (ADR-0012 compliance check (b)) needs a MIRACL-ko sample; deferred to tier 2.",
+    "Existing code in adapters/embed/tei_dense.py and vllm_pooling_bge_m3.py fails ruff EM101 (outside this task's scope).",
+    "Kiwi analyzer_id is recorded as 'kiwi:0.23.2:default'; the bible §6.1 example is 'kiwi:0.24.0:cong'. The dictionary/model label should be settled under ADR-0021.",
+    "The docs/12-appendix/09 deferred-verification ledger has not been regenerated to include the new DEFERRED comments (tools/verify/gen-deferred-ledger.mjs)."
+   ]
+  },
+  {
+   "tests": {
+    "passed": 31,
+    "failed": 0,
+    "deferred": 2
+   },
+   "docs": 0,
+   "issues": [
+    "docs/04-pipelines/12-embedding.md의 '확인 필요' 7곳(vLLM truncate_prompt_tokens 파라미터명, /pooling 응답 스키마·--io-processor-plugin 인터페이스, XLM-R 특수 토큰 id·vocab_size=250002, vLLM/TEI 이미지 태그, 처리량·지연 실측치, KURE-v2 token_embed 서빙 가능성)는 모두 실 서버·실 모델·실측이 필요해 이번 스파이크에서 미확정 상태로 남았다 — needs_docker/needs_gpu/needs_model 환경에서 후속 검증 필요.",
+    "vllm_pooling_bge_m3.py의 /pooling 요청·응답 스키마는 코드가 가정한 제안 형태(예: {\"input\":[...]} -> [{\"dense\":[...],\"sparse\":{...}}])이며 실 vLLM 0.29 --runner pooling 서버로 계약 테스트 코퍼스(카세트) 검증 전까지 골격이다.",
+    "sparse_bm25.py/pylate_late_interaction.py/inprocess_sentence_transformers.py 등 __init__.py가 예고한 나머지 계획 모듈은 이번 스파이크 범위 밖(과제가 지정한 3개 어댑터만 구현)."
+   ]
+  }
+ ],
+ "verify": "모든 3층 검증(`uv run ruff check .`, `uv run mypy src`, `uv run lint-imports`, `uv run pytest -q`)이 시작부터 통과 상태였다(고칠 실패 없음: ruff 0 issues, mypy 168 files clean, import-linter 6/6 kept, pytest 476 passed/4 deselected/27 xfailed/0 failed). `node tools/verify/gen-deferred-ledger.mjs`로 보류 원장을 재생성했다(3건: needs_docker 1, needs_network 1, 미분류 1 — 기존 상태 그대로, 코드 규약 위반 2건은 원장이 이미 \"미해결 이슈\"로 보고 중이며 이번 과제 범위 밖이라 그대로 남겨둠). `tools/verify/check-headers.mjs`는 존재하지 않아 새로 작성했다(결정적 Node 스크립트, LLM 미사용): `src/**/*.py`·`tests/**/*.py`·`tools/**/*.py,*.mjs,*.js`·`sdk/**/*.ts`를 훑어 첫 docstring/주석 블록에 한국어 본문과 필수 항목 5개(역할·설계 근거·구성·불변식·검증 계층)가 있는지 검사한다(\"역할\"은 `CODE-HEADER-RULE.md`의 정본 예시처럼 명시 라벨이 없어도 선행 서술로 대체 인정). 최초 실행에서 70건 위반(트리비얼 `__init__.py` 32개, 테스트 파일 20개, Phase 3~6 워크플로 스크립트 15개, 나머지 실질 어댑터/코어 3개)을 확인했고, 전부 개별 Edit로 한국어 헤더를 보완해 위반 0건으로 만들었다(재검증 통과). 헤더 수정은 docstring/주석뿐이라 ruff/mypy/lint-imports/pytest를 재실행해도 동일하게 전부 통과함을 재확인했다. 마지막으로 `CLAUDE.md`의 \"현재 상태\" 문단과 §4(저장소 구조)를 구 6A 1차 서술(core·stages·workflows·observability, 19개 `__init__.py`)에서 실제 현재 구현 범위(contracts 생성물 93개 모듈, sdk·storage·plugins·profiles·orchestration/local·testing 대역, adapters 3종 스파이크 — HWPX 파서·Qdrant lite·BGE-M3 계열 임베더, testing 적합성 키트)로 고치고 §12 목표 트리와 구분해 서술했다. `README.md`의 상태 배지·요약문·§8·§9 문구를 \"6A·6B·6D 완료\" 사실관계로 갱신했다(6C/6E/6F/6G는 미착수로 그대로 명시). 커밋은 하지 않았다(지시대로 금지)."
+}

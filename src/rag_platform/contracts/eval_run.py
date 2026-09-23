@@ -11,12 +11,14 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import ConfigDict, Field, RootModel
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 
 
-class IndexCommitsRef(BaseModel):
+class IndexCommitsRef(ContractModel):
     """
     선택(N). eval/runs/{run_id}/index_commits.jsonl(행 = $defs/IndexCommitRecord). 커밋이 1,000개를 넘을 때만(전체 current 커밋 목록). 바이블 §5.6 미등재(미해결 이슈 4)
     """
@@ -49,7 +51,7 @@ class MetricKey(RootModel[str]):
     )
 
 
-class IndexCommitRecord(BaseModel):
+class IndexCommitRecord(ContractModel):
     """
     index_commits.jsonl 한 행(커밋 1,000개 초과 코퍼스의 전체 current 커밋 목록; 08-index-commit §8 정의)
     """
@@ -62,7 +64,7 @@ class IndexCommitRecord(BaseModel):
     index_generation: int = Field(..., ge=1)
 
 
-class EvalRun(BaseModel):
+class EvalRun(ContractModel):
     """
     평가 실행 계약(바이블 §5.6, ADR-0023). 하나의 골든셋(dataset_id)을 하나의 해소된 프로파일(profile_hash)로, 평가 시작 시점의 문서별 current 커밋 집합(index_commit_ids; documents.current_commit_id 가 가리키는 커밋, 08-index-commit §8·IC-5)에 대해 실행한 기록이다. run_id 는 EvalRun 전용 식별자(바이블 §6.1·§6.4). 정본은 PostgreSQL eval_runs 원장 행. 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md
     """

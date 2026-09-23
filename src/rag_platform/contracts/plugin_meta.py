@@ -9,7 +9,9 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import ConfigDict, Field, RootModel
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 
@@ -27,7 +29,7 @@ class Territory(RootModel[str]):
     root: str = Field(..., description="ISO 3166-1 alpha-2(KR, US)", pattern="^[A-Z]{2}$")
 
 
-class PluginMeta(BaseModel):
+class PluginMeta(ContractModel):
     """
     플러그인 자기 선언 메타데이터(바이블 §5.6). 플러그인 pyproject.toml [tool.rag_platform.plugin] 테이블이 생산하고 레지스트리·라이선스 게이트(ADR-0001)·프로파일 검증기(§7.4 (1)(2))가 소비한다. plugin_id 접두는 extension_point와 같고 entry point 그룹은 rag_platform.{extension_point}(D-10 14종, ADR-0032). 봉투 없음. 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/15-collection-profile-and-policy-contracts.md
     """

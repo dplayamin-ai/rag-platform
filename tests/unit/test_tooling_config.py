@@ -62,7 +62,24 @@ def test_bible_extras_are_declared(pyproject: dict[str, Any]) -> None:
 
 def test_minimal_runtime_dependencies(pyproject: dict[str, Any]) -> None:
     names = {dep.split(">")[0].split("<")[0].split("=")[0].strip() for dep in pyproject["project"]["dependencies"]}
-    assert names == {"pydantic", "pydantic-settings", "python-ulid", "blake3", "pyyaml", "jsonschema", "httpx", "anyio"}
+    assert names == {
+        "pydantic",
+        "pydantic-settings",
+        "python-ulid",
+        "blake3",
+        "pyyaml",
+        "jsonschema",
+        "httpx",
+        "anyio",
+        "python-hwpx",
+        "qdrant-client",
+        "fsspec",
+        "lxml",
+        "charset-normalizer",
+        "markdown-it-py",
+        "trafilatura",
+        "pypdfium2",
+    }
 
 
 def test_deferred_markers_registered_and_excluded_by_default(pyproject: dict[str, Any]) -> None:

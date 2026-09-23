@@ -1,4 +1,11 @@
 
+// Phase 3 본 워크플로의 뒷부분 조각(fragment) — `build-wf.mjs`가 `wf-head.js` + 패치된 개요 뒤에 이 파일을
+// 이어붙여 `wf-phase3.js`를 만든다(일회성 도구, 단독 실행 대상 아님).
+// 설계 근거: `docs/12-appendix/00-progress-report.md` §7.2d(ADR 38종 + 리뷰 사이클 + `openapi.yaml` + 완결성
+// 비평 계획).
+// 구성: `runAdrs` — ADR 38종 작성·리뷰·수정 루프; 이어서 `openapi.yaml` 생성과 완결성 비평 단계(아래 코드).
+// 불변식: Phase 3가 이미 완료·커밋되었으므로 이 조각은 재실행 대상이 아니다(기록 보존 목적).
+// 검증 계층: 1층(여기서 검증) — 조립된 `wf-phase3.js`는 Phase 3 완료 시점에 이미 실행·검증되었다.
 // ---------------------------------------------------------------- ADRs
 async function runAdrs() {
   phase('ADRs')

@@ -12,7 +12,9 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import AnyUrl, BaseModel, ConfigDict, Field, RootModel
+from pydantic import AnyUrl, ConfigDict, Field, RootModel
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from .. import common_types, job_status
 from . import (
@@ -79,7 +81,7 @@ class ObservedGenerations(RootModel[list[ObservedGeneration]]):
     root: list[ObservedGeneration] = Field(..., min_length=1)
 
 
-class Omitted(BaseModel):
+class Omitted(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -87,7 +89,7 @@ class Omitted(BaseModel):
     risk_flagged: int = Field(..., ge=0)
 
 
-class Resource(BaseModel):
+class Resource(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -167,7 +169,7 @@ class AuditDecision(StrEnum):
     deny = "deny"
 
 
-class Data6(BaseModel):
+class Data6(ContractModel):
     """
     ID·해시·상태만. 콘텍스트 본문 금지(E12)
     """
@@ -188,7 +190,7 @@ class Data6(BaseModel):
     job_state: common_types.JobState = Field(..., description="JobState 부분집합(바이블 §6.4)")
 
 
-class CloudEventEnvelope7(BaseModel):
+class CloudEventEnvelope7(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -215,7 +217,7 @@ class CloudEventEnvelope7(BaseModel):
     data: Data6 = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class Data8(BaseModel):
+class Data8(ContractModel):
     """
     ID·해시·상태만. 콘텍스트 본문 금지(E12)
     """
@@ -233,7 +235,7 @@ class Data8(BaseModel):
     next_attempt_at: common_types.DateTime | None = None
 
 
-class CloudEventEnvelope9(BaseModel):
+class CloudEventEnvelope9(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -260,7 +262,7 @@ class CloudEventEnvelope9(BaseModel):
     data: Data8 = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class Data9(BaseModel):
+class Data9(ContractModel):
     """
     ID·해시·상태만. 콘텍스트 본문 금지(E12)
     """
@@ -276,7 +278,7 @@ class Data9(BaseModel):
     deleted_counts: CountMap = Field(..., description="백엔드별 삭제 레코드 수. current 커밋이 없던 문서는 모두 0")
 
 
-class CloudEventEnvelope10(BaseModel):
+class CloudEventEnvelope10(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -303,7 +305,7 @@ class CloudEventEnvelope10(BaseModel):
     data: Data9 = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class Error(BaseModel):
+class Error(ContractModel):
     """
     StageError 투영(13 J3)
     """
@@ -316,7 +318,7 @@ class Error(BaseModel):
     attempt: int = Field(..., ge=1)
 
 
-class Data11(BaseModel):
+class Data11(ContractModel):
     """
     ID·해시·상태만. 콘텍스트 본문 금지(E12)
     """
@@ -337,7 +339,7 @@ class Data11(BaseModel):
     previous_commit_id: common_types.Ulid | None = None
 
 
-class CloudEventEnvelope12(BaseModel):
+class CloudEventEnvelope12(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -364,7 +366,7 @@ class CloudEventEnvelope12(BaseModel):
     data: Data11 = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class Data12(BaseModel):
+class Data12(ContractModel):
     """
     ID·해시·상태만. 콘텍스트 본문 금지(E12)
     """
@@ -400,7 +402,7 @@ class Data12(BaseModel):
     )
 
 
-class CloudEventEnvelope13(BaseModel):
+class CloudEventEnvelope13(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -427,7 +429,7 @@ class CloudEventEnvelope13(BaseModel):
     data: Data12 = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class Data13(BaseModel):
+class Data13(ContractModel):
     """
     ID·해시·상태만. 콘텍스트 본문 금지(E12)
     """
@@ -454,7 +456,7 @@ class Data13(BaseModel):
     )
 
 
-class CloudEventEnvelope14(BaseModel):
+class CloudEventEnvelope14(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -481,7 +483,7 @@ class CloudEventEnvelope14(BaseModel):
     data: Data13 = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class Data14(BaseModel):
+class Data14(ContractModel):
     """
     ID·해시·상태만. 콘텍스트 본문 금지(E12)
     """
@@ -506,7 +508,7 @@ class Data14(BaseModel):
     propagation_ms: int | None = Field(None, description="접수 → 백엔드 갱신 완료(rag_acl_propagation_seconds)", ge=0)
 
 
-class CloudEventEnvelope15(BaseModel):
+class CloudEventEnvelope15(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -533,7 +535,7 @@ class CloudEventEnvelope15(BaseModel):
     data: Data14 = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class Data15(BaseModel):
+class Data15(ContractModel):
     """
     ID·해시·상태만. 콘텍스트 본문 금지(E12)
     """
@@ -574,7 +576,7 @@ class Data15(BaseModel):
     reindex_job_id: common_types.Ulid | None = Field(None, description="선택(N). 함께 접수된 reindex_collection 잡")
 
 
-class CloudEventEnvelope16(BaseModel):
+class CloudEventEnvelope16(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -601,7 +603,7 @@ class CloudEventEnvelope16(BaseModel):
     data: Data15 = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class Data16(BaseModel):
+class Data16(ContractModel):
     """
     ID·해시·상태만. 콘텍스트 본문 금지(E12)
     """
@@ -624,7 +626,7 @@ class Data16(BaseModel):
     )
 
 
-class CloudEventEnvelope17(BaseModel):
+class CloudEventEnvelope17(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -651,7 +653,7 @@ class CloudEventEnvelope17(BaseModel):
     data: Data16 = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class Returned(BaseModel):
+class Returned(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -659,7 +661,7 @@ class Returned(BaseModel):
     chunk_count: int = Field(..., ge=0)
 
 
-class Data17(BaseModel):
+class Data17(ContractModel):
     """
     ID·해시·상태만. 콘텍스트 본문 금지(E12)
     """
@@ -688,7 +690,7 @@ class Data17(BaseModel):
     latency_ms: int = Field(..., ge=0)
 
 
-class CloudEventEnvelope18(BaseModel):
+class CloudEventEnvelope18(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -715,7 +717,7 @@ class CloudEventEnvelope18(BaseModel):
     data: Data17 = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class Data18(BaseModel):
+class Data18(ContractModel):
     """
     ID·해시·상태만. 콘텍스트 본문 금지(E12)
     """
@@ -731,7 +733,7 @@ class Data18(BaseModel):
     acl_hash: common_types.Hex64 | None = Field(..., description="거부(존재 비노출)면 null")
 
 
-class CloudEventEnvelope19(BaseModel):
+class CloudEventEnvelope19(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -758,7 +760,7 @@ class CloudEventEnvelope19(BaseModel):
     data: Data18 = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class Data19(BaseModel):
+class Data19(ContractModel):
     """
     ID·해시·상태만. 콘텍스트 본문 금지(E12)
     """
@@ -774,7 +776,7 @@ class Data19(BaseModel):
     job_id: common_types.Ulid = Field(..., description="acl.update.v1 잡")
 
 
-class CloudEventEnvelope20(BaseModel):
+class CloudEventEnvelope20(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -801,7 +803,7 @@ class CloudEventEnvelope20(BaseModel):
     data: Data19 = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class Data20(BaseModel):
+class Data20(ContractModel):
     """
     ID·해시·상태만. 콘텍스트 본문 금지(E12)
     """
@@ -823,7 +825,7 @@ class Data20(BaseModel):
     job_id: common_types.Ulid | None = None
 
 
-class CloudEventEnvelope21(BaseModel):
+class CloudEventEnvelope21(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -850,7 +852,7 @@ class CloudEventEnvelope21(BaseModel):
     data: Data20 = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class Data23(BaseModel):
+class Data23(ContractModel):
     """
     ID·해시·상태만. 콘텍스트 본문 금지(E12)
     """
@@ -872,7 +874,7 @@ class Data23(BaseModel):
     )
 
 
-class CloudEventEnvelope24(BaseModel):
+class CloudEventEnvelope24(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -899,7 +901,7 @@ class CloudEventEnvelope24(BaseModel):
     data: Data23 = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class IngestStageEventData(BaseModel):
+class IngestStageEventData(ContractModel):
     """
     ingest.document.{fetched, parsed, normalized, chunked, enriched, embedded}. 스테이지 래퍼 commit_stage가 산출물 저장 트랜잭션에서 기록. 스테이지별 선택 계수는 표 §6.1
     """
@@ -932,7 +934,7 @@ class IngestStageEventData(BaseModel):
     embedding_profile_hash: common_types.Hex64 | None = None
 
 
-class IngestDocumentIndexedData(BaseModel):
+class IngestDocumentIndexedData(ContractModel):
     """
     ingest.document.indexed. publish가 succeeded·partial 종결 트랜잭션에서 기록
     """
@@ -953,7 +955,7 @@ class IngestDocumentIndexedData(BaseModel):
     job_state: common_types.JobState = Field(..., description="JobState 부분집합(바이블 §6.4)")
 
 
-class IngestFailureEventData(BaseModel):
+class IngestFailureEventData(ContractModel):
     """
     ingest.document.retried·failed. StageError 투영 {job_id, document_id, stage, code, retryable, attempt}(13 J3) — detail·artifact_ref·location·cause 없음
     """
@@ -971,7 +973,7 @@ class IngestFailureEventData(BaseModel):
     next_attempt_at: common_types.DateTime | None = None
 
 
-class IngestDocumentDeletedData(BaseModel):
+class IngestDocumentDeletedData(ContractModel):
     """
     ingest.document.deleted. publish가 delete.document.v1 종결 트랜잭션에서 기록. 삭제 잡은 current 커밋 유무와 무관하게 항상 kind=delete tombstone 커밋(record_count=0)을 만들므로(바이블 §11.2·§5.4) commit_id·index_generation은 nullable이 아니다
     """
@@ -987,7 +989,7 @@ class IngestDocumentDeletedData(BaseModel):
     deleted_counts: CountMap = Field(..., description="백엔드별 삭제 레코드 수. current 커밋이 없던 문서는 모두 0")
 
 
-class IndexCommitPublishedData(BaseModel):
+class IndexCommitPublishedData(ContractModel):
     """
     index.commit.published. IndexCommit 투영(08 문서 미해결 이슈 12, 14 예시 4)
     """
@@ -1008,7 +1010,7 @@ class IndexCommitPublishedData(BaseModel):
     previous_commit_id: common_types.Ulid | None = None
 
 
-class IndexCommitRolledBackData(BaseModel):
+class IndexCommitRolledBackData(ContractModel):
     """
     index.commit.rolled_back. IndexCommit.compensation(08 §2.6) 투영: failed_at_status·restored_generation·reason은 compensation의 같은 이름 필드와 값이 같고 code는 최종 IndexCommit.error.code다
     """
@@ -1044,7 +1046,7 @@ class IndexCommitRolledBackData(BaseModel):
     )
 
 
-class IndexConsistencyMismatchData(BaseModel):
+class IndexConsistencyMismatchData(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1067,7 +1069,7 @@ class IndexConsistencyMismatchData(BaseModel):
     )
 
 
-class AclDocumentUpdatedData(BaseModel):
+class AclDocumentUpdatedData(ContractModel):
     """
     acl.document.updated. 주체 문자열 없음(acl_hash·열거만)
     """
@@ -1092,7 +1094,7 @@ class AclDocumentUpdatedData(BaseModel):
     propagation_ms: int | None = Field(None, description="접수 → 백엔드 갱신 완료(rag_acl_propagation_seconds)", ge=0)
 
 
-class CollectionProfileChangedData(BaseModel):
+class CollectionProfileChangedData(ContractModel):
     """
     collection.profile.changed. 프로파일(PATCH /v1/collections/{collection_id}·재색인 alias 교체)·사전(PUT /v1/collections/{collection_id}/dictionary, 16 §6.2 dictionary_hash 변경)·정책 변경 커밋의 투영. change_kind가 무엇이 바뀌었는지 밝힌다 — dictionary·policy 변경은 profile_hash가 불변이라 previous_profile_hash == profile_hash다(I-21)
     """
@@ -1133,7 +1135,7 @@ class CollectionProfileChangedData(BaseModel):
     reindex_job_id: common_types.Ulid | None = Field(None, description="선택(N). 함께 접수된 reindex_collection 잡")
 
 
-class CollectionReindexCompletedData(BaseModel):
+class CollectionReindexCompletedData(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1152,7 +1154,7 @@ class CollectionReindexCompletedData(BaseModel):
     )
 
 
-class AuditQueryExecutedData(BaseModel):
+class AuditQueryExecutedData(ContractModel):
     """
     audit.query.executed(바이블 §8.1 14단계). 질의 원문 없음 — query_hash만
     """
@@ -1181,7 +1183,7 @@ class AuditQueryExecutedData(BaseModel):
     latency_ms: int = Field(..., ge=0)
 
 
-class AuditDocumentAccessedData(BaseModel):
+class AuditDocumentAccessedData(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1193,7 +1195,7 @@ class AuditDocumentAccessedData(BaseModel):
     acl_hash: common_types.Hex64 | None = Field(..., description="거부(존재 비노출)면 null")
 
 
-class AuditAclChangedData(BaseModel):
+class AuditAclChangedData(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1205,7 +1207,7 @@ class AuditAclChangedData(BaseModel):
     job_id: common_types.Ulid = Field(..., description="acl.update.v1 잡")
 
 
-class AuditAdminActionData(BaseModel):
+class AuditAdminActionData(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1223,7 +1225,7 @@ class AuditAdminActionData(BaseModel):
     job_id: common_types.Ulid | None = None
 
 
-class FeedbackQueryEventData(BaseModel):
+class FeedbackQueryEventData(ContractModel):
     """
     feedback.query.cited·rated. comment 없음(PII)
     """
@@ -1239,7 +1241,7 @@ class FeedbackQueryEventData(BaseModel):
     rating: int | None = Field(None, ge=1, le=5)
 
 
-class EvalRunCompletedData(BaseModel):
+class EvalRunCompletedData(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -1268,7 +1270,7 @@ class Data(IngestStageEventData):
     stage: Literal["fetch"] = Field(..., max_length=32, pattern="^[a-z][a-z0-9_]*$")
 
 
-class CloudEventEnvelope1(BaseModel):
+class CloudEventEnvelope1(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -1307,7 +1309,7 @@ class Data1(IngestStageEventData):
     stage_key: common_types.Hex64 = Field(..., description="fetch 이후 스테이지 필수")
 
 
-class CloudEventEnvelope2(BaseModel):
+class CloudEventEnvelope2(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -1346,7 +1348,7 @@ class Data2(IngestStageEventData):
     stage_key: common_types.Hex64 = Field(..., description="fetch 이후 스테이지 필수")
 
 
-class CloudEventEnvelope3(BaseModel):
+class CloudEventEnvelope3(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -1385,7 +1387,7 @@ class Data3(IngestStageEventData):
     stage_key: common_types.Hex64 = Field(..., description="fetch 이후 스테이지 필수")
 
 
-class CloudEventEnvelope4(BaseModel):
+class CloudEventEnvelope4(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -1424,7 +1426,7 @@ class Data4(IngestStageEventData):
     stage_key: common_types.Hex64 = Field(..., description="fetch 이후 스테이지 필수")
 
 
-class CloudEventEnvelope5(BaseModel):
+class CloudEventEnvelope5(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -1463,7 +1465,7 @@ class Data5(IngestStageEventData):
     stage_key: common_types.Hex64 = Field(..., description="fetch 이후 스테이지 필수")
 
 
-class CloudEventEnvelope6(BaseModel):
+class CloudEventEnvelope6(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -1501,7 +1503,7 @@ class Data7(IngestFailureEventData):
     retryable: Literal[True]
 
 
-class CloudEventEnvelope8(BaseModel):
+class CloudEventEnvelope8(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -1528,7 +1530,7 @@ class CloudEventEnvelope8(BaseModel):
     data: Data7 = Field(..., description="ID·해시·상태만. 콘텍스트 본문 금지(E12)")
 
 
-class Data10(BaseModel):
+class Data10(ContractModel):
     """
     ID·해시·상태만. 콘텍스트 본문 금지(E12)
     """
@@ -1551,7 +1553,7 @@ class Data10(BaseModel):
     reason: str | None = Field(None, description="취소·기한 사유(영문, 콘텐츠 미포함)", max_length=256)
 
 
-class CloudEventEnvelope11(BaseModel):
+class CloudEventEnvelope11(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -1589,7 +1591,7 @@ class Data21(FeedbackQueryEventData):
     kind: Literal["cited"]
 
 
-class CloudEventEnvelope22(BaseModel):
+class CloudEventEnvelope22(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -1627,7 +1629,7 @@ class Data22(FeedbackQueryEventData):
     kind: Kind2
 
 
-class CloudEventEnvelope23(BaseModel):
+class CloudEventEnvelope23(ContractModel):
     """
     CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md
     """
@@ -1714,7 +1716,7 @@ class CloudEventEnvelope(
     )
 
 
-class JobStateChangedData(BaseModel):
+class JobStateChangedData(ContractModel):
     """
     job.state.changed. 바이블 §11.5 전이 1건(job_events 행의 투영)
     """

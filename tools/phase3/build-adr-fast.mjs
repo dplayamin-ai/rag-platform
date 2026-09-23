@@ -1,8 +1,11 @@
-// Build tools/phase3/wf-adr-fast.js (2026-09-23): fast ADR review cycle.
-// - 13 ADRs already reviewed in the previous session (0001-0013): merge their anchor+tech findings from the dead workflow's
-//   journal into tools/phase3/results/adr-prereviews/NNNN.json and run only a fix agent that reads that file.
-// - remaining 25 ADRs: one combined fast reviewer (effort medium) -> fix if findings.
-// - then the 06-adr/README.md index.
+// Phase 3 ADR 고속 리뷰 워크플로 `wf-adr-fast.js`를 조립하는 빌드 스크립트(2026-09-23, 일회성 도구) — 이전 세션에서
+// 죽은 워크플로의 저널에서 이미 리뷰된 13개 ADR(0001-0013)의 사전 리뷰 결과를 병합하고, 나머지 25개는 결합 고속
+// 리뷰어 1개로 처리하도록 스크립트를 생성한다.
+// 설계 근거: `docs/12-appendix/00-progress-report.md` §7.2d(고속 ADR 사이클 결정), Phase 3 마감 계획.
+// 구성: 13개 ADR용 `tools/phase3/results/adr-prereviews/NNNN.json` 병합 로직, 나머지 25개용 결합 리뷰어(effort
+// medium) + 조건부 수정 에이전트, `06-adr/README.md` 색인 생성 단계.
+// 불변식: Phase 3가 이미 완료·커밋되었으므로 이 스크립트는 재실행 대상이 아니다(기록 보존 목적).
+// 검증 계층: 1층(여기서 검증) — 산출물 `wf-adr-fast.js`는 Phase 3 완료 시점에 이미 실행·검증되었다.
 import fs from 'node:fs'
 import path from 'node:path'
 const dir = new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1') + '/'

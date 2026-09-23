@@ -1,3 +1,13 @@
+// 코드 헤더 소급 적용 워크플로 — 헤더 규칙(`tools/phase6/CODE-HEADER-RULE.md`)이 생기기 전에 만든 모든 소스
+// 파일(src/tests/tools)에 한국어 설명 헤더를 보완하고, `ruff`·`pytest`가 여전히 통과하는지 검증한다(`Workflow`
+// 하네스가 실행).
+// 설계 근거: `tools/phase6/CODE-HEADER-RULE.md`(필수 항목 5개), 사용자 지시(2026-09-23, 코드 상단 한글 설명
+// 주석).
+// 구성: `meta`(워크플로 메타데이터·단계 목록: Header pass — 디렉터리별 그룹 실행, Verify — ruff/mypy/lint-imports/
+// pytest).
+// 불변식: 로직은 바꾸지 않는다 — 문서화(헤더)만 추가·보완한다; 그룹 1 담당만 `pyproject.toml`의 ruff 설정을 고칠
+// 수 있다(중복 수정 방지).
+// 검증 계층: 1층(여기서 검증) — 이 워크플로 자체가 `uv run ruff check .`/`uv run pytest -q`를 실행해 검증한다.
 export const meta = {
   name: 'rag-code-header-pass',
   description: 'Retrofit Korean explanatory header comments onto every source file created before the header rule existed (src, tests, tools); verify ruff D100 and tests still pass',

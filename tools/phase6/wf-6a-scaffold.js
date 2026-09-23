@@ -1,3 +1,10 @@
+// Phase 6A 레퍼런스 골격 워크플로 — uv 프로젝트·툴체인, 스키마에서 생성한 계약 패키지, 코어 스텁(`Stage`/
+// `Context`/`ArtifactStore`/`Registry`/프로파일 로더/`LocalRunner`), 인메모리 테스트 대역, CI, `HANDOFF.md`,
+// 보류 검증 원장을 만든다(VDI에서 실행 가능한 것은 모두 실행·검증). `Workflow` 하네스가 실행.
+// 설계 근거: 바이블 §12(모듈 맵), `docs/12-appendix/05-phase6-implementation-kit-plan.md`(6A 범위).
+// 구성: `meta`(워크플로 메타데이터·단계 목록: S1 Foundation, S2 Contracts, ...).
+// 불변식: Phase 6A가 이미 완료·커밋되었으므로 이 워크플로는 재실행 대상이 아니다(기록 보존 목적).
+// 검증 계층: 1층(여기서 검증) — Phase 6A 완료 시점에 `uv run pytest`/`ruff`/`mypy`/`lint-imports`로 이미 검증.
 export const meta = {
   name: 'rag-phase6a-scaffold',
   description: 'Phase 6A: reference scaffold — uv project, toolchain, generated contracts package from schemas, core stubs (Stage/Context/ArtifactStore/Registry/profile loader/LocalRunner), in-memory test doubles, CI, HANDOFF and deferred-verification ledger; everything runnable on the VDI is executed and verified',

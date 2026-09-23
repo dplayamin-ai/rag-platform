@@ -9,7 +9,9 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import ConfigDict, Field, RootModel
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 
@@ -22,7 +24,7 @@ class DictToken(RootModel[str]):
     )
 
 
-class UserDictEntry(BaseModel):
+class UserDictEntry(ContractModel):
     """
     사용자 사전 항목 계약(바이블 §5.6, §14 GET/PUT /v1/collections/{collection_id}/dictionary, ADR-0021). Kiwi·mecab-ko 사용자 사전, OpenSearch Nori user_dictionary_rules, synonym_graph 규칙을 생성하는 단일 소스다. collection_id=null 은 테넌트 전역 항목. 항목 집합의 정규화 행 정렬 해시가 dictionary_hash = H("dict", *sorted(rows))(바이블 §6.2)이며 변경은 CollectionSpec.dictionary_hash → lexical_profile_hash 변경 → 렉시컬 재색인 제안으로 이어진다. 정본은 PostgreSQL user_dictionary_entries 원장 행. 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md
     """

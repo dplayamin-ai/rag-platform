@@ -4,11 +4,15 @@ RAG Platform은 수집된 문서(HWPX·HWP·PDF·DOC/DOCX·TXT·HTML)의 URI·�
 파싱 → 정규화 → 의미 청킹 → 보강 → 임베딩 → 하이브리드 인덱싱을 수행하고,
 LLM이 바로 참고할 Top-K Context Pack을 리트리벌 API와 MCP로 제공하는 오픈소스(Apache-2.0) 플랫폼이다.
 
-**현재 상태(2026-09-23): 설계 완료, 6단계 6A(레퍼런스 골격) 착수.**
-저장소에는 `docs/`(설계 문서)·`schemas/`(JSON Schema 정본) 외에 6A 레퍼런스 골격
-(`pyproject.toml`·`uv.lock`·`src/rag_platform/` 패키지 스텁·`tests/`·`deploy/`·`plugins/`·`samples/`·`sidecars/`)이 이미 있다.
-계약 모델(Pydantic)·파이프라인 스테이지·API 등 실질 구현은 아직 없다 —
-코드가 동작하는 것처럼(설치 절차·벤치마크 수치 포함) 쓰지 마라. 품질 목표는 전부 "초안 목표"다.
+**현재 상태(2026-09-23): 설계 완료, 6단계 6A(레퍼런스 골격)·6B(적합성 키트)·6D(어댑터 스파이크) 완료.**
+저장소에는 `docs/`(설계 문서)·`schemas/`(JSON Schema 정본) 외에 실행·검증되는 코드가 있다:
+`contracts/`(스키마에서 생성한 Pydantic v2 계약 모델), `sdk/`·`storage/`·`plugins/`·`profiles/`·
+`orchestration/local/`(코어 프레임워크와 로컬 실행기), `testing/`(적합성 키트 + 인메모리 테스트 대역),
+`adapters/`의 3종 스파이크(HWPX 파서, Qdrant lite 인덱스 백엔드, TEI/vLLM BGE-M3 임베더 — 모델 가중치
+없이 결정적 가짜로 검증). 그 밖의 §12 모듈(`api`·`cli`·`eval`·`korean`·`ledger`·`mcp`·`pipelines`·`render`·
+`retrieval`·`security`·`settings`·`telemetry`·`orchestration/{outbox,temporal}`, `adapters/`의 나머지
+확장 지점)은 아직 패키지 스텁(docstring뿐)이다 —
+코드가 동작하는 것처럼(설치 절차·벤치마크 수치 포함) 쓰지 마라. 구현되지 않은 범위는 전부 "초안 목표"다.
 
 ## 앵커 우선순위
 
@@ -133,16 +137,34 @@ LLM이 바로 참고할 Top-K Context Pack을 리트리벌 API와 MCP로 제공�
   - 필수화·제거·의미 변경, 명명 변경 = ADR + 바이블 major + 영향 문서 일괄 개정.
   - D-xx 개정 = ADR + 바이블 §3.1 `amended` + 브리프 §4 행 갱신.
 
-## 4. 저장소 구조(목표 레이아웃)
+## 4. 저장소 구조(현재 구현 범위 + 목표 레이아웃)
 
 정본은 바이블 §12(모듈/패키지 맵)이고, 확장은 `docs/10-development/01-repository-structure.md` §2.1이다.
-이 저장소는 `docs/`·`schemas/`·`tools/`·`.claude/`에 더해 6A 레퍼런스 골격
-(`pyproject.toml`·`uv.lock`·`src/rag_platform/`·`tests/`·`deploy/`·`plugins/`·`samples/`·`sidecars/`)이 착수돼 있다.
-6A가 채운 것은 `src/rag_platform/` 최상위 패키지 스텁(`contracts core stages`(+8개 하위 스테이지) `workflows api mcp
-eval observability plugins cli`, 총 19개 `__init__.py`, 대부분 docstring뿐)과 `cli --version`, 스캐폴드 테스트
-(`tests/unit/`)뿐이다. 아래는 전체 구현 완료 시 목표 트리이며, 바이블 §12의 `sdk`·`adapters`·`pipelines`·
-`retrieval`·`render`·`orchestration`·`ledger`·`storage`·`security`·`profiles`·`settings`·`korean`·`telemetry`·
-`testing` 등 하위 모듈은 아직 없다.
+이 저장소는 `docs/`·`schemas/`·`tools/`·`.claude/`에 더해 `src/rag_platform/`·`tests/`·`deploy/`·`plugins/`·
+`samples/`·`sidecars/`가 이미 있다.
+
+**현재 구현 범위(6A+6B+6D, `src/rag_platform/` 기준)**는 바이블 §12 모듈 맵의 일부다:
+- `contracts/`(GENERATED — `tools/contracts_gen.py`가 `schemas/*.schema.json`에서 생성한 Pydantic v2 모델
+  93개 파일, 손편집 금지)
+- `sdk/`(`stage.py`·`context.py`·`policy.py`·`ports.py`·`hashing.py` — `Stage`/`PipelineContext`/
+  `StageContext` 프로토콜, `StagePolicy`, 역할 포트)
+- `storage/`(`artifact_store.py`·`keys.py`·`valkey.py`), `plugins/`(`registry.py` — `EXTENSION_POINTS` 14종),
+  `profiles/`(`loader.py`·`validate.py`·`builtin/` 내장 4종: `base`/`lite`/`standard`/`premium`(+`korean-gov`)),
+  `orchestration/local/`(`runner.py` — 비내구 `LocalRunner`)
+- `testing/`(적합성 키트 — `conformance/base.py`·`conformance/kits.py` + `doubles/`의 인메모리 대역 4종
+  `FakeEmbedder`/`InMemoryIndexBackend`/`InMemoryKV`/`InMemoryLedger`, 그 외 `contract_roundtrip`·
+  `idempotency`·`fuser_equivalence`·`litm_order`·`renderer_citation_roundtrip`·`security_invariants`)
+- `adapters/`의 3종 스파이크 — `parse/`(HWPX 파서 `hwpx_python_hwpx.py`+`owpml_adapter.py`),
+  `index/qdrant/`(`backend.py`·`filters.py`·`point_id.py`·`bm25_sparse.py`, Qdrant lite),
+  `embed/`(`tei_dense.py`·`vllm_pooling_bge_m3.py`·`inprocess_fake.py`, BGE-M3 계열 — 모델 가중치
+  없이 결정적 가짜로 검증)
+
+그 밖의 §12 모듈 — `api`·`cli`(`--version`만)·`eval`·`korean`·`ledger`·`mcp`·`pipelines`·`render`·
+`retrieval/{pack,postprocess}`·`security`·`settings`·`telemetry`·`orchestration/{outbox,temporal}`,
+`adapters/`의 나머지 확장 지점(`chunk`/`enrich`/`fetch`/`llm`/`normalize`/`query`/`rerank`/`retrieve`) —
+은 아직 패키지 스텁(docstring뿐, 실 구현 없음)이다.
+
+아래는 전체 구현 완료 시 바이블 §12 목표 트리다:
 
 ```text
 rag-platform/
@@ -154,11 +176,12 @@ rag-platform/
 ├── docs/                       # 설계 문서 세트(브리프 §8 문서 맵)
 ├── plugins/                    # A/B 등급 별도 배포 플러그인(rag-plugin-*), 워크스페이스 멤버
 ├── sidecars/                   # 코어 Python 의존 없는 변환 사이드카(parser-workers, ocr-gpu)
-├── sdk/{python,typescript}/    # 클라이언트 SDK
+├── sdk/{python,typescript}/    # 클라이언트 SDK(루트 — `src/rag_platform/sdk/`의 인프로세스 프레임워크와 다르다)
 ├── deploy/{compose,helm}/      # 프로파일별 배포 매니페스트
 ├── tests/                      # contracts/ adapters/ security/ replay/ eval/
 ├── samples/, examples/         # 5분 기동 데모 문서, SDK 예제
-└── tools/                      # 문서·스키마 검증기(validate-contracts.mjs, audit-docs.mjs 등, 이미 존재)
+└── tools/                      # 문서·스키마·헤더 검증기(validate-contracts.mjs, audit-docs.mjs,
+                                 #   verify/check-headers.mjs, verify/gen-deferred-ledger.mjs 등)
 ```
 
 GPL/AGPL(C 등급) 이미지·플러그인(`lo-sidecar`, pyhwp/pymupdf 사이드카)은 이 저장소에 두지 않는다.

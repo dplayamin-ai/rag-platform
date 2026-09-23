@@ -9,6 +9,7 @@
 - `canonical_json`/`profile_hash` — 키 정렬·공백 없음, `profile_hash` 필드 자체는 해시에서 제외, 내용 변경 시 값 변경.
 - `BUILTIN_DIR` — 내장 YAML 파일 경로 상수.
 
+불변식: `profile_hash`는 자기 자신(hash 필드)을 제외한 정규화된 내용에서만 계산되어 순환 의존이 없다.
 검증 계층: 1층(여기서 검증).
 """
 

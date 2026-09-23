@@ -223,6 +223,7 @@ from .common_types import (
     Window as Window,
 )
 from .context_pack import ContextPack as ContextPack
+from .contract_model import ContractModel as ContractModel
 from .convert_request import ConvertRequest as ConvertRequest
 from .convert_response import ConvertResponse as ConvertResponse
 from .embedded_chunk_set import EmbeddedChunkSet as EmbeddedChunkSet
@@ -294,6 +295,7 @@ __all__ = [
     "ContextItem",
     "ContextPack",
     "ContextPrefix",
+    "ContractModel",
     "ContractsCompat",
     "ConvertRequest",
     "ConvertResponse",

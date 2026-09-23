@@ -12,14 +12,16 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import ConfigDict, Field, RootModel
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from .. import common_types
 from .ContextPack import compression as compression_1
 from .ContextPack.budget import tokenizer as tokenizer_1
 
 
-class TokenizerSpec(BaseModel):
+class TokenizerSpec(ContractModel):
     """
     대상 LLM 토크나이저 3중 키(바이블 §5.5 budget.tokenizer; QueryPlan.pack.tokenizer 복사). 모델 식별자는 프로파일 값(플레이스홀더 허용)
     """
@@ -35,7 +37,7 @@ class TokenizerSpec(BaseModel):
     )
 
 
-class Budget(BaseModel):
+class Budget(ContractModel):
     """
     토큰 예산(바이블 §5.5·§9.1 이중 카운트). 이중 제한 k_max × (max_context_tokens − reserved_answer_tokens); safety_margin은 근사 카운트에만 적용
     """
@@ -83,7 +85,7 @@ class Budget(BaseModel):
     )
 
 
-class Ordering(BaseModel):
+class Ordering(ContractModel):
     """
     렌더 순서 전략(바이블 §9.2). budget_cut 뒤 최종 K개 기준 적용(K ≤ 1 포함). applied=false면 position = rank − 1
     """
@@ -98,7 +100,7 @@ class Ordering(BaseModel):
     )
 
 
-class PackOmittedEntry(BaseModel):
+class PackOmittedEntry(ContractModel):
     """
     제외 항목(바이블 §5.5 omitted). cite_id 없음. RankedSet.omitted(10 RankedOmittedEntry)의 step·related_chunk_id·explain은 복사하지 않는다
     """
@@ -116,7 +118,7 @@ class MissingAspect(RootModel[str]):
     root: str = Field(..., min_length=1)
 
 
-class Sufficiency(BaseModel):
+class Sufficiency(ContractModel):
     """
     충분성 신호(바이블 §9.1). partial 상태는 없고 coverage + confidence로 표현(ADR-0024)
     """
@@ -138,7 +140,7 @@ class Sufficiency(BaseModel):
     method: common_types.SufficiencyMethod
 
 
-class StopSignal(BaseModel):
+class StopSignal(ContractModel):
     """
     에이전트 루프용 파생 신호(바이블 §5.5). sufficient ⇔ sufficiency.status == sufficient
     """
@@ -151,7 +153,7 @@ class StopSignal(BaseModel):
     reason: str = Field(..., max_length=256, min_length=1)
 
 
-class Compression(BaseModel):
+class Compression(ContractModel):
     """
     overflow_policy compress 적용 기록(바이블 §5.5)
     """
@@ -172,7 +174,7 @@ class EntityCounts(RootModel[int]):
     root: int = Field(..., ge=0)
 
 
-class RedactionSummary(BaseModel):
+class RedactionSummary(ContractModel):
     """
     PII 처리 요약(바이블 §5.5). entity_counts는 엔티티 타입별 집계(열린 객체, 값 integer)
     """
@@ -184,7 +186,7 @@ class RedactionSummary(BaseModel):
     entity_counts: dict[str, EntityCounts]
 
 
-class RenderHints(BaseModel):
+class RenderHints(ContractModel):
     """
     렌더 힌트(바이블 §5.5). 공급자 페이로드 자체가 아니라 렌더러 선택·지시문·데이터마킹 정책
     """
@@ -219,7 +221,7 @@ class RenderHints(BaseModel):
     )
 
 
-class LatencyMs(BaseModel):
+class LatencyMs(ContractModel):
     """
     스테이지별 소요(ms). 7키 모두 필수이며 실행되지 않은 스테이지(route=no_retrieval 의 retrieve~postprocess, rerank.applied=false 의 rerank)는 0
     """
@@ -236,7 +238,7 @@ class LatencyMs(BaseModel):
     pack: int = Field(..., ge=0)
 
 
-class PackStepReport(BaseModel):
+class PackStepReport(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -245,7 +247,7 @@ class PackStepReport(BaseModel):
     took_ms: int = Field(..., ge=0)
 
 
-class AclRecheckReport(BaseModel):
+class AclRecheckReport(ContractModel):
     """
     acl_recheck 증적(바이블 §9.1, E9). route=no_retrieval(입력 0건)이면 {checked: 0, denied: 0, hint_hits: 0}
     """
@@ -293,7 +295,7 @@ class PackStep4(PackStepReport):
     step: Literal["citation_align"] = Field(..., description="pack 내부 고정 순서.")
 
 
-class PackExplainItem(BaseModel):
+class PackExplainItem(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -305,7 +307,7 @@ class PackExplainItem(BaseModel):
     explain: list[common_types.ExplainCode]
 
 
-class PackExplainOmitted(BaseModel):
+class PackExplainOmitted(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -315,7 +317,7 @@ class PackExplainOmitted(BaseModel):
     explain: list[common_types.ExplainCode]
 
 
-class PackExplain(BaseModel):
+class PackExplain(ContractModel):
     """
     explain=true 시 상위 K·제외 항목의 점수 요약(원시 점수 분해는 items[].scores)
     """
@@ -331,7 +333,7 @@ class PackExplain(BaseModel):
     omitted: list[PackExplainOmitted]
 
 
-class ContextPack(BaseModel):
+class ContextPack(ContractModel):
     """
     pack 스테이지 출력(바이블 §5.5 ContextPack·ContextItem, §8.2 pack 서브스텝, §9 패커·렌더러 정본). LLM 공급자 중립 표준 JSON: 대상 LLM 토크나이저로 재계산한 토큰 예산, litm_alternating 렌더 순서(position), 관련도순 불변 인용 ID(cite_id = d{rank}), 인용 세그먼트·provenance, 반환 직전 ACL 재검증 증적, 충분성 신호, 렌더 힌트를 담는다. items는 position 오름차순이며 content_hash = H("pack", canonical_json(hash_view(items)))(items에서 타임스탬프 키 acl.checked_at 를 제거한 해시 뷰; 바이블 §6.2·§9.1). 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조하고 재정의하지 않는다(FiltersApplied·SecurityFilter·StrategyFilter 는 10 §3.6·09 §5.1·§5.2 와 같은 형태의 사본, CI 동치 검사). 소유 문서: docs/03-contracts/11-context-pack.md
     """
@@ -414,7 +416,7 @@ class ContextPack(BaseModel):
     )
 
 
-class FiltersApplied(BaseModel):
+class FiltersApplied(ContractModel):
     """
     백엔드에 실제 전송된 필터 트리(바이블 §5.5 CandidateSet.filters_applied·§10.2 (a)(b)(c) 구분). 10 §3.6 FiltersApplied 와 같은 형태의 구조 사본(CI 동치 검사) — CandidateSet.filters_applied 를 그대로 복사(완화가 있었으면 완화 후 값). route=no_retrieval(CandidateSet 없음)이면 QueryPlan.filters 의 4묶음 + 계획 effective_hash
     """
@@ -438,7 +440,7 @@ class FiltersApplied(BaseModel):
     )
 
 
-class Diagnostics(BaseModel):
+class Diagnostics(ContractModel):
     """
     진단(바이블 §5.5 diagnostics). pack_steps는 고정 순서 4개
     """

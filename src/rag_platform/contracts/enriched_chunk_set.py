@@ -11,12 +11,14 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, constr
+from pydantic import ConfigDict, Field, constr
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 
 
-class Source(BaseModel):
+class Source(ContractModel):
     """
     detect 출력 SourceDocument 계약 산출물(원본 바이트 참조 아님; 원본 바이트는 SourceDocument.artifact). index가 requires_lineage로 로드해 acl·metadata를 읽는다(00 §3.2·I-7, 바이블 §4.1·§5.2)
     """
@@ -41,7 +43,7 @@ class Source(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class LineageRefs(BaseModel):
+class LineageRefs(ContractModel):
     """
     enrich 출력의 상류 참조 {source, parsed, normalized, chunk_set}. source·parsed·normalized는 입력 ChunkSet.lineage_refs 복사, 각 키의 schema_type은 00 §3.2 대응표와 일치(I-7). 자기 자신(enriched)·하류(embedded) 금지
     """
@@ -60,7 +62,7 @@ class LineageRefs(BaseModel):
     embedded: common_types.ArtifactRef | None = None
 
 
-class ChunkSetRef(BaseModel):
+class ChunkSetRef(ContractModel):
     """
     원 ChunkSet 산출물(청크 본문 미복제). lineage_refs.chunk_set과 blake3 동일
     """
@@ -85,7 +87,7 @@ class ChunkSetRef(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class BudgetUsed(BaseModel):
+class BudgetUsed(ContractModel):
     """
     LLM 보강 비용 기록(바이블 §5.4 EnrichedChunkSet.budget_used 7키) → usage_ledger·JobStatus.cost. LLM 호출이 없으면 calls=0, provider·model_id=null, 토큰·비용 0. prompt_hashes는 이 문서가 추가한 선택 필드
     """
@@ -120,7 +122,7 @@ class BudgetUsed(BaseModel):
     )
 
 
-class GeneratedPrefix(BaseModel):
+class GeneratedPrefix(ContractModel):
     """
     LLM 생성 접두어 기록(O-05 슬롯). generated는 embed_text[len(deterministic)+1 : text_start_in_embed-1] 과 같다. 프롬프트 해시는 budget_used.prompt_hashes["enricher.llm_context_prefix"]
     """
@@ -140,7 +142,7 @@ class GeneratedPrefix(BaseModel):
     )
 
 
-class EnrichStats(BaseModel):
+class EnrichStats(ContractModel):
     """
     바이블 §5.4 stats {chunks_enriched, llm_cache_hits, entities_total}
     """
@@ -158,7 +160,7 @@ class EnrichStats(BaseModel):
     chunks_partial: int | None = Field(None, description="선택(N). Enrichment.status=partial 인 청크 수", ge=0)
 
 
-class EnrichedChunkSet(BaseModel):
+class EnrichedChunkSet(ContractModel):
     """
     enrich 스테이지 출력(바이블 §5.4). 청크 본문은 chunk_set_ref로 참조하고 enrichments(object<chunk_id, Enrichment>)만 담는다. 3-텍스트 규칙(ADR-0029): embed_text = deterministic + "\\n" + (generated + "\\n")? + text, index_text = prefix(lexical) + "\\n" + lexical_text (+ hypothetical_questions). LLM 보강은 기본 끔(ADR-0016). 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/06-enriched-chunk-set.md
     """

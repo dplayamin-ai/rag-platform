@@ -100,9 +100,9 @@ HWPX는 OCF/OPC 유사 ZIP 패키지다(KS X 6101; 기술 지형 01 §포맷 구
 
 | 엔트리 | 역할 | 어댑터 사용 |
 |--------|------|-------------|
-| `mimetype` | `application/hwp+zip`(python-hwpx `DEFAULT_MIMETYPE`, hwpxlib `MineTypes.HWPX`). hwpxlib에는 `application/hwpml-package+xml`(`MineTypes.HWPML_Package`) 변형 상수가 있으나 실제 파일 출현은 미확인(기술 지형 01 §어댑터 계약·미해결 이슈 7) | `detect`가 판정([04-pipelines/03](03-parsing-router-and-format-detection.md) §2.3 허용 목록: `application/hwp+zip` 정본, `application/hwpml-package+xml` 확인 필요 as of 2026-09). 어댑터는 재검사하지 않으며 두 값의 패키지를 같은 규칙으로 읽는다(미해결 이슈 14) |
+| `mimetype` | `application/hwp+zip`(python-hwpx `DEFAULT_MIMETYPE`, hwpxlib `MineTypes.HWPX`). hwpxlib에는 `application/hwpml-package+xml`(`MineTypes.HWPML_Package`) 변형 상수가 있다. **실측(2026-09-23, `samples/hwpx` 4건: 한컴오피스 11·12 저장 공공누리 보도자료 3건 + python-hwpx 6.5.0 생성본 1건):** `mimetype` 항목은 4건 모두 `application/hwp+zip`이고, `application/hwpml-package+xml`은 `mimetype` 값이 아니라 `META-INF/container.xml`의 `ocf:rootfile[@full-path="Contents/content.hpf"]/@media-type` 값으로 출현한다 | `detect`가 판정([04-pipelines/03](03-parsing-router-and-format-detection.md) §2.3 허용 목록: `application/hwp+zip` 정본, `application/hwpml-package+xml`은 표본에서 `mimetype` 값으로 관찰되지 않음 — 실측 2026-09-23). 어댑터는 재검사하지 않으며 두 값의 패키지를 같은 규칙으로 읽는다(미해결 이슈 14) |
 | `version.xml` | 앱·포맷 버전 | `parser_fingerprint`에 넣지 않음(재현성은 라이브러리 버전으로 충분); `vendor_json` 파서 리포트에 기록 |
-| `META-INF/container.xml`, `META-INF/manifest.xml` | 루트 파일·암호화 매니페스트 | `manifest.xml`에 암호화 항목(요소명 확인 필요 as of 2026-09)이 있으면 암호화 HWPX로 판정(§3.16) |
+| `META-INF/container.xml`, `META-INF/manifest.xml` | 루트 파일·암호화 매니페스트 | `manifest.xml`에 암호화 항목(요소명 확인 필요 as of 2026-09 — 비암호화 표본 4건은 빈 `odf:manifest`(`urn:oasis:names:tc:opendocument:xmlns:manifest:1.0`)만 가진다. 어댑터는 ODF 관례 요소 `encryption-data`를 암호화 표지로 보며 암호화 표본은 미확보)이 있으면 암호화 HWPX로 판정(§3.16) |
 | `Contents/content.hpf` | OPF 스타일 매니페스트·메타데이터(`opf:metadata`, `opf:manifest/opf:item[@id, @href, @media-type]`) | 문서 메타(§3.15), BinData id → href 해석(§3.7), 섹션 순서(`opf:spine`) |
 | `Contents/header.xml` | 전역 정의 `hh:head/hh:refList`(글꼴·테두리·글자모양·문단모양·스타일·번호·글머리표·메모·변경 추적) | heading·목록·글자 크기 추론(§3.4·§3.5), 변경 추적(§3.13) |
 | `Contents/section{N}.xml` | 본문 구역 N(0-based) | 블록 생성의 유일한 원천(§3.2) |
@@ -114,12 +114,12 @@ HWPX는 OCF/OPC 유사 ZIP 패키지다(KS X 6101; 기술 지형 01 §포맷 구
 
 | 요소(`hh:` 네임스페이스) | 핵심 속성 | 어댑터 용도 |
 |------|------|------|
-| `hh:charProperties/hh:charPr` | `@id`, `@height`(글자 크기; 단위는 1/100pt로 알려짐 — 확인 필요), `hh:bold`, `hh:italic`, `hh:underline` | 본문 기준 글자 크기 중위수, heading 휴리스틱(§3.4 3순위) |
-| `hh:paraProperties/hh:paraPr` | `@id`; 자식 `hh:heading[@type ∈ {NONE, OUTLINE, NUMBER, BULLET}, @idRef, @level]` | **1순위 heading·목록 판정**(`OUTLINE` → heading, `NUMBER`/`BULLET` → list_item; `@level` 0-based) |
+| `hh:charProperties/hh:charPr` | `@id`, `@height`(글자 크기, 1/100pt — 실측: 기본 스타일 `바탕글`(10pt)의 `charPr` `height=1000`, 보도자료 본문 중위수 1400~1500), `hh:bold`(자식 요소 존재로 판정), `hh:italic`, `hh:underline` | 본문 기준 글자 크기 중위수, heading 휴리스틱(§3.4 3순위) |
+| `hh:paraProperties/hh:paraPr` | `@id`; 자식 `hh:heading[@type ∈ {NONE, OUTLINE, NUMBER, BULLET}, @idRef, @level]` | **1순위 heading·목록 판정**(`OUTLINE` → heading, `NUMBER`/`BULLET` → list_item; `@level` 0-based). 실측: `OUTLINE`의 `@idRef`는 `0`이고 개요 번호 모양은 구역 `hp:secPr/@outlineShapeIDRef`(표본 모두 `1`)가 가리키는 `hh:numbering`이다 |
 | `hh:styles/hh:style` | `@id`, `@type ∈ {PARA, CHAR}`, `@name`, `@engName`, `@paraPrIDRef`, `@charPrIDRef` | 2순위 heading(스타일 이름 `개요 N`/`Outline N`/`제목 N`/`제목`/`Title`) |
-| `hh:numberings/hh:numbering/hh:paraHead` | `@level`, `@start`, `@numFormat`, 본문 텍스트(형식 문자열, 예 `^1.`) | `NUMBER` 목록의 `numbering_label` 생성(카운터, §3.5) |
+| `hh:numberings/hh:numbering/hh:paraHead` | `@level`(실측: **1-based**, 한컴 저장본은 1~10 — `hh:heading/@level`(0-based) + 1에 대응), `@start`, `@numFormat`(실측 값 `DIGIT`·`HANGUL_SYLLABLE`·`CIRCLED_DIGIT`), 본문 텍스트(형식 문자열 — 실측 `^1.`·`^2.`·`^3)`·`^4)`·`(^5)`·`(^6)`, `^N`의 N은 1-based 레벨) | `NUMBER` 목록의 `numbering_label` 생성(카운터, §3.5) |
 | `hh:bullets/hh:bullet` | `@id`, `@char` | `BULLET` 목록의 `numbering_label` |
-| `hh:memoProperties`, `hh:trackChanges`, `hh:trackChangeAuthors` | 메모·변경 추적 정의 | `annotations[]`, `metadata.has_tracked_changes`(§3.13) |
+| `hh:memoProperties`, `hh:trackChanges`, `hh:trackChangeAuthors` | 메모·변경 추적 정의. 실측: 한컴 저장본은 변경 추적이 없어도 `hh:trackchageConfig`(철자 원문)를 가지므로 존재 판정은 `hh:trackChanges/hh:trackChange` 항목 수로 한다. python-hwpx 6.5.0은 `hh:trackChange[@type ∈ {Insert, Delete}, @authorID, @date, @id]`를 쓴다 | `annotations[]`, `metadata.has_tracked_changes`(§3.13) |
 | `hh:fontfaces`, `hh:borderFills`, `hh:tabProperties`, `hh:forbiddenWordList`, `hh:compatibleDocument`, `hh:docOption` | 서식 | 읽지 않음(표 `role` 휴리스틱의 테두리 유무만 `hh:borderFills` 참조, §3.6) |
 
 ### 2.3 `section{N}.xml`(본문)
@@ -130,23 +130,23 @@ HWPX는 OCF/OPC 유사 ZIP 패키지다(KS X 6101; 기술 지형 01 §포맷 구
 |------|------|------|------------|
 | `hp:p` | `hs:sec` 직계 / `hp:subList` 안 | 문단. `@id`, `@paraPrIDRef`, `@styleIDRef`, `@pageBreak`, `@columnBreak` | `paragraph`/`heading`/`list_item` |
 | `hp:run` | `hp:p` 안 | 글자모양 구간. `@charPrIDRef` | 블록 아님(텍스트 연결 단위; `element_path`에서 제외, §3.3) |
-| `hp:t` | `hp:run` 안 | 텍스트. 자식으로 `hp:tab`, `hp:lineBreak`, `hp:nbSpace`, `hp:fwSpace`, `hp:hyphen`, `hp:markpenBegin/End`, `hp:insertBegin/End`, `hp:deleteBegin/End`(변경 추적 표식 요소명 확인 필요) | `Block.text` 원문(§3.17) |
+| `hp:t` | `hp:run` 안 | 텍스트. 자식으로 `hp:tab`, `hp:lineBreak`, `hp:nbSpace`, `hp:fwSpace`, `hp:hyphen`, `hp:markpenBegin/End`, `hp:insertBegin/End`, `hp:deleteBegin/End`(실측: python-hwpx 6.5.0 생성본에서 `hp:t` 자식 `hp:deleteBegin[@Id, @TcId]`·`hp:deleteEnd[@Id, @TcId, @paraend]`·`hp:insertBegin`·`hp:insertEnd`이고 구간 텍스트는 표식의 tail이다. 한컴 저장본 변경 추적 표본은 미확보) | `Block.text` 원문(§3.17) |
 | `hp:secPr` | 구역 첫 문단의 런 안 | 구역 정의(용지·여백·각주 모양 등) | `page_break{section_index}`(첫 구역 제외, §3.14) |
 | `hp:ctrl` | 런 안 | 컨트롤 컨테이너: 자식 `hp:header`, `hp:footer`, `hp:footNote`, `hp:endNote`, `hp:colPr`, `hp:fieldBegin`, `hp:fieldEnd`, `hp:bookmark`, `hp:autoNum`, `hp:newNum`, `hp:pageNum`, `hp:pageHiding`, `hp:indexmark`, `hp:dutmal`, `hp:compose` | 종류별(§3.8·§3.9·§3.12) |
-| `hp:tbl` | 런 안 | 표. `@rowCnt`, `@colCnt`, `@repeatHeader`, `@pageBreak`, `@borderFillIDRef`; 자식 `hp:caption`, `hp:tr/hp:tc` | `table`(§3.6) |
-| `hp:tc` | `hp:tr` 안 | 셀. `@header`(hwpxlib `Tc.header` 기준, 스펙 확인 필요), `@borderFillIDRef`; 자식 `hp:cellAddr[@rowAddr, @colAddr]`, `hp:cellSpan[@rowSpan, @colSpan]`, `hp:cellSz`, `hp:subList/hp:p*` | `TableCell` |
-| `hp:pic` | 런 안 | 그림. 자식 `hc:img[@binaryItemIDRef]`, `hp:caption`, `hp:shapeComment`(대체 텍스트 후보, 확인 필요) | `figure{kind=image}`(§3.7) |
+| `hp:tbl` | 런 안 | 표. `@rowCnt`, `@colCnt`, `@repeatHeader`(실측: 한컴 저장본 표 24개 전부 `"1"` — 1×N 레이아웃 표 포함, 사실상 기본값), `@pageBreak`, `@borderFillIDRef`; 자식 `hp:caption`(실측: `hp:tr`보다 앞 첫 자식, `@side`·`@fullSz`·`@width`·`@gap`·`@lastWidth`), `hp:tr/hp:tc`, `hp:cellzoneList/hp:cellzone`(테두리 구역 — 무시) | `table`(§3.6) |
+| `hp:tc` | `hp:tr` 안 | 셀. `@header`(실측: 한컴 저장본 638셀·python-hwpx 모두 `"0"`/`"1"` 속성으로 존재, 표본 셀은 전부 `"0"`), `@borderFillIDRef`; 자식 순서 실측 `hp:subList`→`hp:cellAddr`→`hp:cellSpan`→`hp:cellSz`→`hp:cellMargin`; 자식 `hp:cellAddr[@rowAddr, @colAddr]`, `hp:cellSpan[@rowSpan, @colSpan]`, `hp:cellSz`, `hp:subList/hp:p*` | `TableCell` |
+| `hp:pic` | 런 안 | 그림. 자식 `hc:img[@binaryItemIDRef]`, `hp:caption`, `hp:shapeComment`(실측: 한컴 저장본 그림 13개 모두 존재하고 값은 자동 생성 문구 `그림입니다.` + `원본 그림의 이름: …` + `원본 그림의 크기: 가로 N pixel, 세로 M pixel`이다 — 대체 텍스트가 아니므로 어댑터는 이 패턴을 버린다(`drop_auto_shape_comment`). `hp:equation`도 `수식입니다.`를 가진다) | `figure{kind=image}`(§3.7) |
 | `hp:ole`, `hp:container`, `hp:chart`, `hp:video`, `hp:textart` | 런 안 | OLE·그룹·차트·동영상·글맵시 | `figure{kind=ole}` / 그룹 재귀 / 차트·동영상은 스킵 + `vendor_json` 기록 |
 | `hp:rect`, `hp:ellipse`, `hp:arc`, `hp:polygon`, `hp:curve`, `hp:line`, `hp:connectLine` | 런 안 | 도형. 텍스트가 있으면 `hp:drawText/hp:subList/hp:p*` | 글상자 내부 블록(`container=text_box`, §3.10) |
 | `hp:equation` | 런 안 | 수식. `@version`, `@baseLine`, `@font`; 자식 `hp:script`(한컴 수식 스크립트) | `formula{script}`(§3.11) |
 | `hp:footNote`, `hp:endNote` | `hp:ctrl` 안 | 각주·미주 본문 `hp:subList/hp:p*` | `footnote{kind}`(§3.8) |
-| `hp:header`, `hp:footer` | `hp:ctrl` 안 | 머리말·꼬리말 `hp:subList/hp:p*`; `@applyPageType ∈ {BOTH, EVEN, ODD}`(확인 필요) | 블록 아님 → `metadata.page_header_text/page_footer_text`(§3.9) |
-| `hp:fieldBegin`, `hp:fieldEnd` | `hp:ctrl` 안 | 필드 시작·끝. `@type`(예 `CLICK_HERE`, `HYPERLINK`, `DATE`, `MAILMERGE`, `BOOKMARK`; 전체 목록 확인 필요), `@name`, `@id`, `hp:parameters` | `fields[]`/`links[]`(§3.12) |
-| `hp:memogroup`/`hp:memo`(요소명 확인 필요) | 런 안 | 메모 | `annotations[]{kind=memo}`(§3.13) |
+| `hp:header`, `hp:footer` | `hp:ctrl` 안 | 머리말·꼬리말 `hp:subList/hp:p*`; `@applyPageType ∈ {BOTH, EVEN, ODD}`(실측: 한컴 저장본·python-hwpx 모두 `BOTH`만 관찰. python-hwpx 6.5.0은 같은 머리말을 `hp:secPr` 안에도 복제하고 `hp:headerApply`를 추가하므로 어댑터는 `hp:ctrl` 아래만 읽는다) | 블록 아님 → `metadata.page_header_text/page_footer_text`(§3.9) |
+| `hp:fieldBegin`, `hp:fieldEnd` | `hp:ctrl` 안 | 필드 시작·끝. `@type`(예 `CLICK_HERE`, `HYPERLINK`, `DATE`, `MAILMERGE`, `BOOKMARK`; 전체 목록 확인 필요), `@name`, `@id`, `hp:parameters`. 실측: 한컴 `CLICK_HERE`는 `@id`·`@name`·`@editable`·`@dirty`·`@zorder`·`@fieldid`·`@metaTag` + `hp:parameters[@cnt]/hp:integerParam[@name="Prop"]`·`hp:stringParam[@name ∈ {Command, Direction, HelpState}]`, 짝은 `hp:fieldEnd[@beginIDRef, @fieldid]`. python-hwpx 6.5.0 `HYPERLINK`는 `hp:parameters` 없이 URL을 `@name`에 둔다 | `fields[]`/`links[]`(§3.12) |
+| `hp:memogroup`/`hp:memo`(실측: python-hwpx 6.5.0은 `hp:memogroup/hp:memo[@id]/hp:paraList/hp:p*`로 쓴다. 한컴 저장본 메모 표본은 미확보) | `hs:sec` 직계(문단의 형제 — python-hwpx 실측) | 메모 | `annotations[]{kind=memo}`(§3.13) |
 
 ### 2.4 네임스페이스
 
-기존 파일은 `http://www.hancom.co.kr/hwpml/2011/{paragraph, head, core, section, app, ...}`를 쓴다. KS X 6101 2024-10-30 개정에 대응하는 `http://www.owpml.org/owpml/2024/*`는 python-hwpx 문서에 기술되어 있으나 실제 파일 출현은 미확인이다(기술 지형 01 미해결 이슈 6). **결정:** 어댑터는 네임스페이스 URI를 설정 가능한 허용 목록(`namespaces`, §10)으로 관리하고 로컬 이름(local-name)으로 매칭한다. 목록 밖 네임스페이스의 요소는 화이트리스트 밖 요소와 같이 처리한다(§6). `element_path`의 접두 `hp:`는 URI가 아니라 **논리 접두**이며(§3.3), 2011·2024 파일이 같은 경로를 낳는다.
+기존 파일은 `http://www.hancom.co.kr/hwpml/2011/{paragraph, head, core, section, app, ...}`를 쓴다. 실측(2026-09-23, `samples/hwpx` 4건: 한컴오피스 11·12 저장 공공누리 보도자료 3건 + python-hwpx 6.5.0 생성본 1건): 루트 요소는 2011 URI이지만 모든 파트가 `hp10`=`http://www.hancom.co.kr/hwpml/2016/paragraph`·`ooxmlchart`·`hwpunitchar`(2016) 네임스페이스도 선언하고 `header.xml`이 `hp:switch/hp:case[@hp:required-namespace="…/2016/HwpUnitChar"]`를 쓰므로 허용 목록 기본값에 2016 접두를 포함한다(§10). `version.xml`은 `xmlVersion` 1.4·1.5였다. KS X 6101 2024-10-30 개정에 대응하는 `http://www.owpml.org/owpml/2024/*`는 python-hwpx 문서에 기술되어 있으나 실제 파일 출현은 미확인이다(기술 지형 01 미해결 이슈 6). **결정:** 어댑터는 네임스페이스 URI를 설정 가능한 허용 목록(`namespaces`, §10)으로 관리하고 로컬 이름(local-name)으로 매칭한다. 목록 밖 네임스페이스의 요소는 화이트리스트 밖 요소와 같이 처리한다(§6). `element_path`의 접두 `hp:`는 URI가 아니라 **논리 접두**이며(§3.3), 2011·2024 파일이 같은 경로를 낳는다.
 
 ## 3. OWPML 어댑터 설계(`parser.hwpx_python_hwpx`)
 
@@ -156,7 +156,7 @@ HWPX는 OCF/OPC 유사 ZIP 패키지다(KS X 6101; 기술 지형 01 §포맷 구
 
 | 규칙 | 내용 |
 |------|------|
-| 사전 판정 우선 | 암호화·HWP 5.0 오판 등은 `detect`의 `container_flags`·`format`으로 결정하고 라이브러리 예외 타입에 의존하지 않는다(기술 지형 01 §어댑터 계약). 어댑터 안에서 발생한 예외는 모두 `parse.conversion_failed`로 변환한다 |
+| 사전 판정 우선 | 암호화·HWP 5.0 오판 등은 `detect`의 `container_flags`·`format`으로 결정하고 라이브러리 예외 타입에 의존하지 않는다(기술 지형 01 §어댑터 계약). 어댑터 안에서 발생한 예외는 모두 `parse.conversion_failed`로 변환한다. 단 패키지 열기 단계의 컨테이너·XML 손상은 §6 표대로 `parse.corrupt_container`다. 실측(python-hwpx 6.5.0): 비 ZIP·OLE2(HWP 5.0) → `zipfile.BadZipFile`, `mimetype`·`container.xml`·`content.hpf` 누락 → `hwpx.opc.package.HwpxStructureError`(⊂ `HwpxPackageError`), 파트 누락 → `HwpxPackageError`, 경로 이탈·압축비 > 1000·DTD/엔티티 선언 → `hwpx.opc.security.HwpxSecurityError`(`ValueError` 하위), XML 문법 오류 → `lxml.etree.XMLSyntaxError`(`SyntaxError` 하위). 파트 읽기 상한은 멤버 128 MiB·전체 512 MiB·항목 4,096개·XML 64 MiB(`hwpx.opc.security`). `hp:p/@id`는 표본에서 `0`·`2147483648`이 반복되어 키로 쓸 수 없다(`element_path`가 유일 키) |
 | 화이트리스트 | §2.3 표의 요소만 해석한다. 목록 밖 요소는 텍스트 자식(`hp:t`)만 수집하고 요소명을 `vendor_json` 파서 리포트에 남긴다. 텍스트를 버린 경우에만 `quality=degraded`([03 §5.3](../03-contracts/03-parsed-document.md) (d)) |
 | 결정성 | 같은 바이트 + 같은 `fingerprint`는 같은 `ParsedDocument`(`created_at` 제외). 순회 순서는 XML 문서 순서, 카운터는 문서 순서로만 증가. 문서 전체 통계(본문 글자 크기 중위수·`genre`·번호 랭크 사상표, §3.4)는 **1패스 사전 스캔**에서 확정하고 2패스 블록 생성 중에는 바꾸지 않는다 |
 | 원문 보존 | `Block.text`는 NFC 미적용 원문(§3.17). 정규화·PUA 제거·띄어쓰기 교정은 `normalize`의 일이다(기술 지형 13 §띄어쓰기 교정과 정규화 도구) |
@@ -302,7 +302,7 @@ class HwpxPythonHwpxParser:                      # src/rag_platform/adapters/par
 
 | 원천 | `ordered` | `level` | `numbering_label` |
 |------|-----------|---------|-------------------|
-| `hh:heading[@type="NUMBER"]` | `true` | `@level`(0-based) | `hh:numbering[@id=@idRef]/hh:paraHead[@level=@level]`의 형식 문자열에서 `^N` 자리표(형식 문자 확인 필요)를 현재 카운터로 치환. 카운터는 `(numbering id, level)`별로 문서 순서로 증가하고 상위 레벨 항목이 나오면 하위 레벨을 `@start`로 되돌린다. 한컴 자동 번호는 `hp:t`에 없으므로 이 생성이 유일한 라벨 원천이다 |
+| `hh:heading[@type="NUMBER"]` | `true` | `@level`(0-based) | `hh:numbering[@id=@idRef]/hh:paraHead[@level=@level+1]`의 형식 문자열에서 `^N` 자리표(실측: N은 1-based 레벨, 예 `^1.`·`^2.`·`(^5)`)를 레벨 N의 현재 카운터(`@numFormat` 형식)로 치환. 카운터는 `(numbering id, level)`별로 문서 순서로 증가하고 상위 레벨 항목이 나오면 하위 레벨을 `@start`로 되돌린다. 한컴 자동 번호는 `hp:t`에 없으므로 이 생성이 유일한 라벨 원천이다 |
 | `hh:heading[@type="BULLET"]` | `false` | `@level` | `hh:bullet[@id=@idRef]/@char` |
 | 텍스트 마커(§3.4 3순위 미달, `2 ≤ score`) | 번호 패턴 `true` / 글머리 `false` | 마커 랭크 스택: 글머리 `□`(0) → `○`(1) → `-`(2) → `·`·`▪`(3); 번호 패턴은 §3.4 1패스 사상표의 `level` − 1. 스택은 heading 경계에서 초기화 | 마커 원문. `text`에서 마커와 뒤따르는 공백을 제거 |
 | `※`, `붙임`, `참고` 선두 문단 | — | — | `list_item`이 아니라 `paragraph`. 마커 제거 없음 |
@@ -318,7 +318,7 @@ class HwpxPythonHwpxParser:                      # src/rag_platform/adapters/par
 | 격자 | `n_rows=@rowCnt`, `n_cols=@colCnt`. 셀은 `hp:cellAddr/@rowAddr → row`, `@colAddr → col`, `hp:cellSpan/@rowSpan → row_span`, `@colSpan → col_span`. 앵커 셀만 기록하고 격자 덮임·겹침을 검증한다(P-12). 검증 실패(선언 격자와 셀 합 불일치)는 `n_rows/n_cols`를 셀에서 재계산하고 `merged_cells_preserved=false` + `quality=degraded` |
 | 셀 텍스트 | `hp:tc/hp:subList/hp:p*`를 `\n`으로 병합. 셀 안 그림·수식은 자식 블록(`container=table_cell`, 부모 = 표 블록)으로 표 직후에 두고 셀 `text`에는 `figure`는 `alt_text`, `formula`는 `script`를 남긴다 |
 | 중첩 표 | 셀 안 `hp:tbl`은 자식 `table` 블록(`container=table_cell`), 셀 `text`에 `[table:{block_id}]`, `nested_table_block_id` 기록. 깊이 ≤ 3, 초과는 셀 텍스트로 평탄화 + `merged_cells_preserved=false` |
-| 헤더 행 | 1순위 `hp:tc/@header="1"`인 행(hwpxlib `Tc.header`; 스펙 속성명 확인 필요) 또는 `hp:tbl/@repeatHeader="1"`의 첫 행 → `header_row_indices`, `header_inferred=false`. 없으면 첫 행을 헤더로 추정하고 `header_inferred=true`. 첫 열 셀은 첫 행 헤더와 다른 `borderFill`이거나 전체가 짧은 명사구(≤ 12 코드포인트)이면 `header_kind=row`(초안 휴리스틱). 한 행 전체 병합(`col_span=n_cols`)은 `section` |
+| 헤더 행 | 1순위 `hp:tc/@header="1"`인 행(속성명 실측 확인) 또는 `hp:tbl/@repeatHeader="1"`의 첫 행(실측 주의: 한컴 저장본은 표 24개 전부 `repeatHeader="1"`이라 사실상 기본값이다 — 헤더 신호로서의 신뢰도는 골든셋으로 재검토, 미해결 이슈 1) → `header_row_indices`, `header_inferred=false`. 없으면 첫 행을 헤더로 추정하고 `header_inferred=true`. 첫 열 셀은 첫 행 헤더와 다른 `borderFill`이거나 전체가 짧은 명사구(≤ 12 코드포인트)이면 `header_kind=row`(초안 휴리스틱). 한 행 전체 병합(`col_span=n_cols`)은 `section` |
 | `role` | `data` 기본. `layout`: 1×1 표(공문 박스) 또는 테두리 없음(`hh:borderFills` 전 변 `NONE`)이고 헤더 없음. `toc`: 셀 텍스트의 ≥ 50%가 `.{3,}\s*\d+$` 또는 우측 열 전부 숫자. `form`: 빈 셀 비율 ≥ 30%이고 첫 열·첫 행이 라벨형. 휴리스틱은 초안이며 골든셋으로 조정(§8) |
 | 선형화 `text` | 앵커 셀을 행 우선으로 나열, 셀 구분 U+0009, 행 구분 U+000A([03 §6](../03-contracts/03-parsed-document.md) 규약). `TableCell.provenance.char_*`는 이 문자열 안의 구간 |
 | `html_ref` | 어댑터가 `<table>`·`<thead>`·`<tr>`·`<th>/<td rowspan colspan>`를 생성해 `derived/table_html/`에 저장(`text/html`), `artifacts[]{kind=table_html, block_id}`에 등록. 스타일·색 없음 |
@@ -332,7 +332,7 @@ class HwpxPythonHwpxParser:                      # src/rag_platform/adapters/par
 | 바이트 해석 | `hc:img/@binaryItemIDRef` → `content.hpf` `opf:manifest/opf:item[@id]/@href`(예 `BinData/image1.png`) → ZIP 엔트리 스트리밍 읽기. `@media-type`을 `ArtifactRef.media_type`으로 |
 | 저장 | `ctx.artifacts.put_derived(bytes, kind="figure_crop", ext=확장자, media_type)` → `tenants/{tenant_id}/derived/figure_crop/{blake3[:2]}/{blake3}.{ext}`; `figure.artifact` = 그 `ArtifactRef`; `artifacts[]{kind=figure_crop, block_id}` 등록. HWPX 원 바이트에 별도 `kind`가 없어 `figure_crop`을 재사용한다(미해결 이슈 2) |
 | 동일 그림 재사용 | 같은 `binaryItemIDRef`가 여러 `hp:pic`에서 참조되면 저장 1회(콘텐츠 주소화), 블록은 각각 |
-| `alt_text` | `hp:pic/hp:shapeComment` 텍스트(요소명 확인 필요). 없으면 `null`, `text=""` |
+| `alt_text` | `hp:pic/hp:shapeComment` 텍스트(요소명 실측 확인). 한컴 자동 생성 문구(`그림입니다.`로 시작 + 원본 그림 이름·크기)는 대체 텍스트가 아니므로 `null`(설정 `drop_auto_shape_comment`, 기본 켬). 없으면 `null`, `text=""` |
 | 캡션 | `hp:pic/hp:caption` → `caption` 블록(§3.2). 없고 인접 문단이 `^[<\[(]?\s*(그림|사진|도)\s*\d+` 패턴이면 승격 |
 | OLE·차트 | `hp:ole` → `figure{kind=ole}` 바이너리만; `hp:chart`는 블록 없음(`vendor_json` 기록). 텍스트화(OCR·캡셔닝)는 `enrich`의 일이며 파서는 `caption_generated`·`caption_model`을 생략한다([03 §7](../03-contracts/03-parsed-document.md)) |
 | OCR 옵션 | 기본 끔. `figure_ocr`(§10, 제안)은 **본문이 스캔 이미지 1장인 문서**(텍스트 문단이 사실상 없고 그림 1장이 문서 전체)에 한정한 `parse` 단계 예외다 — 그 밖의 그림 텍스트화(OCR·캡셔닝)는 위 행대로 `enrich`의 일이다. 켜면 RapidOCR PP-OCRv5 korean mobile(인프로세스, O-08)로 그림 안 텍스트를 읽어 `paragraph` 블록(`source=ocr`, `confidence` 필수, `container=body`, `element_path=/hp:sec[i]/hp:p[j]/hp:pic[k]/ocr/block[b]`)을 그림 블록 직후 형제로 추가한다. 적용 조건은 문서의 `hp:pic`가 1개이고 `figure.artifact.size_bytes ≥ 임계`이며 1패스 `n_body`가 임계 미만인 경우로 한정한다(초안). 켜면 `source_kind`는 여전히 `flow`이며 `page`·`bbox`는 `null`이다. [03 §5.1](../03-contracts/03-parsed-document.md) `flow` 행은 블록 `source`로 `text_layer`·`converted`만 열거하므로 `ocr` 허용은 03 개정 제안이다(미해결 이슈 19) |
@@ -376,7 +376,7 @@ class HwpxPythonHwpxParser:                      # src/rag_platform/adapters/par
 |------|------|
 | 블록 | `hp:ctrl/hp:footNote` → `footnote{kind=footnote}`, `hp:endNote` → `footnote{kind=endnote}`. `text` = `hp:subList/hp:p*` 병합(`\n`), `container=footnote_body` |
 | 앵커 | `anchor_block_id` = 컨트롤을 담은 문단(또는 표·글상자) 블록. `anchor_char_offset` = 그 블록 `text` 안에서 컨트롤이 놓인 위치의 코드포인트 오프셋(컨트롤 앞까지의 런 텍스트 길이; `numbering_label` 제거분을 뺀다). 각주 표식 문자열이 본문에 없는 경우(한컴 자동 번호) 오프셋만 기록하고 `marker`는 아래에서 생성 |
-| `marker` | 각주 본문 첫 문단의 `hp:autoNum`(있으면 그 번호 형식) 또는 `hh:footNotePr` 번호 형식 + 문서 순서 카운터(형식 요소·속성 확인 필요). 형식을 알 수 없으면 `"{n})"` |
+| `marker` | 각주 본문 첫 문단의 `hp:autoNum`(있으면 그 번호 형식) 또는 구역 `hp:secPr/hp:footNotePr`(`hh:`가 아니라 `hp:` — 실측) 번호 형식 + 문서 순서 카운터. 실측(python-hwpx 6.5.0): `hp:footNote[@number, @suffixChar, @instid]`, 첫 문단 `hp:ctrl/hp:autoNum[@num, @numType ∈ {FOOTNOTE, ENDNOTE}]/hp:autoNumFormat[@type, @userChar, @prefixChar, @suffixChar, @supscript]` — marker = `prefixChar` + 번호(`@type` 형식) + `suffixChar`(예 `1)`). 형식을 알 수 없으면 `"{n})"` |
 | 위치 | 각주는 앵커와 **같은 부모의 형제**로 앵커 직후; 미주는 문서 끝 루트 형제([03 §4.2](../03-contracts/03-parsed-document.md)). 표·글상자 안 앵커의 각주는 표 블록·글상자 블록 뒤 |
 | 다중 | 한 문단에 각주 여러 개면 문서 순서대로 연속 형제 |
 
@@ -397,7 +397,7 @@ class HwpxPythonHwpxParser:                      # src/rag_platform/adapters/par
 | `@type` | 처리 |
 |---------|------|
 | `CLICK_HERE`(누름틀), `DATE`, `MAILMERGE`, `BOOKMARK`(확인 필요) | 필드 구간 텍스트는 문단 `text`에 그대로 포함. `fields[]{name=@name, type=@type 원문, value=구간 텍스트, block_id}` |
-| `HYPERLINK` | `links[]{block_id, char_start, char_end, href}` — `href`는 `hp:parameters` 안 `Command` 문자열 파라미터(확인 필요)에서 추출. 문단 `text`는 표시 텍스트 |
+| `HYPERLINK` | `links[]{block_id, char_start, char_end, href}` — `href`는 `hp:parameters` 안 `Command` 문자열 파라미터(한컴 저장본 HYPERLINK 표본 미확보 — 확인 필요)에서 추출하고, 없으면 `@name`(실측: python-hwpx 6.5.0 생성본은 URL을 `@name`에 둔다). 문단 `text`는 표시 텍스트 |
 | 그 외·미지 타입 | 텍스트만 포함, `fields[]`에 `type` 원문으로 기록 |
 
 `fieldBegin`/`fieldEnd`가 문단 경계를 넘는 경우는 시작 문단의 블록에 귀속하고 `value`는 시작 문단 안 구간만 담는다.
@@ -414,11 +414,11 @@ HWPX는 페이지 개념이 약하다: 페이지는 렌더링 결과이며 파�
 
 ### 3.15 메타데이터
 
-| `ParsedDocument.metadata` | 원천(`Contents/content.hpf`, `opf:metadata`; 항목 이름은 확인 필요 as of 2026-09) | 폴백 |
+| `ParsedDocument.metadata` | 원천(`Contents/content.hpf`, `opf:metadata`. 실측 항목: `opf:title`, `opf:language`, `opf:meta[@name ∈ {creator, subject, description, lastsaveby, CreatedDate, ModifiedDate, date, keyword}]` — 값은 요소 텍스트이고 `@content="text"`는 타입 표지다. python-hwpx `HwpxPackage.document_metadata()`가 같은 항목을 돌려준다) | 폴백 |
 |------|------|------|
-| `title` | `opf:title` | `level=0` heading의 `text`; 둘 다 없으면 생략(`IngestRequest.metadata.title`이 1순위 원천, 바이블 §5.4) |
+| `title` | `opf:title`(실측 주의: 공문 서식 파일은 `3`·`□ 포럼개요`처럼 서식 원본의 제목이 남아 신뢰도가 낮다 — 미해결 이슈 1) | `level=0` heading의 `text`; 둘 다 없으면 생략(`IngestRequest.metadata.title`이 1순위 원천, 바이블 §5.4) |
 | `authors[]` | `opf:meta[@name="creator"]`, `lastsaveby` | 생략 |
-| `created_at`, `modified_at` | `opf:meta[@name="CreatedDate"]`, `ModifiedDate` → RFC 3339 UTC(원 표기에 시간대가 없으면 `Asia/Seoul`로 해석 — 초안 규칙, 미해결 이슈 7) | 생략 |
+| `created_at`, `modified_at` | `opf:meta[@name="CreatedDate"]`, `ModifiedDate`(실측 표기 `2026-09-23T07:05:42Z`; `date` 항목은 한국어 자유 서식이라 쓰지 않음) → RFC 3339 UTC(원 표기에 시간대가 없으면 `Asia/Seoul`로 해석 — 초안 규칙, 미해결 이슈 7) | 생략 |
 | `page_header_text[]`, `page_footer_text[]` | §3.9 | 빈 배열 |
 | `has_tracked_changes` | §3.13 | `false` |
 | `genre` | `IngestRequest.metadata.genre` 힌트 우선; 없으면 §3.4 1패스 원시 카운트로 추론(첫 일치) — `n_article ≥ 5` → `law_article`; `n_form_tbl ≥ 1 ∧ n_body ≤ 20` → `form`; `n_marker / n_body ≥ 0.6` → `outline_report`; 그 외 생략. 블록 분류 결과(`list_item` 수·`role=form` 표 수)는 입력이 아니다(순환 방지) | 생략 |
@@ -710,7 +710,7 @@ ingest:
   parse:
     options:
       hwpx:
-        namespaces: ["http://www.hancom.co.kr/hwpml/2011", "http://www.owpml.org/owpml/2024"]
+        namespaces: ["http://www.hancom.co.kr/hwpml/2011", "http://www.hancom.co.kr/hwpml/2016", "http://www.owpml.org/owpml/2024"]
         heading_inference: {enabled: true, min_score: 4, max_label_free_len: 40, font_delta: 100}
         tracked_changes: accept_all          # accept_all | reject_all
         figure_ocr: false                    # 스캔 이미지 본문 공문용(RapidOCR in_process)
@@ -741,7 +741,7 @@ ingest:
 
 | # | 이슈 | 제안 |
 |---|------|------|
-| 1 | OWPML 태그·속성 중 "확인 필요"로 표기한 항목: `hp:tc/@header`, `hp:tbl/@repeatHeader`, `hp:caption/@side` 값, `hp:shapeComment`, `hp:header/@applyPageType`, 변경 추적 표식 요소명, 메모 요소명, `hp:fieldBegin/@type` 전체 목록과 `hp:parameters` 구조, `hh:charPr/@height` 단위, `hh:paraHead` 형식 자리표, `content.hpf` 메타 항목 이름, 암호화 매니페스트 항목, `hp:hyphen` 치환 문자 | python-hwpx 6.4.x `schema-overview`와 hwpxlib 소스로 실측 후 §2.3·§3 표 갱신(patch) |
+| 1 | **부분 해소(2026-09-23 스파이크 실측, `samples/hwpx` 4건).** 실측 반영: `hp:tc/@header`·`hp:tbl/@repeatHeader`(한컴 기본 `1`)·`hp:shapeComment`(자동 문구)·`hp:header/@applyPageType`·`CLICK_HERE` `hp:parameters` 구조·`hh:charPr/@height` 단위·`hh:paraHead` 레벨과 `^N` 자리표·`content.hpf` 메타 항목·`mimetype`/`hwpml-package+xml` 위치·2016 네임스페이스(§2.1~§2.4·§3.5~§3.8·§3.15). 남은 항목: 암호화 매니페스트 요소명, `hp:hyphen` 치환 문자, 한컴 저장본의 `hp:caption/@side` 값·변경 추적 표식·메모 위치·HYPERLINK `Command` 형식, `hp:fieldBegin/@type` 전체 목록. 추가 결정 필요: `repeatHeader="1"`을 명시 헤더(`header_inferred=false`)로 볼지, 공문 서식의 `opf:title` 신뢰 여부 | 한컴 저장 표본(변경 추적·메모·하이퍼링크·암호화 포함) 확보 후 §2.3·§3 표 갱신(patch) |
 | 2 | HWPX BinData 원 바이트의 `artifacts[].kind`가 없어 `figure_crop`을 재사용한다 | 바이블 §5.4 `artifacts.kind`에 `figure_source` 추가(minor) 또는 `figure_crop` 의미 확대 명시(patch) |
 | 3 | 구조 손실·요소 스킵·미리보기 불일치·공백 소실 의심을 `warnings[]`에 남길 카탈로그 코드가 없다. 현재는 `quality=degraded` + `TableData.quality` + `vendor_json` 리포트로만 표현 | `parse.structure_lost`(—), `parse.element_skipped`(—), `parse.preview_mismatch`(—), `parse.spacing_suspect`(—) 추가 ADR(minor; [13 미해결 이슈](../03-contracts/13-error-model.md)와 공동) |
 | 4 | heading 3순위 점수 임계·가중치, 표 `role` 휴리스틱, `genre` 추론 임계는 초안이다 | §8 코퍼스로 측정 후 확정; `heading_inference` 옵션 값 갱신 |

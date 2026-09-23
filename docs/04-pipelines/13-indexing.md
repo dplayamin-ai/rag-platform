@@ -2,7 +2,7 @@
 title: 인덱싱
 status: active
 owner: architecture
-version: 0.1.1
+version: 0.1.2
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -130,9 +130,9 @@ class IndexBackend(Protocol):
 | `tenant_isolation` | `[payload_filter, shard_key, index_per_tenant]` | `[payload_filter, shard_key, index_per_tenant]`(`shard_key` = routing 고정 + 전용 샤드 라우팅, 바이블 §10.4·[ADR-0028](../06-adr/0028-tenant-isolation-tiering-policy.md)) | `security.tenant_isolation_tier ∈ 모든 vector·lexical 백엔드의 목록`(15 문서 P-6) — `standard`의 100만 청크 초과 `shard_key` 승격(바이블 §7.2·E15)이 두 백엔드 모두에서 통과해야 한다 |
 | `supports_alias_swap` | `true` | `true` | blue/green 가능 여부 |
 | `supports_multivector` | `true`(`max_sim`) | `false` | `false` → `late_interaction` 채널 자동 비활성 + `degraded{channel.late_interaction, capability_unsupported}` |
-| `max_vector_dim` | `null`(공식 상한 미공개, 확인 필요 as of 2026-09) | `16000`(k-NN `knn_vector` 상한; 본 설계는 벡터 미저장) — 확인 필요 as of 2026-09 | 프로파일 dense `dim` ≤ 상한, 초과 시 `plugin.capability_unsupported` |
+| `max_vector_dim` | `null`(공식 상한 미공개. 로컬 모드는 상한 없음 실측 — 70,000차원 컬렉션 생성 성공, §6.1; 서버 상한은 `needs_docker`) | `16000`(k-NN `knn_vector` 상한; 본 설계는 벡터 미저장) — 확인 필요 as of 2026-09 | 프로파일 dense `dim` ≤ 상한, 초과 시 `plugin.capability_unsupported` |
 | `max_multivector_elements` | `1048576`(`sub_vectors × dim`, 공식 vectors 문서) | `null` | `late_interaction` 토큰 수 × 128 ≤ 상한 |
-| `supports_payload_only_points` | `null`(빈 named vectors 허용 여부 확인 필요 as of 2026-09) | `true`(벡터 필드 없음) | `ChunkTextStore` `vector_payload` 구현 조건(§13.2) |
+| `supports_payload_only_points` | `null`(로컬 모드는 `vector={}` 포인트를 수용함을 실측, §6.1; 서버 확인 전까지 `null` 유지 — `needs_docker`) | `true`(벡터 필드 없음) | `ChunkTextStore` `vector_payload` 구현 조건(§13.2) |
 
 ```json
 {
@@ -199,7 +199,7 @@ payload 인덱스는 컬렉션 생성 직후 `create_payload_index`로 만든다
 | keyword(배열) | `acl_allow`, `acl_deny`, `heading_path`, `tags`, `lexical_terms`, `entity_ids` | `acl_*`는 `on_disk: false`, `lexical_terms`·`entity_ids`는 `on_disk: true` |
 | bool | `is_current` | — |
 | integer | `index_generation`, `level`, `tree_level`, `page_start`, `page_end` | `lookup: true, range: true` |
-| datetime | `acl_embargo_until`, `acl_expires_at`, `doc_date` | 옵션 없음(datetime 인덱스는 범위 조건을 기본 지원; Qdrant `DatetimeIndexParams`는 `is_principal`·`on_disk`만 받고 `lookup`/`range`는 `IntegerIndexParams` 전용 — 확인 필요 as of 2026-09; 04 §4.4의 `range: true` 표기 정정 제안, 미해결 이슈 5); `doc_date`의 `is_principal` 힌트는 확인 필요(as of 2026-09, 04 미해결 이슈 13) |
+| datetime | `acl_embargo_until`, `acl_expires_at`, `doc_date` | 옵션 없음(datetime 인덱스는 범위 조건을 기본 지원; Qdrant `DatetimeIndexParams`는 `is_principal`·`on_disk`·`memory`·`enable_hnsw`만 받고 `lookup`/`range`는 `IntegerIndexParams` 전용 — **확인됨**(qdrant-client 1.19.1 모델 필드, §6.1; `DatetimeRange` 범위 필터는 인덱스 옵션 없이 동작); 04 §4.4의 `range: true` 표기 정정 제안, 미해결 이슈 5); `doc_date`의 `is_principal` 힌트는 확인 필요(as of 2026-09, 04 미해결 이슈 13) |
 | 선언 타입 | `custom.{key}` | 컬렉션 `filterable_fields` 선언 키만(keyword/integer/float/datetime) |
 
 `text` 타입 payload 인덱스는 **만들지 않는다**. Qdrant 공식 빌드의 `multilingual` 토크나이저는 한국어 형태소 분석이 없으므로(charabia `korean` 피처 미활성, 07-tech-landscape/06 §Qdrant) 한국어 키워드 조건은 `lexical_terms` keyword 배열로만 처리한다(D-15).
@@ -214,7 +214,7 @@ payload 인덱스는 컬렉션 생성 직후 `create_payload_index`로 만든다
 | 배치 병렬도 | 백엔드당 동시 배치 4(초안 목표; `asyncio.Semaphore(4)`), 순서 무관(`record_id` 멱등) | §11 |
 | 재시도 | gRPC `UNAVAILABLE`·`DEADLINE_EXCEEDED`·5xx → `index.backend_unavailable`(셸 정책 5회, 지수, 최대 간격 5m); 배치 타임아웃 30s(초안 목표) | 바이블 §4.4, 09 문서 §5 |
 | 하트비트 | 배치마다 `ctx.heartbeat()`; `resumable=no`이므로 재시도는 첫 배치부터 다시 upsert(멱등이라 무해) | §4.4 |
-| upsert 모드 | 기본 upsert. Qdrant 1.17+ insert-only 모드는 쓰지 않는다 — 재시도가 같은 `record_id`를 다시 쓰므로 insert-only는 충돌 오류를 낸다(확인 필요 as of 2026-09) | 07-tech-landscape/06 |
+| upsert 모드 | 기본 upsert. insert-only 모드(`PointsList.update_mode = UpdateMode.INSERT_ONLY`, 1.19.1 클라이언트에 존재)는 쓰지 않는다 — 로컬 모드 실측에서 insert-only는 기존 id를 **오류 없이 건너뛰고**(상태 `completed`, 기존 payload 유지, §6.1) 재시도가 바뀐 payload(ACL 갱신 등)를 조용히 버리게 된다. 서버의 같은 동작 여부는 `needs_docker` | 07-tech-landscape/06 |
 
 ### 4.3 표준 필터 DSL → Qdrant `Filter` 변환
 
@@ -228,7 +228,7 @@ payload 인덱스는 컬렉션 생성 직후 `create_payload_index`로 만든다
 | `gt, gte, lt, lte` | `range=Range(...)`(integer·float) / `range=DatetimeRange(...)`(datetime) | `doc_date`는 `string(date)`라 `DatetimeRange` |
 | `exists: true` / `false` | payload 규약상 명시적 `null`로 기록되는 필드(`acl_embargo_until`·`acl_expires_at`, §3 7단계)는 `must_not: [IsNullCondition]` / `IsNullCondition`만; 키 부재가 허용되는 필드(`custom.*`, `external_id` 등 N 필드)는 `must_not: [IsNull, IsEmpty]` / `should: [IsNull, IsEmpty]` | 예시 JSON의 `is_null` 단독 사용이 전자의 경우 |
 | `contains_any` / `contains_all` | `match=MatchAny` / `must: [MatchValue ×n]` | 배열 keyword(`tags`, `heading_path`, `entity_ids`) |
-| `prefix` | 기본 **미지원** → 플래너가 해당 절을 완화 대상으로 취급 | keyword 인덱스는 접두 일치가 없고 `text` 인덱스는 쓰지 않는다. 능력 선언 필드 제안(미해결 이슈 3) |
+| `prefix` | `match=MatchPrefix(prefix)` | Qdrant 1.19 keyword 인덱스 `prefix: true` + `MatchPrefix`(qdrant-client 1.19.1 모델 확인, 로컬 모드 동작 실측 §6.1). 어댑터는 `external_id`·`doc_type`·`department`·`heading_path`·`tags` keyword 인덱스에 `prefix: true`를 켠다; 서버 인덱스 크기·지연은 `needs_docker`(미해결 이슈 3) |
 | 가상 필드 `page eq v` / `in [v…]` | `must: [range(page_start ≤ v), range(page_end ≥ v)]` / `should` OR 결합 | 바이블 §5.7 `FilterableField` |
 | `acl_classification ≤ :max` | `match=MatchAny(any=[허용 등급 목록])` | 열거 순서 비교 불가 → 집합으로 변환(04 §5.2 규칙과 대칭) |
 
@@ -275,8 +275,8 @@ payload 인덱스는 컬렉션 생성 직후 `create_payload_index`로 만든다
 |------|-----------|------|---------------------|
 | `query_points(collection=alias, using="dense", query=dense_vec, query_filter=Filter, limit=top_k, with_payload=payload_slim)` | `dense`(`retriever.qdrant_dense`) | 사전 필터 단일 호출 | `top_k` 100, `hnsw_ef` 128, `quantization: {rescore: true, oversampling: 2.0}`, timeout 250ms |
 | `query_points(using="sparse_learned", query=SparseVector)` | `sparse`(`retriever.qdrant_sparse`) | 동일 | `top_k` 100 |
-| `query_points(using="sparse_bm25", query=SparseVector)` | `lexical`(`retriever.qdrant_sparse_bm25`, `lite`) | 동일; IDF 모집단은 테넌트 필터 범위(Qdrant 1.19 per-query IDF, 확인 필요 as of 2026-09) | `top_k` 50 |
-| `query_points(prefetch=[dense, sparse_bm25], query=FusionQuery(RRF, k=60))` | `lite` 단일 컬렉션·`explain=false` 서버 융합(선택) | prefetch 2개 + 융합 | 적합성 키트 `fuser_equivalence`로 플랫폼 RRF와 순위 일치 확인 |
+| `query_points(using="sparse_bm25", query=SparseVector)` | `lexical`(`retriever.qdrant_sparse_bm25`, `lite`) | 동일; IDF 모집단은 테넌트 필터 범위(`search_params.idf = IdfCorpusParams(corpus=Filter(tenant_id))` — qdrant-client 1.19.1 API 확인·로컬 모드 수치 실측 §6.1; 서버 성능은 `needs_docker`) | `top_k` 50 |
+| `query_points(prefetch=[dense, sparse_bm25], query=RrfQuery(rrf=Rrf(k=60)))`(1.19.1 `Rrf{k, weights}`; 로컬 모드는 순위 0 기준 `1/(k+rank0)` 실측, §6.1) | `lite` 단일 컬렉션·`explain=false` 서버 융합(선택) | prefetch 2개 + 융합 | 적합성 키트 `fuser_equivalence`로 플랫폼 RRF와 순위 일치 확인 |
 | `query_points(prefetch=[dense limit 300], using="late_interaction", query=multivec)` | `late_interaction_rerank`(premium 실험, O-04) | prefetch → MaxSim 재점수 | 300 → 100 |
 | `retrieve(ids=[point_id…], with_payload=[…], with_vectors=False)` | `hydrate`(§4.3) | 1회 배치 ≤ `hydrate.top_n` | 15ms 예산, 1회 재시도(09 문서 §5) |
 | `set_payload(payload={is_current: …, updated_at}, points=Filter(tenant_id, collection_id, document_id, index_generation …), shard_key_selector?)` | 플립·복원(`flip_generation(scope, …)`) | 필터 기반 payload 갱신 | `wait=True` |
@@ -453,7 +453,7 @@ flowchart LR
 | 계산 위치 | `embed` 스테이지의 `embedder.sparse_bm25`(바이블 §12 `adapters/embed/sparse_bm25`)가 `VectorBundle.sparse_bm25`를 만들고 `index`는 값을 그대로 적재한다. `index`가 재계산하지 않는 이유는 `EmbeddedChunkSet`이 콘텐츠 주소 산출물로 저장되어 재적재(replay) 시 동일 벡터를 보장해야 하기 때문이다 | 07 §2.4·§8.3 |
 | 포화식(D-15 고정) | `values[t] = tf(t) · (k1 + 1) / (tf(t) + k1 · (1 − b + b · dl / avgdl))`(계산은 `embed`); 어댑터는 값을 변형하지 않으며 `tf`를 그대로 넣는 경로는 코드에 두지 않는다(TF×IDF 퇴화 방지, 리스크 #5); bm25s 참조 구현과 문서 점수 일치(허용 오차 1e-6) 테스트는 12 문서 소유 | ADR-0012 준수 확인, 12 §12.3 |
 | `avgdl` | 12 §12.3 결정 준수: v1은 **프로파일 상수** `ingest.embed.sparse_bm25.avgdl`(초안 400 토큰)이며 공간 `revision` 입력에 포함된다(값 변경 = 공간 변경 = `lite` 컬렉션 blue/green). 컬렉션 통계 방식(`CollectionSpec.stats` 누적)은 커밋 순서에 따라 같은 청크의 `values`가 달라져 `EmbeddedChunkSet` 재현성과 충돌하므로 이 문서 실측(골든셋 A/B) 뒤 12 문서와 공동 재검토만 한다(미해결 이슈 4) | 12 §12.3, 07 미해결 이슈 10 |
-| IDF | 서버 `modifier: idf`; 모집단은 테넌트 필터 범위(Qdrant 1.19 per-query IDF corpus, 확인 필요 as of 2026-09). 미지원 확인 시 컬렉션 전역 IDF를 받아들이고 `index_per_tenant`를 `lite` 옵션으로 검토(ADR-0012 재검토 조건) — **이 행만 이 문서 소유** | 07-tech-landscape/06 §Qdrant |
+| IDF | 서버 `modifier: idf`; 모집단은 테넌트 필터 범위(Qdrant 1.19 per-query IDF corpus — API 존재·IDF 식 실측 확인, §6.1; 서버 성능은 `needs_docker`). 서버에서 미지원·성능 미달 확인 시 컬렉션 전역 IDF를 받아들이고 `index_per_tenant`를 `lite` 옵션으로 검토(ADR-0012 재검토 조건) — **이 행만 이 문서 소유** | 07-tech-landscape/06 §Qdrant |
 | `indices` | 12 §12.3 확정: `bm25_index(token) = int.from_bytes(blake3(utf8(token)).digest()[:4], "little")`(u32); 어댑터는 오름차순·유일만 검증(위반 `contract.violation`); 충돌은 같은 인덱스의 `tf` 합산 뒤 포화(12 §12.3) | 12 §12.3, 07 §8.3 |
 | 질의 측 | `retriever.qdrant_sparse_bm25`가 `normalized_query`를 **같은 `analyzer_id`·`dictionary_hash`** 로 토큰화하고 같은 해시로 `indices`를 만들어 `query_points(using="sparse_bm25")`; 질의 `values` 규약(소유·정본)은 이 문서가 정하지 않고 [04-pipelines/15](15-hybrid-search-and-fusion.md) §3.5 `tf_q(t)`가 정한다(#186 위임); 불일치는 `degraded{channel.lexical, analyzer_mismatch}`, `vocab_id` 불일치는 `embed.space_mismatch` | 15 §3.5, 바이블 §3.2 O-02 |
 | 공간 | `embedding_space_ids.sparse_bm25 = H("space", …, vocab_id=analyzer_id)`; 분석기·사전 변경 = 공간 변경 = `lite`는 컬렉션 blue/green(물리 컬렉션 이름이 바뀜) | 07 §3 |
@@ -462,6 +462,24 @@ flowchart LR
 | 상태 기계 | 렉시컬 백엔드가 없으므로 `vector_written → lexical_written → flipping_lexical`은 **즉시 통과(no-op 전이)** 로 기록한다(08 §3 규칙 (3); `backend_results`는 1개) | 08 미해결 이슈 10 |
 
 Qdrant의 miniCOIL(FastEmbed `Qdrant/minicoil-v1`) 같은 서버 벤더 제공 sparse 모델은 어휘가 영어 중심이라 한국어 렉시컬 레그 후보가 아니며, 채택하더라도 `sparse_learned` 슬롯의 별도 `vocab_id` 공간으로만 표현된다(확인 필요 as of 2026-09; 미해결 이슈 5).
+
+### 6.1 구현 스파이크 실측(2026-09-23, qdrant-client 1.19.1 로컬 모드)
+
+`src/rag_platform/adapters/index/qdrant/`(`backend`·`filters`·`point_id`·`bm25_sparse`) 구현 스파이크에서 `QdrantClient(":memory:")`로 확인한 값이다. 테스트는 `tests/adapters/index/test_qdrant_local.py`(1층). 로컬 모드는 Qdrant 서버가 아니라 파이썬 재구현이므로 **서버 동작의 증거가 아니다** — 서버 항목은 `needs_docker`로 남긴다. Windows 서버 바이너리(`qdrant-x86_64-pc-windows-msvc.zip` v1.19.1)는 내려받았으나 이 환경의 실행 권한 정책이 외부 바이너리 실행을 막아 1회 확인은 수행하지 못했다.
+
+| 항목 | 실측 결과 | 설계 반영 | 남은 검증 |
+|------|-----------|-----------|-----------|
+| per-query IDF | `SearchParams.idf`가 `IdfScope.GLOBAL` 또는 `IdfCorpusParams(corpus: Filter)`를 받는다. 로컬에서 IDF = `ln(1 + (N − n + 0.5)/(n + 0.5))`이며 `N`·`n`은 corpus 필터 범위로 계산된다(예: 테넌트 3건 중 1건 → 0.9808, 컬렉션 6건 중 4건 → 0.4418) | `search_sparse(using="sparse_bm25")`가 `corpus = Filter(tenant_id)`를 보낸다(§4.4, §6 IDF 행) | 서버 성능·정확도 `needs_docker` |
+| `Fusion.RRF`의 `k` | `RrfQuery(rrf=Rrf(k, weights))` 존재. 로컬 점수는 순위 0 기준 `1/(k + rank0)`(1위 기여 `1/60`) | ADR-0012·ADR-0013의 "`k` 지원 여부" 확인됨. 플랫폼 RRF가 1 기준 순위라면 등가 요청은 `k=61` — `fuser_equivalence`로 확정 전까지 위임 경로는 끈다 | 서버 순위 기준 `needs_docker` |
+| `prefix` | `KeywordIndexParams.prefix`·`MatchPrefix` 존재, 로컬에서 동작 | §4.3 `prefix` 행을 네이티브 변환으로 변경 | 서버 인덱스 크기·지연 |
+| datetime 인덱스 옵션 | `DatetimeIndexParams` 필드 = `type, is_principal, on_disk, memory, enable_hnsw`(`lookup`/`range` 없음). `DatetimeRange`는 `"2026-03-02"` 같은 날짜 문자열 payload에도 동작 | §4.1 datetime 행 확인됨 | — |
+| insert-only | `PointsList.update_mode`는 `upsert`·`insert_only`·`update_only`. 로컬에서 insert-only로 기존 id를 쓰면 오류 없이 건너뜀(payload 불변) | 기본 upsert 유지, 이유를 "조용한 누락"으로 정정(§4.2) | 서버 동작 |
+| 빈 named vectors | 로컬에서 `vector={}` 포인트 upsert·조회 가능 | `supports_payload_only_points`는 서버 확인 전 `null` 유지 | 서버 동작 |
+| 벡터 차원 상한 | 로컬에서 70,000차원 컬렉션 생성 성공(상한 없음) | `max_vector_dim` `null` 유지 | 서버 상한 |
+| payload 인덱스 | 로컬 모드는 `create_payload_index`를 무시한다(경고 "Payload indexes have no effect in the local Qdrant"); `hnsw_ef` 등 `search_params`도 `idf`를 빼고 무시(완전 탐색) | 어댑터는 항상 §4.1 표대로 생성 호출 | `is_tenant` 서브그래프·`payload_m` 효과(#65) |
+| `null`과 키 부재 | `IsNull`은 명시적 `null`만, `IsEmpty`는 `null`·키 부재·`[]` 모두 매치 | §3 7단계(명시적 `null`)·§4.3 `exists` 행 규칙이 그대로 성립 | — |
+| 격리·멱등 | 같은 `chunk_id`의 두 테넌트 레코드가 서로 다른 `point_id`로 공존하고 검색이 테넌트별로 분리됨; 같은 레코드 재upsert 시 포인트 수·payload 불변 | E17·§4.2 멱등 확인 | 서버 모드 격리 1건(`needs_docker`) |
+| Kiwi | 설치된 `kiwipiepy` 0.23.2 + `kiwipiepy_model` 0.23.0으로 오프라인 형태소 분석 동작(초기화 약 5초). PyPI 최신은 0.23.2(LGPLv3)이고 0.24.0 Apache-2.0은 미공개 | `bm25_sparse.default_tokenizer()`는 kiwipiepy가 있으면 Kiwi, 없으면 공백 토큰 폴백 | — |
 
 ## 7. 커밋 프로토콜(세대 사가)과 가시성 시점
 
@@ -671,9 +689,9 @@ flowchart LR
 |---|------|------|
 | 1 | `IndexBackend` 포트 메서드 중 `swap_alias`·`ensure_collection`·`upsert`·`snapshot`(07-tech-landscape/06 제안)과 `flip_generation`·`count`·`scroll`·`stats`·`health`(이 문서 제안)는 바이블에 이름이 없다(바이블 §11.2·§13.4는 "alias 교체"만). 시그니처의 `RecordScope`·`IndexFilter`·`ChannelSearchRequest`·`Candidate`·`UpsertResult`·`FlipResult`·`AclPayload`·`SnapshotRef`·`BackendStats`·`BackendHealth`·`IndexTargetSpec`·`PhysicalTarget`은 바이블 §5.1 인벤토리·§5.3 공용 타입에 없는 **어댑터 내부 타입**이다(`Candidate`는 바이블이 `CandidateSet.channel_runs[].candidates[]`로만 표현). `index`가 `Stage.run` 특수화인지 포트 호출 사가인지(04-pipelines/01 미해결 이슈 14)도 미합의 | 바이블 §4.2 `index` 행 또는 §12 `adapters/index/saga` 주석에 포트 메서드 목록 등재(patch); 내부 타입은 계약으로 게시하지 않고 SDK `rag_platform.index.ports` 모듈에만 두되, `RecordScope`처럼 보안 강제(E7)에 쓰이는 것은 바이블 §5.3 공용 타입 추가(minor)를 제안; `index`는 "플랫폼 소유 사가 + `IndexBackend` 포트"로 스테이지 표에 표기 |
 | 2 | `IndexBackendCapabilities`에 `supports_delete_by_filter`·`supports_partial_payload_update`(플립·ACL 갱신 가능 조건)·`supported_filter_ops`(예: Qdrant `prefix` 미지원)가 없다. `backend_version`은 08 §2.2가 "`capabilities()` 보고값"이라 적었으나 바이블 §5.3 스키마 필드가 아니어서 이 문서는 어댑터 속성으로 두었다(§2.2) | 바이블 §5.3 선택 필드(N) 추가(minor); ADR-0026 재검토 조건("부분 갱신 미제공 백엔드")의 판정 근거. `backend_version`은 08 §2.2 문구를 "어댑터 `backend_version` 속성(`capabilities()` 호출 시 조회)"으로 정정 제안(patch) |
-| 3 | `FilterOp.prefix`는 Qdrant keyword 인덱스에서 네이티브 지원이 없다. `text` 인덱스의 prefix 토크나이저 활용 가능성은 확인 필요(as of 2026-09) | 능력 선언(이슈 2) + 플래너가 미지원 op 절을 `relaxable_keys` 우선 완화 대상으로 취급 + `degraded{self_query_filter, capability_unsupported}` |
+| 3 | **부분 해소(2026-09-23 스파이크).** Qdrant 1.19 keyword 인덱스가 `prefix: true`와 `MatchPrefix`를 제공하므로(§6.1) 어댑터는 `FilterOp.prefix`를 네이티브로 변환한다. 남은 것: 서버에서 `prefix` 인덱스의 크기·지연, 인덱스 없는 필드의 `MatchPrefix` 동작(`needs_docker`) | 다른 백엔드(§13) 대비 능력 선언 `supported_filter_ops`(이슈 2)는 유지 제안; 미지원 백엔드는 플래너가 `relaxable_keys` 우선 완화 + `degraded{self_query_filter, capability_unsupported}` |
 | 4 | `lite` `avgdl`은 04-pipelines/12 §12.3이 프로파일 상수(`ingest.embed.sparse_bm25.avgdl`, 초안 400)로 확정했고 이 문서는 그대로 따른다. 컬렉션 통계 방식은 재현성과 충돌해 채택하지 않았으나 코퍼스별 품질 차이는 실측 전이다 | MIRACL-ko dev + 자체 공공문서 셋에서 상수 400 vs 컬렉션 실측 `avgdl` 고정값(재색인 단위 변경)의 nDCG@10 비교 후 12 문서 상수 기본값만 조정(공간 `revision` 변경 = blue/green); 동적 통계 방식은 12·15 문서와 공동으로만 재검토 |
-| 5 | Qdrant per-query IDF(테넌트 범위)의 API·성능, `supports_payload_only_points`(빈 named vectors), `is_principal` 힌트 범위, insert-only upsert 모드 충돌 동작, miniCOIL 한국어 부적합 판정, datetime payload 인덱스 옵션(`DatetimeIndexParams`가 `range`를 받지 않는다는 판단 — 04 §4.4는 `range: true`로 적음)은 확인 필요(as of 2026-09) | 구현 스파이크 후 §4·§6 갱신; 04 미해결 이슈 13과 공동; datetime 옵션 확인 결과에 따라 04 §4.4 표 정정 제안(patch) |
+| 5 | **부분 해소(2026-09-23 스파이크, §6.1).** 확인됨: per-query IDF API(`IdfCorpusParams`)와 IDF 식, datetime 인덱스 옵션(`range` 없음), insert-only의 로컬 동작(기존 id 무오류 건너뜀), 로컬의 빈 named vectors 수용. 남은 것: 서버 모드의 per-query IDF 성능, 빈 named vectors·insert-only 동작, `is_principal` 힌트 범위, `is_tenant` 서브그래프 효과(로컬 모드는 payload 인덱스를 무시), miniCOIL 한국어 부적합 판정 | 서버 항목은 `needs_docker`(`tests/adapters/index/test_qdrant_local.py::test_server_mode_isolation` 확장); 04 §4.4 datetime `range: true` 표기 정정 제안(patch)은 확인 결과대로 진행; 04 미해결 이슈 13과 공동 |
 | 6 | 접두어에 영향 없는 메타데이터 갱신을 payload만 갱신하는 `update_metadata` 경로는 바이블 §14(`PATCH metadata`)가 "재처리 제안 응답"만 규정해 정본이 없다 | 바이블 §11.2에 `metadata.update.v1`(또는 `acl.update.v1` 확장) 워크플로우 추가 제안(minor); 04-pipelines/19와 합의 |
 | 7 | 초안 수치: 배치 병렬도 4, 배치 타임아웃 30s, `update_by_query` 60s, 문서 1건 3s, 정합성 전체 모드 10분, 재색인 중 green `refresh_interval=30s`, 인덱싱 중 검색 p95 악화 ≤ 10% | 프로파일 키 `ingest.index.max_concurrent_batches`·`bulk_timeout` 제안(15 문서 `IndexConfig` `additionalProperties`); M1 실측 후 09-operations/04에서 확정 |
 | 8 | `rag_index_bytes_total{vector}`의 라벨 값에 렉시컬 인덱스 바이트를 담을 값(`lexical`)이 `VectorName`에 없다 | 바이블 §6.5에 라벨 값 어휘 명시(patch) 또는 별도 메트릭 `rag_index_lexical_bytes_total` |

@@ -11,7 +11,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, constr
+from pydantic import ConfigDict, Field, RootModel, constr
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 
@@ -52,7 +54,7 @@ class Value(RootModel[float]):
     root: float = Field(..., gt=0.0)
 
 
-class SparseVector(BaseModel):
+class SparseVector(ContractModel):
     """
     Qdrant sparse named vector 본문. indices·values 길이 동일, indices 오름차순·중복 없음. vocab_id는 embedding_space_ids의 공간이 함의한다
     """
@@ -68,7 +70,7 @@ class LateInteractionItem(RootModel[list[float]]):
     root: list[float] = Field(..., min_length=1)
 
 
-class IndexRecordVectors(BaseModel):
+class IndexRecordVectors(ContractModel):
     """
     바이블 §5.4 IndexRecord.vectors {dense, sparse_learned?, sparse_bm25?, late_interaction?} — 백엔드 named vectors(VectorName). EmbeddedChunkSet과 달리 오프셋이 아닌 값 본문이다. level ∈ {0, 2}는 dense 필수 + sparse 하나 이상, item_kind=parent(vector_payload 저장 방식만)는 빈 객체
     """
@@ -99,7 +101,7 @@ class IndexRecordVectors(BaseModel):
     page_dense: dict[str, Any] | None = Field(None, description="visual-pages 슬롯(미확정)")
 
 
-class IndexRecord(BaseModel):
+class IndexRecord(ContractModel):
     """
     index 스테이지가 EmbeddedChunkSet(EMB) + requires_lineage(EnrichedChunkSet ENR, ChunkSet CS, SourceDocument SRC) + 워크플로우 인자(IDX)에서 조립해 인덱스 백엔드에 쓰는 논리 레코드(바이블 §5.4). 리프 1개 = 레코드 1개(세대별). 물리 키 record_id = H("record", tenant_id, collection_id, document_id, str(index_generation), chunk_id), point_id = uuid5(NAMESPACE_RAG_CHUNK, record_id)(ADR-0004 v1.2, E17). payload는 필터·정렬·설명·리랭크 입력·인용 좌표·ACL 재검증에 필요한 것만 담고(32KB, text ≤ 8,192 UTF-8 바이트) 정본은 ChunkSet 산출물이다(ADR-0034). 봉투 없음. 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/07-embedded-chunk-set-and-index-record.md
     """

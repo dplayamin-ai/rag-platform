@@ -2,9 +2,9 @@
 
 **RAG Platform**은 수집된 문서(HWPX·HWP·PDF·DOC/DOCX·TXT·HTML 등)의 **위치(URI)와 메타데이터를 API로 받아**, 오픈소스 최선의 기술로 **파싱 → 정규화 → 의미 기반 청킹 → 보강(enrichment) → 임베딩 → 하이브리드 인덱싱**을 수행하고, **리트리벌 API**로 LLM이 즉시 참고해 최고의 답을 낼 수 있는 **Top-K 컨텍스트 팩(Context Pack)** 을 돌려주는 오픈소스 플랫폼이다.
 
-**`설계 완료`** · **`6A 레퍼런스 골격 착수`** · **`Apache-2.0`**
+**`설계 완료`** · **`6A·6B·6D 완료`** · **`Apache-2.0`**
 
-> 설계는 완료됐고, 6단계 6A(uv 워크스페이스·툴체인·패키지 스텁·CI)가 착수된 상태다. 계약 모델(Pydantic)·파이프라인 스테이지·API 등 실질 구현은 아직 없다. 아래 "현재 상태와 로드맵"을 먼저 읽는다.
+> 설계는 완료됐고, 6단계 6A(레퍼런스 골격)·6B(적합성 키트)·6D(어댑터 스파이크 3종)가 완료된 상태다. 계약 모델(Pydantic)·코어 프레임워크(`sdk`/`storage`/`plugins`/`profiles`/`orchestration/local`)·적합성 키트·어댑터 스파이크는 구현·검증됐지만, 파이프라인 스테이지·API 등 나머지 실질 구현은 아직 없다. 아래 "현재 상태와 로드맵"을 먼저 읽는다.
 
 ## 1. 왜 이 플랫폼인가
 
@@ -198,7 +198,7 @@ flowchart LR
 
 ## 8. 현재 상태와 로드맵
 
-**설계 완료(3단계), 6단계 6A(레퍼런스 골격) 착수.** 저장소에는 uv 워크스페이스·툴체인(ruff/mypy/import-linter)·패키지 스텁(`src/rag_platform/`, 19개 `__init__.py`)·CLI `--version`·스캐폴드 테스트(`tests/unit/`)가 있지만, 계약 모델·파이프라인 스테이지·API 등 실질 구현은 아직 없다. [진행 보고서](docs/12-appendix/00-progress-report.md) §3·§8의 3단계 완료 실측값은 다음과 같다.
+**설계 완료(3단계), 6단계 6A(레퍼런스 골격)·6B(적합성 키트)·6D(어댑터 스파이크) 완료.** 저장소에는 uv 워크스페이스·툴체인(ruff/mypy/import-linter)·스키마에서 생성한 계약 모델(`contracts/`)·코어 프레임워크(`sdk`/`storage`/`plugins`/`profiles`/`orchestration/local`)·적합성 키트와 인메모리 테스트 대역(`testing/`)·어댑터 스파이크 3종(HWPX 파서, Qdrant lite, BGE-M3 계열 임베더)·CLI `--version`이 있지만, 파이프라인 스테이지·API 등 나머지 실질 구현은 아직 없다. [진행 보고서](docs/12-appendix/00-progress-report.md) §3·§8의 3단계 완료 실측값은 다음과 같다.
 
 - 설계 문서 **151개**(부속 15건 포함), **99,572행** + `openapi.yaml` 8,461행
 - JSON Schema **35개**(`schemas/`)
@@ -223,7 +223,7 @@ flowchart LR
 | `11-roadmap/` | 3 | 마일스톤·백로그·리스크 |
 | `12-appendix/` | 10 + sources | 진행 보고서·완전성 검토·단계 계획 |
 
-3단계 종료 후 [4·5단계 실행 계획](docs/12-appendix/02-phase4-5-plan.md)에 따라 **4단계(바이블 개정 트리아지·전파, 교차 일관성 확보)와 5단계(마감 — 이 README 포함)가 6단계 6A와 병행 진행 중**이다. [구현 킷과 M1 lite 레퍼런스 계획](docs/12-appendix/05-phase6-implementation-kit-plan.md)이 정의하는 6단계 하위 순서(6A~6G) 중 **6A(레퍼런스 골격: uv 워크스페이스·툴체인·패키지 스텁·CI)만 착수**됐고, 6B 적합성 키트·6C 표본 코퍼스·미니 골든셋·6D 어댑터 스파이크·6E 구현 작업 패키지·6F M1 lite 레퍼런스 구현·6G 공개 준비는 아직 시작하지 않았다.
+3단계 종료 후 [4·5단계 실행 계획](docs/12-appendix/02-phase4-5-plan.md)에 따라 **4단계(바이블 개정 트리아지·전파, 교차 일관성 확보)와 5단계(마감 — 이 README 포함)가 완료**됐다. [구현 킷과 M1 lite 레퍼런스 계획](docs/12-appendix/05-phase6-implementation-kit-plan.md)이 정의하는 6단계 하위 순서(6A~6G) 중 **6A(레퍼런스 골격)·6B(적합성 키트)·6D(어댑터 스파이크 3종)가 완료**됐고, 6C 표본 코퍼스·미니 골든셋·6E 구현 작업 패키지·6F M1 lite 레퍼런스 구현·6G 공개 준비는 아직 시작하지 않았다.
 
 마일스톤(전체는 [마일스톤](docs/11-roadmap/01-milestones.md)):
 
@@ -237,7 +237,7 @@ flowchart LR
 
 이 프로젝트는 **Apache License 2.0**([LICENSE](LICENSE), 고지는 [NOTICE](NOTICE))로 배포된다. 의존성·모델 라이선스는 A(자유)/B(LGPL 조건부)/C(네트워크 분리)/D(모델 제한)/X(금지) 5등급으로 판정하며(설계 브리프 D-02), 이 등급표는 CI 라이선스 게이트의 근거가 될 예정이다.
 
-`CONTRIBUTING.md`는 5단계 마감 산출물([기여 가이드](docs/10-development/07-contributing.md) 설계 문서 기준)로 예정되어 있고, 보안 취약점 보고 채널(`SECURITY.md`)도 아직 마련되지 않았다. 6단계 6A 레퍼런스 골격 단계에서는 `docs/` 아래 설계 문서에 대한 리뷰·이슈 제기와 6A 골격에 대한 리뷰가 가장 유용한 기여다.
+`CONTRIBUTING.md`는 5단계 마감 산출물([기여 가이드](docs/10-development/07-contributing.md) 설계 문서 기준)로 예정되어 있고, 보안 취약점 보고 채널(`SECURITY.md`)도 아직 마련되지 않았다. 6단계 6A·6B·6D가 완료된 현재 단계에서는 `docs/` 아래 설계 문서에 대한 리뷰·이슈 제기와 6A/6B/6D 코드에 대한 리뷰가 가장 유용한 기여다.
 
 ---
 

@@ -11,14 +11,16 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from .. import common_types
 from ..common_types.Block import figure as figure_1, footnote as footnote_1
 from .ParsedDocument import annotations as annotations_1, artifacts as artifacts_1
 
 
-class LineageRefs(BaseModel):
+class LineageRefs(ContractModel):
     """
     parse 출력은 정확히 {source}(SourceDocument 계약 산출물 참조)
     """
@@ -34,7 +36,7 @@ class LineageRefs(BaseModel):
     embedded: common_types.ArtifactRef | None = None
 
 
-class Figure(BaseModel):
+class Figure(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -45,7 +47,7 @@ class Figure(BaseModel):
     caption_model: str | None = None
 
 
-class Formula(BaseModel):
+class Formula(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -53,7 +55,7 @@ class Formula(BaseModel):
     latex: str | None = None
 
 
-class Footnote(BaseModel):
+class Footnote(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -63,14 +65,14 @@ class Footnote(BaseModel):
     marker: str | None = None
 
 
-class Code(BaseModel):
+class Code(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
     language: str | None = None
 
 
-class PageBreak(BaseModel):
+class PageBreak(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -78,7 +80,7 @@ class PageBreak(BaseModel):
     section_index: int | None = Field(None, ge=0)
 
 
-class Block(BaseModel):
+class Block(ContractModel):
     """
     ParsedDocument.blocks[] 요소. 문서 순서 평탄 리스트, 계층은 parent_block_id.
     """
@@ -111,7 +113,7 @@ class Block(BaseModel):
     page_break: PageBreak | None = None
 
 
-class ParserFingerprint(BaseModel):
+class ParserFingerprint(ContractModel):
     """
     파서 지문. parser_fingerprint_hash = H("parser", parser_id, parser_version, ",".join(model_ids), sidecar_image_digest or "", profile_option)(바이블 §6.2)
     """
@@ -137,7 +139,7 @@ class ParserFingerprint(BaseModel):
     )
 
 
-class PageStatusEntry(BaseModel):
+class PageStatusEntry(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -151,7 +153,7 @@ class PageStatusEntry(BaseModel):
     )
 
 
-class WebMetadata(BaseModel):
+class WebMetadata(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -161,7 +163,7 @@ class WebMetadata(BaseModel):
     author: str | None = None
 
 
-class DerivedArtifact(BaseModel):
+class DerivedArtifact(ContractModel):
     """
     derived/ 산출물 참조(봉투 없음, 테넌트 내 공유; 바이블 §13.3)
     """
@@ -175,7 +177,7 @@ class DerivedArtifact(BaseModel):
     block_id: common_types.Hex32 | None = Field(None, description="figure_crop·table_html의 대상 블록")
 
 
-class Annotation(BaseModel):
+class Annotation(ContractModel):
     """
     본문 외 어노테이션. char_*는 대상 Block.text 기준 코드포인트, 끝 미포함
     """
@@ -190,7 +192,7 @@ class Annotation(BaseModel):
     text: str
 
 
-class FormFieldEntry(BaseModel):
+class FormFieldEntry(ContractModel):
     """
     HWPX 필드(hp:fieldBegin) 메타. 값 텍스트는 본문 블록에도 포함된다
     """
@@ -204,7 +206,7 @@ class FormFieldEntry(BaseModel):
     block_id: common_types.Hex32
 
 
-class Link(BaseModel):
+class Link(ContractModel):
     """
     하이퍼링크. char_*는 대상 Block.text 기준 코드포인트, 끝 미포함
     """
@@ -218,7 +220,7 @@ class Link(BaseModel):
     href: str = Field(..., min_length=1)
 
 
-class DocumentMetadata(BaseModel):
+class DocumentMetadata(ContractModel):
     """
     파서가 원본에서 읽은 문서 메타. 모든 필드 선택
     """
@@ -241,7 +243,7 @@ class DocumentMetadata(BaseModel):
     genre: common_types.Genre | None = Field(None, description="요청 힌트 또는 파서 추론")
 
 
-class ParsedDocument(BaseModel):
+class ParsedDocument(ContractModel):
     """
     포맷 독립 표준 문서 모델(바이블 §5.4, D-04, ADR-0002). parse 스테이지가 생산하고 normalize·get_document가 소비한다. 블록은 문서 순서 평탄 리스트이며 계층은 parent_block_id·ordinal로 복원한다. 공용 타입·열거는 urn:rag:schema:common-types:1을 참조한다.
     """

@@ -11,7 +11,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, constr
+from pydantic import ConfigDict, Field, RootModel, constr
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from .. import common_types
 from . import NormalizedDocument as NormalizedDocument_1
@@ -21,7 +23,7 @@ from .NormalizedDocument.derived_meta import (
 )
 
 
-class LineageRefs(BaseModel):
+class LineageRefs(ContractModel):
     """
     봉투. 정확히 {source, parsed}. parsed는 parsed_ref와 같은 참조. 자기 자신(normalized)과 하류 키(chunk_set, enriched, embedded) 미포함(I-3, 00 I-7)
     """
@@ -37,7 +39,7 @@ class LineageRefs(BaseModel):
     embedded: common_types.ArtifactRef | None = None
 
 
-class ParsedRef(BaseModel):
+class ParsedRef(ContractModel):
     """
     원 ParsedDocument 산출물. 구조 계층의 정본
     """
@@ -58,7 +60,7 @@ class ParsedRef(BaseModel):
     stage_key: common_types.Hex64 | None = Field(None, description="생산 스테이지 멱등성 키(계보 자기 서술)")
 
 
-class HeadingNode(BaseModel):
+class HeadingNode(ContractModel):
     """
     heading_tree[] 원소. path는 조상 heading의 display_text(루트→현재), 마지막 원소 = 이 블록의 display_text.
     """
@@ -75,7 +77,7 @@ class LawRef(RootModel[str]):
     root: str = Field(..., pattern="^[^/\\s][^/]*(/제[0-9]+조(의[0-9]+)?)?(/제[0-9]+항)?$")
 
 
-class EntityNormalized(BaseModel):
+class EntityNormalized(ContractModel):
     """
     display_text 기준 코드포인트 구간과 정규화 값.
     """
@@ -94,7 +96,7 @@ class EntityNormalized(BaseModel):
     )
 
 
-class PiiSpan(BaseModel):
+class PiiSpan(ContractModel):
     """
     display_text 기준 구간(row·col이 있으면 table_cell_views 셀 뷰의 display_text 기준). exclude는 start == end(빈 구간, 원문 범위는 offset_map 경계 마커로 복원). 바이블 §5.4 필드 + 선택 row/col(N, 둘 다 있거나 둘 다 없음).
     """
@@ -117,7 +119,7 @@ class PiiSpan(BaseModel):
     operator: pii_spans_1.Operator = Field(..., description="v1에서는 pii_report.policy_applied와 같다")
 
 
-class ContentRisk(BaseModel):
+class ContentRisk(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -135,7 +137,7 @@ class EntityCounts(RootModel[int]):
     root: int = Field(..., ge=0)
 
 
-class PiiReport(BaseModel):
+class PiiReport(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -162,7 +164,7 @@ class BoilerplateRemovedItem(RootModel[str]):
     root: str = Field(..., max_length=512)
 
 
-class NormalizationReport(BaseModel):
+class NormalizationReport(ContractModel):
     """
     감사·재현성용 집계. 콘텐츠는 boilerplate_removed(정규화된 furniture 문자열)만.
     """
@@ -181,7 +183,7 @@ class NormalizationReport(BaseModel):
     )
 
 
-class NormalizationStats(BaseModel):
+class NormalizationStats(ContractModel):
     """
     N. 통계(계량·크기 검증). analyzer_token_count는 형태소 분석기 토큰 수이며 임베딩 토크나이저 토큰 수는 Chunk.token_counts(TokenCounts)가 정본.
     """
@@ -211,7 +213,7 @@ class OffsetMapItem(RootModel[list[OffsetMapItem1Item]]):
     root: list[OffsetMapItem1Item] = Field(..., min_length=3)
 
 
-class TableCellView(BaseModel):
+class TableCellView(ContractModel):
     """
     조건(policy_applied != keep이면 필수). TableData.cells[] 앵커 셀 text의 텍스트 뷰(display_text NFC + PII 연산자, lexical_text NFKC 호환 자모 보존). offset_map은 셀 text 기준(NormalizedBlock.offset_map과 같은 정규형).
     """
@@ -227,7 +229,7 @@ class TableCellView(BaseModel):
     offset_map: list[OffsetMapItem] = Field(..., min_length=1)
 
 
-class DerivedMeta(BaseModel):
+class DerivedMeta(ContractModel):
     """
     규칙 기반 파생 메타(LLM 미사용). 필터·부스트·법령 경로 원천. 모든 필드 N.
     """
@@ -244,7 +246,7 @@ class DerivedMeta(BaseModel):
     )
 
 
-class Annotations(BaseModel):
+class Annotations(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -256,7 +258,7 @@ class Annotations(BaseModel):
     content_risk: list[ContentRisk] | None = Field(None, description="N. 인젠션 L1 규칙 판정")
 
 
-class NormalizedDocument(BaseModel):
+class NormalizedDocument(ContractModel):
     """
     normalize 스테이지 출력(설계 바이블 §5.4 NormalizedDocument·NormalizedBlock, §6.3). ParsedDocument 블록과 block_id로 1:1 대응하는 텍스트 뷰 계층 — display_text(NFC, 표시·인용 원문) / lexical_text(NFKC, BM25·키워드 입력) / offset_map(display → 원문 Block.text 코드포인트 사상) — 과 문장 구간, furniture 판정, 장르, 언어, PII 정책 적용 기록, 정규화 리포트를 담는다. 구조(type·parent_block_id·provenance·table)는 parsed_ref가 가리키는 ParsedDocument가 정본이다. 소유 문서: docs/03-contracts/04-normalized-document.md
     """

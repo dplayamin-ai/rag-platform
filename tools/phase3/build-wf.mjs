@@ -1,4 +1,11 @@
-// Assemble wf-phase3.js from head + extracted (patched) outlines of the v1 script + tail.
+// Phase 3 본 워크플로 `wf-phase3.js`를 `wf-head.js` + (v1 스크립트에서 추출·수정한 개요) + `wf-tail.js`로 조립하는
+// 빌드 스크립트(일회성 도구).
+// 설계 근거: `docs/12-appendix/00-progress-report.md` §7.2d(바이블 v1.2 반영을 위한 개요 패치 내역).
+// 구성: `patches` — v1 개요 문자열 중 바이블 개정과 어긋나는 표현을 치환하는 `[from, to, 최소건수]` 목록; 조립 후
+// `wf-phase3.js`에 기록.
+// 불변식: 각 패치는 최소 매치 건수를 만족하지 못하면 예외를 던진다(조용한 누락 방지); Phase 3가 이미 완료·
+// 커밋되었으므로 재실행 대상이 아니다(기록 보존 목적).
+// 검증 계층: 1층(여기서 검증) — 산출물 `wf-phase3.js`는 Phase 3 완료 시점에 이미 실행·검증되었다.
 import fs from 'node:fs'
 const dir = new URL(".", import.meta.url).pathname.replace(/^/([A-Za-z]:)/, "$1") + "/"
 const orig = fs.readFileSync(dir + 'wf-phase3-v1-orig.js', 'utf8')

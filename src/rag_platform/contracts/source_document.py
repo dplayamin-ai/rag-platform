@@ -11,12 +11,14 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import AnyUrl, BaseModel, ConfigDict, Field, RootModel, constr
+from pydantic import AnyUrl, ConfigDict, Field, RootModel, constr
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 
 
-class LineageRefs(BaseModel):
+class LineageRefs(ContractModel):
     """
     fetch·detect 출력 모두 빈 객체 {}. 원본 바이트는 artifact로 참조하고(00 §3.2 fetch 행), detect는 같은 schema_type을 출력하므로 fetch 출력을 source 키에 넣지 않는다(02 §1.2; fetch→detect 관계는 lineage 원장 행)
     """
@@ -32,7 +34,7 @@ class LineageRefs(BaseModel):
     embedded: common_types.ArtifactRef | None = None
 
 
-class ContainerFlags(BaseModel):
+class ContainerFlags(ContractModel):
     """
     detect가 채우는 컨테이너 플래그(바이블 §5.4). 판정만 하며 오류(parse.document_encrypted, parse.distribution_document)는 parse가 결정한다.
     """
@@ -50,7 +52,7 @@ class ContainerFlags(BaseModel):
     )
 
 
-class HttpMetadata(BaseModel):
+class HttpMetadata(ContractModel):
     """
     원천이 준 검증자·인코딩(바이블 §5.4). 조건부 재수집(If-None-Match/If-Modified-Since)과 TXT/HTML 디코딩 힌트에 쓴다.
     """
@@ -86,7 +88,7 @@ class Custom(RootModel[str]):
     root: str = Field(..., max_length=1024)
 
 
-class SourceMetadata(BaseModel):
+class SourceMetadata(ContractModel):
     """
     IngestRequest.metadata 복사(바이블 §5.4). 제약은 urn:rag:schema:ingest-request:1#/$defs/IngestMetadata와 자구까지 동일(01 §2.2·§2.3·V10; 공용 $defs 승격 전까지 복제). 모든 키 선택. 정규화(NFC·trim·중복 제거)는 01이 접수 시 수행했으므로 여기서는 검증만 한다. custom은 열린 객체(값 string ≤ 1,024 | number | boolean).
     """
@@ -113,7 +115,7 @@ class SourceMetadata(BaseModel):
     )
 
 
-class FetchReport(BaseModel):
+class FetchReport(ContractModel):
     """
     fetch 진단(바이블 §5.4 {attempts, bytes_per_sec, redirects}). http_status·conditional_request·not_modified·duration_ms는 바이블 미등재 선택 키(02 미해결 이슈 3). URI·헤더 원문·콘텐츠는 담지 않는다.
     """
@@ -134,7 +136,7 @@ class Signal(RootModel[str]):
     root: str = Field(..., max_length=256, min_length=1)
 
 
-class Candidate(BaseModel):
+class Candidate(ContractModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -142,7 +144,7 @@ class Candidate(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0)
 
 
-class DetectReport(BaseModel):
+class DetectReport(ContractModel):
     """
     포맷 판별 근거(바이블 미등재 선택 하위 타입, 02 미해결 이슈 3). detect 출력에만 존재한다. 판별기 지문은 봉투 producer가 담으므로 반복하지 않는다. 콘텐츠 미포함(시그니처 이름·컨테이너 항목 이름만).
     """
@@ -165,7 +167,7 @@ class DetectReport(BaseModel):
     )
 
 
-class DedupReport(BaseModel):
+class DedupReport(ContractModel):
     """
     중복 감지 결과(바이블 미등재 선택 하위 타입, 02 미해결 이슈 3). 워크플로우가 dedup_policy 판정에 쓴다.
     """
@@ -184,7 +186,7 @@ class DedupReport(BaseModel):
     )
 
 
-class SourceDocument(BaseModel):
+class SourceDocument(ContractModel):
     """
     fetch(+detect) 출력. 원본 바이트의 콘텐츠 주소(ArtifactRef), 문서 버전(doc_version = content_hash, ADR-0005), 포맷 판별 결과(SourceFormat·format_confidence·container_flags), 문서 ACL(acl·acl_hash), 수집 메타데이터(metadata·metadata_hash)를 나르는 수집 측 첫 산출물 계약. 설계 바이블 §5.4 SourceDocument 표를 같은 철자·같은 필수 여부로 옮겼고, 바이블 미등재 필드(detect_report, dedup_report, fetch_report의 확장 키)는 선택으로만 추가했다. 소유 문서: docs/03-contracts/02-source-document.md
     """

@@ -11,8 +11,10 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, conint, constr
+from pydantic import ConfigDict, Field, RootModel, conint, constr
 from typing_extensions import TypeAliasType
+
+from rag_platform.contracts.contract_model import ContractModel
 
 from . import common_types
 
@@ -30,7 +32,7 @@ class CharRangeItem(RootModel[int]):
     root: int = Field(..., ge=0)
 
 
-class CitationMapEntry(BaseModel):
+class CitationMapEntry(ContractModel):
     """
     공급자 인용 위치 → cite_id → chunk provenance 역매핑 한 행(바이블 §5.5 citation_map)
     """
@@ -61,7 +63,7 @@ class CitationMapEntry(BaseModel):
     )
 
 
-class RenderedContext(BaseModel):
+class RenderedContext(ContractModel):
     """
     render 서브스테이지 출력(바이블 §5.5 RenderedContext, §9.3 렌더러 규칙, §9.4 프롬프트 캐싱). ContextPack의 뷰(D-05)이며 경계 타입을 추가하지 않는다. provider_payload는 공급자 네이티브 블록/메시지/XML 문자열, stable_prefix/volatile_suffix는 프롬프트 캐시 브레이크포인트 기준으로 나눈 같은 내용, citation_map은 공급자 인용 위치 → cite_id·chunk_id·segment_range 역매핑이다. 공급자 페이로드에는 tenant_id·주체·acl_*·record_id를 넣지 않는다(바이블 §9.3 공통 규칙 1). 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/11-context-pack.md
     """

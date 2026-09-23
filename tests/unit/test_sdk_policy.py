@@ -9,6 +9,7 @@
 - `compute_backoff_delay` — 지수 증가 후 `backoff.max`에서 상한, `attempt < 1` 거부.
 - `should_retry` — 재시도 가능 오류·소진된 시도 횟수·프로파일이 코드를 비재시도로 재지정하는 경우를 판정.
 
+불변식: 지수 백오프 지연은 `backoff.max`를 절대 넘지 않는다.
 검증 계층: 1층(여기서 검증).
 """
 
