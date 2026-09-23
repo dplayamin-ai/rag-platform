@@ -9,7 +9,13 @@ security `FORCE`).
 - `DocumentRecord` — `documents` 행 부분집합(식별자 + 현재 버전/세대)
 - `JobRecord` — `jobs` 행 부분집합(식별자, kind/state/stage, 재시도 횟수)
 - `CommitRecord` — `index_commits` 행 부분집합(식별자, 세대, 상태)
-- `Ledger` — 위 레코드에 대한 CRUD 프로토콜(항상 `tenant_id` 스코프)
+- `Ledger` — 위 레코드에 대한 CRUD 프로토콜(항상 `tenant_id` 스코프); `list_commits`는 문서별
+  `index_commits` 이력 전체(성공·롤백·실패 포함)를 반환해 호출자가 `max(index_generation) + 1`을
+  계산하게 한다(F3 배치 검증 open_issue — `adapters.index.saga.IndexSaga`가 이 메서드 부재로
+  `documents.current_generation + 1`을 근사했던 것을 이 메서드 추가로 해소, 계약 문서
+  `contracts/index_commit.py`의 "documents 행 FOR UPDATE 잠금 아래 그 문서의
+  max(index_commits.index_generation) + 1로 할당(current_generation + 1 아님; 롤백·폐기된 세대
+  번호 재사용 없음)" 정의를 그대로 구현)
 
 불변식·주의: 실 PostgreSQL 구현(`ledger/models.py`, `ledger/migrations/`)은 이 작업 범위 밖이며
 프로토콜과 인메모리 대역만 제공한다.
@@ -94,4 +100,8 @@ class Ledger(Protocol):
 
     async def get_commit(self, tenant_id: str, commit_id: str) -> CommitRecord | None:
         """Return a commit row, or `None` if absent for this tenant."""
+        ...
+
+    async def list_commits(self, tenant_id: str, document_id: str) -> list[CommitRecord]:
+        """Return every `index_commits` row for this document (any status), for generation allocation."""
         ...

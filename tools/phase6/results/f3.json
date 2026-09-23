@@ -1,0 +1,47 @@
+{
+ "batch": "F3",
+ "tasks": [
+  {
+   "wp": [
+    "docs/13-implementation/wp/WP-301-embed-stage-and-sparse-bm25.md"
+   ],
+   "tests": {
+    "passed": 21,
+    "failed": 0,
+    "deferred": 0
+   },
+   "issues": 5
+  },
+  {
+   "wp": [
+    "docs/13-implementation/wp/WP-302-index-stage-and-commit-saga.md"
+   ],
+   "tests": {
+    "passed": 12,
+    "failed": 0,
+    "deferred": 0
+   },
+   "issues": 5
+  },
+  {
+   "wp": [
+    "a"
+   ],
+   "tests": {
+    "passed": 1,
+    "failed": 0,
+    "deferred": 0
+   },
+   "issues": 1
+  }
+ ],
+ "verify": {
+  "tests": {
+   "passed": 733,
+   "failed": 0,
+   "deferred": 31
+  },
+  "summary": "F3 batch verified at C:\\Workspaces\\rag-platform. ruff check: clean. ruff format --check: 3 files needed reformatting (adapters/index/stage.py, tests/adapters/index/test_index_commit.py, tests/e2e/test_ingest_e2e.py) -> ran `uv run ruff format .`, now clean. mypy src: fixed 6 errors, all in the embed batch's own files (adapters/embed/stage.py, adapters/embed/sparse_bm25.py) -- a shadowed `vectors` "
+ },
+ "review": null
+}

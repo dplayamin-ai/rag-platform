@@ -127,6 +127,16 @@ class StageContext(Protocol):
     `security`/`plan`/`token_counters`/`analyzer`/`substages` are declared for stage-facing type
     compatibility; `LocalContext` fills the ingest-only subset it needs and leaves the query-only
     members (`security`, `plan`) `None` (bible §4.1: "수집 측은 None").
+
+    F3 배치 검증 open_issue 통합: `own_input_ref`/`commit_id`/`index_generation`/`profile_id`/
+    `dense_vectors`는 WP-106(`normalize`의 `ctx.parsed_ref`)이 처음 임시로 쓰고 이후 WP들(`chunk`의
+    `ctx.normalized_ref`, `embed`의 `ctx.enriched_ref`, `index`의 `ctx.embedded_ref`/`ctx.commit_id`/
+    `ctx.profile_id`/`ctx.dense_vectors`)이 같은 임시 관례를 반복한 것을 여기서 공식 필드로 승격한
+    것이다. `own_input_ref`는 스테이지가 자기 입력(`run(inp, ctx)`의 `inp`)이 저장된 원본
+    `ArtifactRef`를 알아야 할 때(출력 계약의 `lineage_refs.<자기 이름>`에 되짚어 넣을 때) 쓰는
+    범용 슬롯이다. 모두 선택 필드(`None` 허용)라 이 필드를 아직 채우지 않는 기존 호출부(`ctx: Any` +
+    `getattr(ctx, "parsed_ref", None)` 등)는 그대로 동작한다 — 이 변경은 그 관례를 깨지 않고
+    문서화·타입화만 한다.
     """
 
     tenant_id: str
@@ -142,6 +152,11 @@ class StageContext(Protocol):
     artifacts: DerivedArtifacts
     resume_details: Mapping[str, Any] | None
     cancelled: bool
+    own_input_ref: ArtifactRef | None
+    commit_id: str | None
+    index_generation: int | None
+    profile_id: str | None
+    dense_vectors: Mapping[str, Any] | None
 
     def now(self) -> datetime:
         """Return the current time (bible §4.1: shared with `PipelineContext.now`)."""
@@ -173,6 +188,11 @@ class _LocalStageContext:
     plan: Any | None = None
     resume_details: Mapping[str, Any] | None = None
     cancelled: bool = False
+    own_input_ref: ArtifactRef | None = None
+    commit_id: str | None = None
+    index_generation: int | None = None
+    profile_id: str | None = None
+    dense_vectors: Mapping[str, Any] | None = None
     _clock: Callable[[], datetime] = field(kw_only=True)
     _budget_ms: int | None = field(default=None, kw_only=True)
 
@@ -238,8 +258,20 @@ class LocalContext:
         lineage: Mapping[str, Any] | None = None,
         plan: Any | None = None,
         analyzer: KoreanAnalyzer | None = None,
+        own_input_ref: ArtifactRef | None = None,
+        commit_id: str | None = None,
+        index_generation: int | None = None,
+        profile_id: str | None = None,
+        dense_vectors: Mapping[str, Any] | None = None,
     ) -> _LocalStageContext:
-        """Build the `StageContext` a single `Stage.run` call sees."""
+        """Build the `StageContext` a single `Stage.run` call sees.
+
+        `own_input_ref`/`commit_id`/`index_generation`/`profile_id`/`dense_vectors` are the
+        official slots for the per-stage conventions several WPs bolted on via `getattr(ctx, ...)`
+        (WP-106 `parsed_ref` precedent; see the `StageContext` docstring). Callers that do not need
+        them may omit them; existing `getattr(ctx, "parsed_ref", None)`-style call sites keep working
+        unchanged.
+        """
         artifacts = TenantBoundArtifacts(store=self.store, tenant_id=self.tenant_id)
         return _LocalStageContext(
             tenant_id=self.tenant_id,
@@ -253,6 +285,11 @@ class LocalContext:
             analyzer=analyzer,
             lineage=dict(lineage or {}),
             plan=plan,
+            own_input_ref=own_input_ref,
+            commit_id=commit_id,
+            index_generation=index_generation,
+            profile_id=profile_id,
+            dense_vectors=dense_vectors,
             _clock=self.clock,
             _budget_ms=self.budget_ms,
         )

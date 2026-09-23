@@ -5,7 +5,7 @@
 conformance 대역이며 각 레코드를 `(tenant_id, id)` 키로 스코프해 RLS 의미를 근사한다.
 
 구성: `InMemoryLedger` — `upsert_document`/`get_document`, `upsert_job`/`get_job`/`list_jobs`,
-`upsert_commit`/`get_commit`.
+`upsert_commit`/`get_commit`/`list_commits`.
 
 불변식·주의: 모든 레코드는 `(tenant_id, id)` 복합 키로 저장·조회되어 다른 테넌트 레코드가
 섞이지 않는다(바이블 §13.1 RLS와 동일한 격리 의도).
@@ -65,3 +65,11 @@ class InMemoryLedger:
     async def get_commit(self, tenant_id: str, commit_id: str) -> CommitRecord | None:
         """Return the commit row, or `None` if absent for this tenant."""
         return self._commits.get((tenant_id, commit_id))
+
+    async def list_commits(self, tenant_id: str, document_id: str) -> list[CommitRecord]:
+        """List every commit row (any status) for `(tenant_id, document_id)`."""
+        return [
+            commit
+            for (commit_tenant_id, _), commit in self._commits.items()
+            if commit_tenant_id == tenant_id and commit.document_id == document_id
+        ]
