@@ -1,0 +1,102 @@
+# `lite` 개발 프로파일 compose 스택 — `app`(API + `LocalRunner` 동거) · `postgres` · `qdrant` · `valkey`.
+#
+# 역할: `rag up --profile lite`(바이블 §11.6 5분 기동 절차 2단계)가 기동하는 개발용 4-컨테이너
+# 스택. 원장(PostgreSQL), 벡터·희소 인덱스(Qdrant), 캐시·레이트리밋(Valkey), API+워커 동거
+# 앱(`app`, `rag serve api` — 비내구 `LocalRunner`가 인프로세스로 잡을 돈다) 하나로 구성된다.
+# 설계 근거: `docs/09-operations/01-deployment-guide.md` §3.1~§3.4(파일 구조·서비스
+# 목록·환경 변수·compose 스케치), 바이블 §7.1 lite 컴포넌트 표("컨테이너 4(개발)")·§11.6.
+# 구성: `app`(`rag serve api`; `RAG_TEMPORAL__ADDRESS` 미설정 → `LocalRunner`), `postgres`
+# (`rag_ledger`), `qdrant`(1.19, named vectors `dense`·`sparse_bm25`), `valkey`(9, 영속화 끔).
+# 불변식·주의: 이 파일은 "개발"(비내구) 전용이다 — 운영에서는 `compose.lite-durable.yaml`을
+# 함께 적용해야 한다(바이블 §11.1, `LocalRunner`는 비내구). 이미지 digest는 아직 해결되지
+# 않은 자리표시자(`<digest>`, 배포 아키텍처 P5가 정본) — Dockerfile·CI 이미지 빌드는 이 WP
+# 범위 밖(open_issues). `worker`를 별도 컨테이너로 두지 않는다: bible §7.1 "컨테이너
+# 4(개발)"과 배포 가이드 §3.4 스케치 모두 `app` 하나가 API+`LocalRunner`를 겸한다(별도
+# `worker`는 `compose.lite-durable.yaml`의 Temporal 워커 동거 오버레이에서만 의미가 있다).
+# 검증 계층: 작성만(2층 `needs_docker`). `# DEFERRED: docker compose config`와 기동 스모크는
+# `tools/verify/run-deferred.sh`가 Docker 있는 머신에서 수행(HANDOFF.md §"Docker 재확인").
+
+name: rag-lite
+
+services:
+  app:
+    image: ${RAG_IMAGE:-ghcr.io/example/rag-platform@sha256:<digest>} # open_issues: Dockerfile·digest 미해결
+    command: ["serve", "api"] # ENTRYPOINT ["rag"]; RAG_TEMPORAL__ADDRESS 없음 → LocalRunner 동거(비내구)
+    env_file: .env
+    ports:
+      - "8000:8000"
+      - "9090:9090" # /metrics (관측성, compose.observability.yaml과 함께 쓸 때)
+    volumes:
+      - ./.rag/artifacts:/data/artifacts # RAG_OBJECT_STORE__URI=file:///data/artifacts
+      - ./.rag/models:/models # bge-m3 ONNX int8, mecab-ko-dic, RapidOCR ONNX(최초 rag up 시 다운로드)
+      - ./samples:/samples:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/readyz').status == 200 else 1)",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 120s # 모델 최초 로드 대기
+    restart: unless-stopped
+
+  postgres:
+    image: postgres@sha256:<digest> # 메이저 버전은 설정 레퍼런스 확정(Temporal 요구 12+; lite 개발은 Temporal 미기동)
+    environment:
+      POSTGRES_USER: postgres # 부트스트랩 슈퍼유저. rag_owner는 NOLOGIN이라 여기 쓸 수 없다(저장소 아키텍처 §2.4)
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_superuser_password
+      POSTGRES_DB: rag_ledger
+    secrets: [pg_superuser_password]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init/postgres:/docker-entrypoint-initdb.d:ro # 역할 rag_owner(NOLOGIN)·rag_app·rag_platform_admin·rag_maintenance 생성(§5.1)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rag_ledger"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant@sha256:<digest> # 1.19
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  valkey:
+    image: valkey/valkey@sha256:<digest> # 9
+    command:
+      ["valkey-server", "--save", "", "--appendonly", "no", "--maxmemory-policy", "volatile-lru"]
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+secrets:
+  pg_superuser_password:
+    file: ./.secrets/pg_superuser_password
+
+volumes:
+  pgdata: {}
+  qdrant_storage: {}

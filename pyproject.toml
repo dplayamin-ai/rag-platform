@@ -41,6 +41,8 @@ dependencies = [
   "markdown-it-py>=4.2.0",
   "trafilatura>=2.2.0",
   "pypdfium2>=5.13.0",
+  "mcp>=2,<3",
+  "fastapi>=0.141.1",
 ]
 
 [project.optional-dependencies]

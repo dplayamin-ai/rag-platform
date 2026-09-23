@@ -135,7 +135,7 @@ def apply(
     for r in candidates:
         acl: Acl1 | None = r.acl
         hint = revocation_hints.get(_root(r.document_id))
-        hint_typed: RevocationHint | None = hint  # type: ignore[assignment]
+        hint_typed: RevocationHint | None = hint
         hash_differs = hint_typed is not None and (acl is None or hint_typed.acl_hash != _root(acl.acl_hash))
         if hint_typed is not None and hint_typed.deleted:
             # 삭제는 ACL을 바꾸지 않으므로 acl_hash가 payload와 같아도 무조건 거부한다(E9, §9.1
@@ -144,7 +144,7 @@ def apply(
                 hint_hits += 1
             denied.append(_deny(r))
             continue
-        if hash_differs:
+        if hint_typed is not None and hash_differs:
             hint_hits += 1
             ok = _evaluate(
                 allow=hint_typed.allow,

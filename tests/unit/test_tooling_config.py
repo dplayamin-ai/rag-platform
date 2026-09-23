@@ -79,6 +79,8 @@ def test_minimal_runtime_dependencies(pyproject: dict[str, Any]) -> None:
         "markdown-it-py",
         "trafilatura",
         "pypdfium2",
+        "mcp",
+        "fastapi",
     }
 
 

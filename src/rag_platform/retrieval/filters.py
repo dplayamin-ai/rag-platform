@@ -185,9 +185,7 @@ def _field_str(field: ct.FilterableField1) -> str:
 
 
 #: §4.3: `in`/`not_in`/`contains_*`는 비어 있지 않은 배열이 필요하다.
-_LIST_VALUE_OPS = frozenset(
-    {ct.FilterOp.in_, ct.FilterOp.not_in, ct.FilterOp.contains_any, ct.FilterOp.contains_all}
-)
+_LIST_VALUE_OPS = frozenset({ct.FilterOp.in_, ct.FilterOp.not_in, ct.FilterOp.contains_any, ct.FilterOp.contains_all})
 #: §4.3: 범위 연산자는 스칼라(숫자 또는 날짜/일시 문자열, `doc_date` 등)가 필요하다.
 _RANGE_VALUE_OPS = frozenset({ct.FilterOp.gt, ct.FilterOp.gte, ct.FilterOp.lt, ct.FilterOp.lte})
 

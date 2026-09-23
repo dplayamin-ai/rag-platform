@@ -1,0 +1,50 @@
+{
+ "batch": "F5",
+ "tasks": [
+  {
+   "wp": [
+    "C:\\Workspaces\\rag-platform\\docs\\13-implementation\\wp\\WP-501-api-ingest-jobs-query.md"
+   ],
+   "tests": {
+    "passed": 25,
+    "failed": 0,
+    "deferred": 0
+   },
+   "issues": 6
+  },
+  {
+   "wp": [
+    "docs/13-implementation/wp/WP-502-mcp-server.md"
+   ],
+   "tests": {
+    "passed": 18,
+    "failed": 0,
+    "deferred": 3
+   },
+   "issues": 6
+  },
+  {
+   "wp": [
+    "C:\\Workspaces\\rag-platform\\docs\\13-implementation\\wp\\WP-503-cli-and-full-e2e.md"
+   ],
+   "tests": {
+    "passed": 9,
+    "failed": 0,
+    "deferred": 3
+   },
+   "issues": 8
+  }
+ ],
+ "verify": {
+  "tests": {
+   "passed": 878,
+   "failed": 0,
+   "deferred": 27
+  },
+  "summary": "F5 배치 검증자로서 `uv run ruff check .` / `ruff format --check .`(포맷 8개 파일 재포맷 후 통과) / `uv run mypy src` / `uv run lint-imports` / `uv run pytest -q`를 실행하고 실패를 원인 파일 최소 수정으로 통과시켰다.\n\nmypy 54건(6개 파일: cli/main.py, mcp/tools.py, mcp/server.py, api/query.py, api/ingest.py, retrieval/pack/acl_recheck.py)을 수정했다 — 계약 RootModel(Uri/Hex64/Semver/SchemaTypeName)·StrEnum(Classification/AuthMethod/Visibility/Respons"
+ },
+ "review": {
+  "findings": 10,
+  "serious": 3
+ }
+}
