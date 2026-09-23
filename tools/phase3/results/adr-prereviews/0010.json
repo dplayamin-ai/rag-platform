@@ -1,0 +1,100 @@
+{
+ "id": "0010",
+ "findings": [
+  {
+   "severity": "minor",
+   "location": "## 결정 — mermaid 다이어그램(97행) `RR[\"bge-reranker-v2-m3 @ TEI<br/>100→20 (b: 50→20)\"]`",
+   "problem": "(b) 2단 리랭크 구성의 크로스인코더 50→20을 bge-reranker-v2-m3 @ TEI 노드에 붙였다. 바이블 §7.1 리랭커 행·§7.2 `query.rerank` 행에서 (b)가 놓이는 `premium`의 크로스인코더는 Qwen3-Reranker-4B @ vLLM/SGLang(50→20 / 1024 / 600)이고, 같은 문서 A7(70행)·프로파일 값 행(83행)도 그렇게 적고 있어 다이어그램만 어긋난다. 바이블 §3.2 O-04 문장은 모델을 특정하지 않고 '크로스인코더 50→20'이라고만 쓴다.",
+   "fix": "노드 라벨을 모델 중립으로 바꾸거나 두 줄로 분리한다. 예: `RR[\"크로스인코더 리랭커<br/>standard: bge-reranker-v2-m3 @ TEI 100→20<br/>(b, premium): Qwen3-Reranker-4B 50→20\"]` — 근거 바이블 §7.1 리랭커 행, §7.2 `query.rerank.top_n_in → top_n_out` 행, §3.2 O-04.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 — 정본 값 표 `late_interaction` 슬롯 행(80행) \"BGE-M3 colbert(1024d)와 같은 named vector에 혼합 금지(14 §계약 제안)\" 및 ## 참조(182행) \"§계약 제안\"",
+   "problem": "14 문서의 실제 절 이름은 \"계약 필드 제안(03-contracts 문서에 제안; 본 문서는 계약을 변경하지 않음)\"이며, 그 표는 `vectors.late_interaction`의 '차원은 `embedding_space_id`에 기록'만 말하고 '혼합 금지'를 직접 서술하지 않는다. 혼합 금지의 출처는 05 문서 §실패 모드 \"멀티벡터 차원 혼합\"(`MultiVector.dim`을 `embedding_space_id`에 포함, 컬렉션 생성 시 dim 고정)이고, 강제 장치는 바이블 §6.2 `embedding_space_id = H(\"space\", model_id, revision, str(dim), …)`이다.",
+   "fix": "인용을 \"(05 §실패 모드 '멀티벡터 차원 혼합', 바이블 §6.2 `embedding_space_id`, 14 §계약 필드 제안)\"으로 고치고, 참조 절의 \"§계약 제안\"을 14 문서 정본 헤더 \"§계약 필드 제안\"으로 맞춘다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 참조(178행) \"[설계 바이블] … §15 #2·#6·#9·#10\"",
+   "problem": "바이블 §15 #9는 '빠른 릴리스 의존성 파손'(Docling·vLLM pooling·MCP·OTel)이며 본문 어디에서도 인용되지 않는다. 본문(33행 F4, 171행 재검토 4)이 KURE-v2 조기 채택 리스크로 인용하는 것은 매트릭스 종합 리스크 #9(신규 모델 조기 채택)로, 참조 절의 바이블 #9는 매트릭스 #9와 혼동을 부른다.",
+   "fix": "바이블 참조에서 `#9`를 제거하거나(본문 미인용), vLLM pooling 의존성 파손을 근거로 실제 인용하려면 본문 결과·재검토 조건에 \"바이블 §15 #9(vLLM pooling 의존성 파손)\"를 명시적으로 넣은 뒤 유지한다. 매트릭스 #9는 179행에 이미 올바르게 적혀 있다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 맥락과 문제 — F1(30행) \"PIXIE-Rune-v1.5 81.57\"",
+   "problem": "05 문서 §한국어 특화 dense 표(136행)는 MTEB-ko 81.57을 'v1.0 등재; v1.5 등재 여부 확인 필요, as of 2026-09'로 표기하고, 매트릭스 `dense_embedder` 행은 버전 없이 'PIXIE 81.57'로 쓴다. 81.57을 v1.5의 수치로 단정하면 depends_on 문서보다 강한 주장이 된다.",
+   "fix": "\"PIXIE-Rune 81.57(v1.0 등재; v1.5 등재 여부 확인 필요, as of 2026-09)\" 또는 매트릭스 표기대로 \"PIXIE-Rune 81.57\"로 적는다(바이블 §1.2 '확인 전 외부 사실은 확인 필요(as of 2026-09)' 표기 규약).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "major",
+   "location": "## 준수 확인 방법 (표 + 코드 리뷰 체크리스트 행) / ## 결정 표 '위치 (a)'·'위치 (b)' 행",
+   "problem": "문서 전체에 tenant_id·ACL·사전 필터·`filters.security`·`security_context_hash` 언급이 한 번도 없다(grep 0건). 이 ADR은 새 검색 채널 `late_interaction`(Qdrant)과 Qdrant 측 prefetch→MaxSim 재점수 경로(b)를 계약에 넣는데, 바이블 §10.2(\"모든 채널·모든 백엔드, 사전 필터\")·§10.3 E7(리트리버 어댑터 `tenant_id` 필터·사후 필터 금지·`security_context_hash` 서명)이 이 두 경로에도 적용된다는 점과 그것을 어떤 게이트로 강제하는지가 준수 확인 표·체크리스트에 없다. 특히 (b)는 prefetch 요청 자체에 보안 필터가 들어가야 하므로 새 강제 지점 매핑이 필요하다.",
+   "fix": "준수 확인 표에 행 추가: \"어댑터 계약 테스트(§10.3 E7): `retriever.*late_interaction` 채널 런과 `RerankBackend=qdrant_maxsim`의 prefetch/query 요청에 `filters.security`(§10.2 (a)) 전체가 사전 필터로 존재하고 `CandidateSet.security_context_hash`가 서명됨; 사후 필터 금지\". 코드 리뷰 체크리스트에 (g) \"MaxSim prefetch·`late_interaction` 채널도 `filters.security`·`filters.strategy`를 그대로 전송\"을 추가하고 참조에 바이블 §10.2·§10.3 E7·E10, 브리프 원칙 9를 넣는다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 — mermaid 블록 노드 RR (line 97)",
+   "problem": "RR 노드가 `bge-reranker-v2-m3 @ TEI<br/>100→20 (b: 50→20)`로 표기되어 (b) 구성의 크로스인코더도 bge-reranker-v2-m3인 것처럼 읽힌다. 그러나 같은 문서의 A7과 '프로파일 값' 행, 바이블 §7.1 리랭커 행은 `premium` (b) 구성의 50→20 크로스인코더를 Qwen3-Reranker-4B @ vLLM/SGLang으로 둔다. 다이어그램과 본문 표가 불일치한다.",
+   "fix": "RR 라벨을 `크로스인코더<br/>standard: bge-reranker-v2-m3 @ TEI 100→20<br/>premium (b): Qwen3-Reranker-4B 50→20`로 고치거나 `(b: 50→20)` 부분을 제거한다(바이블 §7.1 리랭커 행, §7.2 `query.rerank` 행).",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 표 '위치 (b) 리랭크 단계' 행, ## 준수 확인 방법 `rag profile validate` 행, ## 재검토 조건 1",
+   "problem": "(b) 구성은 `late_interaction_rerank.top_n_in=300`을 전제하지만, 바이블 §8.1 8단계는 융합 결과를 `hydrate.top_n`(premium 100)에서 절단하고, 인용된 검증 규칙 (11)은 `hydrate.top_n ≥ max(rerank.top_n_in, pack.k_max)`만 다룬다. 300개 후보가 플랫폼 fused 리스트 상위 300인지 Qdrant 서버 prefetch(O-01이 dense·sparse에는 금지)인지, 그리고 fuse 절단 하한이 `late_interaction_rerank.top_n_in`을 포함해야 하는지가 문서에 없다. 다이어그램은 FU→MS로 그려 fused 상위를 쓰는 듯하지만 라벨은 'prefetch 300'이다.",
+   "fix": "새 결정을 만들지 않는 범위에서 재검토 조건 1에 \"(b)의 300 후보 원천(플랫폼 fused 상위 300 vs Qdrant prefetch)과 fuse 절단 하한(`max(hydrate.top_n, late_interaction_rerank.top_n_in)`)·§7.4 검증 규칙 추가 여부를 M2 비교와 함께 확정(바이블 미해결 이슈 3, O-01 'prefetch 미사용' 규칙과의 정합)\"을 명시하고, 다이어그램 라벨을 'fused 상위 300 → MaxSim 100' 또는 'prefetch(확정 필요)'로 일관되게 한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 표 '`late_interaction` 슬롯' 행 및 '위치 (a) 인덱스 채널' 행",
+   "problem": "슬롯 행은 `MultiVectorConfig(MAX_SIM)`, `m=0` 옵션만 적고 있어 (a) 인덱스 단계 1차 검색에서는 멀티벡터에 HNSW를 유지(m>0)해야 한다는 점(14 §개방 결정 O-04: \"1차 검색용이면 HNSW 유지, 재점수 전용이면 `m=0`\")이 드러나지 않는다. (a)와 (b)의 메모리·그래프 구축 비용 차이가 M2 비교의 핵심 변수인데 문서가 이를 구분하지 않는다.",
+   "fix": "'위치 (a)' 행에 \"멀티벡터 HNSW 유지(m>0; 14 §O-04)\"를, '위치 (b)' 행에 \"`hnsw_config.m=0` 재점수 전용(14 §Late interaction: 텍스트)\"을 각각 명시하고 재검토 조건 1의 비교 항목(인덱스 크기)에 HNSW 메모리를 포함한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 맥락과 문제 — F1 행",
+   "problem": "\"PIXIE-Rune-v1.5 81.57\"로 적었으나 출처인 05 §한국어 특화 dense 표는 81.57을 v1.0 등재 수치로 두고 \"v1.5 등재 여부 확인 필요(as of 2026-09)\"를 붙였다. 매트릭스도 'PIXIE 81.57'로만 표기한다. 근거 없는 버전 귀속이다.",
+   "fix": "\"PIXIE-Rune 81.57(OnAnd0n v1.0 등재; v1.5 등재 여부 확인 필요, as of 2026-09)\"로 정정(05 §한국어 특화 dense 표 'MTEB-ko 리더보드' 행).",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 참조 — 설계 바이블 항목 \"§15 #2·#6·#9·#10\"",
+   "problem": "바이블 §15 #9는 \"빠른 릴리스 의존성 파손\"이며 본문 어디에서도 인용되지 않는다. 본문(F4·재검토 4)이 인용하는 '신규 모델 조기 채택' #9는 매트릭스 종합 리스크 #9이고 이미 매트릭스 참조에 들어 있다. 바이블 #9 참조는 매트릭스 번호와 혼동된 것으로 보인다.",
+   "fix": "바이블 참조에서 \"#9\"를 삭제하거나, 본문(결과 '부정' 3항 KURE-v2 vLLM `token_embed` 실측)에 \"바이블 §15 #9(vLLM pooling API 변동)\"를 실제로 인용해 연결한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 표 '`late_interaction` 슬롯' 행 — \"BGE-M3 colbert(1024d)와 같은 named vector에 혼합 금지(14 §계약 제안)\"",
+   "problem": "14 §계약 필드 제안은 `vectors.late_interaction`의 차원을 `embedding_space_id`에 기록한다고만 적는다. '128d와 1024d 멀티벡터를 같은 named vector에 적재' 실패 모드와 그 완화(`MultiVector.dim`을 `embedding_space_id`에 포함, 컬렉션 생성 시 dim 고정)는 05 §실패 모드 '멀티벡터 차원 혼합' 행에 있다. 출처 귀속이 틀렸다.",
+   "fix": "출처를 \"05 §실패 모드 '멀티벡터 차원 혼합', 14 §계약 제안(차원은 `embedding_space_id`에 기록)\"으로 고친다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 고려한 대안 — A5·A6·A7 불릿",
+   "problem": "outline은 각 대안에 설명·장점·단점을 요구하는데 A5·A6·A7은 '장점:'·'단점:'만 있고 '설명:'이 없어 대안의 구체 구성(어느 프로파일·어느 모델·어느 위치)이 제목 한 줄에만 의존한다(A1~A4는 형식을 지킴).",
+   "fix": "A5·A6·A7 각 불릿 앞에 한 문장 '설명:'을 추가한다. 예) A6 \"설명: `standard` 기본 채널을 dense·sparse·lexical·late_interaction 4-way로 바꾸고 KURE-v2 멀티벡터를 전 컬렉션에 저장한다(HNSW 유지)\".",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 표 '정의 위치' 열, ## 참조 '하위 설계 문서' 항목",
+   "problem": "상대 링크 12개가 존재하지 않는 파일을 가리킨다: 03-contracts/07·09·10·15, 04-pipelines/12·15·16, 08-evaluation/05, 09-operations/03, 10-development/05·07, 06-adr/README.md(존재 확인: 03-contracts/00만 존재). 바이블 미해결 이슈 11이 미작성 문서 링크를 CI 경고로 처리한다고 하므로 blocker는 아니지만, 준수 확인 표의 '정의 위치'가 전부 미작성 문서라 현재 강제 근거는 바이블 절만 유효하다.",
+   "fix": "각 미작성 링크에 \"(미작성; 바이블 미해결 이슈 11)\" 표기를 붙이거나, 준수 확인 표 '정의 위치'를 바이블 절 번호 우선으로 적고 하위 문서는 보조로 둔다.",
+   "lens": "tech"
+  }
+ ],
+ "verdicts": {
+  "anchor": "accept",
+  "tech": "revise"
+ }
+}

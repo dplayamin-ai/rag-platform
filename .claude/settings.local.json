@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -R \"C:/Users/dplaya.min/AppData/Local/Temp/claude/C--Workspaces-rag-platform\" 2>/dev/null | head -60)"
+    ]
+  }
+}

@@ -1,0 +1,1990 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:profile:1",
+  "title": "Profile",
+  "description": "파이프라인 구성 프리셋(바이블 §5.6 최상위 키, §7.3 YAML 정본). 운영자가 YAML로 생산하고 로더·검증기(§7.4)와 모든 스테이지가 소비한다. extends 단일 상속·깊은 병합(배열 교체)을 해소하고 StagePolicy 기본값을 채운 결과의 canonical_json BLAKE3가 profile_hash다. 이 스키마는 YAML 원본과 해소 결과 양쪽에 적용되며 default 키워드를 갖지 않는다(14 §8). 스테이지 값 객체는 {plugin, policy, 플러그인 config_schema 필드}라 열린 객체(additionalProperties: true)이고 나머지 필드는 플러그인 config_schema가 로딩 시 검증한다. ProfileId·LicensePolicy·Profile.ingest.index.backends.role 은 collection-spec 스키마의 같은 정의의 사본이다(계약 간 교차 $ref 회피; CI 동치 대조). 소유 문서: docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "description": "계약 버전. 초기 \"1.0.0\""
+    },
+    "schema_type": {
+      "type": "string",
+      "const": "Profile",
+      "description": "선택(N, 이 문서 추가). 해소 결과(GET /v1/profiles/{profile_id}) 식별용"
+    },
+    "profile_id": {
+      "$ref": "#/$defs/ProfileId",
+      "description": "kebab-case(§6.1). 내장 base, lite, standard, premium, korean-gov"
+    },
+    "version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "description": "내용 버전. 값 변경 = version 증가 = profile_hash 변경 = 컬렉션 blue/green(§7.4)"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1024,
+      "description": "선택(N). 운영자 설명"
+    },
+    "extends": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ProfileId"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "단일 부모. null은 조상 전용 프로파일(base)이며 컬렉션에 바인딩할 수 없다. 배열은 자식 값으로 교체된다(ADR-0031)"
+    },
+    "tier": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/ProfileTier",
+      "description": "인프라 등급. 내장 프로파일은 profile_id와 같고 base는 lite"
+    },
+    "license_policy": {
+      "$ref": "#/$defs/LicensePolicy",
+      "description": "로딩 검증 (1)의 상한(ADR-0001)"
+    },
+    "runtime": {
+      "$ref": "#/$defs/RuntimeConfig"
+    },
+    "ingest": {
+      "$ref": "#/$defs/IngestConfig"
+    },
+    "query": {
+      "$ref": "#/$defs/QueryConfig"
+    },
+    "security": {
+      "$ref": "#/$defs/SecurityConfig"
+    },
+    "observability": {
+      "$ref": "#/$defs/ObservabilityConfig"
+    },
+    "eval": {
+      "$ref": "#/$defs/EvalConfig"
+    },
+    "profile_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "readOnly": true,
+      "description": "N(바이블 §6.2·§5.6 1.3.0, AM-34 완전성 #12). H(\"profile\", canonical_json(resolved))(§3.8). 로더가 계산해 채우는 파생값 — 프로파일 작성자가 직접 쓰지 않는다(readOnly). CollectionSpec.profile_hash·IndexCommit·QueryPlan·ContextPack·EvalRun.profile_hash 기록 지점의 정본 계산식"
+    }
+  },
+  "required": [
+    "schema_version",
+    "profile_id",
+    "version",
+    "extends",
+    "tier",
+    "license_policy",
+    "runtime",
+    "ingest",
+    "query",
+    "security",
+    "observability",
+    "eval"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "ProfileId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "maxLength": 64,
+      "description": "프로파일 ID kebab-case(바이블 §6.1). urn:rag:schema:collection-spec:1#/$defs/ProfileId 의 사본"
+    },
+    "LicensePolicy": {
+      "type": "object",
+      "description": "바이블 §5.6 Profile.license_policy. urn:rag:schema:collection-spec:1#/$defs/LicensePolicy 의 사본. max_grade는 §5.7 나열 순 비교(A<B<C<D), X(사용 비허가)는 상한이 될 수 없다",
+      "properties": {
+        "max_grade": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/LicenseGrade",
+          "enum": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          "description": "허용 최고 등급. PluginMeta.license_grade <= max_grade"
+        },
+        "territory": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "description": "배포 지역 ISO 3166-1 alpha-2. PluginMeta.territory가 비어 있지 않으면 이 값 전부를 포함해야 한다(ADR-0001)"
+        }
+      },
+      "required": [
+        "max_grade",
+        "territory"
+      ],
+      "additionalProperties": false
+    },
+    "Profile.ingest.index.backends.role": {
+      "type": "string",
+      "enum": [
+        "vector",
+        "lexical",
+        "graph"
+      ],
+      "description": "백엔드 역할 인라인 열거({Type}.{path} 등재 규칙 §5.7). collection-spec 의 CollectionSpec.backends.role 과 값 집합이 같다. commit.flip_order[] 항목도 이 역할 값이다"
+    },
+    "MetricKey": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(@[1-9][0-9]*)?$",
+      "maxLength": 64,
+      "description": "메트릭 키 {metric}[@{k}](k >= 1, 선행 0 금지). urn:rag:schema:eval-run:1#/$defs/MetricKey 의 사본(계약 간 교차 $ref 회피; CI 동치 대조). GateSpec.metric·eval.gates 키가 참조하며 16 GateOutcome.metric 으로 그대로 표현된다"
+    },
+    "GateSpec": {
+      "type": "object",
+      "description": "품질 게이트(바이블 §5.6 게이트 값 행, §7.4). metric 생략 = eval.gates의 ndcg@10, dataset 생략 = eval.datasets[0]. grid | min_delta | min_delta_pt | min_qrels | candidate | promote_to 중 하나 이상. 게이트가 붙은 값은 EvalReport.gate_result.passed와 ADR 없이 바꿀 수 없다",
+      "properties": {
+        "metric": {
+          "$ref": "#/$defs/MetricKey",
+          "description": "EvalReport.metrics 키(ndcg@10, recall@20, mrr, span_hit_rate@10). GateOutcome.metric(16)과 같은 MetricKey 형식"
+        },
+        "dataset": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "maxLength": 64,
+          "description": "EvalDataset.name(16 §2.1; 최신 행으로 해소). 생략 = eval.datasets[0]"
+        },
+        "grid": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "uniqueItems": true,
+          "description": "탐색 격자(value가 그 원소)"
+        },
+        "min_delta": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "후보 채택 최소 개선(지표 단위)"
+        },
+        "min_delta_pt": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "후보 채택 최소 개선(퍼센트 포인트)"
+        },
+        "min_qrels": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "전환 전 필요한 사람 라벨 qrels 수"
+        },
+        "candidate": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "비교 대상 후보(모델 ID 등)"
+        },
+        "max_cost_per_doc_usd": {
+          "type": "number",
+          "minimum": 0,
+          "description": "문서당 비용 상한(LLM 보강)"
+        },
+        "promote_to": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/FusionMethod",
+          "description": "융합 전환 목표(O-01)"
+        },
+        "tool": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "판정 도구(ranx.optimize_fusion 등)"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "grid"
+          ]
+        },
+        {
+          "required": [
+            "min_delta"
+          ]
+        },
+        {
+          "required": [
+            "min_delta_pt"
+          ]
+        },
+        {
+          "required": [
+            "min_qrels"
+          ]
+        },
+        {
+          "required": [
+            "candidate"
+          ]
+        },
+        {
+          "required": [
+            "promote_to"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "GatedValue": {
+      "type": "object",
+      "description": "게이트 보유 값 {value, gate}(바이블 §5.6)",
+      "properties": {
+        "value": {
+          "type": [
+            "integer",
+            "number",
+            "string",
+            "boolean"
+          ]
+        },
+        "gate": {
+          "$ref": "#/$defs/GateSpec"
+        }
+      },
+      "required": [
+        "value",
+        "gate"
+      ],
+      "additionalProperties": false
+    },
+    "StagePolicyPartial": {
+      "type": "object",
+      "description": "프로파일 YAML 안의 부분 StagePolicy. 로더가 task_queue(runtime.queues[stage])·non_retryable_error_codes(§4.4 기본)·resumable(capabilities)·backoff{1s,5m,2.0}를 채워 완전한 StagePolicy(urn:rag:schema:common-types:1#/$defs/StagePolicy)로 만든다. 해소 결과는 그 스키마를 통과해야 한다",
+      "properties": {
+        "task_queue": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "start_to_close": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Duration"
+        },
+        "heartbeat": {
+          "anyOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Duration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "backoff": {
+          "type": "object",
+          "properties": {
+            "initial": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Duration"
+            },
+            "max": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Duration"
+            },
+            "coefficient": {
+              "type": "number",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "initial",
+            "max",
+            "coefficient"
+          ],
+          "additionalProperties": false
+        },
+        "non_retryable_error_codes": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/ErrorCodeCatalog"
+          },
+          "uniqueItems": true
+        },
+        "resumable": {
+          "type": "boolean"
+        },
+        "isolation": {
+          "anyOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/IsolationMode"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "PluginRef": {
+      "type": "object",
+      "description": "플러그인 지정 + 폴백 + 플러그인 config_schema 필드(열린 객체)",
+      "properties": {
+        "plugin": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+        },
+        "fallback": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId",
+          "description": "예외 시 폴백 플러그인(같은 확장 지점·역할)"
+        }
+      },
+      "required": [
+        "plugin"
+      ],
+      "additionalProperties": true
+    },
+    "Profile.runtime.orchestrator": {
+      "type": "string",
+      "enum": [
+        "local",
+        "temporal"
+      ],
+      "description": "바이블 §5.6 runtime.orchestrator 인라인 열거. local = LocalRunner(개발·CI·하네스)"
+    },
+    "RuntimeConfig": {
+      "type": "object",
+      "description": "바이블 §5.6 runtime",
+      "properties": {
+        "orchestrator": {
+          "$ref": "#/$defs/Profile.runtime.orchestrator"
+        },
+        "queues": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "required": [
+            "fetch",
+            "parse",
+            "normalize",
+            "chunk",
+            "enrich",
+            "embed",
+            "index"
+          ],
+          "description": "스테이지 → Temporal task_queue(kebab). StagePolicy.task_queue 기본값의 원천. 선택 키 detect, ocr, enrich_llm, recount(폴백 detect·ocr → parse, recount → chunk). publish 는 로컬 액티비티라 키가 없다"
+        },
+        "tenant_concurrent_jobs_max": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "디스패처가 jobs.running 수로 강제(§11.2)"
+        },
+        "acl_propagation_slo": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Duration",
+          "description": "E11 회수 전파 SLO(rag_acl_propagation_seconds)"
+        },
+        "outbox_lag_slo": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Duration",
+          "description": "아웃박스 릴레이 지연 SLO(rag_outbox_lag_seconds)"
+        },
+        "egress": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/EgressPolicy",
+          "description": "E16. deny_cidrs는 기본 9개 CIDR을 포함해야 한다(검증 규칙 12). file 스킴은 orchestrator=local일 때만"
+        },
+        "consistency_check": {
+          "type": "object",
+          "properties": {
+            "sample_every": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Duration"
+            },
+            "full_every": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Duration"
+            }
+          },
+          "required": [
+            "full_every"
+          ],
+          "additionalProperties": false,
+          "description": "선택(N). §7.2 consistency_check 주기"
+        },
+        "snapshot": {
+          "type": "object",
+          "properties": {
+            "every": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Duration"
+            },
+            "replicate_region": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "every"
+          ],
+          "additionalProperties": false,
+          "description": "선택(N). §7.2 snapshot 주기"
+        }
+      },
+      "required": [
+        "orchestrator",
+        "queues",
+        "tenant_concurrent_jobs_max",
+        "acl_propagation_slo",
+        "outbox_lag_slo",
+        "egress"
+      ],
+      "additionalProperties": false
+    },
+    "RouteStep": {
+      "type": "object",
+      "description": "parse.router 폴백 체인의 한 단계(§7.3). then = 변환 뒤 재라우팅할 SourceFormat",
+      "properties": {
+        "plugin": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+        },
+        "isolation": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/IsolationMode"
+        },
+        "image": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "사이드카 이미지 이름(parser-workers, lo-sidecar, ocr-gpu). digest는 런타임 Producer.image_digest"
+        },
+        "then": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/SourceFormat"
+        }
+      },
+      "required": [
+        "plugin"
+      ],
+      "additionalProperties": false
+    },
+    "RouteChain": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+          },
+          {
+            "$ref": "#/$defs/RouteStep"
+          }
+        ]
+      },
+      "minItems": 1,
+      "description": "시도 순서대로의 파서 체인. ParsedDocument.parser_chain[]에 실제 시도 순서가 기록된다"
+    },
+    "RouteTerminal": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/ErrorCodeCatalog",
+      "enum": [
+        "parse.unsupported_format",
+        "parse.unsupported_variant"
+      ],
+      "description": "해당 포맷을 즉시 비재시도 오류로 종료(§7.3 hwp3·unknown). 카탈로그 부분집합(00 §2 열거 규칙)"
+    },
+    "PdfRoute": {
+      "type": "object",
+      "description": "PDF는 source_kind별 라우팅. mixed=page_route 는 페이지 단위로 born_digital/scanned 경로를 섞는다",
+      "properties": {
+        "born_digital": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+        },
+        "scanned": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+        },
+        "mixed": {
+          "anyOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+            },
+            {
+              "type": "string",
+              "const": "page_route"
+            }
+          ]
+        }
+      },
+      "required": [
+        "born_digital",
+        "scanned",
+        "mixed"
+      ],
+      "additionalProperties": false
+    },
+    "SplitRoute": {
+      "type": "object",
+      "description": "컨테이너 분할 후 재라우팅(§7.3 json: split_hint=json_array 이면 멤버 분할 후 then 포맷으로)",
+      "properties": {
+        "split": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/SplitHint"
+        },
+        "then": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/SourceFormat"
+        }
+      },
+      "required": [
+        "split",
+        "then"
+      ],
+      "additionalProperties": false
+    },
+    "RouteEntry": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RouteChain"
+        },
+        {
+          "$ref": "#/$defs/RouteTerminal"
+        },
+        {
+          "$ref": "#/$defs/PdfRoute"
+        },
+        {
+          "$ref": "#/$defs/SplitRoute"
+        }
+      ]
+    },
+    "ParseRouter": {
+      "type": "object",
+      "description": "SourceFormat 13값 전부를 키로 가진다(검증 규칙 10; 누락 → profile.invalid)",
+      "properties": {
+        "hwpx": {
+          "$ref": "#/$defs/RouteEntry"
+        },
+        "hwp5": {
+          "$ref": "#/$defs/RouteEntry"
+        },
+        "hwp3": {
+          "$ref": "#/$defs/RouteEntry"
+        },
+        "pdf": {
+          "$ref": "#/$defs/RouteEntry"
+        },
+        "docx": {
+          "$ref": "#/$defs/RouteEntry"
+        },
+        "doc": {
+          "$ref": "#/$defs/RouteEntry"
+        },
+        "rtf": {
+          "$ref": "#/$defs/RouteEntry"
+        },
+        "odt": {
+          "$ref": "#/$defs/RouteEntry"
+        },
+        "html": {
+          "$ref": "#/$defs/RouteEntry"
+        },
+        "txt": {
+          "$ref": "#/$defs/RouteEntry"
+        },
+        "md": {
+          "$ref": "#/$defs/RouteEntry"
+        },
+        "json": {
+          "$ref": "#/$defs/RouteEntry"
+        },
+        "unknown": {
+          "$ref": "#/$defs/RouteEntry"
+        }
+      },
+      "required": [
+        "hwpx",
+        "hwp5",
+        "hwp3",
+        "pdf",
+        "docx",
+        "doc",
+        "rtf",
+        "odt",
+        "html",
+        "txt",
+        "md",
+        "json",
+        "unknown"
+      ],
+      "additionalProperties": false
+    },
+    "OcrOptions": {
+      "type": "object",
+      "description": "검증 규칙 6: plugin·lang·version·model 필수(O-08; RapidOCR 기본 PP-OCRv6 차단)",
+      "properties": {
+        "plugin": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "OCR 엔진 이름(PDF 파서 플러그인 내부 옵션; entry point 아님). rapidocr, paddleocr, tesseract, surya"
+        },
+        "lang": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "plugin",
+        "lang",
+        "version",
+        "model"
+      ],
+      "additionalProperties": true
+    },
+    "ParseOptions": {
+      "type": "object",
+      "description": "파서 공통 옵션. pdf·page_timeout 외 키는 포맷별 파서 config_schema",
+      "properties": {
+        "pdf": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "PDF 파서 옵션(layout_model, table_model, threads). 열린 객체: 키·값은 PDF 파서 플러그인 config_schema가 검증"
+        },
+        "ocr": {
+          "$ref": "#/$defs/OcrOptions"
+        },
+        "page_timeout": {
+          "type": "object",
+          "properties": {
+            "cpu": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Duration"
+            },
+            "gpu": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Duration"
+            }
+          },
+          "required": [
+            "cpu",
+            "gpu"
+          ],
+          "additionalProperties": false,
+          "description": "페이지 단위 하트비트 타임아웃(O-08: CPU 60s / GPU 20s)"
+        }
+      },
+      "required": [
+        "ocr"
+      ],
+      "additionalProperties": true
+    },
+    "FetchConfig": {
+      "type": "object",
+      "properties": {
+        "plugin": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+        },
+        "max_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "원본 상한(§5.1 SourceDocument 200MB). EgressPolicy.max_bytes 기본값"
+        },
+        "policy": {
+          "$ref": "#/$defs/StagePolicyPartial"
+        }
+      },
+      "required": [
+        "plugin",
+        "max_bytes"
+      ],
+      "additionalProperties": true
+    },
+    "ParseConfig": {
+      "type": "object",
+      "properties": {
+        "router": {
+          "$ref": "#/$defs/ParseRouter"
+        },
+        "options": {
+          "$ref": "#/$defs/ParseOptions"
+        },
+        "policy": {
+          "$ref": "#/$defs/StagePolicyPartial",
+          "description": "parse(텍스트) 행(§4.4)"
+        },
+        "policy_ocr": {
+          "$ref": "#/$defs/StagePolicyPartial",
+          "description": "parse(OCR) 행(§4.4). 생략 시 policy 상속 + queues.ocr"
+        },
+        "policy_detect": {
+          "$ref": "#/$defs/StagePolicyPartial",
+          "description": "선택(N, 이 문서 추가). detect 행(§4.4: ingest-cpu, 1m, heartbeat 없음, 3회, parse.unsupported_format·parse.corrupt_container, resumable=false). detect 는 parser 확장 지점 role=format_detector 이므로 parse 아래에 둔다. 생략 시 §4.4 detect 행 그대로, task_queue 는 queues.detect ?? queues.parse"
+        }
+      },
+      "required": [
+        "router",
+        "options"
+      ],
+      "additionalProperties": false
+    },
+    "PiiConfig": {
+      "type": "object",
+      "properties": {
+        "plugin": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+        },
+        "policy": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PiiPolicy",
+          "description": "프로파일 기본. CollectionSpec.policies.pii_policy·IngestRequest.pii_policy 중 가장 엄격한 값 적용"
+        },
+        "tokenize_mode": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PiiTokenizeMode"
+        },
+        "recognizers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]*$"
+          },
+          "uniqueItems": true,
+          "description": "명시 활성 인식기(KR_RRN, KR_PHONE, KR_BANK_ACCOUNT, KR_CARD, KR_PASSPORT)"
+        },
+        "reject_entities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]*$"
+          },
+          "uniqueItems": true,
+          "description": "N(바이블 §7.3 1.3.0, AM-43). 이 목록의 엔티티 타입이 탐지되면 policy 값과 무관하게 문서를 reject(korean-gov 기본값 예 [\"KR_RRN\"]). policy=reject 와 함께 오면 중복 지정이므로 profile.invalid"
+        }
+      },
+      "required": [
+        "plugin",
+        "policy"
+      ],
+      "additionalProperties": true
+    },
+    "NormalizeConfig": {
+      "type": "object",
+      "properties": {
+        "analyzer": {
+          "$ref": "#/$defs/PluginRef",
+          "description": "role=korean_analyzer(ADR-0021). lite 필수(검증 규칙 9)"
+        },
+        "sentence_splitter": {
+          "$ref": "#/$defs/PluginRef",
+          "description": "role=sentence_splitter"
+        },
+        "pii": {
+          "$ref": "#/$defs/PiiConfig",
+          "description": "role=pii_detector. 로딩 실패 시 keep 폴백 금지(E4)"
+        },
+        "policy": {
+          "$ref": "#/$defs/StagePolicyPartial"
+        }
+      },
+      "required": [
+        "analyzer",
+        "sentence_splitter",
+        "pii"
+      ],
+      "additionalProperties": true
+    },
+    "ChunkConfig": {
+      "type": "object",
+      "properties": {
+        "plugin": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+        },
+        "tokenizer": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/TokenizerId",
+          "description": "예산 토크나이저 = 임베딩 모델 토크나이저(검증 규칙 4, O-09)"
+        },
+        "secondary_tokenizers": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/TokenizerId"
+          },
+          "uniqueItems": true,
+          "description": "token_counts 병기(tiktoken:o200k_base)"
+        },
+        "leaf_max_tokens": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "$ref": "#/$defs/GatedValue"
+            }
+          ],
+          "description": "리프 상한(게이트 보유 값, O-09 그리드)"
+        },
+        "parent_max_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "merge_min_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fallback": {
+          "type": "object",
+          "properties": {
+            "plugin": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+            },
+            "max_tokens": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "overlap_ratio": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                {
+                  "$ref": "#/$defs/GatedValue"
+                }
+              ]
+            },
+            "sentence_window_n": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "plugin",
+            "max_tokens"
+          ],
+          "additionalProperties": true,
+          "description": "구조가 없는 flat_text 폴백 청커"
+        },
+        "table_row_group_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "genre_rules": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Genre별 분할 규칙(law_article 등). 열린 객체: 키·값은 청커 플러그인 config_schema가 검증"
+        },
+        "policy": {
+          "$ref": "#/$defs/StagePolicyPartial"
+        }
+      },
+      "required": [
+        "plugin",
+        "tokenizer",
+        "leaf_max_tokens",
+        "parent_max_tokens",
+        "merge_min_tokens"
+      ],
+      "additionalProperties": true
+    },
+    "RecountConfig": {
+      "type": "object",
+      "properties": {
+        "plugin": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId",
+          "description": "chunker 그룹 role=token_counter"
+        },
+        "policy": {
+          "$ref": "#/$defs/StagePolicyPartial"
+        }
+      },
+      "required": [
+        "plugin"
+      ],
+      "additionalProperties": true
+    },
+    "EnrichConfig": {
+      "type": "object",
+      "properties": {
+        "deterministic": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "결정적 보강 체인(접두어·형태소 키워드·엔티티·파생 메타). 실행 순서 = 배열 순서"
+        },
+        "generated_prefix": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "plugin": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+            },
+            "gate": {
+              "$ref": "#/$defs/GateSpec"
+            }
+          },
+          "required": [
+            "enabled"
+          ],
+          "additionalProperties": false,
+          "description": "LLM 접두어(O-05). 모든 프로파일 기본 false, 컬렉션 정책으로 켬"
+        },
+        "contextual_doc_summary": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "plugin": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+            }
+          },
+          "required": [
+            "enabled"
+          ],
+          "additionalProperties": false
+        },
+        "budget": {
+          "type": "object",
+          "properties": {
+            "enrichment_budget_tokens": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "corpus_multiplier_max": {
+              "type": "number",
+              "minimum": 1
+            },
+            "queue": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*$"
+            }
+          },
+          "required": [
+            "enrichment_budget_tokens",
+            "corpus_multiplier_max"
+          ],
+          "additionalProperties": false,
+          "description": "프로파일 기본 예산(ADR-0016). CollectionSpec.policies가 컬렉션 값을 가진다"
+        },
+        "policy": {
+          "$ref": "#/$defs/StagePolicyPartial",
+          "description": "enrich(결정적) 행"
+        },
+        "policy_llm": {
+          "$ref": "#/$defs/StagePolicyPartial",
+          "description": "enrich(LLM) 행(queues.enrich_llm)"
+        }
+      },
+      "required": [
+        "deterministic",
+        "generated_prefix",
+        "budget"
+      ],
+      "additionalProperties": true
+    },
+    "EmbedConfig": {
+      "type": "object",
+      "description": "dense 필수 + sparse(sparse_learned) 또는 sparse_bm25(lite) 중 하나 이상(D-07 3-way)",
+      "properties": {
+        "dense": {
+          "type": "object",
+          "properties": {
+            "plugin": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+            },
+            "model_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "HF 저장소(BAAI/bge-m3). Producer.model_ids 표기는 {repo}@{revision}"
+            },
+            "revision": {
+              "type": "string",
+              "minLength": 1,
+              "description": "HF 커밋 SHA(models.lock)"
+            },
+            "dim": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "normalized": {
+              "type": "boolean"
+            },
+            "dtype": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]+$"
+            },
+            "quantization": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]+$"
+            }
+          },
+          "required": [
+            "plugin",
+            "model_id",
+            "revision",
+            "dim",
+            "normalized"
+          ],
+          "additionalProperties": true
+        },
+        "sparse": {
+          "type": "object",
+          "properties": {
+            "plugin": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+            },
+            "vocab_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "xlm-roberta-250k 등. 불일치 → embed.space_mismatch"
+            }
+          },
+          "required": [
+            "plugin",
+            "vocab_id"
+          ],
+          "additionalProperties": true,
+          "description": "learned sparse(sparse_learned 벡터)"
+        },
+        "sparse_bm25": {
+          "type": "object",
+          "properties": {
+            "plugin": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+            },
+            "k1": {
+              "type": "number",
+              "minimum": 0
+            },
+            "b": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "plugin",
+            "k1",
+            "b"
+          ],
+          "additionalProperties": true,
+          "description": "lite 플랫폼 BM25(ADR-0012; k1=1.2, b=0.75 고정)"
+        },
+        "late_interaction": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "plugin": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+            },
+            "model_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "revision": {
+              "type": "string",
+              "minLength": 1
+            },
+            "dim": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "enabled"
+          ],
+          "additionalProperties": true,
+          "description": "별도 슬롯(ADR-0010, 기본 끔). 백엔드 supports_multivector=false면 자동 비활성 + degraded"
+        },
+        "equivalence_gate": {
+          "type": "object",
+          "properties": {
+            "cosine_min": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "sample": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "cosine_min",
+            "sample"
+          ],
+          "additionalProperties": false,
+          "description": "같은 공간 안 서빙 교체 동등성 게이트(D-16)"
+        },
+        "batch_max_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "policy": {
+          "$ref": "#/$defs/StagePolicyPartial"
+        }
+      },
+      "required": [
+        "dense",
+        "late_interaction",
+        "equivalence_gate"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "sparse"
+          ]
+        },
+        {
+          "required": [
+            "sparse_bm25"
+          ]
+        }
+      ],
+      "additionalProperties": true
+    },
+    "IndexBackendConfig": {
+      "type": "object",
+      "properties": {
+        "plugin": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId",
+          "description": "index_backend.{implementation} = CollectionSpec.backends[].backend_id"
+        },
+        "role": {
+          "$ref": "#/$defs/Profile.ingest.index.backends.role"
+        },
+        "named_vectors": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/VectorName"
+          },
+          "uniqueItems": true,
+          "description": "role=vector: 적재하는 named vectors(= embedding_space_ids 키 집합)"
+        },
+        "tenant_isolation": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/TenantIsolationTier",
+          "description": "선택. 있으면 security.tenant_isolation_tier와 같아야 한다"
+        }
+      },
+      "required": [
+        "plugin",
+        "role"
+      ],
+      "additionalProperties": true
+    },
+    "Profile.ingest.index.commit.strategy": {
+      "type": "string",
+      "enum": [
+        "insert_then_delete"
+      ],
+      "description": "세대 사가 전략 인라인 열거(ADR-0026). v1은 insert_then_delete 하나"
+    },
+    "IndexConfig": {
+      "type": "object",
+      "properties": {
+        "backends": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IndexBackendConfig"
+          },
+          "minItems": 1,
+          "maxItems": 8,
+          "description": "plugin 유일, role=vector 정확히 1개"
+        },
+        "commit": {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "$ref": "#/$defs/Profile.ingest.index.commit.strategy"
+            },
+            "flip_order": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Profile.ingest.index.backends.role"
+              },
+              "minItems": 1,
+              "uniqueItems": true,
+              "description": "alias 교체 순서(렉시컬 → 벡터). 항목은 backends[].role 값"
+            },
+            "cleanup_delay": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Duration"
+            }
+          },
+          "required": [
+            "strategy",
+            "flip_order",
+            "cleanup_delay"
+          ],
+          "additionalProperties": false
+        },
+        "tiering": false,
+        "policy": {
+          "$ref": "#/$defs/StagePolicyPartial"
+        }
+      },
+      "required": [
+        "backends",
+        "commit"
+      ],
+      "additionalProperties": true
+    },
+    "IngestConfig": {
+      "type": "object",
+      "description": "바이블 §5.6 ingest {fetch, parse{router, options}, normalize, chunk, recount?, enrich, embed, index}",
+      "properties": {
+        "fetch": {
+          "$ref": "#/$defs/FetchConfig"
+        },
+        "parse": {
+          "$ref": "#/$defs/ParseConfig"
+        },
+        "normalize": {
+          "$ref": "#/$defs/NormalizeConfig"
+        },
+        "chunk": {
+          "$ref": "#/$defs/ChunkConfig"
+        },
+        "recount": {
+          "$ref": "#/$defs/RecountConfig"
+        },
+        "enrich": {
+          "$ref": "#/$defs/EnrichConfig"
+        },
+        "embed": {
+          "$ref": "#/$defs/EmbedConfig"
+        },
+        "index": {
+          "$ref": "#/$defs/IndexConfig"
+        }
+      },
+      "required": [
+        "fetch",
+        "parse",
+        "normalize",
+        "chunk",
+        "enrich",
+        "embed",
+        "index"
+      ],
+      "additionalProperties": false
+    },
+    "ChannelConfig": {
+      "type": "object",
+      "properties": {
+        "channel": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Channel"
+        },
+        "retriever": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId",
+          "description": "retriever.{implementation}. sparse_bm25 벡터는 channel=lexical + retriever.qdrant_sparse_bm25"
+        },
+        "top_k": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 300,
+          "description": "채널 런당 후보 수. 상한 300 = 바이블 §5.1 CandidateSet 채널 런당 300"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "description": "선택. 있으면 fusion.weights[channel]과 같아야 한다"
+        }
+      },
+      "required": [
+        "channel",
+        "retriever",
+        "top_k",
+        "timeout_ms"
+      ],
+      "additionalProperties": true
+    },
+    "FusionConfig": {
+      "type": "object",
+      "properties": {
+        "method": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/FusionMethod"
+        },
+        "k": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "RRF 상수(검증 규칙 3 필수; 런타임 방어 fuse.k_missing)"
+        },
+        "weights": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/Channel"
+          },
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0
+          },
+          "minProperties": 1,
+          "description": "채널 가중. 키 집합 = channels[].channel 집합"
+        },
+        "variant_query_weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "변형 질의 기여 가중(O-01: 0.5)"
+        },
+        "gate": {
+          "$ref": "#/$defs/GateSpec"
+        }
+      },
+      "required": [
+        "method",
+        "k",
+        "weights",
+        "variant_query_weight"
+      ],
+      "additionalProperties": false
+    },
+    "HydrateConfig": {
+      "type": "object",
+      "properties": {
+        "top_n": {
+          "type": "integer",
+          "minimum": 1,
+          "description": ">= max(rerank.top_n_in, pack.k_max)(검증 규칙 11)"
+        },
+        "backend": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId",
+          "description": "payload 1회 배치 조회 백엔드(role=vector 백엔드 중 하나)"
+        },
+        "with_vectors": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "top_n",
+        "backend",
+        "with_vectors"
+      ],
+      "additionalProperties": false
+    },
+    "RerankConfig": {
+      "type": "object",
+      "description": "enabled=false(lite 생략)면 나머지 키 선택. 그 외에는 plugin~normalization 필수",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "plugin": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+        },
+        "model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "response_schema": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/RerankResponseSchema"
+        },
+        "backend": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/RerankBackend"
+        },
+        "top_n_in": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "top_n_out": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_tokens_per_text": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "normalization": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ScoreNormalization"
+        },
+        "gate": {
+          "$ref": "#/$defs/GateSpec"
+        }
+      },
+      "if": {
+        "properties": {
+          "enabled": {
+            "const": false
+          }
+        },
+        "required": [
+          "enabled"
+        ]
+      },
+      "then": {},
+      "else": {
+        "required": [
+          "plugin",
+          "model_id",
+          "response_schema",
+          "backend",
+          "top_n_in",
+          "top_n_out",
+          "max_tokens_per_text",
+          "timeout_ms",
+          "normalization"
+        ]
+      },
+      "additionalProperties": true
+    },
+    "Profile.query.postprocess.parent_expand.text_store": {
+      "type": "string",
+      "enum": [
+        "artifact_store",
+        "vector_payload"
+      ],
+      "description": "부모 텍스트 저장 방식(바이블 §13.2) 인라인 열거"
+    },
+    "PostprocessConfig": {
+      "type": "object",
+      "description": "order는 고정 순서 [relevance_gate, dedup, mmr, parent_expand, dedup, sentence_window, compress]의 부분 수열(D-07). reorder·citation_align은 pack 내부",
+      "properties": {
+        "order": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/PostprocessStep"
+          },
+          "minItems": 1,
+          "maxItems": 7
+        },
+        "relevance_gate": {
+          "type": "object",
+          "properties": {
+            "tau": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "tau"
+          ],
+          "additionalProperties": false
+        },
+        "dedup": {
+          "type": "object",
+          "properties": {
+            "cosine_threshold": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "minhash": {
+              "type": "object",
+              "properties": {
+                "num_perm": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "seed": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "scheme": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9_]+$"
+                },
+                "threshold": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "num_perm",
+                "seed",
+                "scheme",
+                "threshold"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "cosine_threshold",
+            "minhash"
+          ],
+          "additionalProperties": false
+        },
+        "mmr": {
+          "type": "object",
+          "properties": {
+            "lambda": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "lambda"
+          ],
+          "additionalProperties": false
+        },
+        "parent_expand": {
+          "type": "object",
+          "properties": {
+            "ratio_threshold": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "max_parent_tokens": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "text_store": {
+              "$ref": "#/$defs/Profile.query.postprocess.parent_expand.text_store"
+            }
+          },
+          "required": [
+            "ratio_threshold",
+            "max_parent_tokens",
+            "text_store"
+          ],
+          "additionalProperties": false
+        },
+        "sentence_window": {
+          "type": "object",
+          "properties": {
+            "n": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "n"
+          ],
+          "additionalProperties": false
+        },
+        "compress": {
+          "type": "object",
+          "properties": {
+            "plugin": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+            }
+          },
+          "required": [
+            "plugin"
+          ],
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "order",
+        "relevance_gate",
+        "dedup"
+      ],
+      "additionalProperties": false
+    },
+    "Profile.query.pack.tokenizer.provider": {
+      "type": "string",
+      "enum": [
+        "anthropic",
+        "gemini",
+        "hf",
+        "tiktoken"
+      ],
+      "description": "대상 LLM 토크나이저 공급자(tokenizer_id 접두, §6.1). count_method=exact_api 는 anthropic·gemini만"
+    },
+    "PackConfig": {
+      "type": "object",
+      "properties": {
+        "k_max": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "최종 팩 항목 수 상한. 상한 20 = 바이블 §5.1 ContextPack 항목 20(11 Budget.k_max 1..20·items maxItems 20, 16 FeedbackEvent.cite_ids <= 20 과 같은 값)"
+        },
+        "max_context_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reserved_answer_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ordering": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/OrderingStrategy"
+        },
+        "renderer": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Renderer"
+        },
+        "instructions_template_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*@[0-9]+$",
+          "description": "렌더러 지시문 템플릿 {id}@{n}"
+        },
+        "tokenizer": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "$ref": "#/$defs/Profile.query.pack.tokenizer.provider"
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "description": "대상 LLM 모델 식별자(배포별 값)"
+            },
+            "count_method": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/CountMethod"
+            },
+            "calibration_ratio": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "exclusiveMinimum": 0
+            },
+            "safety_margin": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "provider",
+            "model",
+            "count_method",
+            "calibration_ratio",
+            "safety_margin"
+          ],
+          "additionalProperties": false,
+          "description": "팩 예산 토크나이저(대상 LLM으로 재계산, O-09). chunk.tokenizer와 카운터 일치 검증(규칙 4)"
+        },
+        "table_format_preference": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/TableFormat"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "overflow_policy": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/OverflowPolicy"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "confidence_tiers": {
+          "type": "object",
+          "properties": {
+            "high": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "medium": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "high",
+            "medium"
+          ],
+          "additionalProperties": false
+        },
+        "data_marking": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/DataMarking",
+          "description": "선택. korean-gov 는 datamark"
+        },
+        "citation_style": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/CitationStyle"
+        }
+      },
+      "required": [
+        "k_max",
+        "max_context_tokens",
+        "reserved_answer_tokens",
+        "ordering",
+        "renderer",
+        "tokenizer",
+        "table_format_preference",
+        "overflow_policy",
+        "confidence_tiers"
+      ],
+      "additionalProperties": true
+    },
+    "LatencyBudget": {
+      "type": "object",
+      "description": "p95 목표(ms, 초안). 부분 예산 합 <= total",
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "plan": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "retrieve": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rerank": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "postprocess": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pack": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "total"
+      ],
+      "additionalProperties": false
+    },
+    "QueryConfig": {
+      "type": "object",
+      "description": "바이블 §5.6 query {transform, channels, fusion, hydrate, rerank, postprocess, pack, latency_budget_ms}",
+      "properties": {
+        "transform": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "query_transformer 파이프 순서(normalize_ko → router → self_query → rewrite → expand)"
+        },
+        "channels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ChannelConfig"
+          },
+          "minItems": 1,
+          "maxItems": 7,
+          "description": "channel 유일"
+        },
+        "fusion": {
+          "$ref": "#/$defs/FusionConfig"
+        },
+        "hydrate": {
+          "$ref": "#/$defs/HydrateConfig"
+        },
+        "rerank": {
+          "$ref": "#/$defs/RerankConfig"
+        },
+        "postprocess": {
+          "$ref": "#/$defs/PostprocessConfig"
+        },
+        "pack": {
+          "$ref": "#/$defs/PackConfig"
+        },
+        "latency_budget_ms": {
+          "$ref": "#/$defs/LatencyBudget"
+        }
+      },
+      "required": [
+        "transform",
+        "channels",
+        "fusion",
+        "hydrate",
+        "rerank",
+        "postprocess",
+        "pack",
+        "latency_budget_ms"
+      ],
+      "additionalProperties": false
+    },
+    "Profile.security.rate_limit.store": {
+      "type": "string",
+      "enum": [
+        "valkey",
+        "memory"
+      ],
+      "description": "레이트리밋 카운터 저장소 인라인 열거(E3). memory는 orchestrator=local 전용"
+    },
+    "Profile.security.rate_limit.fail_mode": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed"
+      ],
+      "description": "저장소 불가 시 동작 인라인 열거(§7.2: 운영 closed)"
+    },
+    "SecurityConfig": {
+      "type": "object",
+      "description": "바이블 §5.6 security {authn, authz, rate_limit, tenant_isolation_tier, tiering: TieringPolicy}",
+      "properties": {
+        "authn": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/AuthMethod",
+          "description": "기본 인증 방식(E1). mTLS 추가 계층은 배포 매니페스트"
+        },
+        "authz": {
+          "type": "object",
+          "properties": {
+            "plugin": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$",
+              "description": "cedar | static_roles(플랫폼 인프라, 확장 지점 아님)"
+            },
+            "policy_version": {
+              "type": "string",
+              "minLength": 1,
+              "description": "SecurityContext.policy_version 원천"
+            }
+          },
+          "required": [
+            "plugin",
+            "policy_version"
+          ],
+          "additionalProperties": false,
+          "description": "닫힌 객체(플랫폼 인프라 설정, 플러그인 config_schema 없음)"
+        },
+        "rate_limit": {
+          "type": "object",
+          "properties": {
+            "store": {
+              "$ref": "#/$defs/Profile.security.rate_limit.store"
+            },
+            "fail_mode": {
+              "$ref": "#/$defs/Profile.security.rate_limit.fail_mode"
+            }
+          },
+          "required": [
+            "store",
+            "fail_mode"
+          ],
+          "additionalProperties": false,
+          "description": "닫힌 객체(E3 인프라 설정)"
+        },
+        "tenant_isolation_tier": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/TenantIsolationTier",
+          "description": "새 컬렉션의 기본 등급(§7.2). 모든 vector·lexical 백엔드의 IndexBackendCapabilities.tenant_isolation[]에 포함되어야 한다"
+        },
+        "tiering": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/TieringPolicy",
+          "description": "E15 승격 정책(ADR-0028). 정본 경로는 여기이며 ingest.index.tiering은 거부된다"
+        }
+      },
+      "required": [
+        "authn",
+        "authz",
+        "rate_limit",
+        "tenant_isolation_tier",
+        "tiering"
+      ],
+      "additionalProperties": false
+    },
+    "Profile.observability.content_capture": {
+      "type": "string",
+      "enum": [
+        "none",
+        "span_only",
+        "event_only",
+        "span_and_event"
+      ],
+      "description": "트레이스 콘텍스트 캡처 모드 인라인 열거(OTel GenAI ContentCapturingMode 대응, 확인 필요 as of 2026-09). 모든 프로파일 기본 none(E13)"
+    },
+    "ObservabilityConfig": {
+      "type": "object",
+      "properties": {
+        "content_capture": {
+          "$ref": "#/$defs/Profile.observability.content_capture"
+        },
+        "tenant_id_hash": {
+          "type": "boolean",
+          "description": "스팬 rag.tenant_id_hash만 기록(§6.5). false 금지 대상은 아니지만 korean-gov는 true 고정"
+        },
+        "content_capture_locked": {
+          "type": "boolean",
+          "description": "선택(N). true면 RAG_OTEL__CONTENT_CAPTURE 환경 변수로 재정의 불가(korean-gov NO_CONTENT 잠금)"
+        }
+      },
+      "required": [
+        "content_capture",
+        "tenant_id_hash"
+      ],
+      "additionalProperties": false
+    },
+    "Profile.eval.gates.correction": {
+      "type": "string",
+      "enum": [
+        "holm",
+        "bonferroni",
+        "none"
+      ],
+      "description": "다중 비교 보정 인라인 열거(D-12: holm)"
+    },
+    "EvalGate": {
+      "type": "object",
+      "description": "프로파일 전체 회귀 게이트(EvalReport.gate_result 판정 입력)",
+      "properties": {
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "max_regression": {
+          "type": "number",
+          "minimum": 0
+        },
+        "p": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "correction": {
+          "$ref": "#/$defs/Profile.eval.gates.correction"
+        },
+        "warn_below": {
+          "type": "number"
+        }
+      },
+      "minProperties": 1,
+      "additionalProperties": false
+    },
+    "EvalConfig": {
+      "type": "object",
+      "description": "바이블 §5.6 eval {datasets[], gates}",
+      "properties": {
+        "datasets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "maxLength": 64
+          },
+          "uniqueItems": true,
+          "description": "기본 평가 데이터셋. 항목은 EvalDataset.name(16 §2.1; 같은 name 의 최신 행으로 해소, 16 EF-1). GateSpec.dataset 생략 시 [0]"
+        },
+        "gates": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/MetricKey"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/EvalGate"
+          },
+          "minProperties": 1,
+          "description": "키는 MetricKey(16 GateOutcome.metric 과 같은 형식)"
+        }
+      },
+      "required": [
+        "datasets",
+        "gates"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

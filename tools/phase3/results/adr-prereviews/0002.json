@@ -1,0 +1,93 @@
+{
+ "id": "0002",
+ "findings": [
+  {
+   "severity": "minor",
+   "location": "## 결정 동인 DR1(41행), ## 고려한 대안 A5 장점(78행) vs ## 결과 긍정 첫 항목(157행)",
+   "problem": "\"D-18 파서 체인 8경로\" / \"8개 파서 경로\"라는 수치가 근거 없이 등장한다. 같은 문서 157행은 9개 경로(HWPX·HWP 5.0→HWPX·PDF 레이아웃·PDF 고속·OCR·DOCX·DOC/RTF/ODT→DOCX·HTML·TXT/MD)를 나열하고, 브리프 §4 D-18 원문은 7개 포맷 군(HWPX, HWP 5.0, PDF, DOCX, DOC/RTF/ODT, HTML, TXT/MD)이며, 바이블 §12 adapters/parse는 10개 어댑터다. 문서 내부에서도 숫자가 어긋난다(브리프 §9.8 근거 없는 수치 금지).",
+   "fix": "숫자를 빼고 \"D-18의 모든 파서 경로\"로 쓰거나, 157행 목록과 동일한 기준으로 셈한 뒤 41·78·157행을 한 값으로 통일한다(브리프 §4 D-18, 바이블 §12 adapters/parse 기준).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결과 긍정 세 번째 항목(159행), ## 준수 확인 방법 골든셋 게이트 행(186행)",
+   "problem": "`SpanHitEvaluator`는 바이블에 없는 임의 이름이다(기술 지형 09 §통합 설계 함의·제안 A의 명칭). 바이블은 모듈 `eval/ span_hit`(§12), 플러그인 `evaluator.span_hit`(02-architecture/05), 메트릭 키 `span_hit_rate@k`(§5.6 `EvalReport.metrics`)만 정의한다. 186행의 \"Span hit rate\"도 정본 메트릭 키가 아니다.",
+   "fix": "159행을 \"`span_hit_rate@k`(바이블 §5.6 `EvalReport.metrics`) 판정\" 또는 \"`evaluator.span_hit` 판정\"으로, 186행을 \"`span_hit_rate@k`\"로 고친다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 동인 DR4 출처 열(44행), ## 참조 기술 지형 09 항목(205행)",
+   "problem": "`Chunk.provenance`는 바이블에 존재하지 않는 필드다(기술 지형 09 §메트릭 정의의 제안 문구를 인용한 것). 바이블 §5.4 `Chunk`는 `block_refs`(array<BlockRef>)만 갖고, ADR-0023 124행도 청크 적중을 `RankedResult.block_refs[]{element_path, original_char_start, original_char_end}` 교차로 정의한다. 정본 필드명과의 대응 없이 인용만 두면 독자가 `Chunk.provenance`를 계약 필드로 오해할 수 있다.",
+   "fix": "인용 옆에 \"(바이블 §5.4 `Chunk.block_refs`·§5.5 `RankedResult.block_refs`에 해당)\"를 병기한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 맥락과 문제 네 번째 불릿(33행), ## 고려한 대안 A2 단점(61행)",
+   "problem": "\"한자 독음, 띄어쓰기 교정(opt-in)\"을 표시 텍스트 오프셋이 원문과 어긋나는 원인으로 든다. 바이블 §5.4 `NormalizedBlock`은 `display_text` = NFC(제어·PUA·zero-width 제거), `lexical_text` = NFKC(기호 통일, 한자 독음, 띄어쓰기 교정 opt-in)로 분리하므로 한자 독음·띄어쓰기 교정은 `lexical_text`에만 적용되고 `display_text`·`offset_map`에는 영향이 없다. A2가 기각하는 \"정규화 텍스트 기준\"은 NFC 표시 텍스트 기준이므로 인과 서술이 부정확하다.",
+   "fix": "33행·61행에서 표시 텍스트 길이 변화 원인을 \"NFC 합성과 제어·PUA·zero-width 제거(§5.4 `display_text`)\"로 한정하고, 한자 독음·띄어쓰기 교정은 `lexical_text`(NFKC) 전용임을 명시하거나 삭제한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 계약 표 `Block.provenance` 행(95행), HWPX Block 예시 설명(113행)",
+   "problem": "표 제목이 \"의미(바이블)\"이고 \"철자 그대로\"라고 선언했지만, `Block.provenance`의 의미 \"블록 전체 원문 구간\"은 바이블 §5.4 `Block` 표에 없는 문구다(바이블 의미 열은 비어 있음). 113행의 \"`char_end`는 `text`의 코드포인트 길이(35)와 같다\"도 바이블·03-contracts/00 §4.3이 명시하지 않은 ADR의 해석이다(예시 값 35 자체는 정확함).",
+   "fix": "95행 의미 열을 비우거나 \"(바이블 미기술; 본 ADR 해석: 블록 전체 원문 구간)\"으로 표기하고, 113행은 \"본 예시에서는\"으로 한정한다. 계약 불변식으로 두려면 03-contracts/03 `## 미해결 이슈`에 제안으로 넘긴다(바이블 §1.1).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 맥락과 문제(30·31행), ## 결정 동인 DR4·DR5(44·45행), ## 고려한 대안 A4(73행), ## 참조(203·205·206행)",
+   "problem": "기술 지형 문서의 절 이름 인용이 실제 헤더와 다르다: \"02 §PDF 어댑터 규약\" → 02의 실제 헤더는 \"### 어댑터 계약(요지)\"(414행, 좌표·문자 오프셋 행 포함); \"11 §외부 모델 매핑\" → 11의 실제 헤더는 \"### 표준 모델 매핑\"(393행, 표 첫 열이 \"외부 모델\"); \"09 §메트릭\" → 09의 실제 헤더는 \"### 메트릭 정의(공통 기준)\"(138행). 내용 인용 자체(좌상단 원점 변환, UTF-8 코드포인트 문구, coordinates 단위, `Chunk.provenance` 파생 계산)는 모두 실제 문장과 일치한다.",
+   "fix": "절 이름을 실제 헤더로 바꾼다: \"02 §어댑터 계약(요지)\", \"11 §표준 모델 매핑\", \"09 §메트릭 정의(공통 기준)\".",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "문서 전체 분량(208행)",
+   "problem": "브리프 §9.11은 ADR을 60~200행으로 규정한다. 현재 208행으로 상한을 8행 초과한다(감사 지시의 허용 범위 90~220행 안에는 있음).",
+   "fix": "## 참조의 계약·파이프라인 문서 링크 열(208행)을 문서 맵 기준으로 축약하거나 BlockRef JSON 예시(137~151행)를 표 안 한 줄 서술로 줄여 200행 이하로 맞춘다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 동인 DR1 행, ## 고려한 대안 A5 장점, ## 결과 › 긍정 첫 항목",
+   "problem": "파서 경로 수가 문서 내부에서 불일치한다. DR1은 \"D-18 파서 체인 8경로\", A5는 \"8개 파서 경로\"라 쓰지만 결과 절은 HWPX·HWP 5.0→HWPX·PDF 레이아웃·PDF 고속·OCR·DOCX·DOC/RTF/ODT→DOCX·HTML·TXT/MD 9개를 나열한다. 브리프 D-18(v1.1)·바이블 §3.1 D-18 어디에도 '8경로'라는 정본 숫자가 없다.",
+   "fix": "숫자를 하나로 맞춘다. OCR을 PDF 경로의 서브경로로 보면 8(HWPX, HWP 5.0, PDF 레이아웃, PDF 고속, DOCX, DOC/RTF/ODT, HTML, TXT/MD), 별도로 세면 9. 결과 절 나열과 DR1·A5의 숫자를 동일하게 고치거나, 숫자 대신 \"D-18의 모든 파서 경로\"로 표기한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 맥락과 문제 네 번째 불릿, ## 고려한 대안 A2 단점 첫 문장",
+   "problem": "표시 텍스트 오프셋 어긋남의 원인으로 \"NFC 합성·제어 문자 제거·한자 독음·띄어쓰기 교정\"을 열거하지만, 바이블 §5.4 `NormalizedBlock`은 `display_text`=NFC(제어·PUA·zero-width 제거)이고 한자 독음·띄어쓰기 교정(opt-in)은 `lexical_text`(NFKC)에만 적용한다. A2가 '정규화 텍스트'를 \"`normalize` 이후 표시 텍스트(NFC)\"로 정의한 뒤 렉시컬 뷰 변환을 근거로 드는 것은 바이블 정의와 어긋난다. 결론(원문 역추적 불가)은 유지되나 근거 서술이 부정확하다.",
+   "fix": "바이블 §5.4 `NormalizedBlock.display_text`/`lexical_text` 정의대로 표시 텍스트 길이 변화 원인은 \"NFC 합성, 제어·PUA·zero-width 제거\"로 한정하고, 한자 독음·띄어쓰기 교정은 `lexical_text`에만 적용됨을 명시(또는 열거에서 제거)한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 › PDF 블록 `BlockRef` 예시(```json 두 번째 블록) `block_id`",
+   "problem": "`block_id = \"9a0c2b3f9c1a7e0b2d4c6f8a1b3d5e7f\"`를 Docling `#/texts/12`(4쪽) 블록에 붙였는데, 같은 ID가 ADR-0030(150행)·ADR-0034(155행)에서는 HWPX `/hml/body/section[0]/p[37]` 블록의 ID로 쓰인다. 반면 본 ADR의 HWPX `Block` 예시는 같은 경로에 `3f9c1a7e0b2d4c6f8a1b3d5e7f9a0c2b`를 쓴다. `block_id = H(\"block\", doc_version, element_path)[:32]`가 결정적이라고 주장하는 ADR에서 같은 경로에 다른 ID, 다른 경로에 같은 ID가 문서 세트 안에 공존하면 예시가 설계 주장을 약화시킨다.",
+   "fix": "HWPX `/hml/body/section[0]/p[37]` 예시는 ADR-0030·ADR-0034와 같은 `9a0c2b3f…`로 통일하고, `#/texts/12` BlockRef 예시에는 다른 문서 세트에서 쓰지 않은 새 32-hex 플레이스홀더를 부여한다(바이블 §6.2 `block_id` 식).",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 동인 DR3·DR5 출처 열, ## 맥락과 문제 두 번째 불릿, ## 고려한 대안 A4 단점, ## 참조(기술 지형 02·09·11 항목)",
+   "problem": "인용한 절 이름이 실제 헤더와 다르다. (a) \"02 §PDF 어댑터 규약\" → 02 문서의 실제 헤더는 \"### 어댑터 계약(요지)\"(좌표·문자 오프셋 행은 그 표 안에 있음). (b) \"11 §외부 모델 매핑\" → 실제 헤더는 \"### 표준 모델 매핑\"(표의 첫 열 이름이 '외부 모델'). (c) \"09 §메트릭\" → 실제 헤더는 \"### 메트릭 정의(공통 기준)\". (d) DR1 \"매트릭스 §브리프 수정 제안 D-04 행(P0)\" — 해당 행의 구분은 \"계약 표현 조정(03-contracts/03)\"이고 P0 지정은 \"### ADR 발의 목록(우선순위)\" 두 번째 행에 있다.",
+   "fix": "바이블 §1.2 인용 규약(절 이름 정확 인용)에 맞춰 각각 \"02 §어댑터 계약(요지)\", \"11 §표준 모델 매핑\", \"09 §메트릭 정의(공통 기준)\"으로 고치고, DR1의 P0 출처는 \"매트릭스 §ADR 발의 목록 P0 두 번째 행\"으로 옮긴다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결과 › 긍정 세 번째 항목(`SpanHitEvaluator`)",
+   "problem": "`SpanHitEvaluator`는 기술 지형 09 §통합 설계 함의와 제안 A에만 등장하는 가칭이다. 바이블 정본은 §12 `eval/ … span_hit`, 02-architecture/05 `evaluator.span_hit` 플러그인 ID, `EvalReport.metrics` 키 `span_hit_rate@k`(바이블 §5.6)이다. ADR이 바이블 명명을 그대로 써야 한다는 §1.1 규칙과 어긋난다.",
+   "fix": "\"`evaluator.span_hit`(`span_hit_rate@k`, 바이블 §12·§5.6 `EvalReport`)\"로 바꾼다. 준수 확인 표의 \"Span hit rate\"도 `span_hit_rate@k`로 철자를 맞춘다.",
+   "lens": "tech"
+  }
+ ],
+ "verdicts": {
+  "anchor": "accept",
+  "tech": "revise"
+ }
+}

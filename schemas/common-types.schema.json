@@ -1,0 +1,4843 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:common-types:1",
+  "title": "CommonTypes",
+  "description": "RAG Platform 공용 타입·공용 문서/청크/결과 타입·열거 정본. 설계 바이블 §5.3(공용 타입), §5.4·§5.5(Block, NormalizedBlock, Chunk, Enrichment, VectorBundle, RankedResult, ContextItem), §5.7(열거), §6(명명)을 그대로 옮긴 $defs 모음이다. 다른 계약 스키마는 이 파일의 $defs를 $ref로 참조하고 재정의하지 않는다. 소유 문서: docs/03-contracts/00-contract-overview.md",
+  "$comment": "schema_version 1.0.0 (2026-09-22). 열거 $defs 키는 바이블 §5.7 열거 타입명과 같고 CI가 값 집합을 기계 대조한다.",
+  "$defs": {
+    "Ulid": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "발급형 ID. 26자 Crockford base32 대문자(바이블 §6.1)."
+    },
+    "Hex64": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "BLAKE3 소문자 hex 64자. 콘텐츠 파생 키·해시(바이블 §6.1)."
+    },
+    "Hex32": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$",
+      "description": "BLAKE3 hex 32자 절단. block_id 전용(바이블 §6.2)."
+    },
+    "Uuid": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "UUID 소문자(Qdrant point_id, Temporal workflow_run_id)."
+    },
+    "Semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "description": "Semantic Versioning 2.0.0 문자열(schema_version, plugin_version)."
+    },
+    "Bcp47": {
+      "type": "string",
+      "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+      "description": "BCP 47 언어 태그. 기본 서브태그 소문자(ko, en, ko-KR; 바이블 §6.3)."
+    },
+    "DateTime": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$",
+      "description": "RFC 3339 UTC, Z 접미. 정본 표기는 밀리초 정밀도(2026-09-22T09:00:00.000Z; 바이블 §6.3)."
+    },
+    "Date": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "날짜만(YYYY-MM-DD). 필드명 *_date."
+    },
+    "Duration": {
+      "type": "string",
+      "anyOf": [
+        {
+          "format": "duration",
+          "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+(\\.\\d+)?S)?)?$",
+          "description": "ISO 8601 기간(PT5M)."
+        },
+        {
+          "pattern": "^\\d+(ms|s|m|h|d)$",
+          "description": "바이블 §4.4·§5.3 표기(5m, 30s, 24h). 로더가 ISO 8601로 정규화한다."
+        }
+      ],
+      "description": "기간. ISO 8601 또는 바이블 축약 표기(00-contract-overview 미해결 이슈 참조)."
+    },
+    "Uri": {
+      "type": "string",
+      "format": "uri",
+      "minLength": 1,
+      "description": "절대 URI(s3://, file://, https://, urn:...)."
+    },
+    "Cidr": {
+      "type": "string",
+      "pattern": "^(([0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}|[0-9A-Fa-f:.]+/[0-9]{1,3})$",
+      "description": "IPv4 또는 IPv6 CIDR 표기(EgressPolicy.deny_cidrs)."
+    },
+    "PrincipalString": {
+      "type": "string",
+      "pattern": "^(user:\\S+|group:\\S+|service:\\S+|tenant:\\*)$",
+      "maxLength": 512,
+      "description": "주체 문자열 user:{subject} | group:{group_id} | service:{client_id} | tenant:*(바이블 §6.1, §10.1). Principal 객체와 구분한다."
+    },
+    "PluginId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$",
+      "description": "{extension_point}.{implementation}(바이블 §6.1). 예 parser.hwpx_python_hwpx"
+    },
+    "TokenizerId": {
+      "type": "string",
+      "pattern": "^(hf|tiktoken|anthropic|gemini):\\S+$",
+      "description": "hf:{repo} | tiktoken:{encoding} | anthropic:{model} | gemini:{model}(바이블 §6.1)."
+    },
+    "ModelId": {
+      "type": "string",
+      "pattern": "^[^@\\s]+@[^@\\s]+$",
+      "description": "{repo}@{revision}(바이블 §6.1)."
+    },
+    "ImageDigest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "OCI 이미지 digest(Producer.image_digest)."
+    },
+    "ErrorCode": {
+      "type": "string",
+      "pattern": "^(fetch|parse|normalize|chunk|enrich|embed|index|publish|plan|retrieve|fuse|hydrate|rerank|postprocess|pack|render|auth|api|profile|plugin|contract|outbox)\\.[a-z][a-z0-9_]*$",
+      "maxLength": 64,
+      "description": "{stage}.{reason} 형식(바이블 §5.7 접두 규약)의 원시 패턴. 계약의 코드 필드(Warning.code·StageError.code·ProblemDetails.code)는 이 패턴이 아니라 ErrorCodeCatalog를 $ref한다(00 I-14; 카탈로그 밖 코드는 ADR로 추가)."
+    },
+    "ErrorTypeUrn": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^urn:rag:error:(fetch|parse|normalize|chunk|enrich|embed|index|publish|plan|retrieve|fuse|hydrate|rerank|postprocess|pack|render|auth|api|profile|plugin|contract|outbox)\\.[a-z][a-z0-9_]*$",
+      "description": "RFC 9457 type = urn:rag:error:{code}(바이블 §4.1)."
+    },
+    "SchemaId": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^urn:rag:schema:[a-z0-9]+(-[a-z0-9]+)*:[0-9]+$",
+      "description": "urn:rag:schema:{kebab-name}:{major}(바이블 §6.4)."
+    },
+    "SchemaTypeName": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]*$",
+      "description": "PascalCase 계약 타입명(ParsedDocument)."
+    },
+    "MediaType": {
+      "type": "string",
+      "pattern": "^[a-z]+/[A-Za-z0-9!#$&^_.+-]+$",
+      "description": "IANA 미디어 타입 또는 자체 application/vnd.rag.{kebab-name}+json(바이블 §6.4)."
+    },
+    "CiteId": {
+      "type": "string",
+      "pattern": "^d[1-9][0-9]*$",
+      "description": "d{rank}, 1-based 관련도순(바이블 §6.1)."
+    },
+    "ChunkSpan": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}:[0-9]+-[0-9a-f]{32}:[0-9]+$",
+      "description": "{first_block_id}:{char_start}-{last_block_id}:{char_end}(바이블 §6.2)."
+    },
+    "BlockType": {
+      "type": "string",
+      "enum": [
+        "heading",
+        "paragraph",
+        "list_item",
+        "table",
+        "figure",
+        "caption",
+        "footnote",
+        "code",
+        "formula",
+        "page_break",
+        "page_header",
+        "page_footer",
+        "toc",
+        "form_field"
+      ]
+    },
+    "BlockContainer": {
+      "type": "string",
+      "enum": [
+        "body",
+        "text_box",
+        "table_cell",
+        "footnote_body",
+        "page_header",
+        "page_footer"
+      ]
+    },
+    "BlockSource": {
+      "type": "string",
+      "enum": [
+        "text_layer",
+        "ocr",
+        "vlm",
+        "converted"
+      ]
+    },
+    "SourceFormat": {
+      "type": "string",
+      "enum": [
+        "hwpx",
+        "hwp5",
+        "hwp3",
+        "pdf",
+        "docx",
+        "doc",
+        "rtf",
+        "odt",
+        "html",
+        "txt",
+        "md",
+        "json",
+        "unknown"
+      ]
+    },
+    "SourceKind": {
+      "type": "string",
+      "enum": [
+        "born_digital",
+        "scanned",
+        "mixed",
+        "pre_ocr",
+        "flow"
+      ]
+    },
+    "Genre": {
+      "type": "string",
+      "enum": [
+        "law_article",
+        "outline_report",
+        "narrative",
+        "web_article",
+        "form",
+        "manual",
+        "unknown"
+      ]
+    },
+    "Quality": {
+      "type": "string",
+      "enum": [
+        "full",
+        "degraded"
+      ]
+    },
+    "PageStatus": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "timeout",
+        "ocr_failed",
+        "skipped"
+      ]
+    },
+    "FurnitureReason": {
+      "type": "string",
+      "enum": [
+        "repeated_header",
+        "nav",
+        "boilerplate"
+      ]
+    },
+    "TableRole": {
+      "type": "string",
+      "enum": [
+        "data",
+        "toc",
+        "form",
+        "layout"
+      ]
+    },
+    "ItemKind": {
+      "type": "string",
+      "enum": [
+        "text",
+        "list_group",
+        "code",
+        "table",
+        "table_part",
+        "figure",
+        "parent",
+        "summary",
+        "community_report",
+        "entity",
+        "page_image"
+      ]
+    },
+    "ChunkLevel": {
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2
+      ],
+      "description": "0 리프, 1 부모 섹션, 2 문서·코퍼스 상위 파생(summary, community_report, entity)."
+    },
+    "TableSerialization": {
+      "type": "string",
+      "enum": [
+        "html",
+        "markdown",
+        "triplet",
+        "row_json"
+      ]
+    },
+    "TableFormat": {
+      "type": "string",
+      "enum": [
+        "html",
+        "markdown",
+        "json"
+      ]
+    },
+    "PiiPolicy": {
+      "type": "string",
+      "enum": [
+        "mask",
+        "tokenize",
+        "exclude",
+        "keep",
+        "reject"
+      ]
+    },
+    "PiiTokenizeMode": {
+      "type": "string",
+      "enum": [
+        "hash",
+        "encrypt"
+      ]
+    },
+    "DedupPolicy": {
+      "type": "string",
+      "enum": [
+        "skip_if_same_hash",
+        "reindex_always"
+      ]
+    },
+    "SplitHint": {
+      "type": "string",
+      "enum": [
+        "none",
+        "json_array",
+        "zip_members"
+      ]
+    },
+    "Visibility": {
+      "type": "string",
+      "enum": [
+        "public",
+        "tenant",
+        "restricted"
+      ]
+    },
+    "Classification": {
+      "type": "string",
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "secret"
+      ],
+      "description": "나열 순 = 등급 순(public < internal < confidential < secret)."
+    },
+    "AuthMethod": {
+      "type": "string",
+      "enum": [
+        "oidc",
+        "api_key",
+        "mtls"
+      ]
+    },
+    "TenantStatus": {
+      "type": "string",
+      "enum": [
+        "active",
+        "disabled"
+      ],
+      "description": "바이블 §5.7 1.3.0(AM-38). disabled 테넌트에 대한 요청은 auth.forbidden(403)."
+    },
+    "VectorName": {
+      "type": "string",
+      "enum": [
+        "dense",
+        "sparse_learned",
+        "sparse_bm25",
+        "late_interaction",
+        "page_multivector",
+        "pooled_page_multivector",
+        "page_dense"
+      ]
+    },
+    "Pooling": {
+      "type": "string",
+      "enum": [
+        "cls",
+        "mean",
+        "late"
+      ]
+    },
+    "EmbeddingMode": {
+      "type": "string",
+      "enum": [
+        "document",
+        "query"
+      ]
+    },
+    "KeywordSource": {
+      "type": "string",
+      "enum": [
+        "analyzer_nng",
+        "analyzer_nnp",
+        "sparse_top",
+        "user_dict"
+      ]
+    },
+    "EntityExtractor": {
+      "type": "string",
+      "enum": [
+        "gliner2",
+        "spacy_ko",
+        "llm",
+        "dictionary"
+      ]
+    },
+    "EnrichStatus": {
+      "type": "string",
+      "enum": [
+        "complete",
+        "partial"
+      ]
+    },
+    "Channel": {
+      "type": "string",
+      "enum": [
+        "dense",
+        "sparse",
+        "lexical",
+        "graph",
+        "tree",
+        "visual",
+        "late_interaction"
+      ]
+    },
+    "ScoreKind": {
+      "type": "string",
+      "enum": [
+        "dense",
+        "sparse",
+        "lexical",
+        "graph",
+        "tree",
+        "visual",
+        "late_interaction",
+        "fused",
+        "rerank"
+      ],
+      "description": "점수 원장 열 = Channel ∪ {fused, rerank}."
+    },
+    "BoostKind": {
+      "type": "string",
+      "enum": [
+        "entity",
+        "recency",
+        "item_kind_penalty",
+        "user_dictionary"
+      ]
+    },
+    "FusionMethod": {
+      "type": "string",
+      "enum": [
+        "rrf",
+        "convex_minmax",
+        "convex_zscore",
+        "dbsf",
+        "combmnz"
+      ]
+    },
+    "RerankBackend": {
+      "type": "string",
+      "enum": [
+        "tei",
+        "vllm",
+        "sglang",
+        "llamacpp",
+        "in_process",
+        "qdrant_maxsim"
+      ]
+    },
+    "RerankResponseSchema": {
+      "type": "string",
+      "enum": [
+        "tei",
+        "cohere"
+      ]
+    },
+    "ScoreNormalization": {
+      "type": "string",
+      "enum": [
+        "sigmoid",
+        "minmax",
+        "identity"
+      ]
+    },
+    "Route": {
+      "type": "string",
+      "enum": [
+        "no_retrieval",
+        "single",
+        "multi"
+      ]
+    },
+    "Complexity": {
+      "type": "string",
+      "enum": [
+        "no_retrieval",
+        "single_step",
+        "multi_step"
+      ]
+    },
+    "Strategy": {
+      "type": "string",
+      "enum": [
+        "hybrid",
+        "graph_local",
+        "graph_global",
+        "tree_collapsed",
+        "visual_pages",
+        "iterative"
+      ]
+    },
+    "QueryRole": {
+      "type": "string",
+      "enum": [
+        "original",
+        "rewrite",
+        "abstraction",
+        "hypothetical",
+        "sub_query"
+      ]
+    },
+    "ChannelRunStatus": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "timeout",
+        "error",
+        "disabled"
+      ]
+    },
+    "RankedStage": {
+      "type": "string",
+      "enum": [
+        "fused",
+        "reranked",
+        "postprocessed"
+      ]
+    },
+    "PostprocessStep": {
+      "type": "string",
+      "enum": [
+        "relevance_gate",
+        "dedup",
+        "mmr",
+        "parent_expand",
+        "sentence_window",
+        "compress"
+      ],
+      "description": "고정 순서 relevance_gate → dedup → mmr → parent_expand → dedup → sentence_window → compress(dedup은 두 번 등장)."
+    },
+    "PackStep": {
+      "type": "string",
+      "enum": [
+        "acl_recheck",
+        "budget_cut",
+        "reorder",
+        "citation_align"
+      ],
+      "description": "pack 내부 고정 순서."
+    },
+    "ExplainCode": {
+      "type": "string",
+      "enum": [
+        "lexical_only_hit",
+        "dense_only_hit",
+        "sparse_only_hit",
+        "multi_channel_hit",
+        "rerank_skipped",
+        "parent_of_n_hits",
+        "mmr_demoted",
+        "below_gate",
+        "deduped",
+        "window_added",
+        "boost_entity",
+        "boost_recency",
+        "late_interaction_pass",
+        "hydrate_missing",
+        "acl_revoked_hint"
+      ]
+    },
+    "OrderingStrategy": {
+      "type": "string",
+      "enum": [
+        "litm_alternating",
+        "relevance_desc",
+        "document_order"
+      ]
+    },
+    "ConfidenceTier": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "CountMethod": {
+      "type": "string",
+      "enum": [
+        "exact_api",
+        "exact_local",
+        "approximate"
+      ]
+    },
+    "OverflowPolicy": {
+      "type": "string",
+      "enum": [
+        "downgrade_tables",
+        "truncate",
+        "compress"
+      ]
+    },
+    "OmitReason": {
+      "type": "string",
+      "enum": [
+        "below_threshold",
+        "duplicate",
+        "budget_exceeded",
+        "acl_denied",
+        "parent_merged",
+        "item_kind_excluded",
+        "risk_flagged",
+        "hydrate_missing"
+      ]
+    },
+    "SufficiencyStatus": {
+      "type": "string",
+      "enum": [
+        "not_needed",
+        "sufficient",
+        "insufficient",
+        "unknown"
+      ]
+    },
+    "SufficiencyMethod": {
+      "type": "string",
+      "enum": [
+        "rule",
+        "llm_judge"
+      ]
+    },
+    "ConflictKind": {
+      "type": "string",
+      "enum": [
+        "version",
+        "source",
+        "date"
+      ]
+    },
+    "TextFormat": {
+      "type": "string",
+      "enum": [
+        "markdown",
+        "plain",
+        "html"
+      ]
+    },
+    "CitationStyle": {
+      "type": "string",
+      "enum": [
+        "native",
+        "bracket_id"
+      ]
+    },
+    "DataMarking": {
+      "type": "string",
+      "enum": [
+        "none",
+        "delimit",
+        "datamark"
+      ]
+    },
+    "AclCheckSource": {
+      "type": "string",
+      "enum": [
+        "payload",
+        "revocation_hint"
+      ]
+    },
+    "Renderer": {
+      "type": "string",
+      "enum": [
+        "anthropic_search_result",
+        "anthropic_document",
+        "openai_messages",
+        "gemini_messages",
+        "xml_documents",
+        "markdown",
+        "mcp_tool_result",
+        "plain_records",
+        "dify_external_knowledge"
+      ]
+    },
+    "ResponseFormat": {
+      "type": "string",
+      "enum": [
+        "concise",
+        "detailed",
+        "pack_only"
+      ]
+    },
+    "RetrievalVariant": {
+      "type": "string",
+      "enum": [
+        "default",
+        "quality",
+        "fast"
+      ]
+    },
+    "RetrievalMode": {
+      "type": "string",
+      "enum": [
+        "hybrid",
+        "dense",
+        "sparse",
+        "lexical"
+      ]
+    },
+    "CommitStatus": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "vector_written",
+        "lexical_written",
+        "flipping_lexical",
+        "flipping_vector",
+        "committed",
+        "rolling_back",
+        "rolled_back",
+        "failed"
+      ]
+    },
+    "CommitKind": {
+      "type": "string",
+      "enum": [
+        "upsert",
+        "delete"
+      ]
+    },
+    "JobState": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "partial",
+        "failed",
+        "cancelling",
+        "cancelled"
+      ]
+    },
+    "JobKind": {
+      "type": "string",
+      "enum": [
+        "ingest_document",
+        "reprocess_document",
+        "delete_document",
+        "delete_collection",
+        "acl_update",
+        "reindex_collection",
+        "build_graph",
+        "evaluate",
+        "consistency_check",
+        "tier_promotion"
+      ],
+      "description": "바이블 §5.7 1.3.0: delete_collection 추가(AM-37) — 부모가 문서 페이지를 순회해 자식 delete_document 잡을 팬아웃한다(collection.delete.v1)."
+    },
+    "IsolationMode": {
+      "type": "string",
+      "enum": [
+        "in_process",
+        "helper_process",
+        "sidecar"
+      ]
+    },
+    "TenantIsolationTier": {
+      "type": "string",
+      "enum": [
+        "payload_filter",
+        "shard_key",
+        "index_per_tenant"
+      ]
+    },
+    "LicenseGrade": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "X"
+      ]
+    },
+    "Linkage": {
+      "type": "string",
+      "enum": [
+        "pure_python",
+        "dynamic",
+        "static_bundled"
+      ]
+    },
+    "IndexPerTenantMode": {
+      "type": "string",
+      "enum": [
+        "opt_in",
+        "auto",
+        "disabled"
+      ]
+    },
+    "ExtensionPoint": {
+      "type": "string",
+      "enum": [
+        "fetcher",
+        "parser",
+        "normalizer",
+        "chunker",
+        "enricher",
+        "embedder",
+        "index_backend",
+        "query_transformer",
+        "retriever",
+        "fuser",
+        "reranker",
+        "postprocessor",
+        "packer",
+        "evaluator"
+      ]
+    },
+    "ProfileTier": {
+      "type": "string",
+      "enum": [
+        "lite",
+        "standard",
+        "premium",
+        "korean-gov"
+      ]
+    },
+    "DegradedComponent": {
+      "type": "string",
+      "enum": [
+        "planner_llm",
+        "channel.dense",
+        "channel.sparse",
+        "channel.lexical",
+        "channel.graph",
+        "channel.tree",
+        "channel.visual",
+        "channel.late_interaction",
+        "fusion",
+        "hydrate",
+        "rerank",
+        "late_interaction_rerank",
+        "parent_expand",
+        "sentence_window",
+        "compress",
+        "token_count",
+        "acl_recheck",
+        "self_query_filter",
+        "multi_query",
+        "query_embedding"
+      ],
+      "description": "바이블 §5.3 DegradedEntry 행의 목록. channel.*는 Channel 값으로 전개."
+    },
+    "DegradedReason": {
+      "type": "string",
+      "enum": [
+        "timeout",
+        "unavailable",
+        "capability_unsupported",
+        "analyzer_mismatch",
+        "profile_mismatch",
+        "latency_budget",
+        "llm_failed",
+        "filter_relaxed",
+        "approximate_count",
+        "skipped_by_policy",
+        "partial_result"
+      ]
+    },
+    "JudgmentLevel": {
+      "type": "string",
+      "enum": [
+        "binary",
+        "graded"
+      ]
+    },
+    "LabelProvenance": {
+      "type": "string",
+      "enum": [
+        "human",
+        "umbrela",
+        "synthetic"
+      ]
+    },
+    "EvalRunStatus": {
+      "type": "string",
+      "enum": [
+        "running",
+        "completed",
+        "failed"
+      ]
+    },
+    "DictSource": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "imported",
+        "mined"
+      ]
+    },
+    "FeedbackKind": {
+      "type": "string",
+      "enum": [
+        "cited",
+        "rated",
+        "corrected"
+      ]
+    },
+    "FilterOp": {
+      "type": "string",
+      "enum": [
+        "eq",
+        "ne",
+        "in",
+        "not_in",
+        "gt",
+        "gte",
+        "lt",
+        "lte",
+        "exists",
+        "prefix",
+        "contains_any",
+        "contains_all"
+      ]
+    },
+    "FilterableField": {
+      "type": "string",
+      "anyOf": [
+        {
+          "enum": [
+            "document_id",
+            "doc_version",
+            "external_id",
+            "doc_date",
+            "doc_type",
+            "department",
+            "tags",
+            "lang",
+            "genre",
+            "item_kind",
+            "heading_path",
+            "entity_ids",
+            "page_start",
+            "page_end",
+            "page"
+          ]
+        },
+        {
+          "pattern": "^custom\\.[a-z0-9_]+$",
+          "description": "컬렉션 filterable_fields에 선언된 키만(플래너가 검증)."
+        }
+      ],
+      "description": "사용자·self-query 필터 가능 필드 화이트리스트(바이블 §5.7). tenant_id, collection_id, acl_*, is_current, index_generation, level, commit_id, record_id는 금지 → plan.filter_field_forbidden."
+    },
+    "EventType": {
+      "type": "string",
+      "enum": [
+        "ingest.document.fetched",
+        "ingest.document.parsed",
+        "ingest.document.normalized",
+        "ingest.document.chunked",
+        "ingest.document.enriched",
+        "ingest.document.embedded",
+        "ingest.document.indexed",
+        "ingest.document.retried",
+        "ingest.document.failed",
+        "ingest.document.deleted",
+        "job.state.changed",
+        "index.commit.published",
+        "index.commit.rolled_back",
+        "index.consistency.mismatch",
+        "acl.document.updated",
+        "collection.profile.changed",
+        "collection.reindex.completed",
+        "audit.query.executed",
+        "audit.document.accessed",
+        "audit.acl.changed",
+        "audit.admin.action",
+        "feedback.query.cited",
+        "feedback.query.rated",
+        "eval.run.completed",
+        "tenant.policies.changed"
+      ],
+      "description": "바이블 §5.7 이벤트 이름 카탈로그(domain.entity.action). CloudEventEnvelope.type. 1.3.0: tenant.policies.changed 추가(AM-38, 25종)."
+    },
+    "ErrorCodeCatalog": {
+      "type": "string",
+      "enum": [
+        "fetch.access_denied",
+        "fetch.not_found",
+        "fetch.too_large",
+        "fetch.scheme_unsupported",
+        "fetch.egress_denied",
+        "fetch.timeout",
+        "fetch.upstream_error",
+        "parse.unsupported_format",
+        "parse.unsupported_variant",
+        "parse.corrupt_container",
+        "parse.document_encrypted",
+        "parse.distribution_document",
+        "parse.sidecar_unavailable",
+        "parse.conversion_failed",
+        "parse.page_timeout",
+        "parse.page_ocr_failed",
+        "parse.page_skipped",
+        "parse.block_oversized",
+        "parse.block_limit_exceeded",
+        "parse.element_path_synthesized",
+        "parse.table_structure_fallback",
+        "parse.footnote_unanchored",
+        "parse.container_limit_exceeded",
+        "parse.extractor_fallback",
+        "normalize.nfd_residual",
+        "normalize.pii_policy_violation",
+        "normalize.pii_detector_unavailable",
+        "normalize.segmenter_fallback",
+        "chunk.tokenizer_missing",
+        "chunk.count_exceeded",
+        "chunk.block_oversized",
+        "enrich.content_policy_violation",
+        "enrich.llm_policy_denied",
+        "enrich.budget_exceeded",
+        "enrich.extractor_timeout",
+        "enrich.llm_unavailable",
+        "embed.space_mismatch",
+        "embed.tokenizer_missing",
+        "embed.server_unavailable",
+        "embed.token_overflow",
+        "index.security_fields_missing",
+        "index.generation_conflict",
+        "index.backend_unavailable",
+        "index.partial_commit",
+        "plan.security_context_missing",
+        "plan.filter_field_forbidden",
+        "plan.collection_forbidden",
+        "plan.llm_failed",
+        "retrieve.security_context_missing",
+        "fuse.k_missing",
+        "retrieve.channel_timeout",
+        "retrieve.backend_error",
+        "retrieve.unavailable",
+        "hydrate.backend_error",
+        "rerank.schema_mismatch",
+        "pack.tokenizer_mismatch",
+        "render.mixed_blocks",
+        "render.citations_with_structured_output",
+        "render.empty_pack",
+        "rerank.timeout",
+        "postprocess.parent_text_miss",
+        "pack.count_api_failed",
+        "pack.budget_overflow",
+        "pack.conflict_unlabeled",
+        "pack.acl_hint_unavailable",
+        "auth.unauthenticated",
+        "auth.forbidden",
+        "auth.too_many_principals",
+        "api.idempotency_conflict",
+        "api.idempotency_payload_mismatch",
+        "api.rate_limited",
+        "api.not_found",
+        "api.quota_exceeded",
+        "contract.violation",
+        "contract.schema_type_mismatch",
+        "contract.upcast_failed",
+        "contract.acl_deny_all",
+        "profile.invalid",
+        "profile.gate_pending",
+        "plugin.license_denied",
+        "plugin.capability_unsupported",
+        "render.template_unsupported",
+        "outbox.egress_denied",
+        "outbox.relay_failed"
+      ],
+      "description": "바이블 §5.7 오류 코드 카탈로그 전체(경고·폴백 코드 포함). 재시도 가능 여부는 카탈로그가 결정한다. 1.3.0: AM-36 16종 추가(84종) — 재시도 no: parse.block_limit_exceeded, parse.container_limit_exceeded, contract.schema_type_mismatch, contract.upcast_failed, render.template_unsupported, api.not_found(404), api.quota_exceeded; 나머지 신규 코드는 경고(재시도 —)."
+    },
+    "Block.figure.kind": {
+      "type": "string",
+      "enum": [
+        "image",
+        "chart",
+        "ole",
+        "equation_image"
+      ]
+    },
+    "Block.footnote.kind": {
+      "type": "string",
+      "enum": [
+        "footnote",
+        "endnote"
+      ]
+    },
+    "TableCell.header_kind": {
+      "type": "string",
+      "enum": [
+        "column",
+        "row",
+        "section",
+        "none"
+      ]
+    },
+    "TableData.quality.structure_source": {
+      "type": "string",
+      "enum": [
+        "native",
+        "tableformer",
+        "line_based",
+        "render_fallback"
+      ]
+    },
+    "ArtifactRef": {
+      "type": "object",
+      "description": "오브젝트 스토리지 산출물 참조. 오케스트레이터 경계를 넘는 유일한 페이로드(바이블 §4.1, §5.3).",
+      "properties": {
+        "uri": {
+          "$ref": "#/$defs/Uri",
+          "description": "s3:// 또는 file:// URI(오브젝트 키 규약 §13.3)"
+        },
+        "blake3": {
+          "$ref": "#/$defs/Hex64",
+          "description": "산출물 바이트의 BLAKE3 콘텐츠 해시"
+        },
+        "media_type": {
+          "$ref": "#/$defs/MediaType",
+          "description": "application/vnd.rag.{kebab-name}+json 또는 원본 MIME"
+        },
+        "schema_type": {
+          "$ref": "#/$defs/SchemaTypeName",
+          "description": "계약 산출물이면 PascalCase 타입명. 봉투 schema_type과 일치해야 로드"
+        },
+        "schema_version": {
+          "$ref": "#/$defs/Semver",
+          "description": "계약 산출물이면 계약 버전"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "바이트 크기(인라인 금지 검증·계량)"
+        },
+        "stage_key": {
+          "$ref": "#/$defs/Hex64",
+          "description": "생산 스테이지 멱등성 키(계보 자기 서술)"
+        }
+      },
+      "required": [
+        "uri",
+        "blake3",
+        "media_type",
+        "size_bytes"
+      ],
+      "dependentRequired": {
+        "schema_type": [
+          "schema_version"
+        ],
+        "schema_version": [
+          "schema_type"
+        ]
+      },
+      "additionalProperties": false
+    },
+    "Producer": {
+      "type": "object",
+      "description": "재현성 지문. fingerprint = H(\"producer\", plugin_id, plugin_version, config_hash, image_digest or \"\", \",\".join(model_ids))(바이블 §6.2).",
+      "properties": {
+        "plugin_id": {
+          "$ref": "#/$defs/PluginId"
+        },
+        "plugin_version": {
+          "$ref": "#/$defs/Semver",
+          "description": "패키지 버전"
+        },
+        "config_hash": {
+          "$ref": "#/$defs/Hex64",
+          "description": "H(\"config\", canonical_json(config))"
+        },
+        "image_digest": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ImageDigest"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "사이드카·서빙 이미지 digest. 인프로세스는 null"
+        },
+        "model_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ModelId"
+          },
+          "description": "{model_id}@{revision} 목록"
+        }
+      },
+      "required": [
+        "plugin_id",
+        "plugin_version",
+        "config_hash",
+        "image_digest"
+      ],
+      "additionalProperties": false
+    },
+    "Provenance": {
+      "type": "object",
+      "description": "원문 좌표(ADR-0002). char_*는 원문 Block.text 기준 0-based 유니코드 코드포인트, 끝 미포함.",
+      "properties": {
+        "element_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "원본 요소 경로(OWPML 경로·Docling self_ref·HTML XPath·pdftext 블록 경로). 문서 내 유일"
+        },
+        "char_start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "char_end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "description": "1-based. 흐름 포맷(HWP/HWPX·DOCX·HTML·MD)은 null"
+        },
+        "bbox": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4,
+          "description": "[x0, y0, x1, y1] 좌상단 원점·PDF 포인트(1/72 in). 흐름 포맷은 null"
+        },
+        "section_index": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "HWPX 구역(secPr) 인덱스"
+        }
+      },
+      "required": [
+        "element_path",
+        "char_start",
+        "char_end",
+        "page",
+        "bbox"
+      ],
+      "additionalProperties": false
+    },
+    "Acl": {
+      "type": "object",
+      "description": "문서 단위 ACL(모든 레벨 레코드가 상속, 바이블 §10.1). 거부가 허용보다 우선.",
+      "properties": {
+        "allow_principals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PrincipalString"
+          },
+          "maxItems": 1024
+        },
+        "deny_principals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PrincipalString"
+          },
+          "maxItems": 1024
+        },
+        "visibility": {
+          "$ref": "#/$defs/Visibility",
+          "description": "기본 tenant"
+        },
+        "classification": {
+          "$ref": "#/$defs/Classification",
+          "description": "기본 internal. 팩 classification_max로 전파"
+        },
+        "embargo_until": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/DateTime"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "이 시각 전 검색 불가"
+        },
+        "expires_at": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/DateTime"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "이 시각 후 검색 불가"
+        },
+        "source_acl_hash": {
+          "$ref": "#/$defs/Hex64",
+          "description": "원천 ACL 변경 감지"
+        }
+      },
+      "required": [
+        "allow_principals",
+        "visibility"
+      ],
+      "additionalProperties": false
+    },
+    "SecurityContext": {
+      "type": "object",
+      "readOnly": true,
+      "description": "서버 주입·읽기 전용. 클라이언트 입력 없음(ADR-0027, 바이블 §5.3).",
+      "properties": {
+        "tenant_id": {
+          "$ref": "#/$defs/Ulid"
+        },
+        "principals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PrincipalString"
+          },
+          "minItems": 1,
+          "maxItems": 1024,
+          "description": "사용자 + 확장 그룹 + tenant:*. 초과 auth.too_many_principals"
+        },
+        "collection_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Ulid"
+          },
+          "description": "Cedar allowed_collections ∩ 요청 컬렉션"
+        },
+        "as_of": {
+          "$ref": "#/$defs/DateTime",
+          "description": "서버 now(). embargo/expiry 판정 시각"
+        },
+        "classification_max": {
+          "$ref": "#/$defs/Classification",
+          "description": "주체가 볼 수 있는 최고 등급(테넌트 정책 기본 internal)"
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Cedar 정책 버전"
+        },
+        "auth_method": {
+          "$ref": "#/$defs/AuthMethod"
+        },
+        "visible_set": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Visibility"
+          },
+          "minItems": 1,
+          "description": "기본 [public, tenant]; api_key이고 service: 주체만이면 [public]"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "principals",
+        "collection_ids",
+        "as_of",
+        "classification_max",
+        "policy_version",
+        "auth_method",
+        "visible_set"
+      ],
+      "additionalProperties": false
+    },
+    "Principal": {
+      "type": "object",
+      "description": "PrincipalResolver 출력(바이블 §8.1 1단계). SecurityContext.principals의 원천.",
+      "properties": {
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OIDC sub 또는 이메일, API 키 client_id"
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tenant_id": {
+          "$ref": "#/$defs/Ulid"
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "auth_method": {
+          "$ref": "#/$defs/AuthMethod"
+        },
+        "api_key_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "subject",
+        "groups",
+        "tenant_id",
+        "roles",
+        "auth_method"
+      ],
+      "additionalProperties": false
+    },
+    "TokenCounts": {
+      "type": "object",
+      "description": "{tokenizer_id: integer}. 예 {\"hf:BAAI/bge-m3\": 387, \"tiktoken:o200k_base\": 455}",
+      "minProperties": 1,
+      "propertyNames": {
+        "$ref": "#/$defs/TokenizerId"
+      },
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "Warning": {
+      "type": "object",
+      "description": "품질 삼중항 2. 콘텐츠 미포함.",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCodeCatalog",
+          "description": "§5.7 카탈로그에 등재된 코드(재시도 열 '—' 경고·폴백 코드 또는 partial 코드). 카탈로그 밖 코드는 스키마가 거부한다(00 I-14)"
+        },
+        "message": {
+          "type": "string",
+          "description": "콘텐츠 미포함"
+        },
+        "block_id": {
+          "$ref": "#/$defs/Hex32"
+        },
+        "chunk_id": {
+          "$ref": "#/$defs/Hex64"
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "DegradedEntry": {
+      "type": "object",
+      "description": "품질 삼중항 3(질의 측). 콘텐츠 미포함.",
+      "properties": {
+        "component": {
+          "$ref": "#/$defs/DegradedComponent"
+        },
+        "reason": {
+          "$ref": "#/$defs/DegradedReason"
+        },
+        "detail": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "component",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "StageError": {
+      "type": "object",
+      "description": "스테이지 오류. RFC 9457 type = urn:rag:error:{code} 1:1(바이블 §4.1). 재시도 여부는 카탈로그가 결정. message·occurred_at·attempt·location·cause는 바이블 §5.3 미등재 선택 필드(13-error-model 제안, 00 미해결 이슈 U-12).",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCodeCatalog",
+          "description": "§5.7 카탈로그 등재 코드(00 I-14). type = urn:rag:error:{code}"
+        },
+        "type": {
+          "$ref": "#/$defs/ErrorTypeUrn"
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "stage": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 32,
+          "description": "발생 스테이지(fetch, detect, parse, normalize, chunk, recount, enrich, embed, index, publish, plan, retrieve, fuse, hydrate, rerank, postprocess, pack, render) 또는 비파이프라인 지점(api, loader, relay)"
+        },
+        "plugin_id": {
+          "$ref": "#/$defs/PluginId",
+          "maxLength": 128
+        },
+        "detail": {
+          "type": "string",
+          "maxLength": 1024,
+          "description": "인스턴스별 진단 문구(영문, 기계 지향). 콘텐츠 미포함"
+        },
+        "artifact_ref": {
+          "$ref": "#/$defs/ArtifactRef",
+          "description": "실패 시점 입력"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "코드별 고정 영문 문구(카탈로그 title_en). 지역화는 ProblemDetails.title에서만"
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/DateTime",
+          "description": "발생 시각"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "실패한 시도 번호(1-based; StagePolicy.max_attempts 대비)"
+        },
+        "location": {
+          "$ref": "#/$defs/ErrorLocation",
+          "description": "오류 위치(요청 필드·페이지·블록·청크·채널·스코프 ID)"
+        },
+        "cause": {
+          "$ref": "#/$defs/StageError",
+          "description": "원인 오류(폴백 체인·보상에서 감싼 하위 오류). 중첩 깊이 3 이하(Pydantic 검증)"
+        }
+      },
+      "required": [
+        "code",
+        "type",
+        "retryable",
+        "stage"
+      ],
+      "additionalProperties": false
+    },
+    "ErrorLocation": {
+      "type": "object",
+      "description": "StageError.location. 오류 위치 식별자만 담고 ACL·주체·콘텐츠는 담지 않는다(13-error-model §2.2 제안 하위 타입).",
+      "properties": {
+        "pointer": {
+          "type": "string",
+          "format": "json-pointer",
+          "maxLength": 256,
+          "description": "RFC 6901 JSON Pointer(요청 본문 또는 산출물 내 위치)"
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "1-based 페이지(흐름 포맷은 생략)"
+        },
+        "block_id": {
+          "$ref": "#/$defs/Hex32"
+        },
+        "chunk_id": {
+          "$ref": "#/$defs/Hex64"
+        },
+        "channel": {
+          "$ref": "#/$defs/Channel",
+          "description": "질의 측 채널(retrieve·hydrate 오류)"
+        },
+        "collection_id": {
+          "$ref": "#/$defs/Ulid"
+        },
+        "document_id": {
+          "$ref": "#/$defs/Ulid"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ProblemDetails": {
+      "type": "object",
+      "description": "RFC 9457 Problem Details + 확장 멤버(code, retryable, trace_id, errors). retry_after·request_id는 바이블 §5.3 미등재 선택 필드(13-error-model 제안, 00 미해결 이슈 U-12).",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/ErrorTypeUrn"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "코드별 고정 제목. Accept-Language로 지역화되는 유일한 필드"
+        },
+        "status": {
+          "type": "integer",
+          "minimum": 400,
+          "maximum": 599,
+          "description": "HTTP 상태(13-error-model HTTP 매핑 표)"
+        },
+        "detail": {
+          "type": "string",
+          "maxLength": 2048,
+          "description": "인스턴스별 진단 문구(영문). 콘텐츠 미포함"
+        },
+        "instance": {
+          "type": "string",
+          "format": "uri-reference",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "발생 요청 경로 또는 관련 자원(/v1/jobs/{job_id}). RFC 9457 §3.1.5 URI-reference(상대 참조 허용)"
+        },
+        "code": {
+          "$ref": "#/$defs/ErrorCodeCatalog",
+          "description": "= StageError.code(§5.7 카탈로그 등재 코드, 00 I-14)"
+        },
+        "retryable": {
+          "type": "boolean",
+          "description": "카탈로그 값. errors[]가 있으면 errors[].retryable의 OR"
+        },
+        "trace_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$",
+          "description": "W3C Trace Context trace-id(소문자 hex 32)"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StageError"
+          },
+          "minItems": 1,
+          "maxItems": 16,
+          "description": "다중 오류(요청 검증·채널 실패). 16개 초과분은 detail에 개수만 남긴다"
+        },
+        "retry_after": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Retry-After 헤더 값(초)의 본문 사본. status 429·503에서만"
+        },
+        "request_id": {
+          "$ref": "#/$defs/Ulid",
+          "description": "요청 ID(바이블 §6.1)"
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "status",
+        "code",
+        "retryable",
+        "trace_id"
+      ],
+      "additionalProperties": false
+    },
+    "CloudEventEnvelope": {
+      "type": "object",
+      "description": "CloudEvents 1.0.2 봉투(ADR-0017). data는 ID·해시·상태만, 콘텍스트 본문 금지.",
+      "properties": {
+        "specversion": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "id": {
+          "$ref": "#/$defs/Ulid",
+          "description": "event_id(소비자 멱등 키)"
+        },
+        "source": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^urn:rag:[a-z][a-z0-9_-]*$",
+          "description": "urn:rag:{component}"
+        },
+        "type": {
+          "$ref": "#/$defs/EventType"
+        },
+        "time": {
+          "$ref": "#/$defs/DateTime"
+        },
+        "subject": {
+          "type": "string",
+          "pattern": "^tenant/[0-9A-HJKMNP-TV-Z]{26}/[a-z_]+/[^/\\s]+$",
+          "description": "tenant/{tenant_id}/{entity}/{id}"
+        },
+        "datacontenttype": {
+          "type": "string",
+          "const": "application/json"
+        },
+        "dataschema": {
+          "$ref": "#/$defs/SchemaId"
+        },
+        "tenantid": {
+          "$ref": "#/$defs/Ulid",
+          "description": "CloudEvents 확장 속성(릴레이 테넌트 스코프)"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "ID·해시·상태만. 콘텍스트 본문 금지(E12)"
+        }
+      },
+      "required": [
+        "specversion",
+        "id",
+        "source",
+        "type",
+        "time",
+        "subject",
+        "datacontenttype",
+        "tenantid",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ChannelScore": {
+      "type": "object",
+      "description": "채널 원점수·채널 내 순위·융합 기여분·적중 질의 변형.",
+      "properties": {
+        "score": {
+          "type": "number",
+          "description": "채널 원점수(cosine / dot / BM25 / MaxSim)"
+        },
+        "rank": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "채널 내 1-based 순위"
+        },
+        "contribution": {
+          "type": "number",
+          "description": "융합 기여분(RRF: w/(k+rank))"
+        },
+        "variant_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Ulid"
+          },
+          "description": "적중 질의 변형(rewritten_queries[].variant_id)"
+        }
+      },
+      "required": [
+        "score",
+        "rank",
+        "contribution",
+        "variant_ids"
+      ],
+      "additionalProperties": false
+    },
+    "ScoreBreakdown": {
+      "type": "object",
+      "description": "점수 원장(K3, ADR-0030). 불변식 Σ contribution(non-null 채널) = fused.",
+      "properties": {
+        "dense": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ChannelScore"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sparse": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ChannelScore"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lexical": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ChannelScore"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "graph": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ChannelScore"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tree": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ChannelScore"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "visual": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ChannelScore"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "late_interaction": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ChannelScore"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fused": {
+          "type": "number"
+        },
+        "fused_rank": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rerank_raw": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "rerank_normalized": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "normalization": {
+          "$ref": "#/$defs/ScoreNormalization"
+        },
+        "boosts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "$ref": "#/$defs/BoostKind"
+              },
+              "delta": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "kind",
+              "delta"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "dense",
+        "sparse",
+        "lexical",
+        "graph",
+        "tree",
+        "visual",
+        "late_interaction",
+        "fused",
+        "fused_rank",
+        "rerank_raw",
+        "rerank_normalized",
+        "normalization"
+      ],
+      "additionalProperties": false
+    },
+    "FilterNode": {
+      "description": "사용자·self-query 필터 DSL. 논리 결합(and/or/not) 또는 리프(field, op, value) 택1. 깊이 ≤ 3, 절 ≤ 32(플래너 검증).",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "and": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/FilterNode"
+              },
+              "minItems": 1,
+              "maxItems": 32
+            }
+          },
+          "required": [
+            "and"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "or": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/FilterNode"
+              },
+              "minItems": 1,
+              "maxItems": 32
+            }
+          },
+          "required": [
+            "or"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "not": {
+              "$ref": "#/$defs/FilterNode"
+            }
+          },
+          "required": [
+            "not"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field": {
+              "$ref": "#/$defs/FilterableField"
+            },
+            "op": {
+              "$ref": "#/$defs/FilterOp"
+            },
+            "value": {
+              "description": "op별 값. in/not_in/contains_*는 배열, exists는 boolean, 그 외 스칼라"
+            }
+          },
+          "required": [
+            "field",
+            "op"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "op": {
+                    "enum": [
+                      "in",
+                      "not_in",
+                      "contains_any",
+                      "contains_all"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "value"
+                ],
+                "properties": {
+                  "value": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "op": {
+                    "const": "exists"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "value"
+                ],
+                "properties": {
+                  "value": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "op": {
+                    "enum": [
+                      "eq",
+                      "ne",
+                      "gt",
+                      "gte",
+                      "lt",
+                      "lte",
+                      "prefix"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "value"
+                ],
+                "properties": {
+                  "value": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "Entity": {
+      "type": "object",
+      "description": "보강 엔티티(기본 GLiNER2).",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "canonical_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "span": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "chunk_id": {
+              "$ref": "#/$defs/Hex64"
+            },
+            "char_start": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "char_end": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "chunk_id",
+            "char_start",
+            "char_end"
+          ],
+          "additionalProperties": false
+        },
+        "extractor": {
+          "$ref": "#/$defs/EntityExtractor"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "confidence",
+        "extractor"
+      ],
+      "additionalProperties": false
+    },
+    "Relation": {
+      "type": "object",
+      "description": "그래프 플러그인 슬롯(ADR-0015).",
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "predicate": {
+          "type": "string",
+          "minLength": 1
+        },
+        "object_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "weight": {
+          "type": "number"
+        },
+        "evidence_chunk_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Hex64"
+          }
+        }
+      },
+      "required": [
+        "subject_id",
+        "predicate",
+        "object_id",
+        "weight",
+        "evidence_chunk_ids"
+      ],
+      "additionalProperties": false
+    },
+    "BlockRef": {
+      "type": "object",
+      "description": "단일 좌표계(K1). char_*는 Chunk.text(display) 기준, original_char_*는 원문 Block.text 기준(offset_map 사상). Chunk·IndexRecord·RankedResult의 block_refs가 같은 구조.",
+      "properties": {
+        "block_id": {
+          "$ref": "#/$defs/Hex32"
+        },
+        "element_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Block.provenance.element_path 복사"
+        },
+        "char_start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "char_end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "original_char_start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "original_char_end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "bbox": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "section_index": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "required": [
+        "block_id",
+        "element_path",
+        "char_start",
+        "char_end",
+        "original_char_start",
+        "original_char_end",
+        "page",
+        "bbox"
+      ],
+      "additionalProperties": false
+    },
+    "Capabilities": {
+      "type": "object",
+      "description": "모든 Stage 공통 capabilities() 선언(ADR-0032).",
+      "properties": {
+        "isolation_modes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IsolationMode"
+          },
+          "minItems": 1
+        },
+        "supports_resumable": {
+          "type": "boolean",
+          "description": "heartbeat_details 재개 지원"
+        },
+        "contracts_compat": {
+          "$ref": "#/$defs/ContractsCompat",
+          "description": "계약 호환 범위(\">=1.0,<2.0\"). M-2: PluginMeta.contracts_compat 와 같아야 한다"
+        },
+        "input_formats": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "model_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ModelId"
+          }
+        },
+        "requires_gpu": {
+          "type": "boolean"
+        },
+        "extra": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "확장 지점 전용 필드. index_backend는 IndexBackendCapabilities"
+        }
+      },
+      "required": [
+        "isolation_modes",
+        "supports_resumable",
+        "contracts_compat"
+      ],
+      "additionalProperties": false
+    },
+    "IndexBackendCapabilities": {
+      "type": "object",
+      "description": "Capabilities.extra(index_backend 전용). 프로파일 로딩 검증·채널 구성의 근거.",
+      "properties": {
+        "supports_server_bm25": {
+          "type": "boolean"
+        },
+        "korean_analyzer": {
+          "type": "boolean"
+        },
+        "supports_server_fusion": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FusionMethod"
+          }
+        },
+        "tenant_isolation": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TenantIsolationTier"
+          },
+          "minItems": 1
+        },
+        "supports_alias_swap": {
+          "type": "boolean"
+        },
+        "supports_multivector": {
+          "type": "boolean"
+        },
+        "max_vector_dim": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "max_multivector_elements": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "supports_payload_only_points": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "supports_server_bm25",
+        "korean_analyzer",
+        "supports_server_fusion",
+        "tenant_isolation",
+        "supports_alias_swap",
+        "supports_multivector",
+        "max_vector_dim",
+        "max_multivector_elements",
+        "supports_payload_only_points"
+      ],
+      "additionalProperties": false
+    },
+    "StagePolicy": {
+      "type": "object",
+      "description": "스테이지 실행 정책(바이블 §4.4 표의 한 행).",
+      "properties": {
+        "task_queue": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "start_to_close": {
+          "$ref": "#/$defs/Duration"
+        },
+        "heartbeat": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Duration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "backoff": {
+          "type": "object",
+          "properties": {
+            "initial": {
+              "$ref": "#/$defs/Duration"
+            },
+            "max": {
+              "$ref": "#/$defs/Duration"
+            },
+            "coefficient": {
+              "type": "number",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "initial",
+            "max",
+            "coefficient"
+          ],
+          "additionalProperties": false,
+          "description": "기본 {1s, 5m, 2.0}"
+        },
+        "non_retryable_error_codes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ErrorCodeCatalog"
+          }
+        },
+        "resumable": {
+          "type": "boolean"
+        },
+        "isolation": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/IsolationMode"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "task_queue",
+        "start_to_close",
+        "heartbeat",
+        "max_attempts",
+        "non_retryable_error_codes",
+        "resumable"
+      ],
+      "additionalProperties": false
+    },
+    "TieringPolicy": {
+      "type": "object",
+      "description": "테넌트 격리 등급 승격 정책(E15, ADR-0028). 기본 {1000000, null, opt_in, 24h}.",
+      "properties": {
+        "shard_key_threshold_chunks": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "threshold_qps": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "index_per_tenant": {
+          "$ref": "#/$defs/IndexPerTenantMode"
+        },
+        "promotion_window": {
+          "$ref": "#/$defs/Duration"
+        }
+      },
+      "required": [
+        "shard_key_threshold_chunks",
+        "index_per_tenant"
+      ],
+      "additionalProperties": false
+    },
+    "EgressPolicy": {
+      "type": "object",
+      "description": "아웃바운드 egress 정책(E16, ADR-0038). 프로파일 정책 AND 테넌트 정책.",
+      "properties": {
+        "allowed_schemes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9+.-]*$"
+          },
+          "minItems": 1,
+          "description": "기본 [https, s3, gs, az]"
+        },
+        "allowed_hosts": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "deny_cidrs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Cidr"
+          },
+          "description": "사설·루프백·링크로컬·클라우드 메타데이터 CIDR"
+        },
+        "max_redirects": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "기본 3, 리다이렉트마다 재검사"
+        },
+        "resolve_pin": {
+          "type": "boolean",
+          "description": "DNS 해석 IP 검사 후 고정 연결"
+        },
+        "max_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "connect_timeout_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "allowed_ports": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          }
+        },
+        "strip_query_keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "description": "N(바이블 §5.3 1.3.0, AM-30). 서명 쿼리 파라미터 키(로그·감사 이벤트 기록 전 제거). 정본 목록은 04-pipelines/02 §3.6"
+        }
+      },
+      "required": [
+        "allowed_schemes",
+        "deny_cidrs",
+        "max_redirects",
+        "resolve_pin"
+      ],
+      "additionalProperties": false
+    },
+    "LineageRefs": {
+      "type": "object",
+      "description": "봉투 lineage_refs(바이블 §5.2). 상류 산출물 참조, 자기 자신 제외. IndexCommit.artifact_refs와 같은 키.",
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/ArtifactRef"
+        },
+        "parsed": {
+          "$ref": "#/$defs/ArtifactRef"
+        },
+        "normalized": {
+          "$ref": "#/$defs/ArtifactRef"
+        },
+        "chunk_set": {
+          "$ref": "#/$defs/ArtifactRef"
+        },
+        "enriched": {
+          "$ref": "#/$defs/ArtifactRef"
+        },
+        "embedded": {
+          "$ref": "#/$defs/ArtifactRef"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TableCell": {
+      "type": "object",
+      "description": "표 앵커 셀(병합 셀은 앵커 1개). 0-based 좌표, span ≥ 1.",
+      "properties": {
+        "row": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "col": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "row_span": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "col_span": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "text": {
+          "type": "string",
+          "description": "셀 내 문단 병합. 중첩 표는 [table:{block_id}] 플레이스홀더"
+        },
+        "is_header": {
+          "type": "boolean"
+        },
+        "header_kind": {
+          "$ref": "#/$defs/TableCell.header_kind"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "nested_table_block_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "row",
+        "col",
+        "row_span",
+        "col_span",
+        "text",
+        "is_header",
+        "header_kind"
+      ],
+      "additionalProperties": false
+    },
+    "TableData": {
+      "type": "object",
+      "description": "셀 격자 무손실(HTML rowspan/colspan 재생성 가능).",
+      "properties": {
+        "n_rows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "n_cols": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cells": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TableCell"
+          }
+        },
+        "header_row_indices": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "header_inferred": {
+          "type": "boolean"
+        },
+        "role": {
+          "$ref": "#/$defs/TableRole"
+        },
+        "quality": {
+          "type": "object",
+          "properties": {
+            "merged_cells_preserved": {
+              "type": "boolean"
+            },
+            "structure_source": {
+              "$ref": "#/$defs/TableData.quality.structure_source"
+            },
+            "structure_confidence": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "merged_cells_preserved",
+            "structure_source"
+          ],
+          "additionalProperties": false
+        },
+        "html_ref": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ArtifactRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "n_rows",
+        "n_cols",
+        "cells",
+        "header_row_indices",
+        "header_inferred",
+        "role",
+        "quality"
+      ],
+      "additionalProperties": false
+    },
+    "Block": {
+      "type": "object",
+      "description": "ParsedDocument.blocks[] 요소. 문서 순서 평탄 리스트, 계층은 parent_block_id.",
+      "properties": {
+        "block_id": {
+          "$ref": "#/$defs/Hex32",
+          "description": "H(\"block\", doc_version, element_path)[:32]"
+        },
+        "type": {
+          "$ref": "#/$defs/BlockType"
+        },
+        "parent_block_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Hex32"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "text": {
+          "type": "string",
+          "description": "원문(NFC 미적용; 표·그림은 \"\" 가능)"
+        },
+        "level": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "heading 0..6(0 = 문서 제목), list_item 깊이"
+        },
+        "numbering_label": {
+          "type": "string"
+        },
+        "heading_inferred": {
+          "type": "boolean"
+        },
+        "ordered": {
+          "type": "boolean"
+        },
+        "furniture": {
+          "type": "boolean",
+          "description": "머리말·꼬리말·nav 등 본문 아님(기본 청킹 제외)"
+        },
+        "container": {
+          "$ref": "#/$defs/BlockContainer"
+        },
+        "lang": {
+          "$ref": "#/$defs/Bcp47"
+        },
+        "source": {
+          "$ref": "#/$defs/BlockSource"
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "caption_of": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "caption_block_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Hex32"
+          }
+        },
+        "table": {
+          "$ref": "#/$defs/TableData"
+        },
+        "figure": {
+          "type": "object",
+          "properties": {
+            "artifact": {
+              "$ref": "#/$defs/ArtifactRef"
+            },
+            "kind": {
+              "$ref": "#/$defs/Block.figure.kind"
+            },
+            "alt_text": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "caption_generated": {
+              "type": "boolean"
+            },
+            "caption_model": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "artifact",
+            "kind"
+          ],
+          "additionalProperties": false
+        },
+        "formula": {
+          "type": "object",
+          "properties": {
+            "script": {
+              "type": "string",
+              "description": "한컴 수식 script 원문(필수)"
+            },
+            "latex": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "script"
+          ],
+          "additionalProperties": false
+        },
+        "footnote": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "$ref": "#/$defs/Block.footnote.kind"
+            },
+            "anchor_block_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "anchor_char_offset": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "marker": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        },
+        "code": {
+          "type": "object",
+          "properties": {
+            "language": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "page_break": {
+          "type": "object",
+          "properties": {
+            "page_no": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1
+            },
+            "section_index": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "block_id",
+        "type",
+        "parent_block_id",
+        "ordinal",
+        "text",
+        "furniture",
+        "container",
+        "source",
+        "provenance"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "table"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "table"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "figure"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "figure"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "formula"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "formula"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "footnote"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "footnote"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "code"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "code"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "page_break"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "page_break"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "heading",
+                  "list_item"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "level"
+            ],
+            "properties": {
+              "level": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "list_item"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "ordered"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "enum": [
+                  "ocr",
+                  "vlm"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "confidence"
+            ],
+            "properties": {
+              "confidence": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "NormalizedBlock": {
+      "type": "object",
+      "description": "NormalizedDocument.blocks[] 요소. 원 Block과 block_id로 1:1. display_text NFC / lexical_text NFKC.",
+      "properties": {
+        "block_id": {
+          "$ref": "#/$defs/Hex32"
+        },
+        "display_text": {
+          "type": "string",
+          "description": "NFC(제어·PUA·zero-width 제거; 표시·인용 원문)"
+        },
+        "lexical_text": {
+          "type": "string",
+          "description": "NFKC(기호 통일, 한자 독음, 띄어쓰기 교정 opt-in; BM25·키워드 입력)"
+        },
+        "offset_map": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "integer",
+                "minimum": 0
+              }
+            ],
+            "items": false,
+            "minItems": 3
+          },
+          "description": "[display_start, original_start, length] 구간 사상"
+        },
+        "sentence_spans": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "sub_spans": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  ],
+                  "items": false,
+                  "minItems": 2
+                }
+              }
+            },
+            "required": [
+              "start",
+              "end",
+              "sub_spans"
+            ],
+            "additionalProperties": false
+          },
+          "description": "display 기준"
+        },
+        "lang": {
+          "$ref": "#/$defs/Bcp47"
+        },
+        "boilerplate": {
+          "type": "boolean"
+        },
+        "furniture_reason": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/FurnitureReason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "text_source": {
+          "$ref": "#/$defs/BlockSource"
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "block_id",
+        "display_text",
+        "lexical_text",
+        "offset_map",
+        "sentence_spans",
+        "lang",
+        "boilerplate",
+        "text_source",
+        "confidence"
+      ],
+      "additionalProperties": false
+    },
+    "Chunk": {
+      "type": "object",
+      "description": "ChunkSet.chunks[] 요소. chunk_id = H(\"chunk\", doc_version, chunker_config_hash, str(level), span)(ADR-0004). 3-텍스트 규칙: text는 접두어 미포함(ADR-0029). item_kind ↔ level 대응(바이블 §5.7 ChunkLevel; parent ⇔ 1, summary·community_report·entity ⇔ 2, 그 외 ⇔ 0; 05 C-5)은 allOf의 if/then 4개로 강제하며 IndexRecord와 같은 규칙이다.",
+      "properties": {
+        "chunk_id": {
+          "$ref": "#/$defs/Hex64"
+        },
+        "span": {
+          "$ref": "#/$defs/ChunkSpan"
+        },
+        "item_kind": {
+          "$ref": "#/$defs/ItemKind"
+        },
+        "level": {
+          "$ref": "#/$defs/ChunkLevel"
+        },
+        "parent_chunk_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Hex64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "child_chunk_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Hex64"
+          }
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "text": {
+          "type": "string",
+          "description": "display_text 조각, 접두어 미포함"
+        },
+        "lexical_text": {
+          "type": "string",
+          "description": "lexical_text 조각(BM25·sparse 입력 원료)"
+        },
+        "heading_path": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "numbering_path": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "block_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BlockRef"
+          },
+          "description": "level 0·1은 1개 이상이며 오프셋 합집합이 text를 재구성한다. level 2(summary·community_report·entity)는 text가 파생물이라 재구성 불변식이 적용되지 않는다(00 미해결 이슈 U-11)"
+        },
+        "sentence_spans": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "integer",
+                "minimum": 0
+              }
+            ],
+            "items": false,
+            "minItems": 2
+          }
+        },
+        "token_counts": {
+          "$ref": "#/$defs/TokenCounts"
+        },
+        "lang": {
+          "$ref": "#/$defs/Bcp47"
+        },
+        "table_ref": {
+          "type": "object",
+          "properties": {
+            "table_block_id": {
+              "$ref": "#/$defs/Hex32"
+            },
+            "header_row_indices": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "row_range": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              ],
+              "items": false,
+              "minItems": 2
+            },
+            "col_range": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              ],
+              "items": false,
+              "minItems": 2
+            },
+            "serialization": {
+              "$ref": "#/$defs/TableSerialization"
+            },
+            "html_ref": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/ArtifactRef"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "table_block_id",
+            "header_row_indices",
+            "row_range",
+            "col_range",
+            "serialization",
+            "html_ref"
+          ],
+          "additionalProperties": false
+        },
+        "window": {
+          "type": "object",
+          "properties": {
+            "before_chunk_ids": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Hex64"
+              }
+            },
+            "after_chunk_ids": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Hex64"
+              }
+            }
+          },
+          "required": [
+            "before_chunk_ids",
+            "after_chunk_ids"
+          ],
+          "additionalProperties": false
+        },
+        "context_prefix": {
+          "type": "object",
+          "properties": {
+            "deterministic": {
+              "type": "string",
+              "description": "\"{title} › {heading_path 조인} › {caption?}\" 50~100토큰"
+            },
+            "generated": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "LLM 문맥(O-05, 기본 null)"
+            },
+            "generated_by": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/ModelId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "deterministic",
+            "generated",
+            "generated_by"
+          ],
+          "additionalProperties": false
+        },
+        "tree_level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page_image_ref": {
+          "$ref": "#/$defs/ArtifactRef"
+        },
+        "text_source": {
+          "$ref": "#/$defs/BlockSource",
+          "description": "포함 블록 source의 최저 신뢰 등급(text_layer > converted > vlm > ocr)"
+        },
+        "ocr_confidence_min": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "content_hash": {
+          "$ref": "#/$defs/Hex64",
+          "description": "blake3_hex(utf8(text))"
+        }
+      },
+      "required": [
+        "chunk_id",
+        "span",
+        "item_kind",
+        "level",
+        "parent_chunk_id",
+        "ordinal",
+        "text",
+        "lexical_text",
+        "heading_path",
+        "block_refs",
+        "sentence_spans",
+        "token_counts",
+        "lang",
+        "context_prefix",
+        "text_source",
+        "ocr_confidence_min",
+        "content_hash"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "item_kind": {
+                "enum": [
+                  "table",
+                  "table_part"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "table_ref"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "level": {
+                "enum": [
+                  1,
+                  2
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "child_chunk_ids"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "level": {
+                "enum": [
+                  0,
+                  1
+                ]
+              }
+            },
+            "required": [
+              "level"
+            ]
+          },
+          "then": {
+            "properties": {
+              "block_refs": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "text_source": {
+                "enum": [
+                  "ocr",
+                  "vlm"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "ocr_confidence_min": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "item_kind": {
+                "const": "parent"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "level": {
+                "const": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "item_kind": {
+                "enum": [
+                  "text",
+                  "list_group",
+                  "code",
+                  "table",
+                  "table_part",
+                  "figure",
+                  "page_image"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "level": {
+                "const": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "item_kind": {
+                "enum": [
+                  "summary",
+                  "community_report",
+                  "entity"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "level": {
+                "const": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "level": {
+                "const": 1
+              }
+            },
+            "required": [
+              "level"
+            ]
+          },
+          "then": {
+            "properties": {
+              "item_kind": {
+                "const": "parent"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Enrichment": {
+      "type": "object",
+      "description": "EnrichedChunkSet.enrichments[chunk_id]. embed_text = deterministic + \"\\n\" + (generated + \"\\n\")? + text; index_text = prefix(lexical) + \"\\n\" + lexical_text.",
+      "properties": {
+        "embed_text": {
+          "type": "string",
+          "description": "dense·sparse 입력"
+        },
+        "index_text": {
+          "type": "string",
+          "description": "BM25 입력"
+        },
+        "strip_offsets": {
+          "type": "object",
+          "properties": {
+            "text_start_in_embed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "text_start_in_index": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "text_start_in_embed",
+            "text_start_in_index"
+          ],
+          "additionalProperties": false,
+          "description": "strip() 대칭 보장"
+        },
+        "keywords": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "term": {
+                "type": "string",
+                "minLength": 1
+              },
+              "weight": {
+                "type": "number",
+                "minimum": 0,
+                "description": "source별 가중(06 §5), ≥ 0(06 E-12)"
+              },
+              "source": {
+                "$ref": "#/$defs/KeywordSource"
+              }
+            },
+            "required": [
+              "term",
+              "weight",
+              "source"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "entities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Entity"
+          }
+        },
+        "relations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Relation"
+          }
+        },
+        "dates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Date"
+          }
+        },
+        "law_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "figure_caption": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "figure_table_markdown": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hypothetical_questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "켜면 index_text에만 부착"
+        },
+        "summary": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "risk_flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "risk_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "pii_entity_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "status": {
+          "$ref": "#/$defs/EnrichStatus"
+        }
+      },
+      "required": [
+        "embed_text",
+        "index_text",
+        "strip_offsets",
+        "keywords",
+        "entities",
+        "risk_flags",
+        "risk_score",
+        "pii_entity_counts",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "VectorBundle": {
+      "type": "object",
+      "description": "EmbeddedChunkSet.vectors[chunk_id]. 벡터 본문은 vectors_ref 안 오프셋. sparse_learned(standard) 또는 sparse_bm25(lite) 중 하나 이상.",
+      "properties": {
+        "dense": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "dense"
+            },
+            "dim": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "name",
+            "dim",
+            "offset"
+          ],
+          "additionalProperties": false
+        },
+        "sparse_learned": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "sparse_learned"
+            },
+            "vocab_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "indices": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "required": [
+            "name",
+            "vocab_id",
+            "indices",
+            "values"
+          ],
+          "additionalProperties": false
+        },
+        "sparse_bm25": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "sparse_bm25"
+            },
+            "vocab_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "= analyzer_id"
+            },
+            "indices": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "required": [
+            "name",
+            "vocab_id",
+            "indices",
+            "values"
+          ],
+          "additionalProperties": false
+        },
+        "late_interaction": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "late_interaction"
+            },
+            "dim": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "name",
+            "dim",
+            "count",
+            "offset"
+          ],
+          "additionalProperties": false
+        },
+        "page_multivector": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "visual-pages(07 문서)"
+        },
+        "pooled_page_multivector": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "visual-pages(07 문서)"
+        },
+        "page_dense": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "visual-pages(07 문서)"
+        },
+        "embed_text_hash": {
+          "$ref": "#/$defs/Hex64",
+          "description": "캐시 키 재계산"
+        },
+        "truncated": {
+          "type": "boolean",
+          "description": "토큰 초과 절단 여부"
+        }
+      },
+      "required": [
+        "dense",
+        "embed_text_hash",
+        "truncated"
+      ],
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "sparse_learned"
+          ]
+        },
+        {
+          "required": [
+            "sparse_bm25"
+          ]
+        }
+      ]
+    },
+    "RankedResult": {
+      "type": "object",
+      "description": "RankedSet.results[] 요소. hydrated=true 조건 필수(text 등)는 RankedSet 스키마의 if/then이 강제한다.",
+      "properties": {
+        "record_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Hex64"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "부모 확장 항목(item_kind=parent)은 null"
+        },
+        "chunk_id": {
+          "$ref": "#/$defs/Hex64"
+        },
+        "collection_id": {
+          "$ref": "#/$defs/Ulid"
+        },
+        "document_id": {
+          "$ref": "#/$defs/Ulid"
+        },
+        "doc_version": {
+          "$ref": "#/$defs/Hex64"
+        },
+        "item_kind": {
+          "$ref": "#/$defs/ItemKind"
+        },
+        "level": {
+          "$ref": "#/$defs/ChunkLevel"
+        },
+        "parent_chunk_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Hex64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "final_rank": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "final_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "fused_score": {
+          "type": "number"
+        },
+        "fused_rank": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rerank_raw_score": {
+          "type": "number"
+        },
+        "rerank_normalized_score": {
+          "type": "number"
+        },
+        "rerank_rank": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "score_breakdown": {
+          "$ref": "#/$defs/ScoreBreakdown"
+        },
+        "channels_hit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Channel"
+          }
+        },
+        "variant_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Ulid"
+          }
+        },
+        "text": {
+          "type": "string"
+        },
+        "context_prefix": {
+          "type": "string"
+        },
+        "heading_path": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "numbering_path": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "title": {
+          "type": "string"
+        },
+        "source_uri": {
+          "$ref": "#/$defs/Uri"
+        },
+        "external_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "doc_date": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "doc_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "page_start": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "page_end": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "lang": {
+          "$ref": "#/$defs/Bcp47"
+        },
+        "text_source": {
+          "$ref": "#/$defs/BlockSource"
+        },
+        "ocr_confidence_min": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "chunk_set_blake3": {
+          "$ref": "#/$defs/Hex64"
+        },
+        "token_count_primary": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "N(바이블 §5.5 1.3.0, AM-33). hydrate 시 채움 — 대상 토크나이저 기준 text 토큰 수(Chunk.token_counts.primary 복사)"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "N(바이블 §5.5 1.3.0, AM-33). hydrate 시 채움 — Chunk.ordinal 복사(같은 부모 아래 형제 순서, 0-based)"
+        },
+        "text_truncated": {
+          "type": "boolean",
+          "description": "N(바이블 §5.5 1.3.0, AM-33). hydrate 시 채움 — text가 IndexRecord payload 절단본(embed.token_overflow)이면 true"
+        },
+        "pii_policy_applied": {
+          "$ref": "#/$defs/PiiPolicy",
+          "description": "N(바이블 §5.5 1.3.0, AM-33). hydrate 시 채움 — 원천은 IndexRecord.payload.pii_policy_applied 경로"
+        },
+        "acl": {
+          "type": "object",
+          "properties": {
+            "allow": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/PrincipalString"
+              }
+            },
+            "deny": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/PrincipalString"
+              }
+            },
+            "visibility": {
+              "$ref": "#/$defs/Visibility"
+            },
+            "classification": {
+              "$ref": "#/$defs/Classification"
+            },
+            "embargo_until": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/DateTime"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "expires_at": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/DateTime"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "acl_hash": {
+              "$ref": "#/$defs/Hex64"
+            }
+          },
+          "required": [
+            "allow",
+            "deny",
+            "visibility",
+            "classification",
+            "embargo_until",
+            "expires_at",
+            "acl_hash"
+          ],
+          "additionalProperties": false,
+          "description": "IndexRecord.acl_* 역평탄화; pack.acl_recheck 입력"
+        },
+        "block_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BlockRef"
+          }
+        },
+        "sentence_spans": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "integer",
+                "minimum": 0
+              }
+            ],
+            "items": false,
+            "minItems": 2
+          }
+        },
+        "table_ref": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "Chunk.table_ref 복사(pack이 tables[]로 구체화)"
+        },
+        "html_ref": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ArtifactRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expanded_from": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Hex64"
+          }
+        },
+        "duplicates_of": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Hex64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "window_chunk_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Hex64"
+          }
+        },
+        "explain": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExplainCode"
+          }
+        }
+      },
+      "required": [
+        "record_id",
+        "chunk_id",
+        "collection_id",
+        "document_id",
+        "doc_version",
+        "item_kind",
+        "level",
+        "parent_chunk_id",
+        "final_rank",
+        "final_score",
+        "fused_score",
+        "fused_rank",
+        "score_breakdown",
+        "channels_hit",
+        "variant_ids",
+        "explain"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "rerank_raw_score": [
+          "rerank_normalized_score",
+          "rerank_rank"
+        ],
+        "rerank_normalized_score": [
+          "rerank_raw_score",
+          "rerank_rank"
+        ],
+        "rerank_rank": [
+          "rerank_raw_score",
+          "rerank_normalized_score"
+        ]
+      }
+    },
+    "ContextItem": {
+      "type": "object",
+      "description": "ContextPack.items[] 요소. cite_id는 관련도순 불변, position은 렌더 위치. provenance는 block_refs에서 결정적으로 생성.",
+      "properties": {
+        "cite_id": {
+          "$ref": "#/$defs/CiteId"
+        },
+        "rank": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "관련도 순위(1-based, 최종 항목 기준)"
+        },
+        "position": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "렌더 위치(0-based)"
+        },
+        "record_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Hex64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "chunk_id": {
+          "$ref": "#/$defs/Hex64"
+        },
+        "collection_id": {
+          "$ref": "#/$defs/Ulid"
+        },
+        "document_id": {
+          "$ref": "#/$defs/Ulid"
+        },
+        "doc_version": {
+          "$ref": "#/$defs/Hex64"
+        },
+        "parent_chunk_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Hex64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "item_kind": {
+          "$ref": "#/$defs/ItemKind"
+        },
+        "level": {
+          "$ref": "#/$defs/ChunkLevel"
+        },
+        "confidence_tier": {
+          "$ref": "#/$defs/ConfidenceTier"
+        },
+        "header": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "section_path": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "numbering_path": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "source_uri": {
+              "$ref": "#/$defs/Uri"
+            },
+            "external_id": {
+              "type": "string"
+            },
+            "doc_date": {
+              "$ref": "#/$defs/Date"
+            },
+            "doc_type": {
+              "type": "string"
+            },
+            "page_start": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "page_end": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "lang": {
+              "$ref": "#/$defs/Bcp47"
+            },
+            "doc_version_label": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "title",
+            "section_path",
+            "numbering_path",
+            "source_uri",
+            "lang"
+          ],
+          "additionalProperties": false
+        },
+        "text": {
+          "type": "string",
+          "description": "원문(접두어 제외). level=0 항목 ≤ 8,192 UTF-8 바이트, 부모 확장 항목 ≤ 32,768"
+        },
+        "text_format": {
+          "$ref": "#/$defs/TextFormat"
+        },
+        "text_source": {
+          "$ref": "#/$defs/BlockSource"
+        },
+        "ocr_confidence_min": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "index": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "text": {
+                "type": "string"
+              },
+              "char_start": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "char_end": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "block_id": {
+                "$ref": "#/$defs/Hex32"
+              }
+            },
+            "required": [
+              "index",
+              "text",
+              "char_start",
+              "char_end",
+              "block_id"
+            ],
+            "additionalProperties": false
+          },
+          "description": "인용 최소 단위(문장·표 행), text 기준 오프셋"
+        },
+        "context_prefix": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "table_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "html": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "markdown": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "json_records": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "caption": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "format_used": {
+                "$ref": "#/$defs/TableFormat"
+              },
+              "downgraded": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "table_id",
+              "format_used",
+              "downgraded"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "figures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "figure_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "caption": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "alt_text": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "image_ref": {
+                "$ref": "#/$defs/ArtifactRef"
+              }
+            },
+            "required": [
+              "figure_id"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "parent": {
+          "type": "object",
+          "properties": {
+            "parent_chunk_id": {
+              "$ref": "#/$defs/Hex64"
+            },
+            "expanded": {
+              "type": "boolean"
+            },
+            "parent_text_included": {
+              "type": "boolean"
+            },
+            "child_chunk_ids": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Hex64"
+              }
+            }
+          },
+          "required": [
+            "parent_chunk_id",
+            "expanded",
+            "parent_text_included",
+            "child_chunk_ids"
+          ],
+          "additionalProperties": false
+        },
+        "duplicates_of": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Hex64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "conflicts_with": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "cite_id": {
+                "$ref": "#/$defs/CiteId"
+              },
+              "kind": {
+                "$ref": "#/$defs/ConflictKind"
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "cite_id",
+              "kind"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Provenance"
+          },
+          "description": "block_refs[]에서 결정적 생성: char_* = original_char_*. level 0·1은 1개 이상(00 미해결 이슈 U-11)"
+        },
+        "acl": {
+          "type": "object",
+          "properties": {
+            "classification": {
+              "$ref": "#/$defs/Classification"
+            },
+            "checked": {
+              "type": "boolean",
+              "const": true
+            },
+            "checked_at": {
+              "$ref": "#/$defs/DateTime",
+              "description": "= SecurityContext.as_of"
+            },
+            "source": {
+              "$ref": "#/$defs/AclCheckSource"
+            }
+          },
+          "required": [
+            "classification",
+            "checked",
+            "checked_at",
+            "source"
+          ],
+          "additionalProperties": false,
+          "description": "반환 직전 재검증 증적(E9)"
+        },
+        "scores": {
+          "$ref": "#/$defs/ScoreBreakdown",
+          "description": "explain=true만"
+        },
+        "token_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "budget.tokenizer 기준"
+        }
+      },
+      "required": [
+        "cite_id",
+        "rank",
+        "position",
+        "record_id",
+        "chunk_id",
+        "collection_id",
+        "document_id",
+        "doc_version",
+        "item_kind",
+        "level",
+        "confidence_tier",
+        "header",
+        "text",
+        "text_format",
+        "text_source",
+        "ocr_confidence_min",
+        "segments",
+        "provenance",
+        "acl",
+        "token_count"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "conflicts_with": {
+                "type": "array",
+                "minItems": 1
+              }
+            },
+            "required": [
+              "conflicts_with"
+            ]
+          },
+          "then": {
+            "properties": {
+              "header": {
+                "required": [
+                  "doc_date",
+                  "doc_version_label"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "level": {
+                "enum": [
+                  0,
+                  1
+                ]
+              }
+            },
+            "required": [
+              "level"
+            ]
+          },
+          "then": {
+            "properties": {
+              "provenance": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "text_source": {
+                "enum": [
+                  "ocr",
+                  "vlm"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "ocr_confidence_min": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "SecurityFilter": {
+      "type": "object",
+      "description": "보안 불변식(바이블 §10.2 (a), §5.1 1.3.0 공용 타입 승격 AM-35). 제거·완화 불가. 값은 security_context에서 복사.",
+      "properties": {
+        "tenant_id": {
+          "$ref": "#/$defs/Ulid"
+        },
+        "collection_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Ulid"
+          },
+          "minItems": 1,
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "principals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PrincipalString"
+          },
+          "minItems": 1,
+          "maxItems": 1024,
+          "uniqueItems": true
+        },
+        "visible_set": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Visibility"
+          },
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "as_of": {
+          "$ref": "#/$defs/DateTime"
+        },
+        "is_current": {
+          "type": "boolean",
+          "const": true
+        },
+        "classification_max": {
+          "$ref": "#/$defs/Classification"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "collection_ids",
+        "principals",
+        "visible_set",
+        "as_of",
+        "is_current",
+        "classification_max"
+      ],
+      "additionalProperties": false
+    },
+    "StrategyFilter": {
+      "type": "object",
+      "description": "전략 필터(바이블 §10.2 (b), §5.1 1.3.0 공용 타입 승격 AM-35). strategy별 고정값(최상위 allOf가 const로 고정). 사용자 완화 불가.",
+      "properties": {
+        "level_in": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ChunkLevel"
+          },
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "item_kinds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ItemKind"
+          },
+          "minItems": 1,
+          "maxItems": 11,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "level_in",
+        "item_kinds"
+      ],
+      "additionalProperties": false
+    },
+    "ChannelRunId": {
+      "type": "string",
+      "pattern": "^[a-z_]+:[0-9A-HJKMNP-TV-Z]{26}:[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "\"{channel}:{collection_id}:{variant_id}\"(바이블 §6.1, §5.1 1.3.0 공용 타입 승격 AM-35). 채널 부분은 형태만 검사(Channel 열거 재기술 금지); 채널 값 = ChannelRun.channel 일치는 Pydantic이 검사한다."
+    },
+    "EmbeddingSpaceIds": {
+      "type": "object",
+      "description": "바이블 §5.4 embedding_space_ids {dense, sparse_learned?, sparse_bm25?, late_interaction?}(§5.1 1.3.0 공용 타입 승격 AM-35). 키는 VectorName, 값은 H(\"space\", model_id, revision, str(dim), str(normalized), prompt_hash, quantization, vocab_id or \"\")(§6.2). sparse_learned(standard) 또는 sparse_bm25(lite) 중 하나 이상. 모델·revision·차원·정규화·프롬프트·양자화·어휘 중 하나라도 바뀌면 다른 공간 = 재색인. visual-pages page_* 변형은 07 미해결 이슈 3 확정 후 minor로 추가(현재 미포함)",
+      "properties": {
+        "dense": {
+          "$ref": "#/$defs/Hex64"
+        },
+        "sparse_learned": {
+          "$ref": "#/$defs/Hex64",
+          "description": "vocab_id 예 xlm-roberta-250k(BGE-M3 sparse)"
+        },
+        "sparse_bm25": {
+          "$ref": "#/$defs/Hex64",
+          "description": "lite. vocab_id = analyzer_id"
+        },
+        "late_interaction": {
+          "$ref": "#/$defs/Hex64",
+          "description": "선택 슬롯(기본 끔, ADR-0010)"
+        }
+      },
+      "required": [
+        "dense"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "sparse_learned"
+          ]
+        },
+        {
+          "required": [
+            "sparse_bm25"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "TableRef": {
+      "type": "object",
+      "description": "Chunk.table_ref 구조(§5.1 1.3.0 공용 타입 승격 AM-35). row_range·col_range는 [start, end) 0-based.",
+      "properties": {
+        "table_block_id": {
+          "$ref": "#/$defs/Hex32"
+        },
+        "header_row_indices": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "row_range": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "integer",
+              "minimum": 0
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "description": "[start, end) 0-based 정수 구간"
+        },
+        "col_range": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "integer",
+              "minimum": 0
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "description": "[start, end) 0-based 정수 구간"
+        },
+        "serialization": {
+          "$ref": "#/$defs/TableSerialization"
+        },
+        "html_ref": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ArtifactRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "table_block_id",
+        "header_row_indices",
+        "row_range",
+        "col_range",
+        "serialization",
+        "html_ref"
+      ],
+      "additionalProperties": false
+    },
+    "ProfileId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "maxLength": 64,
+      "description": "프로파일 ID kebab-case(바이블 §6.1, §5.1 1.3.0 공용 타입 승격 AM-35). 예 standard, korean-gov"
+    },
+    "AnalyzerId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*:[^:\\s]+:[^\\s]+$",
+      "maxLength": 128,
+      "description": "{engine}:{version}:{dictionary}(바이블 §6.1, §5.1 1.3.0 공용 타입 승격 AM-35). 예 mecab-ko:1.3.7:ko-dic-2.1.1, kiwi:0.24.0:cong"
+    },
+    "KebabName": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "스키마 파일 이름·미디어 타입 접미의 kebab-name(§5.1 1.3.0 공용 타입 승격 AM-35)."
+    },
+    "ContractsCompat": {
+      "type": "string",
+      "pattern": "^(>=|<=|==|<|>)(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(,(>=|<=|==|<|>)(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*))*$",
+      "maxLength": 64,
+      "description": "수용 계약 schema_version 범위(\">=1.0,<2.0\", §5.1 1.3.0 공용 타입 승격 AM-35). 문법·평가는 14 §4.3: 쉼표로 이은 비교절, 각 절은 (>=|<=|==|<|>)MAJOR.MINOR(선행 0 금지), patch 불참, ~= 없음. M-2(contracts_compat == capabilities.contracts_compat)로 capabilities.contracts_compat에도 같은 문법이 강제된다."
+    }
+  }
+}

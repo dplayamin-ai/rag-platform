@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:convert-response:1",
+  "title": "ConvertResponse",
+  "description": "변환 사이드카 → 워커 POST /v1/convert 200 응답(바이블 §5.6·§14, ADR-0033). 변환 실패는 200 + output=null + error(StageError, stage=parse); ProblemDetails 는 전송·검증 오류(400 contract.violation, 503 parse.sidecar_unavailable)에만 쓴다(13-error-model §6.4). output·derived[] 는 tenants/{tenant_id}/derived/{kind}/ 아래 콘텐츠 주소화 산출물이고 producer.image_digest 는 사이드카 자기 보고(비-null)다. 공용 타입은 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+  "type": "object",
+  "properties": {
+    "schema_version": {"$ref": "urn:rag:schema:common-types:1#/$defs/Semver", "description": "선택(N). 계약 버전 \"1.0.0\". 바이블 §5.6 미등재(미해결 이슈 1)"},
+    "output": {"oneOf": [{"$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef", "properties": {"uri": {"pattern": "^(s3|file)://.*/tenants/[0-9A-HJKMNP-TV-Z]{26}/derived/"}}}, {"type": "null"}], "description": "Y(nullable). 요청된 주 산출물 1개(HWPX 변환본·DOCX 변환본·OCR 결과). null 이면 error 필수(allOf)"},
+    "derived": {"type": "array", "items": {"$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef", "properties": {"uri": {"pattern": "^(s3|file)://.*/tenants/[0-9A-HJKMNP-TV-Z]{26}/derived/"}}}, "maxItems": 64, "description": "부속 파생물(페이지 이미지 매니페스트·변환 보고서·표 HTML). 빈 배열 허용. ParsedDocument.artifacts[] 로 전파. 페이지 단위 산출물은 매니페스트 1개로 묶는다(미해결 이슈 9)"},
+    "warnings": {"type": "array", "items": {"$ref": "urn:rag:schema:common-types:1#/$defs/Warning"}, "maxItems": 64, "description": "stage.reason 경고 코드(§5.7 카탈로그). 콘텐츠 미포함"},
+    "error": {"oneOf": [{"$ref": "urn:rag:schema:common-types:1#/$defs/StageError"}, {"type": "null"}], "description": "선택(N, null 허용). output=null 이면 필수: stage=parse, plugin_id=사이드카 어댑터, code 는 parse.* 카탈로그 코드(parse.sidecar_unavailable 제외 — 그것은 503 전송 계층). retryable 은 카탈로그 값"},
+    "took_ms": {"type": "integer", "minimum": 0, "description": "사이드카 처리 시간(ms). deadline_ms 초과면 output=null(불변식 EF-26)"},
+    "producer": {"$ref": "urn:rag:schema:common-types:1#/$defs/Producer", "properties": {"image_digest": {"type": "string"}}, "description": "plugin_id=사이드카 어댑터({extension_point}.{implementation}), plugin_version, config_hash, image_digest(sha256 digest, 비-null), model_ids(OCR 모델 등)"}
+  },
+  "required": ["output", "derived", "warnings", "took_ms", "producer"],
+  "additionalProperties": false,
+  "allOf": [
+    {"if": {"properties": {"output": {"type": "null"}}, "required": ["output"]}, "then": {"required": ["error"], "properties": {"error": {"type": "object", "additionalProperties": true, "properties": {"stage": {"const": "parse"}, "code": {"allOf": [{"pattern": "^parse\\."}, {"not": {"const": "parse.sidecar_unavailable"}}]}}}}}},
+    {"if": {"properties": {"output": {"type": "object"}}, "required": ["output"]}, "then": {"properties": {"error": {"type": "null"}}}}
+  ]
+}

@@ -1,0 +1,640 @@
+{
+  "root": "C:/Workspaces/rag-platform",
+  "schemas": 34,
+  "errors": [
+    {
+      "file": "docs/03-contracts/00-contract-overview.md",
+      "msg": "L1097: 예시가 스키마(schema_type=ParsedDocument)에 위배 — $: 필수 필드 누락 \"tenant_id\"; $: 필수 필드 누락 \"collection_id\"; $: 필수 필드 누락 \"producer\"; $: 필수 필드 누락 \"quality\"; $: 필수 필드 누락 \"warnings\"; $: 필수 필드 누락 \"created_at\"; $: 필수 필드 누락 \"lineage_refs\"; $: 필수 필드 누락 \"document_id\" … 외 15건"
+    },
+    {
+      "file": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+      "msg": "L449: 문서 내 스키마 urn:rag:schema:schema-diff-report:1 에 대응하는 schemas/ 파일이 없다"
+    },
+    {
+      "file": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+      "msg": "L748: 예시가 스키마(schema_type=ParsedDocument)에 위배 — $: 필수 필드 누락 \"tenant_id\"; $: 필수 필드 누락 \"collection_id\"; $: 필수 필드 누락 \"producer\"; $: 필수 필드 누락 \"quality\"; $: 필수 필드 누락 \"warnings\"; $: 필수 필드 누락 \"created_at\"; $: 필수 필드 누락 \"lineage_refs\"; $: 필수 필드 누락 \"document_id\" … 외 15건"
+    }
+  ],
+  "warnings": [
+    {
+      "file": "schemas/convert-response.schema.json",
+      "msg": "additionalProperties 정책 미명시 (at /allOf/0/then/properties/error)"
+    },
+    {
+      "file": "schemas/enriched-chunk-set.schema.json",
+      "msg": "additionalProperties 정책 미명시 (at /allOf/0/then/properties/enrichments/additionalProperties/properties/entities/not/contains)"
+    },
+    {
+      "file": "docs/03-contracts/00-contract-overview.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/01-api-design-guidelines.md"
+    },
+    {
+      "file": "docs/03-contracts/01-ingest-request.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/02-ingestion-api.md"
+    },
+    {
+      "file": "docs/03-contracts/01-ingest-request.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../09-operations/07-backup-and-disaster-recovery.md"
+    },
+    {
+      "file": "docs/03-contracts/01-ingest-request.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/02-ingestion-api.md"
+    },
+    {
+      "file": "docs/03-contracts/01-ingest-request.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/07-webhooks-and-events.md"
+    },
+    {
+      "file": "docs/03-contracts/04-normalized-document.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/04-management-api.md"
+    },
+    {
+      "file": "docs/03-contracts/04-normalized-document.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../10-development/04-testing-strategy.md"
+    },
+    {
+      "file": "docs/03-contracts/05-chunk-set.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/04-management-api.md"
+    },
+    {
+      "file": "docs/03-contracts/05-chunk-set.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/04-management-api.md"
+    },
+    {
+      "file": "docs/03-contracts/07-embedded-chunk-set-and-index-record.md",
+      "msg": "L544: JSON 블록에 주석/생략 부호(…, ...)가 있어 파싱 불가 — 예시는 완전해야 한다(브리프 §9.5)"
+    },
+    {
+      "file": "docs/03-contracts/08-index-commit.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/04-management-api.md"
+    },
+    {
+      "file": "docs/03-contracts/08-index-commit.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/04-management-api.md"
+    },
+    {
+      "file": "docs/03-contracts/08-index-commit.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../09-operations/07-backup-and-disaster-recovery.md"
+    },
+    {
+      "file": "docs/03-contracts/08-index-commit.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/04-management-api.md"
+    },
+    {
+      "file": "docs/03-contracts/08-index-commit.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../09-operations/07-backup-and-disaster-recovery.md"
+    },
+    {
+      "file": "docs/03-contracts/09-query-request-and-query-plan.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/03-retrieval-api.md"
+    },
+    {
+      "file": "docs/03-contracts/09-query-request-and-query-plan.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/05-mcp-server.md"
+    },
+    {
+      "file": "docs/03-contracts/09-query-request-and-query-plan.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/03-retrieval-api.md"
+    },
+    {
+      "file": "docs/03-contracts/09-query-request-and-query-plan.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/05-mcp-server.md"
+    },
+    {
+      "file": "docs/03-contracts/09-query-request-and-query-plan.md",
+      "msg": "L625: JSON 블록에 주석/생략 부호(…, ...)가 있어 파싱 불가 — 예시는 완전해야 한다(브리프 §9.5)"
+    },
+    {
+      "file": "docs/03-contracts/11-context-pack.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/03-retrieval-api.md"
+    },
+    {
+      "file": "docs/03-contracts/11-context-pack.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/05-mcp-server.md"
+    },
+    {
+      "file": "docs/03-contracts/11-context-pack.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../08-evaluation/04-llm-judge-and-generation-quality.md"
+    },
+    {
+      "file": "docs/03-contracts/11-context-pack.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/03-retrieval-api.md"
+    },
+    {
+      "file": "docs/03-contracts/11-context-pack.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/03-retrieval-api.md"
+    },
+    {
+      "file": "docs/03-contracts/11-context-pack.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/05-mcp-server.md"
+    },
+    {
+      "file": "docs/03-contracts/11-context-pack.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../08-evaluation/02-retrieval-metrics-and-harness.md"
+    },
+    {
+      "file": "docs/03-contracts/11-context-pack.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../08-evaluation/04-llm-judge-and-generation-quality.md"
+    },
+    {
+      "file": "docs/03-contracts/12-jobs-events-and-status.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/07-webhooks-and-events.md"
+    },
+    {
+      "file": "docs/03-contracts/12-jobs-events-and-status.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../09-operations/05-security-and-compliance.md"
+    },
+    {
+      "file": "docs/03-contracts/12-jobs-events-and-status.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/04-management-api.md"
+    },
+    {
+      "file": "docs/03-contracts/12-jobs-events-and-status.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/02-ingestion-api.md"
+    },
+    {
+      "file": "docs/03-contracts/12-jobs-events-and-status.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/04-management-api.md"
+    },
+    {
+      "file": "docs/03-contracts/12-jobs-events-and-status.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/07-webhooks-and-events.md"
+    },
+    {
+      "file": "docs/03-contracts/12-jobs-events-and-status.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../09-operations/03-observability.md"
+    },
+    {
+      "file": "docs/03-contracts/12-jobs-events-and-status.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../09-operations/06-runbooks.md"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/01-api-design-guidelines.md"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../09-operations/01-deployment-guide.md"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/06-client-sdks.md"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/01-api-design-guidelines.md"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../10-development/05-ci-cd.md"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/05-mcp-server.md"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../09-operations/01-deployment-guide.md"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/01-api-design-guidelines.md"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/07-webhooks-and-events.md"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/05-mcp-server.md"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/06-client-sdks.md"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../09-operations/03-observability.md"
+    },
+    {
+      "file": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/01-api-design-guidelines.md"
+    },
+    {
+      "file": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/04-management-api.md"
+    },
+    {
+      "file": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/06-client-sdks.md"
+    },
+    {
+      "file": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../09-operations/08-upgrade-and-migration.md"
+    },
+    {
+      "file": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../10-development/05-ci-cd.md"
+    },
+    {
+      "file": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../10-development/06-plugin-development-guide.md"
+    },
+    {
+      "file": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+      "msg": "L695: schema_type SchemaDiffReport 에 대응하는 스키마(urn:rag:schema:schema-diff-report:1)가 없다"
+    },
+    {
+      "file": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+      "msg": "L721: schema_type SchemaDiffReport 에 대응하는 스키마(urn:rag:schema:schema-diff-report:1)가 없다"
+    },
+    {
+      "file": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../09-operations/02-configuration-reference.md"
+    },
+    {
+      "file": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/04-management-api.md"
+    },
+    {
+      "file": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../10-development/06-plugin-development-guide.md"
+    },
+    {
+      "file": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../09-operations/02-configuration-reference.md"
+    },
+    {
+      "file": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../09-operations/02-configuration-reference.md"
+    },
+    {
+      "file": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/04-management-api.md"
+    },
+    {
+      "file": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../08-evaluation/02-retrieval-metrics-and-harness.md"
+    },
+    {
+      "file": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../09-operations/02-configuration-reference.md"
+    },
+    {
+      "file": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../10-development/06-plugin-development-guide.md"
+    },
+    {
+      "file": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../08-evaluation/02-retrieval-metrics-and-harness.md"
+    },
+    {
+      "file": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../08-evaluation/04-llm-judge-and-generation-quality.md"
+    },
+    {
+      "file": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../08-evaluation/03-golden-dataset-construction.md"
+    },
+    {
+      "file": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../08-evaluation/06-online-feedback-loop.md"
+    },
+    {
+      "file": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/04-management-api.md"
+    },
+    {
+      "file": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../05-api/04-management-api.md"
+    },
+    {
+      "file": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../08-evaluation/02-retrieval-metrics-and-harness.md"
+    },
+    {
+      "file": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../08-evaluation/03-golden-dataset-construction.md"
+    },
+    {
+      "file": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+      "msg": "링크 대상 미존재(동시 작성 중일 수 있음): ../08-evaluation/06-online-feedback-loop.md"
+    }
+  ],
+  "infos": [
+    {
+      "file": "docs/02-architecture/00-design-bible.md",
+      "msg": "§5.7 열거 ScoreKind 는 합성 정의(Channel) — 수동 확인"
+    },
+    {
+      "file": "docs/02-architecture/00-design-bible.md",
+      "msg": "§5.7 열거 DegradedComponent 는 합성 정의(DegradedEntry) — 수동 확인"
+    },
+    {
+      "file": "docs/02-architecture/00-design-bible.md",
+      "msg": "바이블 §5.7 열거 FilterableField 가 어떤 스키마 $defs 에도 없다"
+    },
+    {
+      "file": "docs/03-contracts/00-contract-overview.md",
+      "msg": "L723: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/00-contract-overview.md",
+      "msg": "L747: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/00-contract-overview.md",
+      "msg": "L772: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/00-contract-overview.md",
+      "msg": "L1111: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/00-contract-overview.md",
+      "msg": "L1125: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/00-contract-overview.md",
+      "msg": "L1140: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/00-contract-overview.md",
+      "msg": "L1158: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/00-contract-overview.md",
+      "msg": "L1188: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/00-contract-overview.md",
+      "msg": "L1207: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/00-contract-overview.md",
+      "msg": "L1231: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/00-contract-overview.md",
+      "msg": "L1257: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/00-contract-overview.md",
+      "msg": "L1271: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/01-ingest-request.md",
+      "msg": "L724: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/01-ingest-request.md",
+      "msg": "L802: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/01-ingest-request.md",
+      "msg": "L814: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/01-ingest-request.md",
+      "msg": "L825: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/07-embedded-chunk-set-and-index-record.md",
+      "msg": "L344: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/07-embedded-chunk-set-and-index-record.md",
+      "msg": "L1034: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/07-embedded-chunk-set-and-index-record.md",
+      "msg": "L1107: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/11-context-pack.md",
+      "msg": "L361: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/12-jobs-events-and-status.md",
+      "msg": "L1022: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/12-jobs-events-and-status.md",
+      "msg": "L1043: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/12-jobs-events-and-status.md",
+      "msg": "L1063: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "L561: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "L629: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "L668: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "L982: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "L1018: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "L1036: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "L1087: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "msg": "L1115: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+      "msg": "L764: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+      "msg": "L1702: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+      "msg": "L1715: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+      "msg": "L1730: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+      "msg": "L1741: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+      "msg": "L1263: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+      "msg": "L1274: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+      "msg": "L1280: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+      "msg": "L1333: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    },
+    {
+      "file": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+      "msg": "L1395: 인스턴스 대상 스키마를 정하지 못해 검증 생략(schema_type 없음)"
+    }
+  ],
+  "docs": [
+    {
+      "file": "docs/03-contracts/00-contract-overview.md",
+      "fences": 13,
+      "parsed": 13,
+      "schemasInDoc": 0,
+      "validated": 1,
+      "skipped": 12
+    },
+    {
+      "file": "docs/03-contracts/01-ingest-request.md",
+      "fences": 7,
+      "parsed": 7,
+      "schemasInDoc": 1,
+      "validated": 2,
+      "skipped": 4
+    },
+    {
+      "file": "docs/03-contracts/02-source-document.md",
+      "fences": 3,
+      "parsed": 3,
+      "schemasInDoc": 1,
+      "validated": 2,
+      "skipped": 0
+    },
+    {
+      "file": "docs/03-contracts/03-parsed-document.md",
+      "fences": 3,
+      "parsed": 3,
+      "schemasInDoc": 1,
+      "validated": 2,
+      "skipped": 0
+    },
+    {
+      "file": "docs/03-contracts/04-normalized-document.md",
+      "fences": 3,
+      "parsed": 3,
+      "schemasInDoc": 1,
+      "validated": 2,
+      "skipped": 0
+    },
+    {
+      "file": "docs/03-contracts/05-chunk-set.md",
+      "fences": 3,
+      "parsed": 3,
+      "schemasInDoc": 1,
+      "validated": 2,
+      "skipped": 0
+    },
+    {
+      "file": "docs/03-contracts/06-enriched-chunk-set.md",
+      "fences": 3,
+      "parsed": 3,
+      "schemasInDoc": 1,
+      "validated": 2,
+      "skipped": 0
+    },
+    {
+      "file": "docs/03-contracts/07-embedded-chunk-set-and-index-record.md",
+      "fences": 6,
+      "parsed": 5,
+      "schemasInDoc": 1,
+      "validated": 1,
+      "skipped": 4
+    },
+    {
+      "file": "docs/03-contracts/08-index-commit.md",
+      "fences": 4,
+      "parsed": 4,
+      "schemasInDoc": 1,
+      "validated": 3,
+      "skipped": 0
+    },
+    {
+      "file": "docs/03-contracts/09-query-request-and-query-plan.md",
+      "fences": 5,
+      "parsed": 4,
+      "schemasInDoc": 1,
+      "validated": 3,
+      "skipped": 1
+    },
+    {
+      "file": "docs/03-contracts/10-candidate-set-and-ranked-set.md",
+      "fences": 4,
+      "parsed": 4,
+      "schemasInDoc": 2,
+      "validated": 2,
+      "skipped": 0
+    },
+    {
+      "file": "docs/03-contracts/11-context-pack.md",
+      "fences": 6,
+      "parsed": 6,
+      "schemasInDoc": 2,
+      "validated": 3,
+      "skipped": 1
+    },
+    {
+      "file": "docs/03-contracts/12-jobs-events-and-status.md",
+      "fences": 7,
+      "parsed": 7,
+      "schemasInDoc": 2,
+      "validated": 2,
+      "skipped": 3
+    },
+    {
+      "file": "docs/03-contracts/13-error-model.md",
+      "fences": 10,
+      "parsed": 10,
+      "schemasInDoc": 2,
+      "validated": 0,
+      "skipped": 8
+    },
+    {
+      "file": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+      "fences": 5,
+      "parsed": 5,
+      "schemasInDoc": 1,
+      "validated": 1,
+      "skipped": 3
+    },
+    {
+      "file": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+      "fences": 15,
+      "parsed": 15,
+      "schemasInDoc": 7,
+      "validated": 4,
+      "skipped": 4
+    },
+    {
+      "file": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+      "fences": 24,
+      "parsed": 24,
+      "schemasInDoc": 7,
+      "validated": 12,
+      "skipped": 5
+    }
+  ]
+}

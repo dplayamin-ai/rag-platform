@@ -1,0 +1,79 @@
+{
+ "id": "0013",
+ "findings": [
+  {
+   "severity": "minor",
+   "location": "## 맥락과 문제 첫 단락(27행) 및 ## 고려한 대안 표 A8 행(66행)",
+   "problem": "\"바이블 v1.1은 … `reorder`·`citation_align`을 후처리 끝에 두었으나 … v1.2에서 `pack` 내부로 이동했다\"는 바이블 §범위 변경 이력과 어긋난다. 바이블 변경 이력은 \"1.1.0(2026-09-22) 설계 리뷰 반영 — … `reorder`·`citation_align`의 `pack` 이동\"으로, pack 이동은 바이블 1.1.0에서 일어났고 후처리 끝에 두었던 것은 바이블 1.0.0(브리프 D-07 v1.1)이다. `v1.2`는 브리프 D-07 행의 개정 표기이지 바이블 버전이 아니다. A8 행의 \"(바이블 v1.1, 07 권고 순서)\"·\"바이블 v1.2 기각\"도 같은 혼동이다.",
+   "fix": "27행을 \"바이블 v1.0(브리프 D-07 v1.1)은 07 문서 권고에 따라 후처리 순서를 바꾸고 `reorder`·`citation_align`을 후처리 끝에 두었으나, 설계 리뷰 major 지적을 반영한 바이블 v1.1(브리프 D-07 v1.2)에서 `pack` 내부로 이동했다\"로, A8 행을 \"(바이블 v1.0 / 브리프 D-07 v1.1, 07 권고 순서)\" … \"**기각**(D-07 v1.2·바이블 v1.1 기각, F6)\"으로 고친다(바이블 §범위 변경 이력, §3.1 D-07 행 `amended(v1.2)` = 브리프 행 버전).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 표 \"스키마 제약\" 행(155행)",
+   "problem": "\"`RankedSet.results[].score_breakdown`은 `if/then`으로 `Σ contribution = fused_score`(허용 오차는 03-contracts/10) 검증\"은 성립하지 않는 강제 수단이다. JSON Schema 2020-12는 산술 합을 표현할 수 없고, 바이블 §5.5는 `if/then`을 `stage`·`hydrated` 기반 조건 필수에만 쓴다. 같은 불변식을 다루는 ADR-0030 §준수 확인 방법은 이를 \"계약 테스트(03-contracts/10 불변식 절, 부동소수 허용 오차)\" 항목으로 두고 있어 두 ADR이 서로 다른 강제 지점을 주장한다.",
+   "fix": "해당 문구를 스키마 제약 행에서 빼고 \"계약 테스트·Pydantic 검증기(`model_validator`): `Σ contribution = fused_score`(허용 오차는 03-contracts/10 불변식 절), `fused_rank` = `(-fused_score, record_id)` 정렬 일치 — ADR-0030 §준수 확인 방법과 동일 항목\"으로 옮긴다. `if/then`은 `RankedSet.fusion.downgraded_from`(`method = rrf` ∧ `degraded[]∋{fusion, profile_mismatch}`)·`rerank` 조건 필수처럼 조건부 필수/`const` 제약에만 남긴다(바이블 §5.5 RankedSet 서두, ADR-0030 191행).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 표 \"`rag profile validate` (3)·(11)\" 행(154행)",
+   "problem": "\"`postprocess.order[]`가 §5.7 고정 순서를 위반하면 `profile.invalid`\"는 바이블 §7.4 검증 규칙 (1)~(12)에 없는 새 로딩 검증 규칙이다. 바이블 §1.1에 따라 ADR은 바이블 규칙을 추가할 수 없고, 괄호의 \"검증 항목 번호는 03-contracts/15에서 확정\"만으로는 제안인지 확정인지 구분되지 않는다(MADR 구조라 미해결 이슈 절이 없으므로 본문에서 표기해야 함).",
+   "fix": "문장을 \"(제안) `postprocess.order[]`의 §5.7 고정 순서 위반을 §7.4 검증 항목 (13)으로 추가 — 바이블 §1.2 절차(ADR 발의 → 바이블 표 갱신)로 확정 전까지는 CI 열거 대조(§1.2)와 적합성 키트 `contract_roundtrip`으로만 강제\"로 바꾸거나, 재검토 조건 절에 \"§7.4 (13) 추가 여부\" 항목으로 이동한다(바이블 §7.4, §1.1·§1.2).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "F3 행 출처(33행), ## 결과 부정 둘째 항목(139행), ## 참조 06 항목(176행)",
+   "problem": "출처 인용이 실제 절·행 이름과 다르다. (a) F3 \"09 `ir_metrics` 행\": 09 문서에는 `ir_metrics`라는 행이 없다(`ir_metrics`는 선정 매트릭스의 조사 항목 ID이고 09 문서에는 후보 표 `ranx` 행(77행)·`ir_measures` 행·개방 결정 O-01 행(586행)이 있다; 같은 문서의 참조 절 177행은 올바르게 \"`ranx`·`ir_measures` 행\"으로 적었다). (b) 139행 \"초안 예산 `fuse` 5ms, 07 §리소스\": 07 §리소스 요구 표는 리랭커·압축기 자원만 다루며 `fuse` 5ms는 바이블 §8.3 값이다. (c) 176행 \"06 §프로파일별 구성 표\": 06 문서의 실제 절 이름은 \"프로파일별 조합\"이다.",
+   "fix": "(a) F3 출처를 \"07 §2.1, 09 후보 표 `ranx` 행·§개방 결정 O-01 행, 매트릭스 `ir_metrics` 행\"으로, (b) 139행을 \"(초안 예산 `fuse` 5ms, 바이블 §8.3)\"으로, (c) 176행을 \"§권고안 프로파일별 조합 표\"로 고친다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "major",
+   "location": "## 준수 확인 방법 › 표 '스키마 제약' 행(155행) 및 ## 결과 › 긍정 5번째 불릿(134행)",
+   "problem": "JSON Schema `if/then`이 `Σ contribution = fused_score`(허용 오차 포함)를 검증하고 `ContextItem.cite_id`의 팩 내 `d1..dK` 연속을 검증한다고 적었다. JSON Schema(2020-12)에는 산술 연산도 배열 항목 간 교차 제약도 없어 두 불변식은 스키마로 강제할 수 없다(바이블 §5.5는 `if/then`을 `stage`·`hydrated` 기반 조건 필수 표현에만 쓴다). 또 134행은 `PostprocessStep` 순서 위반이 'CI 열거 대조'에서 잡힌다고 하지만 §1.2 CI는 `$defs` 값 집합만 대조하므로 순서·`dedup` 2회 출현은 검출하지 못한다. 준수 확인 장치가 실제로는 존재하지 않는 능력에 기대고 있어 구현자가 그대로 따르면 두 불변식은 어디에서도 강제되지 않는다.",
+   "fix": "155행: `Σ contribution = fused_score`(허용 오차)와 `cite_id` `d1..dK` 연속은 계약 Pydantic 모델의 `model_validator`(03-contracts/10·11) + 적합성 키트 `fuser_equivalence`·`renderer_citation_roundtrip`(바이블 §12 `testing/`)으로 이동하고, 스키마 행에는 `QueryPlan.fusion.k` 필수, `stage`·`hydrated` 기반 `if/then` 조건 필수, `cite_id` 패턴 `^d[1-9][0-9]*$`, `pack_steps[].step` 순서의 `prefixItems` 고정, `downgraded_from` 조건부 존재만 남긴다. 134행은 '값 집합은 CI 열거 대조, 순서는 프로파일 검증·`prefixItems`·적합성 키트'로 구분해 적는다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 맥락과 문제 첫 문단(27행), 대안 표 A8 행(66행), A8 불릿(75행), ## 결과 › 중립 3번째 불릿(147행)",
+   "problem": "'바이블 v1.1은 … 후처리 끝에 두었으나 … v1.2에서 `pack` 내부로 이동', '(바이블 v1.1, 07 권고 순서)', '(바이블 v1.2 기각, F6)', '(v1.2 개정은 …)'로 적었다. 바이블 버전은 1.0.0(2026-09-18)·1.1.0(2026-09-22)뿐이며 `reorder`·`citation_align`의 `pack` 이동은 바이블 1.1.0 변경 이력이다(바이블 §범위 변경 이력). v1.1·v1.2는 브리프 D-xx 행의 개정 표기다(바이블 §1.1 '현재 v1.1·v1.2', §3.1 D-07 `amended(v1.2)`). 문서 버전과 결정 개정 버전을 뒤섞어 이력 추적을 오도한다.",
+   "fix": "'바이블 v1.1' → 'D-07 개정 v1.1(바이블 1.0.0)', '(바이블) v1.2' → 'D-07 개정 v1.2(바이블 1.1.0)'로 통일한다. 정본 표기: 바이블 §1.1 `(개정 v1.x, 근거: ADR-xxxx)`, §3.1 D-07 `amended(v1.2)`, §범위 변경 이력 1.0.0/1.1.0.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 표 '서버 융합 허용' 행(88행), 코드 리뷰 체크리스트 (a)(159행), 스키마 제약 행(155행)",
+   "problem": "`lite` 단일 컬렉션 질의는 Qdrant `Fusion.RRF(k=60)` 위임을 허용하면서, F2에서 스스로 '개별 prefetch 점수를 반환하지 않는다'고 확정했다. 그러나 위임 경로에서 `RankedSet.results[].score_breakdown`의 채널 `contribution`·`rank`가 무엇이 되는지, K3 불변식 `Σ contribution = fused_score`가 어떻게 성립하는지 어디에도 없고, 준수 확인 표는 불변식을 무조건 검증한다고 적어 정상적인 `lite` 위임 출력이 검증에 실패하는 내부 모순이 생긴다(실패 모드·관측성 불명확).",
+   "fix": "## 결과 › 부정(또는 중립)에 한 줄 추가: '`lite` 서버 융합 위임 시 채널 `ChannelScore`는 null·`fused`만 채워지며 `Σ contribution = fused_score` 검증은 플랫폼 `fuser` 산출(`plugin_id = fuser.*`)에만 적용된다 — 조건식은 03-contracts/10에서 확정'. 바이블이 이 조건을 명시하지 않으므로 새 규칙으로 쓰지 말고 재검토 조건 4(Qdrant prefetch 점수 반환 시 재검토)에 '위임 경로의 `score_breakdown` 표현 규칙 확정'을 함께 적는다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 › '`rag profile validate` (3)·(11)' 행(154행)",
+   "problem": "'`postprocess.order[]`가 §5.7 고정 순서를 위반하면 `profile.invalid`'를 프로파일 검증 항목처럼 적었으나 바이블 §7.4 (1)~(12)에는 이 항목이 없다. '(검증 항목 번호는 03-contracts/15에서 확정)'으로 얼버무려 새 검증 규칙을 ADR이 만든 셈이며, 바이블 §1.1은 ADR이 바이블 표를 바꾸지 못한다고 정한다.",
+   "fix": "이 항목을 '§7.4 (13) 추가 제안(ADR-0031 개정 대상)'으로 명시해 기존 게이트와 구분하거나, 대신 `schemas/profile.schema.json`의 `query.postprocess.order`에 `prefixItems`/허용 부분열 제약을 두는 것으로 §1.2 CI 스키마 대조 범위에 귀속시킨다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결과 › 부정 2번째 불릿(139행)",
+   "problem": "'초안 예산 `fuse` 5ms, 07 §리소스'로 인용했으나 07 문서 §리소스 요구 표는 리랭커·LLMLingua-2 구성만 다루며 융합 비용 항목이 없다. 근거 없는 출처 인용이다.",
+   "fix": "출처를 '바이블 §8.3(fuse 5ms, 초안)'만 남기고 '07 §리소스'를 삭제한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 고려한 대안 › A6·A7·A9(64~67행, 74행)",
+   "problem": "outline은 각 대안에 설명·장점·단점을 요구하지만 A6(CombMNZ/LTR)과 A9(채택 순서)는 표 행만 있고 불릿이 없으며, A7(브리프 v1.0 순서)은 단점만 있고 장점이 없다. 기각 근거만 나열되어 대안 비교의 공정성이 떨어진다.",
+   "fix": "A7에 장점 한 줄(단계 수 최소·브리프 원문 그대로·dedup 1회로 지연 절감) 추가; A6에 짧은 불릿(장점: CombMNZ 무튠·다채널 적중 보너스, LTR 품질 상한 최고 / 단점: Cormack 2009 열위, qrels 대량 필요 — 07 §2.1 표 인용); A9는 'A1·A7·A8 불릿이 근거'라고 한 줄로 연결한다.",
+   "lens": "tech"
+  }
+ ],
+ "verdicts": {
+  "anchor": "revise",
+  "tech": "revise"
+ }
+}

@@ -1,0 +1,1296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:query-plan:1",
+  "title": "QueryPlan",
+  "description": "plan 스테이지 출력(바이블 §5.5). QueryRequest + 서버 주입 SecurityContext 로부터 만든 질의 이해 결과이며 retrieve·fuse·hydrate·rerank·postprocess·pack 은 이를 재해석하지 않는다. 질의 측 봉투(schema_version, schema_type, tenant_id, collection_ids, producer, warnings, degraded, created_at). filters 는 security(제거·완화 불가) ∧ strategy(플래너 결정) ∧ user ∧ self_query(relaxable_keys 순서로만 완화) 4묶음(바이블 §10.2). 인프로세스 값이며 산출물로 저장하지 않는다(explain 시 응답 포함, ≤ 32KB). 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/09-query-request-and-query-plan.md",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "pattern": "^1\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+      "description": "계약 버전. 1.x 만 수용"
+    },
+    "schema_type": {
+      "type": "string",
+      "const": "QueryPlan",
+      "description": "봉투. PascalCase 타입명"
+    },
+    "tenant_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "봉투. = security_context.tenant_id"
+    },
+    "collection_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+      },
+      "minItems": 1,
+      "maxItems": 20,
+      "uniqueItems": true,
+      "description": "봉투(질의 측 복수). SecurityContext.collection_ids ∩ QueryRequest.collection_ids"
+    },
+    "producer": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Producer",
+      "description": "플래너 지문. plugin_id = query_transformer.pipeline(초안 합성 ID — 바이블 §6.1 규약에 pipeline 구현체는 없음, 미해결 이슈 17), config_hash = H(\"config\", canonical_json(query.transform)), image_digest = null, model_ids 는 quality LLM 모델(없으면 빈 배열)"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/Warning"
+      },
+      "description": "봉투. 빈 배열 허용"
+    },
+    "degraded": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/DegradedEntry"
+      },
+      "description": "봉투(질의 측). planner_llm/llm_failed, fusion/profile_mismatch, channel.*/analyzer_mismatch|capability_unsupported|latency_budget, multi_query|rerank|hydrate/latency_budget, query_embedding/unavailable, parent_expand/skipped_by_policy. self_query_filter/filter_relaxed|latency_budget 는 retrieve 시점 판정이라 CandidateSet 봉투에 기록된다(플랜 불변, 문서 §5.3)"
+    },
+    "created_at": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime",
+      "description": "플랜 생성 시각(security_context.as_of 와 같거나 이후)"
+    },
+    "plan_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "서버 발급"
+    },
+    "query_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "= QueryRequest.query_id"
+    },
+    "security_context": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/SecurityContext",
+      "description": "서버 주입·읽기 전용(ADR-0027). filters.security 의 원천"
+    },
+    "profile_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/ProfileId",
+      "description": "kebab-case(바이블 §6.1). = 해소된 프로파일의 profile_id(team_assignment 반영)"
+    },
+    "profile_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"profile\", canonical_json(해소된 프로파일))"
+    },
+    "original_query": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000,
+      "description": "= QueryRequest.query"
+    },
+    "normalized_query": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000,
+      "description": "NFC·공백 정규화 + Kiwi 오타·띄어쓰기 교정(mecab-ko 는 교정 생략)"
+    },
+    "dense_query_text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8000,
+      "description": "original 변형의 벡터 런(dense·sparse) 임베딩 입력. default·fast 는 = normalized_query, 치환형 HyDE(quality)는 가상 문서(바이블 §5.5). 그 외 변형의 벡터 런은 rewritten_queries[].text 를 임베딩한다"
+    },
+    "analyzer_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/AnalyzerId",
+      "description": "{engine}:{version}:{dictionary}(바이블 §6.1). 컬렉션 값(CollectionSpec.analyzer_id = IndexRecord.analyzer_id)과 불일치 → degraded{channel.lexical, analyzer_mismatch}"
+    },
+    "dictionary_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"dict\", *sorted(entry 정규화 행))(바이블 §6.2); 컬렉션 값"
+    },
+    "route": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Route"
+    },
+    "complexity": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Complexity",
+      "description": "Adaptive-RAG. 있으면 route 와 대응(no_retrieval↔no_retrieval, single_step↔single, multi_step↔multi)"
+    },
+    "strategy": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Strategy",
+      "description": "기본 hybrid; filters.strategy 를 결정"
+    },
+    "rewritten_queries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RewrittenQuery"
+      },
+      "minItems": 1,
+      "maxItems": 16,
+      "description": "original(weight 1.0, variant_id = query_id) 항상 포함, 변형은 fusion.variant_query_weight"
+    },
+    "sub_queries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/SubQuery"
+      },
+      "minItems": 1,
+      "maxItems": 16,
+      "description": "route=multi 일 때 필수, 그 외 부재"
+    },
+    "lexical_terms": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/LexicalTerm"
+      },
+      "maxItems": 128,
+      "description": "Kiwi/mecab-ko NNG·NNP·SL·SN + 사용자 사전(가중 1.5). 빈 배열 허용"
+    },
+    "filters": {
+      "$ref": "#/$defs/PlanFilters"
+    },
+    "channels": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ChannelPlan"
+      },
+      "minItems": 1,
+      "maxItems": 140,
+      "description": "채널 × 컬렉션 단위(항목은 enabled=false 여도 유지). 질의 변형은 rewritten_queries[].channels 로 결합되어 런이 된다. route=no_retrieval 이면 모든 항목 enabled=false(최상위 allOf). 실효 상한은 QueryPlan 32KB 한계가 정한다(문서 §11)"
+    },
+    "fusion": {
+      "$ref": "#/$defs/FusionPlan"
+    },
+    "hydrate": {
+      "$ref": "#/$defs/HydratePlan"
+    },
+    "rerank": {
+      "$ref": "#/$defs/RerankPlan"
+    },
+    "late_interaction_rerank": {
+      "$ref": "#/$defs/LateInteractionRerankPlan"
+    },
+    "postprocess": {
+      "$ref": "#/$defs/PostprocessPlan"
+    },
+    "pack": {
+      "$ref": "#/$defs/PackPlan"
+    },
+    "latency_budget_ms": {
+      "$ref": "#/$defs/LatencyBudget"
+    },
+    "budget": {
+      "$ref": "#/$defs/PlanBudget"
+    },
+    "cache_keys": {
+      "$ref": "#/$defs/CacheKeys"
+    },
+    "explain": {
+      "type": "boolean",
+      "description": "= QueryRequest.explain or false"
+    },
+    "planner_fingerprint": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"planner\", *sorted(f\"{plugin_id}@{plugin_version}:{config_hash}\" for transform in query.transform), profile_hash)"
+    },
+    "session_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "선택(N). = QueryRequest.session_id. 바이블 §5.5 미등재(미해결 이슈 5)"
+    },
+    "exclude_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+      },
+      "minItems": 1,
+      "maxItems": 1000,
+      "uniqueItems": true,
+      "description": "선택(N). QueryRequest.exclude_ids ∪ cursor 누적. retrieve 가 must_not chunk_id 로 적용. 바이블 §5.5 미등재(미해결 이슈 5)"
+    },
+    "experiment_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "선택(N). 요청 값 복사. 바이블 §5.5 미등재(미해결 이슈 5)"
+    },
+    "team_assignment": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "선택(N). 요청 값 복사. 바이블 §5.5 미등재(미해결 이슈 5)"
+    }
+  },
+  "required": [
+    "schema_version",
+    "schema_type",
+    "tenant_id",
+    "collection_ids",
+    "producer",
+    "warnings",
+    "degraded",
+    "created_at",
+    "plan_id",
+    "query_id",
+    "security_context",
+    "profile_id",
+    "profile_hash",
+    "original_query",
+    "normalized_query",
+    "dense_query_text",
+    "analyzer_id",
+    "dictionary_hash",
+    "route",
+    "strategy",
+    "rewritten_queries",
+    "lexical_terms",
+    "filters",
+    "channels",
+    "fusion",
+    "hydrate",
+    "rerank",
+    "postprocess",
+    "pack",
+    "latency_budget_ms",
+    "budget",
+    "cache_keys",
+    "explain",
+    "planner_fingerprint"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "route": {
+            "const": "multi"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "sub_queries"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "sub_queries"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "route": {
+            "const": "no_retrieval"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "channels": {
+            "items": {
+              "properties": {
+                "enabled": {
+                  "const": false
+                }
+              }
+            }
+          },
+          "fusion": {
+            "properties": {
+              "weights": {
+                "maxProperties": 0
+              }
+            }
+          },
+          "rewritten_queries": {
+            "maxItems": 1,
+            "items": {
+              "properties": {
+                "role": {
+                  "const": "original"
+                },
+                "channels": {
+                  "maxItems": 0
+                }
+              }
+            }
+          },
+          "cache_keys": {
+            "properties": {
+              "query_embedding": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "fusion": {
+            "properties": {
+              "weights": {
+                "minProperties": 1
+              }
+            }
+          },
+          "rewritten_queries": {
+            "items": {
+              "properties": {
+                "channels": {
+                  "minItems": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "complexity"
+        ],
+        "properties": {
+          "complexity": {
+            "const": "no_retrieval"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "route": {
+            "const": "no_retrieval"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "complexity"
+        ],
+        "properties": {
+          "complexity": {
+            "const": "single_step"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "route": {
+            "const": "single"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "complexity"
+        ],
+        "properties": {
+          "complexity": {
+            "const": "multi_step"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "route": {
+            "const": "multi"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "strategy": {
+            "enum": [
+              "hybrid",
+              "iterative"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "filters": {
+            "properties": {
+              "strategy": {
+                "properties": {
+                  "level_in": {
+                    "const": [
+                      0
+                    ]
+                  },
+                  "item_kinds": {
+                    "const": [
+                      "text",
+                      "list_group",
+                      "code",
+                      "table",
+                      "table_part",
+                      "figure"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "strategy": {
+            "const": "tree_collapsed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "filters": {
+            "properties": {
+              "strategy": {
+                "properties": {
+                  "level_in": {
+                    "const": [
+                      0,
+                      2
+                    ]
+                  },
+                  "item_kinds": {
+                    "const": [
+                      "text",
+                      "list_group",
+                      "code",
+                      "table",
+                      "table_part",
+                      "figure",
+                      "summary"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "strategy": {
+            "enum": [
+              "graph_local",
+              "graph_global"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "filters": {
+            "properties": {
+              "strategy": {
+                "properties": {
+                  "level_in": {
+                    "const": [
+                      0,
+                      2
+                    ]
+                  },
+                  "item_kinds": {
+                    "const": [
+                      "text",
+                      "list_group",
+                      "code",
+                      "table",
+                      "table_part",
+                      "figure",
+                      "community_report",
+                      "entity"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "strategy": {
+            "const": "visual_pages"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "filters": {
+            "properties": {
+              "strategy": {
+                "properties": {
+                  "level_in": {
+                    "const": [
+                      0
+                    ]
+                  },
+                  "item_kinds": {
+                    "const": [
+                      "page_image"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "RewrittenQuery": {
+      "type": "object",
+      "description": "질의 변형. original 은 weight 1.0·variant_id = query_id; 변형은 fusion.variant_query_weight. channels ⊆ enabled 채널(route≠no_retrieval 이면 1개 이상, no_retrieval 이면 빈 배열 — 최상위 allOf). 벡터 런 임베딩 입력은 original 이면 QueryPlan.dense_query_text, 그 외는 text.",
+      "properties": {
+        "variant_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "role": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/QueryRole"
+        },
+        "weight": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "channels": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/Channel"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "variant_id",
+        "text",
+        "role",
+        "weight",
+        "channels"
+      ],
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "role": {
+            "const": "original"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "weight": {
+            "const": 1
+          }
+        }
+      }
+    },
+    "SubQuery": {
+      "type": "object",
+      "description": "route=multi 분해 질의. sub_query_id 는 rewritten_queries[role=sub_query].variant_id 와 같다.",
+      "properties": {
+        "sub_query_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "depends_on": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "sub_query_id",
+        "text",
+        "depends_on"
+      ],
+      "additionalProperties": false
+    },
+    "LexicalTerm": {
+      "type": "object",
+      "description": "형태소 키워드. 사용자 사전 가중 1.5.",
+      "properties": {
+        "term": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "weight": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "tag": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{0,15}$",
+          "description": "분석기 품사 태그(NNG, NNP, SL, SN) 또는 USER_DICT"
+        }
+      },
+      "required": [
+        "term",
+        "weight",
+        "tag"
+      ],
+      "additionalProperties": false
+    },
+    "PlanFilters": {
+      "type": "object",
+      "description": "필터 4묶음. security ∧ strategy ∧ user ∧ self_query. relaxable_keys 는 FilterableField 타입이므로 보안·전략 키를 담을 수 없다(E6).",
+      "properties": {
+        "security": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/SecurityFilter"
+        },
+        "strategy": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/StrategyFilter"
+        },
+        "user": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/FilterNode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Y(nullable). QueryRequest.filters 원형(page 변환 전·완화 전). 실전송 트리는 CandidateSet.filters_applied.user 가 기록"
+        },
+        "self_query": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/FilterNode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Y(nullable). 플래너 추출 필터(완화 전). 실전송 트리는 CandidateSet.filters_applied.self_query 가 기록"
+        },
+        "relaxable_keys": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/FilterableField"
+          },
+          "maxItems": 32,
+          "uniqueItems": true,
+          "description": "0건 시 순서대로 제거할 사용자·self-query 필드. user·self_query 리프에 존재하는 필드만"
+        },
+        "effective_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "H(\"filters\", canonical_json(계획 필터 트리: QueryPlan.filters 에 저장된 security + strategy + user + self_query 그대로, page 변환·완화 전))(바이블 §6.2 식의 계획 시점 값). QueryPlan 과 함께 불변이며 재계산·갱신하지 않는다; 실전송 트리(page 변환·완화 반영)의 해시는 CandidateSet.filters_applied.effective_hash 가 기록(문서 §5.4). as_of 는 바인드 이름 \":as_of\" 로 직렬화한다 — 바이블 §10.2 바인드 파라미터 표기에 근거한 잠정 해석(미해결 이슈 3(a))"
+        }
+      },
+      "required": [
+        "security",
+        "strategy",
+        "user",
+        "self_query",
+        "relaxable_keys",
+        "effective_hash"
+      ],
+      "additionalProperties": false
+    },
+    "ChannelPlan": {
+      "type": "object",
+      "description": "채널 × 컬렉션 런 정의. enabled=false 항목도 유지(감사).",
+      "properties": {
+        "channel": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Channel"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "retriever_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+        },
+        "backend_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+        },
+        "collection_alias": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "col_{collection_id}_vec | col_{collection_id}_lex(바이블 §13.4)"
+        },
+        "embedding_profile_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "index_generation_min": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "top_k": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "채널·컬렉션당 후보 수. ≥ pack.k_max"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "description": "= fusion.weights[channel]"
+        },
+        "embedding_space_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "선택(N). 벡터 채널의 공간 ID"
+        },
+        "query_vector_ref": {
+          "type": "string",
+          "pattern": "^qemb:[0-9a-f]{64}:[0-9a-f]{64}$",
+          "description": "선택(N). 이 채널·공간의 original 변형 질의 벡터 캐시 키. embedding_space_id 와 dense_query_text 에서 유도 가능하므로 플래너는 기본 생략(retrieve 가 유도; 문서 §8.2·§11); 유도식이 다른 플러그인 채널만 채운다"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "channel",
+        "collection_id",
+        "retriever_id",
+        "backend_id",
+        "collection_alias",
+        "embedding_profile_hash",
+        "index_generation_min",
+        "top_k",
+        "timeout_ms",
+        "weight",
+        "enabled"
+      ],
+      "additionalProperties": false
+    },
+    "FusionPlan": {
+      "type": "object",
+      "description": "융합 설정(ADR-0013). k 필수. weights 키 = enabled 채널 집합(route=no_retrieval 이면 빈 객체, 그 외 1개 이상 — 최상위 allOf).",
+      "properties": {
+        "method": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/FusionMethod"
+        },
+        "k": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "weights": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/Channel"
+          },
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "variant_query_weight": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "method",
+        "k",
+        "weights",
+        "variant_query_weight"
+      ],
+      "additionalProperties": false
+    },
+    "HydratePlan": {
+      "type": "object",
+      "description": "fuse 뒤 payload 1회 배치 조회(ADR-0034). top_n ≥ max(rerank.top_n_in, pack.k_max).",
+      "properties": {
+        "top_n": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "fused 상위 N. 상한 100 = RankedSet.results maxItems(바이블 §5.1; 10 RS-12 candidates_out ≤ hydrate.top_n ≤ 100)"
+        },
+        "backend_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+        },
+        "with_vectors": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "top_n",
+        "backend_id",
+        "with_vectors"
+      ],
+      "additionalProperties": false
+    },
+    "RerankPlan": {
+      "type": "object",
+      "description": "크로스인코더 리랭크. enabled=false 여도 프로파일 값은 유지된다.",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "plugin_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+        },
+        "model_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ModelId"
+        },
+        "backend": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/RerankBackend"
+        },
+        "response_schema": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/RerankResponseSchema"
+        },
+        "top_n_in": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "top_n_out": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_tokens_per_text": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "normalization": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ScoreNormalization"
+        },
+        "instruction": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "description": "선택(N). 지시형 리랭커 프롬프트"
+        }
+      },
+      "required": [
+        "enabled",
+        "plugin_id",
+        "model_id",
+        "backend",
+        "response_schema",
+        "top_n_in",
+        "top_n_out",
+        "max_tokens_per_text",
+        "timeout_ms",
+        "normalization"
+      ],
+      "additionalProperties": false
+    },
+    "LateInteractionRerankPlan": {
+      "type": "object",
+      "description": "2단 리랭크 1단(MaxSim), O-04 실험 슬롯(ADR-0010).",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "model_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ModelId"
+        },
+        "top_n_in": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "top_n_out": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "enabled",
+        "model_id",
+        "top_n_in",
+        "top_n_out"
+      ],
+      "additionalProperties": false
+    },
+    "PostprocessPlan": {
+      "type": "object",
+      "description": "후처리 설정. order 는 고정 순서 relevance_gate → dedup → mmr → parent_expand → dedup → sentence_window → compress 의 부분열(Pydantic 검증).",
+      "properties": {
+        "order": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/PostprocessStep"
+          },
+          "minItems": 1,
+          "maxItems": 7
+        },
+        "relevance_gate": {
+          "type": "object",
+          "properties": {
+            "tau": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "tau"
+          ],
+          "additionalProperties": false
+        },
+        "dedup": {
+          "type": "object",
+          "properties": {
+            "cosine_threshold": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "minhash": {
+              "type": "object",
+              "properties": {
+                "num_perm": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "seed": {
+                  "type": "integer"
+                },
+                "scheme": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "threshold": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "num_perm",
+                "seed",
+                "scheme",
+                "threshold"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "cosine_threshold",
+            "minhash"
+          ],
+          "additionalProperties": false
+        },
+        "mmr": {
+          "type": "object",
+          "properties": {
+            "lambda": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "lambda"
+          ],
+          "additionalProperties": false
+        },
+        "parent_expand": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "ratio_threshold": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "max_parent_tokens": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "text_store": {
+              "$ref": "#/$defs/QueryPlan.postprocess.parent_expand.text_store"
+            }
+          },
+          "required": [
+            "enabled",
+            "ratio_threshold",
+            "max_parent_tokens",
+            "text_store"
+          ],
+          "additionalProperties": false
+        },
+        "sentence_window": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "n": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "enabled",
+            "n"
+          ],
+          "additionalProperties": false
+        },
+        "compress": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "method": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1
+            }
+          },
+          "required": [
+            "enabled",
+            "method"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "order",
+        "relevance_gate",
+        "dedup",
+        "mmr",
+        "parent_expand",
+        "sentence_window",
+        "compress"
+      ],
+      "additionalProperties": false
+    },
+    "QueryPlan.postprocess.parent_expand.text_store": {
+      "type": "string",
+      "enum": [
+        "artifact_store",
+        "vector_payload"
+      ],
+      "description": "바이블 §5.5 parent_expand.text_store 인라인 열거"
+    },
+    "PackPlan": {
+      "type": "object",
+      "description": "패킹 설정. 내부 순서 acl_recheck → budget_cut → reorder → citation_align 은 고정(바이블 §8.2).",
+      "properties": {
+        "k_max": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "최종 항목 수 상한 = 프로파일 query.pack.k_max(바이블 §7.2 standard 20). QueryRequest.top_k 와 결합하지 않는다(바이블 §5.5 별개·§16 GL-08; 문서 미해결 이슈 1). 상한 20 = ContextPack.budget.k_max·items maxItems(바이블 §5.1 초안 한계 20; 11 §2.2 가 이 값을 budget.k_max 로 복사)"
+        },
+        "max_context_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reserved_answer_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tokenizer": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "$ref": "#/$defs/QueryPlan.pack.tokenizer.provider"
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "name": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/TokenizerId"
+            }
+          },
+          "required": [
+            "provider",
+            "model",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        "count_method": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/CountMethod"
+        },
+        "renderer": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Renderer"
+        },
+        "ordering": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/OrderingStrategy"
+        },
+        "table_format_preference": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/TableFormat"
+          },
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "overflow_policy": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/OverflowPolicy"
+          },
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "expose_confidence": {
+          "type": "boolean"
+        },
+        "confidence_tiers": {
+          "type": "object",
+          "properties": {
+            "high": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "medium": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "high",
+            "medium"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "k_max",
+        "max_context_tokens",
+        "reserved_answer_tokens",
+        "tokenizer",
+        "count_method",
+        "renderer",
+        "ordering",
+        "table_format_preference",
+        "overflow_policy",
+        "expose_confidence",
+        "confidence_tiers"
+      ],
+      "additionalProperties": false
+    },
+    "QueryPlan.pack.tokenizer.provider": {
+      "type": "string",
+      "enum": [
+        "anthropic",
+        "openai",
+        "google",
+        "local"
+      ],
+      "description": "바이블 §5.5 pack.tokenizer.provider 인라인 열거(= QueryRequest.target_model.provider 값 집합)"
+    },
+    "LatencyBudget": {
+      "type": "object",
+      "description": "남은 지연 예산(ms). plan + retrieve + rerank + postprocess + pack ≤ total.",
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "plan": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "retrieve": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rerank": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "postprocess": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pack": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "total",
+        "plan",
+        "retrieve",
+        "rerank",
+        "postprocess",
+        "pack"
+      ],
+      "additionalProperties": false
+    },
+    "PlanBudget": {
+      "type": "object",
+      "properties": {
+        "max_tool_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "llm_calls_allowed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "max_tool_calls",
+        "llm_calls_allowed"
+      ],
+      "additionalProperties": false
+    },
+    "CacheKeys": {
+      "type": "object",
+      "description": "Valkey 키(바이블 §13.4). query_embedding 은 original 변형·첫 활성 벡터 채널 공간 기준이며 활성 벡터 채널이 없으면(no_retrieval, mode=lexical, 임베딩 불가) null. self_query 는 정규식 self-query 면 null.",
+      "properties": {
+        "query_embedding": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^qemb:[0-9a-f]{64}:[0-9a-f]{64}$",
+          "description": "Y(nullable). qemb:{embedding_space_id}:{blake3_hex(utf8(dense_query_text))}"
+        },
+        "plan": {
+          "type": "string",
+          "pattern": "^plan:[0-9A-HJKMNP-TV-Z]{26}:[0-9a-f]{64}:[0-9a-f]{64}$",
+          "description": "plan:{tenant_id}:{profile_hash}:{H(\"plan\", normalized_query, sorted collection_ids, filters.effective_hash, profile_hash, H(\"principals\", *sorted(principals)), request_options_hash)}(문서 §8.1; 여섯째 part 는 잠정, 미해결 이슈 16)"
+        },
+        "self_query": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^sq:[0-9A-HJKMNP-TV-Z]{26}:[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "query_embedding",
+        "plan",
+        "self_query"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

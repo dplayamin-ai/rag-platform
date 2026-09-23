@@ -1,0 +1,79 @@
+{
+ "id": "0004",
+ "findings": [
+  {
+   "severity": "major",
+   "location": "## 결정 — 테스트 벡터 JSON, line 144 (`record_id_other_collection`)",
+   "problem": "고정 벡터에 `record_id_other_collection` 값(`2d6d27e5…dfee7`)이 있으나 그 계산에 쓰인 '다른 컬렉션'의 `collection_id`가 벡터 어디에도 없다. 나머지 8개 값(doc_version, block_id, chunker_config_hash, chunk_id, record_id, NAMESPACE_RAG_CHUNK, point_id, record_id_generation_2)은 uv+blake3로 재계산해 모두 일치함을 확인했지만 이 값만 재현 불가(컬렉션↔문서 교환, 테넌트 교환 등 후보 입력으로도 불일치). 문서는 이 JSON을 `tests/contracts`에 고정하는 적합성 키트 벡터라고 선언하므로(line 123, 178) 입력 없는 출력은 검증 불가능한 상수를 CI에 박게 된다.",
+   "fix": "벡터에 `\"collection_id_other\": \"<26자 Crockford ULID>\"`를 추가하고 `record_id_other_collection = H(\"record\", tenant_id, collection_id_other, document_id, \"1\", chunk_id)`로 재계산한 값을 적거나, 해당 항목을 삭제한다. 결합식은 바이블 §6.2 `record_id` 행 그대로 유지.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 표(line 176~184) 및 ## 참조 계약 문서 행(line 204)",
+   "problem": "링크 8건이 현재 저장소에 파일로 존재하지 않는다: 03-contracts/05-chunk-set, 07-embedded-chunk-set-and-index-record, 08-index-commit, 04-pipelines/13-indexing, 19-update-delete-and-reindexing, 10-development/03-coding-standards, 04-testing-strategy, 05-ci-cd. 모두 브리프 §8 문서 맵에 있는 경로이므로 브리프 §9.6('문서 맵에 있는 경로만')과 바이블 미해결 이슈 11(미작성 하위 문서 링크는 CI 경고)에 따라 허용되나, 링크 검사 CI 경고 대상임을 인지해야 한다.",
+   "fix": "유지 가능(문서 맵 경로). 엄격 적용을 원하면 해당 문서 작성 전까지 링크 대신 경로 텍스트(`04-pipelines/13`)로 표기하거나, 문서 작성 후 링크 검사에서 경고가 사라지는지 확인한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 맥락과 문제 line 25·27, ## 결정 동인 line 36, ## 고려한 대안 line 45, ## 참조 line 199~201",
+   "problem": "기술 지형 문서 절 인용이 실제 헤더와 다르다. (a) '07-tech-landscape/04 §Chunker 인터페이스 제안'이라는 절은 없고 해당 문장(순수 함수, `BLAKE3(document_hash + chunker_config_hash + block_path + char_range)`)은 '## 통합 설계 함의 › ### 어댑터 계약' 본문 bullet(line 346)이다. (b) '07-tech-landscape/06 §멀티테넌시'는 헤더가 아니라 Qdrant 심층 비교 안의 굵은 단락(line 111)이며, '§매핑'의 실제 헤더는 '### 표준 `IndexRecord` → 백엔드 매핑'(line 360)이다. (c) '07-tech-landscape/08 §페이지네이션'도 헤더가 아니라 bullet(line 345)이다. 인용 내용 자체(u64/UUID 제약, `ulid_to_uuid`, `id` 단독 키셋)는 모두 원문과 일치한다.",
+   "fix": "'07-tech-landscape/04 §통합 설계 함의 — 어댑터 계약(Chunker 플러그인 인터페이스 제안)', '07-tech-landscape/06 §심층 비교 Qdrant 멀티테넌시 단락 / §표준 IndexRecord → 백엔드 매핑', '07-tech-landscape/08 §REST API 설계 — 페이지네이션 항목'처럼 실제 헤더 기준으로 고친다(바이블 §1.2 '절 번호를 쓴다' 규약 준용).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "frontmatter `depends_on`(line 8~16)",
+   "problem": "본문(결정 동인 line 36)과 참조(line 201)에서 07-tech-landscape/08-orchestration-messaging-and-api-frameworks.md를 근거로 인용하지만 `depends_on`에는 없다. 반대로 `depends_on`에 든 04·06·제안 A/B/C는 모두 본문에서 인용되어 정합하다.",
+   "fix": "`depends_on`에 `../07-tech-landscape/08-orchestration-messaging-and-api-frameworks.md`를 추가하거나, 08 인용을 제거한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결과 › 중립 line 170",
+   "problem": "'새 라벨 추가는 minor 변경이다'를 규칙처럼 단정하지만 바이블 §1.2 변경 절차 표에는 해시 라벨 추가 항목이 없다(필드 추가·열거값 추가 = minor, 명명 규약 변경 = major만 규정). 앵커에 없는 분류를 ADR이 새로 도입한 셈이다.",
+   "fix": "'바이블 §1.2의 「필드 추가(선택)·열거값 추가」에 준해 minor로 취급하되 §6.2 표 갱신을 동반한다(바이블 소유자 확인 필요)'로 완화하거나, 바이블 §1.2 표에 라벨 추가 행을 넣는 제안임을 명시한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "major",
+   "location": "## 결정 — JSON 고정 벡터, 144행 `record_id_other_collection`",
+   "problem": "벡터가 \"적합성 키트의 고정 벡터\"라고 선언되어 있는데 `record_id_other_collection`의 입력인 두 번째 `collection_id`가 JSON 어디에도 없어 이 값만 벡터 자체로 재계산할 수 없다(다른 9개 값은 blake3/uuid5로 재계산해 모두 일치함). 두 번째 컬렉션 ULID를 추측해 대입했을 때 `01J9ZQ7E2S5Q6R7S8T9V0WXYZ1`로 정확히 일치했으므로 값 자체는 옳지만 fixture가 자기완결적이지 않다.",
+   "fix": "JSON에 `\"collection_id_other\": \"01J9ZQ7E2S5Q6R7S8T9V0WXYZ1\"` 키를 추가하고 설명문(123행)에 \"`record_id_other_collection`은 `collection_id_other`로 계산\"을 한 줄 덧붙인다(검증: `H(\"record\", tenant_id, collection_id_other, document_id, \"1\", chunk_id)` = `2d6d27e5…dfee7`). 또는 해당 키를 삭제한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 — Python 참조 구현, 115~121행",
+   "problem": "`blake3`가 임포트 없이 사용되어 미정의 이름이다. 바이블 §12는 이 함수를 `sdk`의 `hash_of`로 명명하는데 스니펫은 `H`만 보여 준다.",
+   "fix": "블록 첫 줄에 `from blake3 import blake3`를 추가하고, 주석으로 `# rag_platform.sdk.hash_of`(바이블 §12)임을 표기한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결과 › 중립, 170행",
+   "problem": "\"새 라벨 추가는 minor 변경이다\"는 바이블 §1.2 표(필드 추가·열거값 추가·기본 파라미터 값 변경 → minor)에 없는 등급 규칙을 ADR이 새로 정한 문장이다. ADR은 바이블 표를 바꾸지 못하고 새 결정을 만들지 않아야 한다.",
+   "fix": "\"새 라벨은 바이블 §6.2 표에 등재해야 하며 변경 등급은 §1.2 절차를 따른다\"로 바꾸어 등급 판정을 바이블에 위임한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 맥락과 문제 25·27행, ## 참조 199~200행 — 07-tech-landscape 절 인용",
+   "problem": "인용한 절 이름이 실제 헤더와 다르다: 07/04의 \"§Chunker 인터페이스 제안\"은 `### 어댑터 계약` 아래 불릿(346행)이고, 07/06의 \"§매핑\"은 `### 표준 IndexRecord → 백엔드 매핑`(360행), \"§멀티테넌시\"는 Qdrant 절 안의 굵은 문단 표지(111행)로 헤더가 아니다. 내용 자체는 모두 일치한다.",
+   "fix": "07/04는 \"§어댑터 계약(Chunker 인터페이스 제안)\", 07/06은 \"§표준 IndexRecord → 백엔드 매핑\"과 \"§Qdrant › 멀티테넌시\"로 실제 헤더 명칭을 쓴다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "frontmatter 1~17행",
+   "problem": "38개 ADR 중 30개가 `owner`·`version`·`last_updated`를 frontmatter에 두는데 본 문서에는 없다(0012·0016·0020·0021·0029·0035·0037도 동일 누락). outline 필수 항목은 모두 충족하므로 형식 통일 문제다.",
+   "fix": "ADR-0005와 같이 `owner: architecture`, `version: 0.1.0`, `last_updated: 2026-09-22`를 추가한다.",
+   "lens": "tech"
+  }
+ ],
+ "verdicts": {
+  "anchor": "revise",
+  "tech": "revise"
+ }
+}

@@ -1,0 +1,436 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:enriched-chunk-set:1",
+  "title": "EnrichedChunkSet",
+  "description": "enrich 스테이지 출력(바이블 §5.4). 청크 본문은 chunk_set_ref로 참조하고 enrichments(object<chunk_id, Enrichment>)만 담는다. 3-텍스트 규칙(ADR-0029): embed_text = deterministic + \"\\n\" + (generated + \"\\n\")? + text, index_text = prefix(lexical) + \"\\n\" + lexical_text (+ hypothetical_questions). LLM 보강은 기본 끔(ADR-0016). 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/06-enriched-chunk-set.md",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "description": "계약 버전. 초기 \"1.0.0\"",
+      "pattern": "^1.(0|[1-9]d*).(0|[1-9]d*)$"
+    },
+    "schema_type": {
+      "type": "string",
+      "const": "EnrichedChunkSet",
+      "description": "PascalCase 타입명. ArtifactRef.schema_type와 일치해야 로드"
+    },
+    "tenant_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "보안 삼중항 1"
+    },
+    "collection_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "보안 삼중항 2(수집 측 단수)"
+    },
+    "producer": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Producer",
+      "description": "재현성 지문. plugin_id는 플랫폼 합성 보강기 enricher.pipeline, model_ids는 LLM·VLM 보강 모델(없으면 빈 배열). image_digest는 LLM 비활성(인프로세스)이면 null, LLM/VLM 활성(외부 서빙)이면 서빙 이미지 digest(00 I-20)"
+    },
+    "quality": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Quality",
+      "description": "품질 삼중항 1. 입력 ChunkSet의 값을 전파(되돌리지 않음)하고 status=partial이면 degraded(allOf[1])"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/Warning"
+      },
+      "description": "품질 삼중항 2. enrich.extractor_timeout(chunk_id 포함), enrich.budget_exceeded(세트당 1건), enrich.content_policy_violation(chunk_id 포함, 초안) 등 콘텐츠 미포함"
+    },
+    "created_at": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime"
+    },
+    "lineage_refs": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/LineageRefs",
+      "required": [
+        "source",
+        "parsed",
+        "normalized",
+        "chunk_set"
+      ],
+      "properties": {
+        "source": {
+          "properties": {
+            "schema_type": {
+              "const": "SourceDocument"
+            },
+            "media_type": {
+              "const": "application/vnd.rag.source-document+json"
+            }
+          },
+          "required": [
+            "schema_type",
+            "schema_version"
+          ],
+          "description": "detect 출력 SourceDocument 계약 산출물(원본 바이트 참조 아님; 원본 바이트는 SourceDocument.artifact). index가 requires_lineage로 로드해 acl·metadata를 읽는다(00 §3.2·I-7, 바이블 §4.1·§5.2)"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "enriched"
+            ]
+          },
+          {
+            "required": [
+              "embedded"
+            ]
+          }
+        ]
+      },
+      "description": "enrich 출력의 상류 참조 {source, parsed, normalized, chunk_set}. source·parsed·normalized는 입력 ChunkSet.lineage_refs 복사, 각 키의 schema_type은 00 §3.2 대응표와 일치(I-7). 자기 자신(enriched)·하류(embedded) 금지"
+    },
+    "chunk_set_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "입력 ChunkSet.chunk_set_id 복사"
+    },
+    "document_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+    },
+    "doc_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "= SourceDocument.content_hash(ADR-0005)"
+    },
+    "chunk_set_ref": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef",
+      "properties": {
+        "schema_type": {
+          "const": "ChunkSet"
+        },
+        "media_type": {
+          "const": "application/vnd.rag.chunk-set+json"
+        }
+      },
+      "required": [
+        "schema_type",
+        "schema_version"
+      ],
+      "description": "원 ChunkSet 산출물(청크 본문 미복제). lineage_refs.chunk_set과 blake3 동일"
+    },
+    "enricher_fingerprint": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"enricher\", *sorted(f\"{plugin_id}@{plugin_version}:{config_hash}\"), policy_hash)(바이블 §6.2). IndexCommit 재현성 조건이며 stage_key 입력은 producer 지문(fingerprint)이다"
+    },
+    "policy_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "컬렉션 보강 정책 해시. 초안 결합식 H(\"enrich-policy\", canonical_json(policy))"
+    },
+    "status": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/EnrichStatus",
+      "description": "세트 단위. 예산 초과·추출기 타임아웃·콘텐츠 정책 거부가 하나라도 있으면 partial(그때 quality=degraded)"
+    },
+    "budget_used": {
+      "$ref": "#/$defs/BudgetUsed"
+    },
+    "enrichments": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "additionalProperties": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/Enrichment"
+      },
+      "description": "object<chunk_id, Enrichment>. 키 집합 = 입력 ChunkSet.chunks[].chunk_id 집합(모든 레벨)"
+    },
+    "generated_prefixes": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/GeneratedPrefix"
+      },
+      "description": "선택(N). LLM 생성 접두어의 기록 object<chunk_id, GeneratedPrefix>. 키는 enrichments 키의 부분집합이며 LLM 비활성(budget_used.calls == 0 이고 stats.llm_cache_hits == 0)이면 존재하지 않는다. 규칙 2(b)에서는 같은 섹션의 청크가 요약 하나를 공유하므로 항목 수가 calls + llm_cache_hits를 넘을 수 있다 — E-7·E-10은 고유 (generated, generated_by) 쌍 수를 계수한다(Pydantic·셸 검사)"
+    },
+    "stats": {
+      "$ref": "#/$defs/EnrichStats"
+    }
+  },
+  "required": [
+    "schema_version",
+    "schema_type",
+    "tenant_id",
+    "collection_id",
+    "producer",
+    "quality",
+    "warnings",
+    "created_at",
+    "lineage_refs",
+    "chunk_set_id",
+    "document_id",
+    "doc_version",
+    "chunk_set_ref",
+    "enricher_fingerprint",
+    "policy_hash",
+    "status",
+    "budget_used",
+    "enrichments",
+    "stats"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "budget_used": {
+            "properties": {
+              "calls": {
+                "const": 0
+              }
+            }
+          },
+          "stats": {
+            "properties": {
+              "llm_cache_hits": {
+                "const": 0
+              }
+            }
+          }
+        },
+        "required": [
+          "budget_used",
+          "stats"
+        ]
+      },
+      "then": {
+        "properties": {
+          "budget_used": {
+            "properties": {
+              "provider": {
+                "type": "null"
+              },
+              "model_id": {
+                "type": "null"
+              },
+              "llm_tokens_in": {
+                "const": 0
+              },
+              "llm_tokens_out": {
+                "const": 0
+              },
+              "cost_usd": {
+                "const": 0
+              }
+            },
+            "not": {
+              "required": [
+                "prompt_hashes"
+              ]
+            }
+          },
+          "enrichments": {
+            "additionalProperties": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "hypothetical_questions"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "summary"
+                    ]
+                  }
+                ]
+              },
+              "properties": {
+                "entities": {
+                  "not": {
+                    "contains": {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "required": [
+                        "extractor"
+                      ],
+                      "properties": {
+                        "extractor": {
+                          "const": "llm"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "not": {
+          "required": [
+            "generated_prefixes"
+          ]
+        }
+      },
+      "else": {
+        "properties": {
+          "budget_used": {
+            "properties": {
+              "provider": {
+                "type": "string"
+              },
+              "model_id": {
+                "$ref": "urn:rag:schema:common-types:1#/$defs/ModelId"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "partial"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "quality": {
+            "const": "degraded"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "BudgetUsed": {
+      "type": "object",
+      "description": "LLM 보강 비용 기록(바이블 §5.4 EnrichedChunkSet.budget_used 7키) → usage_ledger·JobStatus.cost. LLM 호출이 없으면 calls=0, provider·model_id=null, 토큰·비용 0. prompt_hashes는 이 문서가 추가한 선택 필드",
+      "properties": {
+        "provider": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "description": "LLM 서빙 공급자(vllm, anthropic, openai_compatible 등 어댑터 식별자). 호출 없음이면 null"
+        },
+        "model_id": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/ModelId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "{repo}@{revision}. 호출 없음이면 null"
+        },
+        "llm_tokens_in": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "입력 토큰 합(캐시 적중 제외; 템플릿·문서 문맥 포함)"
+        },
+        "llm_tokens_out": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cost_usd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "calls": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "실제 LLM 호출 수(모든 산출물 종류 합, 캐시 적중 제외)"
+        },
+        "budget_remaining_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "이 잡 종료 시점 컬렉션 enrichment_budget_tokens 잔여. 초과 종료면 0"
+        },
+        "prompt_hashes": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^enricher\\.[a-z][a-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+          },
+          "minProperties": 1,
+          "description": "선택(N). LLM 산출물 종류별 프롬프트 템플릿 해시 object<plugin_id, hex64>. 캐시 키 H(\"llm-enrich\", model_id, prompt_hashes[plugin_id], embed_text) 재계산 입력. LLM 비활성이면 존재하지 않는다"
+        },
+        "charged_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "N(바이블 §5.4 1.3.0, AM-32). 예산 대조 기준 토큰 수(캐시 적중분 포함 여부는 llm_tokens_in 과 달리 프로파일 enrichment_budget_tokens 잔여 계산에 실제 청구된 값). LLM 비활성이면 존재하지 않는다"
+        }
+      },
+      "required": [
+        "provider",
+        "model_id",
+        "llm_tokens_in",
+        "llm_tokens_out",
+        "cost_usd",
+        "calls",
+        "budget_remaining_tokens"
+      ],
+      "additionalProperties": false
+    },
+    "GeneratedPrefix": {
+      "type": "object",
+      "description": "LLM 생성 접두어 기록(O-05 슬롯). generated는 embed_text[len(deterministic)+1 : text_start_in_embed-1] 과 같다. 프롬프트 해시는 budget_used.prompt_hashes[\"enricher.llm_context_prefix\"]",
+      "properties": {
+        "generated": {
+          "type": "string",
+          "minLength": 1,
+          "description": "LLM 문맥(NFC). text에 포함되지 않는다. 규칙 2(b)면 Enrichment.summary와 같다"
+        },
+        "generated_by": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ModelId"
+        },
+        "cache_hit": {
+          "type": "boolean",
+          "description": "H(\"llm-enrich\", model_id, prompt_hash, embed_text)(규칙 2(b)는 section_text 키) 캐시 적중 여부(true면 budget_used.calls에 미계수). 한 요약을 공유하는 청크는 모두 같은 값"
+        }
+      },
+      "required": [
+        "generated",
+        "generated_by",
+        "cache_hit"
+      ],
+      "additionalProperties": false
+    },
+    "EnrichStats": {
+      "type": "object",
+      "description": "바이블 §5.4 stats {chunks_enriched, llm_cache_hits, entities_total}",
+      "properties": {
+        "chunks_enriched": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "= enrichments 키 수"
+        },
+        "llm_cache_hits": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "모든 LLM 산출물 종류의 캐시 적중 수 합(키 조회 단위; ≥ generated_prefixes 중 cache_hit=true 인 고유 (generated, generated_by) 쌍 수)"
+        },
+        "entities_total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "= Σ len(enrichments[*].entities)"
+        },
+        "chunks_partial": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "선택(N). Enrichment.status=partial 인 청크 수"
+        }
+      },
+      "required": [
+        "chunks_enriched",
+        "llm_cache_hits",
+        "entities_total"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

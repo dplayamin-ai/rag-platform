@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:eval-report:1",
+  "title": "EvalReport",
+  "description": "평가 결과 계약(바이블 §5.6·§7.4, ADR-0023). 한 EvalRun 의 메트릭 집계(metrics; 질의 평균 또는 런 단위 값), 베이스라인 대비 Holm 보정 비교(comparison), 프로파일 게이트 판정(gate_result), 질의별 산출물 참조(artifacts_ref)를 담는다. gate_result.passed 는 프로파일 품질 기본값 변경의 유일한 판정자(바이블 §7.4). 정본은 PostgreSQL eval_reports 원장 행. MetricKey 는 urn:rag:schema:eval-run:1 을, 공용 타입은 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+  "type": "object",
+  "properties": {
+    "schema_version": {"$ref": "urn:rag:schema:common-types:1#/$defs/Semver", "description": "선택(N). 계약 버전 \"1.0.0\". 바이블 §5.6 미등재(미해결 이슈 1)"},
+    "run_id": {"$ref": "urn:rag:schema:common-types:1#/$defs/Ulid", "description": "EvalRun.run_id(status=completed). 리포트는 런당 1개"},
+    "tenant_id": {"$ref": "urn:rag:schema:common-types:1#/$defs/Ulid", "readOnly": true, "description": "선택(N). EvalRun.tenant_id 복사(서버 도출; 하네스가 항상 채운다, EF-30). 바이블 §5.6 미등재(미해결 이슈 1)"},
+    "dataset_id": {"$ref": "urn:rag:schema:common-types:1#/$defs/Ulid", "description": "선택(N). EvalRun.dataset_id 복사(외부 소비자 편의). 바이블 §5.6 미등재(미해결 이슈 1)"},
+    "profile_hash": {"$ref": "urn:rag:schema:common-types:1#/$defs/Hex64", "description": "선택(N). EvalRun.profile_hash 복사. 바이블 §5.6 미등재(미해결 이슈 1)"},
+    "query_count": {"type": "integer", "minimum": 1, "description": "선택(N). 집계에 포함된 질의 수(검정력 판단). 바이블 §5.6 미등재(미해결 이슈 1)"},
+    "metrics": {"type": "object", "minProperties": 1, "maxProperties": 64, "propertyNames": {"$ref": "urn:rag:schema:eval-run:1#/$defs/MetricKey"}, "additionalProperties": {"type": "number"}, "description": "질의 평균 또는 런 단위 집계값(키별 정의 이 문서 §4.2; ndcg@k 는 선형 이득 고정). ≤ 64 키(metrics_requested 상한과 동일, §8). EvalRun.metrics_requested 를 포함해야 한다"},
+    "comparison": {"oneOf": [{"$ref": "#/$defs/EvalComparison"}, {"type": "null"}], "description": "선택(N, null 허용). 베이스라인 런 대비 비교. 없으면 절대 게이트(min·warn_below)만 판정"},
+    "gate_result": {"$ref": "#/$defs/GateResult"},
+    "artifacts_ref": {"$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef", "properties": {"media_type": {"const": "application/x-ndjson"}}, "description": "eval/runs/{run_id}/per_query.jsonl(행 = $defs/PerQueryRecord; 바이블 §13.3 반영 제안, 미해결 이슈 2). 계약 산출물이 아니므로 schema_type 없음"},
+    "run_ref": {"$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef", "properties": {"media_type": {"const": "text/plain"}}, "description": "선택(N). eval/runs/{run_id}/run.trec — TREC run 텍스트(query_id Q0 doc_id rank score run_tag; run_tag = run_id). ranx·ir_measures 교차 검증 입력. 바이블 §5.6 미등재(미해결 이슈 1)"},
+    "created_at": {"$ref": "urn:rag:schema:common-types:1#/$defs/DateTime", "description": "리포트 확정 시각 = EvalRun.finished_at"}
+  },
+  "required": ["run_id", "metrics", "gate_result", "artifacts_ref", "created_at"],
+  "additionalProperties": false,
+  "$defs": {
+    "EvalReport.gate_result.failed_gates.condition": {"type": "string", "enum": ["min", "max", "max_regression", "p", "warn_below", "min_delta", "min_delta_pt", "min_qrels", "max_cost_per_doc_usd", "grid"], "description": "실패한 게이트 조건 = 프로파일 게이트 객체의 키 이름(바이블 §7.3 eval.gates.* 와 §7.4 gate 객체). 15 EvalGate{min, max, max_regression, p, warn_below}·GateSpec{grid, min_delta, min_delta_pt, min_qrels, max_cost_per_doc_usd} 판정 키와 1:1(EF-15). 인라인 열거 {Type}.{path} 등재 규칙(§5.7). warned_gates 항목도 같은 열거를 쓴다"},
+    "EvalReport.gate_result.failed_gates.severity": {"type": "string", "enum": ["fail", "warn"], "description": "fail 은 passed 를 false 로 만들고, warn(warn_below 등)은 warned_gates 에만 기록된다"},
+    "EvalComparison": {
+      "type": "object",
+      "description": "바이블 §5.6 comparison{baseline_run_id, deltas, p_values, correction: \"holm\"}. 질의 단위 쌍대 검정 p값에 Holm 보정을 적용한 값이 p_values 다(ADR-0023)",
+      "properties": {
+        "baseline_run_id": {"$ref": "urn:rag:schema:common-types:1#/$defs/Ulid", "description": "같은 dataset_id 의 completed 런. run_id 와 다르다"},
+        "deltas": {"type": "object", "minProperties": 1, "maxProperties": 64, "propertyNames": {"$ref": "urn:rag:schema:eval-run:1#/$defs/MetricKey"}, "additionalProperties": {"type": "number"}, "description": "metrics[k] − baseline.metrics[k]. 키는 metrics 의 부분집합(≤ 64)"},
+        "p_values": {"type": "object", "minProperties": 1, "maxProperties": 64, "propertyNames": {"$ref": "urn:rag:schema:eval-run:1#/$defs/MetricKey"}, "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}, "description": "Holm 보정 후 p값. 키 집합 = deltas 키 집합"},
+        "correction": {"type": "string", "const": "holm", "description": "고정값(D-12)"},
+        "stat_test": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$", "maxLength": 64, "description": "선택(N). 보정 전 검정 이름(예 fisher_randomization, paired_t, tukey_hsd; 정본은 08-evaluation/02). 바이블 §5.6 미등재(미해결 이슈 1)"}
+      },
+      "required": ["baseline_run_id", "deltas", "p_values", "correction"],
+      "additionalProperties": false
+    },
+    "GateOutcome": {
+      "type": "object",
+      "description": "게이트 하나의 판정. gate_path 는 프로파일 YAML 경로(eval.gates.ndcg@10 또는 게이트가 붙은 파라미터 경로 ingest.chunk.leaf_max_tokens), condition 은 그 게이트 객체 안에서 실패한 키",
+      "properties": {
+        "gate_path": {"type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_@-]+)*$", "maxLength": 256, "description": "프로파일 YAML 경로(바이블 §7.3)"},
+        "metric": {"$ref": "urn:rag:schema:eval-run:1#/$defs/MetricKey", "description": "판정에 쓴 메트릭 키(gate.metric 또는 eval.gates 의 키)"},
+        "condition": {"$ref": "#/$defs/EvalReport.gate_result.failed_gates.condition"},
+        "expected": {"type": "number", "description": "통과에 필요한 값 하나의 의미만(min 0.80, max 800, max_regression 0.01, p 0.05, warn_below 0.7, min_delta 0.03, min_delta_pt 2, min_qrels 200, max_cost_per_doc_usd 0.05; grid 는 그리드 중 metric 이 최고인 후보 값)"},
+        "observed": {"type": ["number", "null"], "description": "관측값(min·max·warn_below 는 metrics[k], max_regression 은 −deltas[k], p 는 p_values[k], min_delta 는 deltas[k], min_delta_pt 는 deltas[k]×100, min_qrels 는 qrels 수, grid 는 프로파일의 현재 value). 계산 불가면 null"},
+        "dataset": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "maxLength": 64, "description": "선택(N). 게이트가 지정한 데이터셋 이름(EvalDataset.name)"},
+        "severity": {"$ref": "#/$defs/EvalReport.gate_result.failed_gates.severity"},
+        "detail": {"type": "string", "maxLength": 512, "description": "선택(N). 영문 진단 문구. 콘텐츠·질의 문자열 미포함"}
+      },
+      "required": ["gate_path", "metric", "condition", "expected", "observed", "severity"],
+      "additionalProperties": false
+    },
+    "GateResult": {
+      "type": "object",
+      "description": "바이블 §5.6 gate_result{passed, failed_gates[]} + warned_gates(N). passed ⇔ failed_gates 가 비어 있다",
+      "properties": {
+        "passed": {"type": "boolean", "description": "true 면 이 런이 인용된 프로파일 값 변경이 허용된다(바이블 §7.4)"},
+        "failed_gates": {"type": "array", "items": {"allOf": [{"$ref": "#/$defs/GateOutcome"}, {"properties": {"severity": {"const": "fail"}}}]}, "maxItems": 64, "description": "severity=fail 항목만"},
+        "warned_gates": {"type": "array", "items": {"allOf": [{"$ref": "#/$defs/GateOutcome"}, {"properties": {"severity": {"const": "warn"}}}]}, "maxItems": 64, "description": "선택(N). warn_below 등 경고 게이트(judged@10 < 0.7 → qrels 보강 필요). passed 에 영향 없음. 바이블 §5.6 미등재(미해결 이슈 1)"}
+      },
+      "required": ["passed", "failed_gates"],
+      "additionalProperties": false,
+      "allOf": [
+        {"if": {"properties": {"passed": {"const": true}}, "required": ["passed"]}, "then": {"properties": {"failed_gates": {"maxItems": 0}}}},
+        {"if": {"properties": {"passed": {"const": false}}, "required": ["passed"]}, "then": {"properties": {"failed_gates": {"minItems": 1}}}}
+      ]
+    },
+    "PerQueryRecord": {
+      "type": "object",
+      "description": "per_query.jsonl 한 행(질의별 메트릭). 질의 본문·청크 본문은 싣지 않는다(ID·수치만)",
+      "properties": {
+        "query_id": {"$ref": "urn:rag:schema:eval-dataset:1#/$defs/QueryId"},
+        "metrics": {"type": "object", "minProperties": 1, "maxProperties": 64, "propertyNames": {"$ref": "urn:rag:schema:eval-run:1#/$defs/MetricKey"}, "additionalProperties": {"type": "number"}},
+        "top_doc_ids": {"type": "array", "items": {"$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"}, "maxItems": 100, "description": "선택(N). 상위 문서 ID(순위순). TREC run 과 중복되므로 run_ref 가 있으면 생략 가능"},
+        "span_hit_ranks": {"type": "array", "items": {"type": "integer", "minimum": 1}, "maxItems": 100, "description": "선택(N). answer_spans 와 겹친 청크의 최종 순위(1-based)"}
+      },
+      "required": ["query_id", "metrics"],
+      "additionalProperties": false
+    }
+  }
+}

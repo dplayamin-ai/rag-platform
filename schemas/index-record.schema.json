@@ -1,0 +1,702 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:index-record:1",
+  "title": "IndexRecord",
+  "description": "index 스테이지가 EmbeddedChunkSet(EMB) + requires_lineage(EnrichedChunkSet ENR, ChunkSet CS, SourceDocument SRC) + 워크플로우 인자(IDX)에서 조립해 인덱스 백엔드에 쓰는 논리 레코드(바이블 §5.4). 리프 1개 = 레코드 1개(세대별). 물리 키 record_id = H(\"record\", tenant_id, collection_id, document_id, str(index_generation), chunk_id), point_id = uuid5(NAMESPACE_RAG_CHUNK, record_id)(ADR-0004 v1.2, E17). payload는 필터·정렬·설명·리랭크 입력·인용 좌표·ACL 재검증에 필요한 것만 담고(32KB, text ≤ 8,192 UTF-8 바이트) 정본은 ChunkSet 산출물이다(ADR-0034). 봉투 없음. 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/07-embedded-chunk-set-and-index-record.md",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "description": "선택(N). payload 기록 시점의 이 계약 버전(hydrate가 unknown 열거값 처리·업캐스트 판정에 참고; 바이블 §5.4 미등재, 미해결 이슈)",
+      "pattern": "^1.(0|[1-9]d*).(0|[1-9]d*)$"
+    },
+    "record_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"record\", tenant_id, collection_id, document_id, str(index_generation), chunk_id) — 스코프·세대 합성 물리 키. OpenSearch _id. 원천 IDX"
+    },
+    "point_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Uuid",
+      "description": "uuid5(NAMESPACE_RAG_CHUNK, record_id), NAMESPACE_RAG_CHUNK = uuid5(NAMESPACE_URL, \"urn:rag:chunk\") = 4198d3e2-bdc6-5334-b170-0d5490f26cc7. Qdrant 포인트 ID. 원천 IDX"
+    },
+    "chunk_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "콘텐츠 주소 키(세대·스코프 무관). exclude_ids·commit_hash·평가 run·duplicates_of 기준. 원천 CS"
+    },
+    "tenant_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "보안 삼중항 1. 필수 사전 필터(Qdrant is_tenant=true, OpenSearch routing). 원천 봉투"
+    },
+    "collection_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "보안 삼중항 2. 필수 사전 필터. 원천 봉투"
+    },
+    "document_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "삭제·부모 확장·상충 판정 키. 원천 봉투"
+    },
+    "doc_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "= SourceDocument.content_hash. 원천 SRC"
+    },
+    "commit_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "IndexCommit.commit_id — 사가 보상 키(delete_by_filter(commit_id)). 원천 IDX"
+    },
+    "index_generation": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "문서 단위 단조 증가 세대(원장 documents 행 잠금 아래 할당). 원천 IDX"
+    },
+    "is_current": {
+      "type": "boolean",
+      "description": "적재 시 false, 커밋 플립(렉시컬 → 벡터) 시 true, 다음 세대 커밋 시 false(바이블 §11.4). 보안 불변식 (a) 필수 사전 필터. 원천 IDX"
+    },
+    "item_kind": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/ItemKind",
+      "description": "전략 필터 item_kind IN :item_kinds. 원천 CS"
+    },
+    "level": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/ChunkLevel",
+      "description": "전략 필터 level IN :level_in. 원천 CS"
+    },
+    "parent_chunk_id": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Y(nullable). 같은 세트 내 level+1 청크. 원천 CS"
+    },
+    "ordinal": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "부모 내 순서(비인덱스). 원천 CS"
+    },
+    "tree_level": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "선택. RAPTOR 트리 레벨(리프 0). 원천 CS"
+    },
+    "vectors": {
+      "$ref": "#/$defs/IndexRecordVectors"
+    },
+    "index_text": {
+      "type": "string",
+      "description": "조건(렉시컬 백엔드 대상이면 Y). Enrichment.index_text — BM25 입력(OpenSearch nori_index/nori_search). lite(Qdrant 단독)는 sparse_bm25 계산 입력으로만 쓰고 payload에 넣지 않는다. 원천 ENR"
+    },
+    "lexical_terms": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "description": "Enrichment.keywords[].term 정렬·중복 제거(keyword 배열; Qdrant 한국어 키워드 필터·부스트). 원천 ENR"
+    },
+    "text": {
+      "type": "string",
+      "maxLength": 8192,
+      "description": "표시 원문(Chunk.text) ≤ 8,192 UTF-8 바이트(바이트 검사는 Pydantic; maxLength 8192 코드포인트는 필요조건). 초과 시 §9 절단(블록 경계 우선; 마지막 block_ref의 char_end만 클리핑, original_char_*는 Chunk 값 불변) + text_truncated=true. 전문은 ChunkSet·ChunkTextStore. 원천 CS"
+    },
+    "text_preview": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "≤ 200자(MCP concise·디버그·CandidateSet.payload_slim). 원천 CS"
+    },
+    "text_truncated": {
+      "type": "boolean",
+      "description": "text가 8,192 바이트 절단본이면 true(마지막 block_ref는 블록 중간에서 잘린 부분 ref일 수 있다, §9 규칙 2). 원천 CS(index 계산)"
+    },
+    "context_prefix": {
+      "type": "string",
+      "description": "Chunk.context_prefix.deterministic — 리랭크 입력(context_prefix + \"\\n\" + text)·팩 헤더 재생성. OpenSearch text(boost 0.5). 원천 CS"
+    },
+    "block_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/BlockRef"
+      },
+      "description": "인용 좌표(K1). char_*는 text 기준, original_char_*는 원문 Block.text 기준 코드포인트(바이블 §6.3)이며 절단(§9) 시에도 Chunk 값 그대로; 마지막 항목의 char_end == cp(text)(절단 여부 무관). hydrate가 읽어 pack이 segments·provenance 생성. level 0·1은 1개 이상. 원천 CS"
+    },
+    "sentence_spans": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Range2"
+      },
+      "description": "text 기준 문장 구간. 원천 CS"
+    },
+    "table_ref": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/TableRef"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "조건(item_kind ∈ {table, table_part}). Chunk.table_ref 복사. 원천 CS"
+    },
+    "html_ref": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "조건(item_kind ∈ {table, table_part}). 표 전체 HTML 파생물(= table_ref.html_ref; pack이 tables[].html 로드). 원천 CS"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "description": "문서 제목. 대체 순서: IngestRequest.metadata.title → ParsedDocument.metadata.title → 첫 heading level 0 → source_uri 마지막 경로 요소(대체값이 512 코드포인트를 넘으면 앞 512로 절단). 제약은 01 IngestMetadata.title·02 SourceMetadata.title과 동일(minLength 1, maxLength 512; 공용 $defs 승격 전까지 복제). 원천 SRC(metadata)"
+    },
+    "heading_path": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "루트→현재 heading. keyword(첫 2단). 원천 CS"
+    },
+    "numbering_path": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Chunk.numbering_path(없으면 빈 배열). 원천 CS"
+    },
+    "source_uri": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Uri",
+      "description": "SourceDocument.source_uri. 원천 SRC"
+    },
+    "external_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "선택. SourceDocument.external_id. 원천 SRC"
+    },
+    "doc_date": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Date",
+      "description": "선택. metadata.doc_date(self-query·recency 부스트). 원천 SRC(metadata)"
+    },
+    "doc_type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$",
+      "description": "선택. metadata.doc_type — snake_case keyword(01 IngestMetadata.doc_type·02 SourceMetadata.doc_type과 동일 패턴; 공용 $defs 승격 전까지 복제). 원천 SRC(metadata)"
+    },
+    "department": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "선택. metadata.department(01·02와 동일 제약 minLength 1, maxLength 256). 원천 SRC(metadata)"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      },
+      "maxItems": 64,
+      "uniqueItems": true,
+      "description": "선택. metadata.tags — 정확 일치 keyword(01·02와 동일 제약: 항목 1..128자, ≤ 64개, 중복 없음; 01 정규화가 순서 보존 중복 제거를 수행한 값을 그대로 투영). 원천 SRC(metadata)"
+    },
+    "lang": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Bcp47",
+      "description": "Chunk.lang. 원천 CS"
+    },
+    "genre": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Genre",
+      "description": "ChunkSet.genre_route. 원천 CS"
+    },
+    "custom": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{0,63}$"
+      },
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string",
+            "maxLength": 1024
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      },
+      "maxProperties": 64,
+      "description": "선택. 컬렉션 filterable_fields 선언 키만(FilterableField custom.{key}) — 원천의 부분집합. 키·값 제약은 01 CustomMetadata·02 SourceMetadata.custom과 동일(키 ^[a-z][a-z0-9_]{0,63}$ ≤ 64개, 값 string ≤ 1,024 | number | boolean; 00 §8.2 열린 객체; 공용 $defs 승격 전까지 복제). 원천 SRC(metadata.custom)"
+    },
+    "page_start": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "description": "Y(nullable). min(block_refs[].page); 흐름 포맷은 null. 사용자 필터 page → page_start <= v <= page_end. 원천 CS(block_refs)"
+    },
+    "page_end": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "description": "Y(nullable). max(block_refs[].page). 원천 CS(block_refs)"
+    },
+    "text_source": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/BlockSource",
+      "description": "청크 텍스트 출처 최저 등급(팩 [ocr] 표기). 원천 CS"
+    },
+    "ocr_confidence_min": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Y(nullable). text_source ∈ {ocr, vlm}이면 non-null. 원천 CS"
+    },
+    "acl_allow": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/PrincipalString"
+      },
+      "maxItems": 1024,
+      "description": "Acl.allow_principals 평탄화(문서 ACL, 모든 레벨 동일). 보안 불변식 (a). 원천 SRC(acl)"
+    },
+    "acl_deny": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/PrincipalString"
+      },
+      "maxItems": 1024,
+      "description": "선택. Acl.deny_principals 평탄화(항상 우선). 원천 SRC(acl)"
+    },
+    "acl_visibility": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Visibility",
+      "description": "Acl.visibility. 원천 SRC(acl)"
+    },
+    "acl_classification": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Classification",
+      "description": "Acl.classification(부재 시 기본 internal). acl_classification <= :classification_max. 원천 SRC(acl)"
+    },
+    "acl_embargo_until": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "선택(N | null; 계약 인스턴스는 생략·null 모두 허용, 00 §8.1 4행). Acl.embargo_until. 백엔드 payload(to_payload)에서만 명시적 null로 기록한다(IS NULL 필터). 원천 SRC(acl)"
+    },
+    "acl_expires_at": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "선택(N | null; 계약 인스턴스는 생략·null 모두 허용). Acl.expires_at. 백엔드 payload에서만 명시적 null. 원천 SRC(acl)"
+    },
+    "acl_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "SourceDocument.acl_hash = H(\"acl\", canonical_json(acl)). E9 회수 힌트 대조 키; E5 필수 보안 필드. 원천 SRC"
+    },
+    "entity_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "description": "선택. Enrichment.entities[].canonical_id(non-null) 정렬·중복 제거. 부스트(BoostKind entity). 원천 ENR"
+    },
+    "content_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "Chunk.content_hash = blake3_hex(utf8(Chunk.text)) — 절단 여부와 무관하게 원 청크 값(정합성 검사·commit_hash). 원천 CS"
+    },
+    "token_count_primary": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Chunk.token_counts[primary_tokenizer_id](패킹 사전 예산). 원천 CS"
+    },
+    "risk_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Enrichment.risk_score(pack omitted.reason=risk_flagged 근거). 원천 ENR"
+    },
+    "pii_policy_applied": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/PiiPolicy",
+      "description": "ChunkSet.pii_policy_applied. 원천 CS"
+    },
+    "embedding_space_ids": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/EmbeddingSpaceIds",
+      "description": "EmbeddedChunkSet.embedding_space_ids 복사(질의 시 공간 불일치 감지). 원천 EMB"
+    },
+    "embedding_profile_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "EmbeddedChunkSet.embedding_profile_hash 복사 = Qdrant 물리 컬렉션 rag_vec_{[:12]} 선택 근거. 원천 EMB"
+    },
+    "analyzer_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/AnalyzerId",
+      "description": "ChunkSet.analyzer_id 복사(R-10) — {engine}:{version}:{dictionary}(바이블 §6.1). 질의 analyzer_id 불일치 → degraded{channel.lexical, analyzer_mismatch}. 원천 CS"
+    },
+    "dictionary_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "ChunkSet.dictionary_hash(변경 시 렉시컬 재색인). 원천 CS"
+    },
+    "chunk_set_blake3": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "lineage_refs.chunk_set.blake3 — 부모 텍스트 번들 derived/parent_texts/{chunk_set_blake3}.json 키(§13.2). 원천 CS(ArtifactRef.blake3)"
+    },
+    "updated_at": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime",
+      "description": "레코드 기록·payload 갱신(ACL 갱신·플립) 시각. 원천 IDX"
+    }
+  },
+  "required": [
+    "record_id",
+    "point_id",
+    "chunk_id",
+    "tenant_id",
+    "collection_id",
+    "document_id",
+    "doc_version",
+    "commit_id",
+    "index_generation",
+    "is_current",
+    "item_kind",
+    "level",
+    "parent_chunk_id",
+    "ordinal",
+    "vectors",
+    "lexical_terms",
+    "text",
+    "text_preview",
+    "text_truncated",
+    "context_prefix",
+    "block_refs",
+    "sentence_spans",
+    "title",
+    "heading_path",
+    "numbering_path",
+    "source_uri",
+    "lang",
+    "genre",
+    "page_start",
+    "page_end",
+    "text_source",
+    "ocr_confidence_min",
+    "acl_allow",
+    "acl_visibility",
+    "acl_classification",
+    "acl_hash",
+    "content_hash",
+    "token_count_primary",
+    "risk_score",
+    "pii_policy_applied",
+    "embedding_space_ids",
+    "embedding_profile_hash",
+    "analyzer_id",
+    "dictionary_hash",
+    "chunk_set_blake3",
+    "updated_at"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "item_kind": {
+            "enum": [
+              "table",
+              "table_part"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "table_ref",
+          "html_ref"
+        ],
+        "properties": {
+          "table_ref": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/TableRef"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "text_source": {
+            "enum": [
+              "ocr",
+              "vlm"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "ocr_confidence_min": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "level": {
+            "enum": [
+              0,
+              2
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "vectors": {
+            "required": [
+              "dense"
+            ],
+            "anyOf": [
+              {
+                "required": [
+                  "sparse_learned"
+                ]
+              },
+              {
+                "required": [
+                  "sparse_bm25"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "level": {
+            "const": 0
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "block_refs": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "item_kind": {
+            "const": "parent"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "level": {
+            "const": 1
+          },
+          "vectors": {
+            "maxProperties": 0
+          },
+          "block_refs": {
+            "minItems": 1
+          },
+          "parent_chunk_id": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "item_kind": {
+            "enum": [
+              "text",
+              "list_group",
+              "code",
+              "table",
+              "table_part",
+              "figure",
+              "page_image"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "level": {
+            "const": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "item_kind": {
+            "enum": [
+              "summary",
+              "community_report",
+              "entity"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "level": {
+            "const": 2
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "level": {
+            "const": 1
+          }
+        },
+        "required": [
+          "level"
+        ]
+      },
+      "then": {
+        "properties": {
+          "item_kind": {
+            "const": "parent"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "Range2": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "integer",
+          "minimum": 0
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "description": "[start, end) 0-based 정수 구간"
+    },
+    "SparseVector": {
+      "type": "object",
+      "description": "Qdrant sparse named vector 본문. indices·values 길이 동일, indices 오름차순·중복 없음. vocab_id는 embedding_space_ids의 공간이 함의한다",
+      "properties": {
+        "indices": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "indices",
+        "values"
+      ],
+      "additionalProperties": false
+    },
+    "IndexRecordVectors": {
+      "type": "object",
+      "description": "바이블 §5.4 IndexRecord.vectors {dense, sparse_learned?, sparse_bm25?, late_interaction?} — 백엔드 named vectors(VectorName). EmbeddedChunkSet과 달리 오프셋이 아닌 값 본문이다. level ∈ {0, 2}는 dense 필수 + sparse 하나 이상, item_kind=parent(vector_payload 저장 방식만)는 빈 객체",
+      "properties": {
+        "dense": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 1,
+          "description": "L2 정규화 float 벡터, 길이 = 공간 dim(BGE-M3 1024). Qdrant dense(cosine)"
+        },
+        "sparse_learned": {
+          "$ref": "#/$defs/SparseVector",
+          "description": "learned sparse(BGE-M3 lexical weights). Qdrant modifier none; channel=sparse"
+        },
+        "sparse_bm25": {
+          "$ref": "#/$defs/SparseVector",
+          "description": "lite. 플랫폼 계산 BM25 TF 포화값(k1=1.2, b=0.75). Qdrant modifier idf; channel=lexical(ADR-0012)"
+        },
+        "late_interaction": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 1
+          },
+          "minItems": 1,
+          "description": "토큰 벡터 행렬 [count, dim](KURE-v2 128d 후보). Qdrant MultiVectorConfig(MAX_SIM), m=0 옵션"
+        },
+        "page_multivector": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "visual-pages 슬롯(별도 컬렉션; 미확정)"
+        },
+        "pooled_page_multivector": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "visual-pages 슬롯(미확정)"
+        },
+        "page_dense": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "visual-pages 슬롯(미확정)"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

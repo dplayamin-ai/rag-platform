@@ -1,0 +1,1061 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:context-pack:1",
+  "title": "ContextPack",
+  "description": "pack 스테이지 출력(바이블 §5.5 ContextPack·ContextItem, §8.2 pack 서브스텝, §9 패커·렌더러 정본). LLM 공급자 중립 표준 JSON: 대상 LLM 토크나이저로 재계산한 토큰 예산, litm_alternating 렌더 순서(position), 관련도순 불변 인용 ID(cite_id = d{rank}), 인용 세그먼트·provenance, 반환 직전 ACL 재검증 증적, 충분성 신호, 렌더 힌트를 담는다. items는 position 오름차순이며 content_hash = H(\"pack\", canonical_json(hash_view(items)))(items에서 타임스탬프 키 acl.checked_at 를 제거한 해시 뷰; 바이블 §6.2·§9.1). 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조하고 재정의하지 않는다(FiltersApplied·SecurityFilter·StrategyFilter 는 10 §3.6·09 §5.1·§5.2 와 같은 형태의 사본, CI 동치 검사). 소유 문서: docs/03-contracts/11-context-pack.md",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "description": "계약 버전. 초기 \"1.0.0\""
+    },
+    "schema_type": {
+      "type": "string",
+      "const": "ContextPack",
+      "description": "PascalCase 타입명(봉투)"
+    },
+    "tenant_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "보안 삼중항 1(봉투). 공급자 페이로드에는 나가지 않는다"
+    },
+    "collection_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+      },
+      "minItems": 1,
+      "maxItems": 20,
+      "uniqueItems": true,
+      "description": "질의 측 봉투(복수). QueryPlan.collection_ids 복사. 모든 items[].collection_id는 이 집합에 속한다"
+    },
+    "producer": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Producer",
+      "description": "재현성 지문(봉투). plugin_id는 packer 확장 지점 구현(예 packer.standard), image_digest는 인프로세스이므로 null"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/Warning"
+      },
+      "description": "품질 삼중항 2(봉투). pack.budget_overflow, pack.conflict_unlabeled 등 경고 코드만. 콘텐츠 미포함"
+    },
+    "degraded": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/DegradedEntry"
+      },
+      "description": "품질 삼중항 3(질의 측 봉투). plan~pack의 저하 누적(token_count·acl_recheck 포함)"
+    },
+    "created_at": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime",
+      "description": "RFC 3339 UTC(봉투). content_hash 계산에서 제외"
+    },
+    "pack_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "서버 발급 팩 식별자"
+    },
+    "query_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "QueryRequest.query_id"
+    },
+    "plan_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "QueryPlan.plan_id"
+    },
+    "profile_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "kebab-case 프로파일 ID(바이블 §6.1)"
+    },
+    "profile_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"profile\", canonical_json(해소된 프로파일))"
+    },
+    "trace_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$",
+      "description": "OTel/W3C Trace Context trace-id(소문자 hex 32). content_hash 계산에서 제외"
+    },
+    "budget": {
+      "$ref": "#/$defs/Budget"
+    },
+    "ordering": {
+      "$ref": "#/$defs/Ordering"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/ContextItem"
+      },
+      "maxItems": 20,
+      "description": "최종 항목 K개, position 오름차순(렌더 순서). cite_id는 d1..dK 연속. 상한 20은 바이블 §5.1 초안 한계"
+    },
+    "omitted": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PackOmittedEntry"
+      },
+      "description": "제외 항목. cite_id 없음(cite_id는 최종 항목에만 존재). 렌더하지 않는다"
+    },
+    "sufficiency": {
+      "$ref": "#/$defs/Sufficiency"
+    },
+    "stop_signal": {
+      "$ref": "#/$defs/StopSignal"
+    },
+    "compression": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Compression"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "선택. overflow_policy의 compress가 적용되었을 때만 객체, 아니면 생략 또는 null"
+    },
+    "redaction_summary": {
+      "$ref": "#/$defs/RedactionSummary"
+    },
+    "classification_max": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Classification",
+      "description": "items[].acl.classification의 최고 등급(K=0이면 public)"
+    },
+    "render_hints": {
+      "$ref": "#/$defs/RenderHints"
+    },
+    "explain": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/PackExplain"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "선택. QueryRequest.explain=true일 때만 객체(items[].scores와 함께)"
+    },
+    "diagnostics": {
+      "$ref": "#/$defs/Diagnostics"
+    },
+    "truncated": {
+      "type": "boolean",
+      "description": "선택(MCP). 결과 토큰 상한(20k)으로 절단되었으면 true"
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 512,
+      "description": "선택(MCP). \"더 보기\" 불투명 핸들(Valkey cursor:{tenant}:{ulid}, 10m, 테넌트 바인딩)"
+    },
+    "content_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"pack\", canonical_json(hash_view(items))) — hash_view 는 items 의 레퍼런스 직렬화에서 타임스탬프 키(*_at; 현재 acl.checked_at)를 재귀 제거한 뷰. created_at·trace_id·diagnostics 는 items 밖. 같은 RankedSet·설정이면 SecurityContext.as_of 가 달라도 동일(바이블 §6.2·§9.1, P-13)"
+    }
+  },
+  "required": [
+    "schema_version",
+    "schema_type",
+    "tenant_id",
+    "collection_ids",
+    "producer",
+    "warnings",
+    "degraded",
+    "created_at",
+    "pack_id",
+    "query_id",
+    "plan_id",
+    "profile_id",
+    "profile_hash",
+    "trace_id",
+    "budget",
+    "ordering",
+    "items",
+    "omitted",
+    "sufficiency",
+    "redaction_summary",
+    "classification_max",
+    "render_hints",
+    "diagnostics",
+    "content_hash"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "truncated": {
+            "const": true
+          }
+        },
+        "required": [
+          "truncated"
+        ]
+      },
+      "then": {
+        "required": [
+          "next_cursor"
+        ],
+        "properties": {
+          "next_cursor": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "explain": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "explain"
+        ]
+      },
+      "then": {
+        "properties": {
+          "items": {
+            "items": {
+              "required": [
+                "scores"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "sufficiency": {
+            "properties": {
+              "status": {
+                "const": "not_needed"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "items": {
+            "maxItems": 0
+          },
+          "omitted": {
+            "maxItems": 0
+          },
+          "explain": {
+            "properties": {
+              "ranked_set_id": {
+                "type": "null"
+              },
+              "items": {
+                "maxItems": 0
+              },
+              "omitted": {
+                "maxItems": 0
+              }
+            }
+          },
+          "diagnostics": {
+            "properties": {
+              "mmr_lambda": {
+                "type": "null"
+              },
+              "index_generations_seen": {
+                "maxItems": 0
+              },
+              "latency_ms": {
+                "properties": {
+                  "retrieve": {
+                    "const": 0
+                  },
+                  "fuse": {
+                    "const": 0
+                  },
+                  "hydrate": {
+                    "const": 0
+                  },
+                  "rerank": {
+                    "const": 0
+                  },
+                  "postprocess": {
+                    "const": 0
+                  }
+                }
+              },
+              "acl_recheck": {
+                "properties": {
+                  "checked": {
+                    "const": 0
+                  },
+                  "denied": {
+                    "const": 0
+                  },
+                  "hint_hits": {
+                    "const": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "sufficiency": {
+            "properties": {
+              "status": {
+                "not": {
+                  "const": "not_needed"
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "explain": {
+            "properties": {
+              "ranked_set_id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "ContextPack.budget.tokenizer.provider": {
+      "type": "string",
+      "enum": [
+        "anthropic",
+        "openai",
+        "google",
+        "local"
+      ],
+      "description": "인라인 열거(바이블 §5.5 QueryRequest.target_model.provider·09 QueryPlan.pack.tokenizer.provider와 같은 값 집합). tokenizer.name 접두 대응: anthropic→anthropic:, openai→tiktoken:, google→gemini:, local→hf:"
+    },
+    "TokenizerSpec": {
+      "type": "object",
+      "description": "대상 LLM 토크나이저 3중 키(바이블 §5.5 budget.tokenizer; QueryPlan.pack.tokenizer 복사). 모델 식별자는 프로파일 값(플레이스홀더 허용)",
+      "properties": {
+        "provider": {
+          "$ref": "#/$defs/ContextPack.budget.tokenizer.provider"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "description": "대상 모델 식별자(예 claude-opus-5)"
+        },
+        "name": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/TokenizerId",
+          "description": "tokenizer_id 형식(바이블 §6.1): hf:{repo} | tiktoken:{encoding} | anthropic:{model} | gemini:{model}. 접두는 provider에 대응(불일치는 pack.tokenizer_mismatch). Valkey tok:{name}:{H(text)} 캐시 키"
+        }
+      },
+      "required": [
+        "provider",
+        "model",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "Budget": {
+      "type": "object",
+      "description": "토큰 예산(바이블 §5.5·§9.1 이중 카운트). 이중 제한 k_max × (max_context_tokens − reserved_answer_tokens); safety_margin은 근사 카운트에만 적용",
+      "properties": {
+        "tokenizer": {
+          "$ref": "#/$defs/TokenizerSpec"
+        },
+        "count_method": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/CountMethod",
+          "description": "exact_api(Anthropic count_tokens·Gemini count_tokens) / exact_local(tiktoken·HF tokenizers·Gemini LocalTokenizer) / approximate(근사 × calibration_ratio)"
+        },
+        "calibration_ratio": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0,
+          "description": "조건. count_method=approximate이면 골든셋 실측 exact/approx 배율(non-null 필수), 그 외 null 또는 생략(if/then/else)"
+        },
+        "safety_margin": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "안전 마진 비율(기본 0.10). count_method=approximate(count_api_failed 폴백 포함)일 때 근사 카운트에 얹는 보수 계수: token_count = ceil(raw × calibration_ratio × (1 + safety_margin)). exact_api·exact_local에는 적용하지 않고 프로파일 값을 기록만 한다. 절단 상한은 항상 max_context_tokens − reserved_answer_tokens(바이블 §8.2·§9.1)"
+        },
+        "max_context_tokens": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "팩 전체 상한(프로파일 query.pack.max_context_tokens; QueryRequest.max_context_tokens는 이하로만)"
+        },
+        "used_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "실제 사용(항목 본문 + 헤더 추정). 렌더 후 RenderedContext.token_count_rendered로 갱신"
+        },
+        "reserved_answer_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "답변용 예약"
+        },
+        "k_max": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "항목 수 상한(프로파일 query.pack.k_max; §5.1 초안 한계 20)"
+        },
+        "overflow_policy": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/OverflowPolicy"
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "예산 초과 시 적용 순서. 기본 [downgrade_tables, truncate]"
+        }
+      },
+      "required": [
+        "tokenizer",
+        "count_method",
+        "safety_margin",
+        "max_context_tokens",
+        "used_tokens",
+        "reserved_answer_tokens",
+        "k_max",
+        "overflow_policy"
+      ],
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "count_method": {
+            "const": "approximate"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "calibration_ratio"
+        ],
+        "properties": {
+          "calibration_ratio": {
+            "type": "number"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "calibration_ratio": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    "Ordering": {
+      "type": "object",
+      "description": "렌더 순서 전략(바이블 §9.2). budget_cut 뒤 최종 K개 기준 적용(K ≤ 1 포함). applied=false면 position = rank − 1",
+      "properties": {
+        "strategy": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/OrderingStrategy"
+        },
+        "applied": {
+          "type": "boolean",
+          "description": "전략이 실제 적용되었는지. document_order의 원문 순서 정보 부재 등 전략을 실행할 수 없어 관련도순으로 폴백했을 때만 false"
+        }
+      },
+      "required": [
+        "strategy",
+        "applied"
+      ],
+      "additionalProperties": false
+    },
+    "PackOmittedEntry": {
+      "type": "object",
+      "description": "제외 항목(바이블 §5.5 omitted). cite_id 없음. RankedSet.omitted(10 RankedOmittedEntry)의 step·related_chunk_id·explain은 복사하지 않는다",
+      "properties": {
+        "chunk_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "document_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "reason": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/OmitReason"
+        }
+      },
+      "required": [
+        "chunk_id",
+        "collection_id",
+        "document_id",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "Sufficiency": {
+      "type": "object",
+      "description": "충분성 신호(바이블 §9.1). partial 상태는 없고 coverage + confidence로 표현(ADR-0024)",
+      "properties": {
+        "status": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/SufficiencyStatus"
+        },
+        "coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "(적중 질의 변형 수 + 적중 lexical_terms 수) / (전체 변형 수 + 전체 lexical_terms 수)"
+        },
+        "confidence": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ConfidenceTier",
+          "description": "max(final_score)의 tier"
+        },
+        "missing_aspects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "미적중 질의 변형·키워드 라벨(콘텐츠 아님; 질의 측 어휘)"
+        },
+        "method": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/SufficiencyMethod"
+        }
+      },
+      "required": [
+        "status",
+        "coverage",
+        "confidence",
+        "missing_aspects",
+        "method"
+      ],
+      "additionalProperties": false
+    },
+    "StopSignal": {
+      "type": "object",
+      "description": "에이전트 루프용 파생 신호(바이블 §5.5). sufficient ⇔ sufficiency.status == sufficient",
+      "properties": {
+        "sufficient": {
+          "type": "boolean"
+        },
+        "coverage_estimate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "sufficient",
+        "coverage_estimate",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "ContextPack.compression.granularity": {
+      "type": "string",
+      "enum": [
+        "sentence",
+        "token"
+      ],
+      "description": "인라인 열거. sentence는 segments 보존(오프셋 재계산), token은 text_format=plain 강제 + segments 전면 재계산"
+    },
+    "Compression": {
+      "type": "object",
+      "description": "overflow_policy compress 적용 기록(바이블 §5.5)",
+      "properties": {
+        "method": {
+          "type": "string",
+          "minLength": 1,
+          "description": "압축기 plugin_id 또는 방법명(예 postprocessor.exit_sentence)"
+        },
+        "rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "압축 후 토큰 / 압축 전 토큰"
+        },
+        "granularity": {
+          "$ref": "#/$defs/ContextPack.compression.granularity"
+        }
+      },
+      "required": [
+        "method",
+        "rate",
+        "granularity"
+      ],
+      "additionalProperties": false
+    },
+    "RedactionSummary": {
+      "type": "object",
+      "description": "PII 처리 요약(바이블 §5.5). entity_counts는 엔티티 타입별 집계(열린 객체, 값 integer)",
+      "properties": {
+        "pii_policy": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PiiPolicy"
+        },
+        "entity_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "required": [
+        "pii_policy",
+        "entity_counts"
+      ],
+      "additionalProperties": false
+    },
+    "RenderHints": {
+      "type": "object",
+      "description": "렌더 힌트(바이블 §5.5). 공급자 페이로드 자체가 아니라 렌더러 선택·지시문·데이터마킹 정책",
+      "properties": {
+        "preferred_renderer": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Renderer"
+        },
+        "citation_style": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/CitationStyle",
+          "description": "native(공급자 citations; anthropic_* 렌더러에서만) / bracket_id([dN] 마커; 모든 렌더러 — anthropic_*는 구조화 출력 병용 시)"
+        },
+        "instructions_template_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*@[0-9]+$",
+          "description": "시스템 지시문 템플릿(인용·기권·형식·데이터 경계 문구). 예 rag-answer-ko@1"
+        },
+        "stable_prefix_ref": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef",
+          "description": "선택. 컬렉션 고정 문맥(용어집 등) 산출물 — 프롬프트 캐시 접두어(바이블 §9.4)"
+        },
+        "table_format_preference": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/TableFormat"
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "표 형식 우선순위. downgrade_tables는 이 순서로 강등"
+        },
+        "language": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Bcp47",
+          "description": "지시문 언어"
+        },
+        "expose_confidence": {
+          "type": "boolean",
+          "description": "confidence_tier·ocr_confidence_min 노출 여부"
+        },
+        "data_marking": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/DataMarking",
+          "description": "none / delimit(구분자 + 데이터 표지 문구) / datamark(공백 마커 삽입; korean-gov 기본)"
+        }
+      },
+      "required": [
+        "preferred_renderer",
+        "citation_style",
+        "instructions_template_id",
+        "table_format_preference",
+        "language",
+        "expose_confidence",
+        "data_marking"
+      ],
+      "additionalProperties": false
+    },
+    "LatencyMs": {
+      "type": "object",
+      "description": "스테이지별 소요(ms). 7키 모두 필수이며 실행되지 않은 스테이지(route=no_retrieval 의 retrieve~postprocess, rerank.applied=false 의 rerank)는 0",
+      "properties": {
+        "plan": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "retrieve": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fuse": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hydrate": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rerank": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "postprocess": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pack": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "plan",
+        "retrieve",
+        "fuse",
+        "hydrate",
+        "rerank",
+        "postprocess",
+        "pack"
+      ],
+      "additionalProperties": false
+    },
+    "PackStepReport": {
+      "type": "object",
+      "properties": {
+        "step": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PackStep"
+        },
+        "removed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "took_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "step",
+        "removed",
+        "took_ms"
+      ],
+      "additionalProperties": false
+    },
+    "AclRecheckReport": {
+      "type": "object",
+      "description": "acl_recheck 증적(바이블 §9.1, E9). route=no_retrieval(입력 0건)이면 {checked: 0, denied: 0, hint_hits: 0}",
+      "properties": {
+        "checked": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "재검증한 후보 수 = pack 입력(RankedSet(postprocessed).results) 건수; 후처리가 이미 제외한 항목은 대상이 아니다"
+        },
+        "denied": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "omitted(acl_denied) 수"
+        },
+        "hint_hits": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "aclrev: 회수 힌트가 payload와 달라 힌트로 판정한 수"
+        }
+      },
+      "required": [
+        "checked",
+        "denied",
+        "hint_hits"
+      ],
+      "additionalProperties": false
+    },
+    "FiltersApplied": {
+      "type": "object",
+      "description": "백엔드에 실제 전송된 필터 트리(바이블 §5.5 CandidateSet.filters_applied·§10.2 (a)(b)(c) 구분). 10 §3.6 FiltersApplied 와 같은 형태의 구조 사본(CI 동치 검사) — CandidateSet.filters_applied 를 그대로 복사(완화가 있었으면 완화 후 값). route=no_retrieval(CandidateSet 없음)이면 QueryPlan.filters 의 4묶음 + 계획 effective_hash",
+      "properties": {
+        "security": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/SecurityFilter",
+          "description": "= CandidateSet.filters_applied.security = QueryPlan.filters.security(보안 불변식 (a), 09 §5.1). 제거·완화 불가. principals 는 요청 주체 자신의 목록이며 MCP 슬림 팩·공급자 페이로드에는 나가지 않는다"
+        },
+        "strategy": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/StrategyFilter",
+          "description": "= CandidateSet.filters_applied.strategy = QueryPlan.filters.strategy(전략 필터 (b), 09 §5.2)"
+        },
+        "user": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/FilterNode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Y(nullable). 사용자 필터(page 변환·완화 후 값)"
+        },
+        "self_query": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/FilterNode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Y(nullable). 추출 필터(완화 후 값)"
+        },
+        "effective_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "Y(10 과 동일; 바이블 §5.5 patch 전제, 10 미해결 이슈 3). 실전송 해시 H(\"filters\", canonical_json(security + strategy + user + self_query; as_of 는 바인드 이름 \":as_of\"))(바이블 §6.2, 09 §5.4) — 변환·완화가 없으면 QueryPlan.filters.effective_hash 와 같다; route=no_retrieval 은 계획 해시"
+        }
+      },
+      "required": [
+        "security",
+        "strategy",
+        "user",
+        "self_query",
+        "effective_hash"
+      ],
+      "additionalProperties": false
+    },
+    "Diagnostics": {
+      "type": "object",
+      "description": "진단(바이블 §5.5 diagnostics). pack_steps는 고정 순서 4개",
+      "properties": {
+        "dedup_removed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "parent_expansions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mmr_lambda": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Y(nullable). mmr 끔이면 null"
+        },
+        "filters_applied": {
+          "$ref": "#/$defs/FiltersApplied",
+          "description": "= CandidateSet.filters_applied(실전송 필터; 10 §3.6 과 같은 형태). route=no_retrieval 이면 QueryPlan.filters 4묶음 + 계획 effective_hash"
+        },
+        "relaxed_applied_keys": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/FilterableField"
+          },
+          "maxItems": 32,
+          "uniqueItems": true,
+          "description": "선택(N; 바이블 §5.5 diagnostics 미등재, 11 미해결 이슈 3). 0건 완화(QueryPlan.filters.relaxable_keys 순서)로 실제 제거된 사용자·self-query 필드. 완화가 없으면 생략"
+        },
+        "latency_ms": {
+          "$ref": "#/$defs/LatencyMs"
+        },
+        "index_generations_seen": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "uniqueItems": true,
+          "description": "후보가 속한 인덱스 세대(플립 혼합 진단). route=no_retrieval 이면 []"
+        },
+        "count_method_fallback": {
+          "type": "boolean",
+          "description": "pack.count_api_failed 폴백이 발생했으면 true"
+        },
+        "pack_steps": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/PackStepReport"
+                },
+                {
+                  "properties": {
+                    "step": {
+                      "const": "acl_recheck"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/PackStepReport"
+                },
+                {
+                  "properties": {
+                    "step": {
+                      "const": "budget_cut"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/PackStepReport"
+                },
+                {
+                  "properties": {
+                    "step": {
+                      "const": "reorder"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/PackStepReport"
+                },
+                {
+                  "properties": {
+                    "step": {
+                      "const": "citation_align"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4,
+          "description": "PackStep 고정 순서 acl_recheck → budget_cut → reorder → citation_align(바이블 §8.2)"
+        },
+        "acl_recheck": {
+          "$ref": "#/$defs/AclRecheckReport"
+        }
+      },
+      "required": [
+        "dedup_removed",
+        "parent_expansions",
+        "mmr_lambda",
+        "filters_applied",
+        "latency_ms",
+        "index_generations_seen",
+        "count_method_fallback",
+        "pack_steps",
+        "acl_recheck"
+      ],
+      "additionalProperties": false
+    },
+    "PackExplainItem": {
+      "type": "object",
+      "properties": {
+        "cite_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/CiteId"
+        },
+        "chunk_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "final_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "fused_rank": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rerank_rank": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "explain": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/ExplainCode"
+          }
+        }
+      },
+      "required": [
+        "cite_id",
+        "chunk_id",
+        "final_score",
+        "fused_rank",
+        "rerank_rank",
+        "explain"
+      ],
+      "additionalProperties": false
+    },
+    "PackExplainOmitted": {
+      "type": "object",
+      "properties": {
+        "chunk_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "final_score": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "reason": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/OmitReason"
+        },
+        "explain": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/ExplainCode"
+          }
+        }
+      },
+      "required": [
+        "chunk_id",
+        "final_score",
+        "reason",
+        "explain"
+      ],
+      "additionalProperties": false
+    },
+    "PackExplain": {
+      "type": "object",
+      "description": "explain=true 시 상위 K·제외 항목의 점수 요약(원시 점수 분해는 items[].scores)",
+      "properties": {
+        "ranked_set_id": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Y(nullable). 입력 RankedSet.ranked_set_id; route=no_retrieval(RankedSet 없음, 09 P-17)이면 null(최상위 allOf 가 sufficiency.status=not_needed 와 결합)"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PackExplainItem"
+          }
+        },
+        "omitted": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PackExplainOmitted"
+          }
+        }
+      },
+      "required": [
+        "ranked_set_id",
+        "items",
+        "omitted"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

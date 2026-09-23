@@ -1,0 +1,1714 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:cloud-event-envelope:1",
+  "title": "CloudEventEnvelope",
+  "description": "CloudEvents 1.0.2 봉투(바이블 §5.3·§6.5, ADR-0017)의 정제 래퍼. 봉투 자체는 urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope 을 참조하고, 이 파일은 바이블 §5.7 이벤트 카탈로그 24종의 type ↔ data·subject 바인딩(oneOf)과 이벤트별 data 타입($defs)만 더한다. data는 ID·해시·상태·계수만 담고 콘텍스트 본문을 담지 않는다(E12). 소유 문서: docs/03-contracts/12-jobs-events-and-status.md",
+  "$ref": "urn:rag:schema:common-types:1#/$defs/CloudEventEnvelope",
+  "oneOf": [
+    {
+      "properties": {
+        "type": {
+          "const": "ingest.document.fetched"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/IngestStageEventData"
+            },
+            {
+              "properties": {
+                "stage": {
+                  "const": "fetch"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "ingest.document.parsed"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/IngestStageEventData"
+            },
+            {
+              "properties": {
+                "stage": {
+                  "const": "parse"
+                }
+              },
+              "required": [
+                "stage_key"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "ingest.document.normalized"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/IngestStageEventData"
+            },
+            {
+              "properties": {
+                "stage": {
+                  "const": "normalize"
+                }
+              },
+              "required": [
+                "stage_key"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "ingest.document.chunked"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/IngestStageEventData"
+            },
+            {
+              "properties": {
+                "stage": {
+                  "enum": [
+                    "chunk",
+                    "recount"
+                  ]
+                }
+              },
+              "required": [
+                "stage_key"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "ingest.document.enriched"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/IngestStageEventData"
+            },
+            {
+              "properties": {
+                "stage": {
+                  "const": "enrich"
+                }
+              },
+              "required": [
+                "stage_key"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "ingest.document.embedded"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/IngestStageEventData"
+            },
+            {
+              "properties": {
+                "stage": {
+                  "const": "embed"
+                }
+              },
+              "required": [
+                "stage_key"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "ingest.document.indexed"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "$ref": "#/$defs/IngestDocumentIndexedData"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "ingest.document.retried"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/IngestFailureEventData"
+            },
+            {
+              "properties": {
+                "retryable": {
+                  "const": true
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "ingest.document.failed"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "$ref": "#/$defs/IngestFailureEventData"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "ingest.document.deleted"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "$ref": "#/$defs/IngestDocumentDeletedData"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "job.state.changed"
+        },
+        "subject": {
+          "type": "string",
+          "pattern": "^tenant/[0-9A-HJKMNP-TV-Z]{26}/job/[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "data": {
+          "$ref": "#/$defs/JobStateChangedData"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "index.commit.published"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "$ref": "#/$defs/IndexCommitPublishedData"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "index.commit.rolled_back"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "$ref": "#/$defs/IndexCommitRolledBackData"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "index.consistency.mismatch"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "$ref": "#/$defs/IndexConsistencyMismatchData"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "acl.document.updated"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "$ref": "#/$defs/AclDocumentUpdatedData"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "collection.profile.changed"
+        },
+        "subject": {
+          "$ref": "#/$defs/CollectionSubject"
+        },
+        "data": {
+          "$ref": "#/$defs/CollectionProfileChangedData"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "collection.reindex.completed"
+        },
+        "subject": {
+          "$ref": "#/$defs/CollectionSubject"
+        },
+        "data": {
+          "$ref": "#/$defs/CollectionReindexCompletedData"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "audit.query.executed"
+        },
+        "subject": {
+          "$ref": "#/$defs/QuerySubject"
+        },
+        "data": {
+          "$ref": "#/$defs/AuditQueryExecutedData"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "audit.document.accessed"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "$ref": "#/$defs/AuditDocumentAccessedData"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "audit.acl.changed"
+        },
+        "subject": {
+          "$ref": "#/$defs/DocumentSubject"
+        },
+        "data": {
+          "$ref": "#/$defs/AuditAclChangedData"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "audit.admin.action"
+        },
+        "data": {
+          "$ref": "#/$defs/AuditAdminActionData"
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "feedback.query.cited"
+        },
+        "subject": {
+          "$ref": "#/$defs/QuerySubject"
+        },
+        "data": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/FeedbackQueryEventData"
+            },
+            {
+              "properties": {
+                "kind": {
+                  "const": "cited"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "feedback.query.rated"
+        },
+        "subject": {
+          "$ref": "#/$defs/QuerySubject"
+        },
+        "data": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/FeedbackQueryEventData"
+            },
+            {
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "rated",
+                    "corrected"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "eval.run.completed"
+        },
+        "subject": {
+          "type": "string",
+          "pattern": "^tenant/[0-9A-HJKMNP-TV-Z]{26}/eval_run/[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "data": {
+          "$ref": "#/$defs/EvalRunCompletedData"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "DocumentSubject": {
+      "type": "string",
+      "pattern": "^tenant/[0-9A-HJKMNP-TV-Z]{26}/document/[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "CollectionSubject": {
+      "type": "string",
+      "pattern": "^tenant/[0-9A-HJKMNP-TV-Z]{26}/collection/[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "QuerySubject": {
+      "type": "string",
+      "pattern": "^tenant/[0-9A-HJKMNP-TV-Z]{26}/query/[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "StageName": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "maxLength": 32
+    },
+    "CountMap": {
+      "type": "object",
+      "description": "{backend_id 또는 이름: 정수}",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "maxProperties": 8
+    },
+    "IngestStageEventData": {
+      "type": "object",
+      "description": "ingest.document.{fetched, parsed, normalized, chunked, enriched, embedded}. 스테이지 래퍼 commit_stage가 산출물 저장 트랜잭션에서 기록. 스테이지별 선택 계수는 표 §6.1",
+      "properties": {
+        "job_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "document_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "stage": {
+          "$ref": "#/$defs/StageName"
+        },
+        "doc_version": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "quality": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Quality"
+        },
+        "artifact_blake3": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "산출물 바이트 해시(ArtifactRef.blake3)"
+        },
+        "stage_key": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "fetch 이후 스테이지 필수"
+        },
+        "cache_hit": {
+          "type": "boolean"
+        },
+        "warning_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "format": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/SourceFormat"
+        },
+        "block_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "흐름 포맷은 null"
+        },
+        "pii_policy_applied": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PiiPolicy"
+        },
+        "chunk_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "parent_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "chunker_config_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "enrich_status": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/EnrichStatus"
+        },
+        "llm_tokens_in": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "llm_tokens_out": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "record_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "embedding_profile_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        }
+      },
+      "required": [
+        "job_id",
+        "document_id",
+        "stage",
+        "doc_version",
+        "quality",
+        "artifact_blake3"
+      ],
+      "additionalProperties": false
+    },
+    "IngestDocumentIndexedData": {
+      "type": "object",
+      "description": "ingest.document.indexed. publish가 succeeded·partial 종결 트랜잭션에서 기록",
+      "properties": {
+        "job_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "document_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "stage": {
+          "type": "string",
+          "const": "index"
+        },
+        "doc_version": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "quality": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Quality"
+        },
+        "commit_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "index_generation": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "commit_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "record_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "job_state": {
+          "allOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/JobState"
+            },
+            {
+              "enum": [
+                "succeeded",
+                "partial"
+              ]
+            }
+          ],
+          "description": "JobState 부분집합(바이블 §6.4)"
+        }
+      },
+      "required": [
+        "job_id",
+        "document_id",
+        "stage",
+        "doc_version",
+        "quality",
+        "commit_id",
+        "index_generation",
+        "commit_hash",
+        "record_count",
+        "job_state"
+      ],
+      "additionalProperties": false
+    },
+    "IngestFailureEventData": {
+      "type": "object",
+      "description": "ingest.document.retried·failed. StageError 투영 {job_id, document_id, stage, code, retryable, attempt}(13 J3) — detail·artifact_ref·location·cause 없음",
+      "properties": {
+        "job_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "document_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "stage": {
+          "$ref": "#/$defs/StageName"
+        },
+        "code": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ErrorCodeCatalog"
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "next_attempt_at": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime"
+        }
+      },
+      "required": [
+        "job_id",
+        "document_id",
+        "stage",
+        "code",
+        "retryable",
+        "attempt"
+      ],
+      "additionalProperties": false
+    },
+    "IngestDocumentDeletedData": {
+      "type": "object",
+      "description": "ingest.document.deleted. publish가 delete.document.v1 종결 트랜잭션에서 기록. 삭제 잡은 current 커밋 유무와 무관하게 항상 kind=delete tombstone 커밋(record_count=0)을 만들므로(바이블 §11.2·§5.4) commit_id·index_generation은 nullable이 아니다",
+      "properties": {
+        "job_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "document_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "commit_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+          "description": "kind=delete tombstone 커밋(항상 존재)"
+        },
+        "index_generation": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "deleted_counts": {
+          "$ref": "#/$defs/CountMap",
+          "description": "백엔드별 삭제 레코드 수. current 커밋이 없던 문서는 모두 0"
+        }
+      },
+      "required": [
+        "job_id",
+        "document_id",
+        "collection_id",
+        "commit_id",
+        "index_generation",
+        "deleted_counts"
+      ],
+      "additionalProperties": false
+    },
+    "JobStateChangedData": {
+      "type": "object",
+      "description": "job.state.changed. 바이블 §11.5 전이 1건(job_events 행의 투영)",
+      "properties": {
+        "job_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "kind": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/JobKind"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "from_state": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/JobState"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "접수(첫 queued)는 null"
+        },
+        "to_state": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/JobState"
+        },
+        "stage": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/StageName"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "progress": {
+          "$ref": "urn:rag:schema:job-status:1#/$defs/JobProgress"
+        },
+        "document_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "index_commit_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "waiting_for": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "error": {
+          "type": "object",
+          "description": "StageError 투영(13 J3)",
+          "properties": {
+            "code": {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/ErrorCodeCatalog"
+            },
+            "retryable": {
+              "type": "boolean"
+            },
+            "attempt": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "code",
+            "retryable",
+            "attempt"
+          ],
+          "additionalProperties": false
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "취소·기한 사유(영문, 콘텐츠 미포함)"
+        }
+      },
+      "required": [
+        "job_id",
+        "kind",
+        "collection_id",
+        "from_state",
+        "to_state",
+        "stage",
+        "attempts"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "to_state": {
+                "const": "running"
+              }
+            },
+            "required": [
+              "to_state"
+            ]
+          },
+          "then": {
+            "required": [
+              "progress"
+            ]
+          }
+        }
+      ]
+    },
+    "IndexCommitPublishedData": {
+      "type": "object",
+      "description": "index.commit.published. IndexCommit 투영(08 문서 미해결 이슈 12, 14 예시 4)",
+      "properties": {
+        "commit_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "job_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "document_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "doc_version": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "index_generation": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "allOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/CommitStatus"
+            },
+            {
+              "const": "committed"
+            }
+          ],
+          "description": "CommitStatus 고정값(바이블 §6.4)"
+        },
+        "kind": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/CommitKind"
+        },
+        "commit_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "record_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_commit_id": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "commit_id",
+        "job_id",
+        "document_id",
+        "collection_id",
+        "doc_version",
+        "index_generation",
+        "status",
+        "commit_hash",
+        "record_count"
+      ],
+      "additionalProperties": false
+    },
+    "IndexCommitRolledBackData": {
+      "type": "object",
+      "description": "index.commit.rolled_back. IndexCommit.compensation(08 §2.6) 투영: failed_at_status·restored_generation·reason은 compensation의 같은 이름 필드와 값이 같고 code는 최종 IndexCommit.error.code다",
+      "properties": {
+        "commit_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "job_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "document_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "doc_version": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "index_generation": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "allOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/CommitStatus"
+            },
+            {
+              "const": "rolled_back"
+            }
+          ],
+          "description": "CommitStatus 고정값"
+        },
+        "failed_at_status": {
+          "allOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/CommitStatus"
+            },
+            {
+              "enum": [
+                "pending",
+                "vector_written",
+                "lexical_written",
+                "flipping_lexical",
+                "flipping_vector"
+              ]
+            }
+          ],
+          "description": "CommitStatus 부분집합(바이블 §6.4) = IndexCommit.compensation.failed_at_status: 보상 시작 시점의 전종결 상태(종결·rolling_back 불가). pending~lexical_written = 플립 전 모드, flipping_* = 플립 후 모드"
+        },
+        "restored_generation": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "description": "= compensation.restored_generation. 플립 후 보상이 복원한 세대. 플립 전·첫 세대는 null"
+        },
+        "code": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ErrorCodeCatalog",
+          "description": "선택(N). 최종 IndexCommit.error.code(retryable=false; 촉발 원인은 error.cause.code이며 이벤트에 없음). reason=job_cancelled(취소, error 없음)면 없고 그 외는 reason과 같다(08 IC-15)"
+        },
+        "reason": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)?$",
+          "maxLength": 64,
+          "description": "= IndexCommit.compensation.reason: 최종 error.code({stage}.{reason}) 또는 job_cancelled"
+        }
+      },
+      "required": [
+        "commit_id",
+        "job_id",
+        "document_id",
+        "collection_id",
+        "index_generation",
+        "status",
+        "failed_at_status",
+        "restored_generation",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "reason": {
+                "const": "job_cancelled"
+              }
+            },
+            "required": [
+              "reason"
+            ]
+          },
+          "then": {
+            "not": {
+              "required": [
+                "code"
+              ]
+            }
+          },
+          "else": {
+            "required": [
+              "code"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "failed_at_status": {
+                "enum": [
+                  "pending",
+                  "vector_written",
+                  "lexical_written"
+                ]
+              }
+            },
+            "required": [
+              "failed_at_status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "restored_generation": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "IndexConsistencyMismatchData": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+          "description": "보상 실패 잡 또는 consistency_check 잡"
+        },
+        "document_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "commit_id": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "index_generation": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "expected_record_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observed_record_counts": {
+          "$ref": "#/$defs/CountMap"
+        },
+        "content_hash_mismatch": {
+          "type": "boolean"
+        },
+        "repair_job_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+          "description": "재적재(from_stage=index) 잡"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "missing_records",
+            "hash_mismatch",
+            "stale_current",
+            "orphan",
+            "acl_hash_mismatch",
+            "artifact_missing"
+          ],
+          "description": "N(바이블 §5.7 1.3.0, 04-pipelines/13 §10 불일치 종류; 요청 #172). 메트릭 rag_consistency_mismatch_total{outcome} 라벨과 같은 값 집합"
+        },
+        "observed_generations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "description": "N(바이블 §5.7 1.3.0; 요청 #172). object(키 backend_id, 값 index_generation 배열) — 백엔드별로 관측된 세대 목록(stale_current 등 세대 분포 진단)"
+        }
+      },
+      "required": [
+        "job_id",
+        "document_id",
+        "collection_id",
+        "commit_id",
+        "index_generation",
+        "expected_record_count",
+        "observed_record_counts",
+        "content_hash_mismatch"
+      ],
+      "additionalProperties": false
+    },
+    "AclDocumentUpdatedData": {
+      "type": "object",
+      "description": "acl.document.updated. 주체 문자열 없음(acl_hash·열거만)",
+      "properties": {
+        "job_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "document_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "acl_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "previous_acl_hash": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "visibility": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Visibility",
+          "description": "갱신 후 Acl.visibility(원천 생략 시 기본 tenant를 채워 기록)"
+        },
+        "classification": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Classification",
+          "description": "갱신 후 Acl.classification. 원천(common-types Acl, N)이 생략되었으면 기본 internal을 채워 기록 — 이벤트에서는 항상 필수"
+        },
+        "backends_updated": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+          },
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true
+        },
+        "revocation_hint_recorded": {
+          "type": "boolean",
+          "description": "aclrev: 회수 힌트 기록 여부(E9)"
+        },
+        "propagation_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "접수 → 백엔드 갱신 완료(rag_acl_propagation_seconds)"
+        }
+      },
+      "required": [
+        "job_id",
+        "document_id",
+        "collection_id",
+        "acl_hash",
+        "previous_acl_hash",
+        "visibility",
+        "classification",
+        "backends_updated",
+        "revocation_hint_recorded"
+      ],
+      "additionalProperties": false
+    },
+    "CollectionProfileChangedData": {
+      "type": "object",
+      "description": "collection.profile.changed. 프로파일(PATCH /v1/collections/{collection_id}·재색인 alias 교체)·사전(PUT /v1/collections/{collection_id}/dictionary, 16 §6.2 dictionary_hash 변경)·정책 변경 커밋의 투영. change_kind가 무엇이 바뀌었는지 밝힌다 — dictionary·policy 변경은 profile_hash가 불변이라 previous_profile_hash == profile_hash다(I-21)",
+      "properties": {
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "change_kind": {
+          "$ref": "#/$defs/CollectionProfileChangedData.change_kind"
+        },
+        "profile_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+          "maxLength": 64
+        },
+        "profile_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "변경 후 프로파일 해시"
+        },
+        "previous_profile_hash": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "변경 전 프로파일 해시(최초 지정은 null). change_kind ∈ {dictionary, policy}면 profile_hash와 같다"
+        },
+        "embedding_profile_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "analyzer_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*:[^:\\s]+:[^\\s]+$",
+          "maxLength": 128,
+          "description": "변경 후 analyzer_id({engine}:{version}:{dictionary}, 바이블 §6.1)"
+        },
+        "previous_analyzer_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*:[^:\\s]+:[^\\s]+$",
+          "maxLength": 128,
+          "description": "선택(N). 분석기가 바뀐 경우만(변경 전 analyzer_id)"
+        },
+        "dictionary_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "변경 후 dictionary_hash(16 EF-23)"
+        },
+        "previous_dictionary_hash": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "선택(N, null 허용). 변경 전 dictionary_hash(사전이 없었으면 null). change_kind=dictionary면 필수 — 16 §6.2 API 응답 previous_dictionary_hash와 같은 값"
+        },
+        "reindex_required": {
+          "type": "boolean",
+          "description": "재색인이 필요한 변경인지(사전 변경은 16 §6.2 reindex_suggested와 같은 값)"
+        },
+        "reindex_job_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+          "description": "선택(N). 함께 접수된 reindex_collection 잡"
+        }
+      },
+      "required": [
+        "collection_id",
+        "change_kind",
+        "profile_id",
+        "profile_hash",
+        "previous_profile_hash",
+        "embedding_profile_hash",
+        "analyzer_id",
+        "dictionary_hash",
+        "reindex_required"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "change_kind": {
+                "const": "dictionary"
+              }
+            },
+            "required": [
+              "change_kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "previous_dictionary_hash"
+            ]
+          }
+        }
+      ]
+    },
+    "CollectionProfileChangedData.change_kind": {
+      "type": "string",
+      "enum": [
+        "profile",
+        "dictionary",
+        "policy"
+      ],
+      "description": "인라인 열거(§5.7 {Type}.{path} 규칙; 미해결 이슈 8). profile = 프로파일 지정·변경·재색인 alias 교체, dictionary = 사용자 사전 변경(dictionary_hash), policy = 컬렉션 정책(TieringPolicy·EgressPolicy 등) 변경"
+    },
+    "CollectionReindexCompletedData": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "profile_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "document_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "succeeded_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "partial_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "alias_swapped": {
+          "type": "boolean"
+        },
+        "gate_passed": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "게이트 미실행은 null"
+        },
+        "run_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+          "description": "선택(N). 게이트 평가 EvalRun.run_id(바이블 §6.1; 게이트 미실행이면 생략)"
+        }
+      },
+      "required": [
+        "job_id",
+        "collection_id",
+        "profile_hash",
+        "document_count",
+        "succeeded_count",
+        "partial_count",
+        "failed_count",
+        "alias_swapped",
+        "gate_passed"
+      ],
+      "additionalProperties": false
+    },
+    "AuditDecision": {
+      "type": "string",
+      "enum": [
+        "allow",
+        "deny"
+      ],
+      "description": "Cedar 결정. 바이블 §5.7 미등재(미해결 이슈 8)"
+    },
+    "AuditQueryExecutedData": {
+      "type": "object",
+      "description": "audit.query.executed(바이블 §8.1 14단계). 질의 원문 없음 — query_hash만",
+      "properties": {
+        "query_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "plan_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "pack_id": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "route=no_retrieval이면 null"
+        },
+        "trace_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "auth_method": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/AuthMethod"
+        },
+        "principal_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "H(\"principal\", tenant_id, subject)(07 문서 제안)"
+        },
+        "actor_client_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "collection_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+          },
+          "minItems": 1,
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "query_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "blake3_hex(utf8(normalized_query)) — 07 §8.2 hash_only 정책(라벨 없음; 미해결 이슈 8)"
+        },
+        "filters_effective_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "security_context_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "profile_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "returned": {
+          "type": "object",
+          "properties": {
+            "document_ids": {
+              "type": "array",
+              "items": {
+                "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+              },
+              "maxItems": 100,
+              "uniqueItems": true
+            },
+            "chunk_count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "document_ids",
+            "chunk_count"
+          ],
+          "additionalProperties": false
+        },
+        "omitted": {
+          "type": "object",
+          "properties": {
+            "acl_denied": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "risk_flagged": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "acl_denied",
+            "risk_flagged"
+          ],
+          "additionalProperties": false
+        },
+        "degraded": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/DegradedEntry"
+          },
+          "maxItems": 64
+        },
+        "latency_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "query_id",
+        "plan_id",
+        "pack_id",
+        "trace_id",
+        "auth_method",
+        "principal_hash",
+        "collection_ids",
+        "query_hash",
+        "filters_effective_hash",
+        "security_context_hash",
+        "profile_hash",
+        "returned",
+        "omitted",
+        "degraded",
+        "latency_ms"
+      ],
+      "additionalProperties": false
+    },
+    "AuditDocumentAccessedData": {
+      "type": "object",
+      "properties": {
+        "document_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "view": {
+          "$ref": "#/$defs/AuditDocumentAccessedData.view"
+        },
+        "principal_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "decision": {
+          "$ref": "#/$defs/AuditDecision"
+        },
+        "acl_hash": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "거부(존재 비노출)면 null"
+        }
+      },
+      "required": [
+        "document_id",
+        "view",
+        "principal_hash",
+        "decision",
+        "acl_hash"
+      ],
+      "additionalProperties": false
+    },
+    "AuditDocumentAccessedData.view": {
+      "type": "string",
+      "enum": [
+        "metadata",
+        "parsed",
+        "normalized",
+        "chunks",
+        "commits"
+      ],
+      "description": "GET /v1/documents/{document_id}, /content?view=parsed|normalized|chunks, /commits, MCP get_document"
+    },
+    "AuditAclChangedData": {
+      "type": "object",
+      "properties": {
+        "document_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "principal_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "acl_hash_before": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acl_hash_after": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "job_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+          "description": "acl.update.v1 잡"
+        }
+      },
+      "required": [
+        "document_id",
+        "principal_hash",
+        "acl_hash_before",
+        "acl_hash_after",
+        "job_id"
+      ],
+      "additionalProperties": false
+    },
+    "AuditAdminActionData": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$",
+          "maxLength": 64,
+          "description": "Cedar 액션명(예 collection.update, job.cancel)"
+        },
+        "resource": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "pattern": "^[a-z_]+$",
+              "maxLength": 32
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "principal_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "decision": {
+          "$ref": "#/$defs/AuditDecision"
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "request_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "job_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        }
+      },
+      "required": [
+        "action",
+        "resource",
+        "principal_hash",
+        "decision",
+        "policy_version",
+        "request_id"
+      ],
+      "additionalProperties": false
+    },
+    "FeedbackQueryEventData": {
+      "type": "object",
+      "description": "feedback.query.cited·rated. comment 없음(PII)",
+      "properties": {
+        "feedback_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "query_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "pack_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "kind": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/FeedbackKind"
+        },
+        "cite_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/CiteId"
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "rating": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 5
+        }
+      },
+      "required": [
+        "feedback_id",
+        "query_id",
+        "pack_id",
+        "kind",
+        "cite_ids"
+      ],
+      "additionalProperties": false
+    },
+    "EvalRunCompletedData": {
+      "type": "object",
+      "properties": {
+        "run_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "dataset_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "profile_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+          "maxLength": 64
+        },
+        "profile_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "status": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/EvalRunStatus"
+        },
+        "index_commit_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+          },
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "gate_passed": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          },
+          "maxProperties": 64,
+          "description": "EvalReport.metrics 사본(ndcg@10, recall@20, mrr 등)"
+        }
+      },
+      "required": [
+        "run_id",
+        "dataset_id",
+        "profile_id",
+        "profile_hash",
+        "status",
+        "index_commit_ids",
+        "gate_passed",
+        "metrics"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

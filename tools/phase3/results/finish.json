@@ -1,0 +1,388 @@
+{
+ "date": "2026-09-23",
+ "full": {
+  "done": [
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\05-api\\02-ingestion-api.md",
+    "review": "fixed_unverified",
+    "serious": 1,
+    "lines": 899
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\05-api\\04-management-api.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 748
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\05-api\\05-mcp-server.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 880
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\10-development\\05-ci-cd.md",
+    "review": "fixed_unverified",
+    "serious": 1,
+    "lines": 899
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\11-roadmap\\02-epics-and-backlog.md",
+    "review": "fixed_unverified",
+    "serious": 1,
+    "lines": 997
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\11-roadmap\\03-risks-and-mitigations.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 440
+   }
+  ],
+  "dropped": [],
+  "openIssues": [
+   "02-ingestion-api.md: [minor 2 미반영] 01-api-design-guidelines §9.3 표(line 346~360)의 마지막 열은 `operationId`(§17.3)이며 Cedar 액션 열이 아니다. `update_document_metadata`는 operationId(06 §5.1·04-management-api line 108도 동일 분리)로 07 §4.1 `reprocess_document` Cedar 액션과 충돌하지 않으므로 주석·이슈 추가 없이 현행 유지. 이 문서 §1 표 아래 문장이 이미 '한도 클래스·operationId는 01 §9.3, Cedar 액션은 07 §4.1'로 출처를 분리 명시함.",
+   "02-ingestion-api.md: [관찰, 이 문서 범위 밖] 04-management-api.md line 108은 같은 엔드포인트 응답을 `Document`(+`reprocess_suggested`)로 적어 이 문서의 `DocumentMeta`(+`reprocess_suggestion`)와 이름이 다르다. 04는 depends_on이 아니고 동시 작성 중이므로 수정하지 않음 — 이 문서 미해결 이슈 3(DocumentMeta 소유·04 링크)에서 마무리 단계에 정합 필요.",
+   "02-ingestion-api.md: [유지] SDK `client.jobs.wait_all(job_ids, timeout=, on_event=)` 키워드 인자와 `IngestBatchAccepted.jobs`·`.replayed` 속성은 06 §3.5·§5.1 방향과 부합하나 06이 정확한 시그니처를 확정하지 않아 예시 수준으로 둠.",
+   "04-management-api.md: 리뷰 항목 3에서 `max_bytes`·`connect_timeout_ms`·`allowed_ports`를 예시에서 제거하지 않고 15 §8 추가 필드(N)로 표기하는 쪽을 택했다 — 15 §8이 depends_on 문서로 세 필드를 N으로 정의하고 합성 규칙까지 두므로 정보를 유지하는 것이 유용하다고 판단; 바이블 §5.3 patch 채택 여부는 15 소유 이슈라 이 문서에 별도 미해결 이슈를 신설하지 않고 §2.1 본문에 종속 관계만 명시함",
+   "04-management-api.md: 삭제 감사 값 어휘(`manage_collection` vs 19의 `delete_collection` 값 제안)는 리뷰 범위 밖이라 §미해결 이슈 6에 메모만 추가하고 본문 결정은 바꾸지 않음",
+   "04-management-api.md: 07 §4.1 `manage_tenants` 행 정정은 07 문서 소유이므로 이 문서에서는 §미해결 이슈 12의 요청으로만 남김(07 파일은 수정하지 않음)",
+   "05-mcp-server.md: 리뷰 항목 중 미반영은 없음(3건 모두 반영).",
+   "05-mcp-server.md: FR-MCP-03 충돌은 이 문서가 고칠 수 없어 미해결 이슈 16으로 기능 요구사항 문서 patch 제안만 남김(01-functional-requirements.md FR-MCP-03 행·미해결 이슈, 01-system-overview.md 미해결 이슈 7 갱신 필요).",
+   "05-mcp-server.md: SDK v2 4 MiB 초과 시 오류 표현(HTTP 413 vs JSON-RPC 파싱 오류)은 SDK 동작 확인 필요(as of 2026-09)로 표기.",
+   "05-ci-cd.md: 리뷰 minor 3(quality-gate 예산)에서 '8분으로 올리고 §3.2·§4.7 갱신' 대안은 채택하지 않음 — 정본 §3.2 표·04 §19(품질 층 5분)에 스케치를 맞췄다. compose 기동 포함 5분이 실측에서 부족하면 §3.2 표·04 §19를 함께 minor 개정해야 함(초안 목표).",
+   "05-ci-cd.md: 리뷰 minor 1(C4)에서 '계약·통합도 두 인터프리터로 실행' 대안은 채택하지 않음 — 04 §19 표가 L1 단위만 매트릭스로 명시하고 §3.2·§4.5·§11.1이 모두 unit만 매트릭스이므로 원칙 문장을 표에 맞췄다.",
+   "05-ci-cd.md: release.yaml 스케치의 push(release/**) 이벤트 처리: 버전이 없는 후보 실행은 게이트만 돌리고 tag 이하를 건너뛰도록 했으나, staging-rehearsal에 넘기는 후보 식별자(`inputs.version || github.sha`)와 promote.yaml의 `candidate: true` 입력 의미는 promote.yaml 확정 시 함께 정해야 함(이 문서 제안).",
+   "05-ci-cd.md: 새 미해결 이슈 16: `rag_eval_metric_value`에 데이터셋 라벨이 필요해지면 바이블 §6.5 허용 라벨 minor 개정(ADR)을 08-evaluation·09-operations/03 소유자와 발의 — 이 문서는 `EvalRun` 원장 분해로 대체.",
+   "05-ci-cd.md: supply-chain 스케치의 trivy 플래그(`--ignorefile .trivyignore.yaml`, `--scanners vuln,secret,misconfig`, `--ignore-unfixed`)와 09/05 §6의 세부 정책 대응은 도구 버전 확인 필요(as of 2026-09) 상태 그대로.",
+   "02-epics-and-backlog.md: 리뷰 minor 3번 후반(`packer.default` 개명) 미반영: 리뷰어 제안 `packer.packer`는 바이블에 근거가 없고, `packer.default`는 depends_on 밖 문서이지만 브리프 문서 맵에 있는 02-architecture/05-plugin-architecture.md 확장 지점 표(line 909)가 정본처럼 쓰는 이름이다. 바이블 §6.1에 packer 예시가 없으므로 단정 대신 미해결 이슈 13으로 등재하고 T-PCK-03(line 336)·§3.2(line 659) 표기는 유지했다. 바이블 §6.1 예시 표에 packer 항목이 추가되면 갱신 필요.",
+   "02-epics-and-backlog.md: T-MGT-30 의존 변경으로 §2.8 '에픽 간 의존' 문단은 수정 불필요(T-CHK-23 언급 없음)했으나, 마일스톤 문서(01-milestones.md) 쪽에 T-MGT-30/T-CHK-23 의존을 인용한 문장이 있는지는 이 태스크 범위 밖이라 확인하지 않았다.",
+   "02-epics-and-backlog.md: 참조 ADR 목록에 T-EVL-19가 텍스트로 언급하는 0006·0019는 여전히 링크가 없다(리뷰 항목 아님, 일관성 차원의 후속 후보).",
+   "03-risks-and-mitigations.md: 리뷰 항목 3의 1안(R-L-01/R-L-02를 L=4·16점 치명으로 승격)은 채택하지 않았다. 이유: 히트맵·치명 건수(5→7)·§7 비상 계획 상세 2절 신설·§4 목표 점수·결정 요약·01-milestones §11 정합까지 연쇄되어 minor 항목의 국소 수정 범위를 넘고, 바이블 #2가 이 문서에서 네 건으로 분해된 점을 고려하면 개별 가능성 3·2가 §1.2 정의에 부합한다. 대신 §3.2에 예외 근거를 명시하고 미해결 이슈 6(바이블 §15 동기화)에 포함했다. M1 종료 검토에서 바이블 patch 시 재판단 대상.",
+   "03-risks-and-mitigations.md: 리뷰 항목 4의 '(비정본) 표기' 지시는 그대로 따르지 않았다. 이유: judged@10은 바이블 §5.1·§7.3 정본이고 span_hit_rate@k도 바이블 §5.1 EvalReport.metrics 정본 키여서, 비정본 표기보다 정본 식별자(rag_eval_metric_value{metric=\"span_hit_rate@10\"}, eval.gates.judged@10.warn_below)로 교체하는 것이 앵커 우선 규칙에 맞다. 원천 문서 명시 요구는 §5.2 신설 행(08-evaluation/03·05 링크)으로 충족.",
+   "03-risks-and-mitigations.md: 이 문서 미해결 이슈 13(02-epics-and-backlog·10-development/05-ci-cd·05-api/04-management-api와 동시 작성으로 내용 대조 미완)은 이번 수정 범위 밖이며 그대로 남아 있다."
+  ]
+ },
+ "cycleApi": {
+  "done": [
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\05-api\\01-api-design-guidelines.md",
+    "review": "fixed_unverified",
+    "serious": 2,
+    "lines": 851
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\05-api\\03-retrieval-api.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 799
+   }
+  ],
+  "dropped": [],
+  "openIssues": [
+   "01-api-design-guidelines.md: 리뷰 항목은 모두 반영했으며 미반영 항목 없음.",
+   "01-api-design-guidelines.md: 앵커 간 잔존 간극(문서 내 미해결 이슈 2에 기록): 바이블 §10.3 E1과 계약 개요 §4.5는 본문 tenant_id를 422로 정하지만 바이블 §5.7 카탈로그에 422 코드가 없어 auth.tenant_mismatch 채택 전까지 400 임시 응답이 E1의 상태와 어긋난다 — 조기 채택 요청으로 남김.",
+   "01-api-design-guidelines.md: 잡 접수형 DELETE의 멱등 지문 규칙(wire_body를 {}로 둠)은 이 문서가 정한 규칙이며 수집 요청 계약 §4의 공식을 확장한 것 — 관리 API·갱신·삭제 문서 게시 후 대조 필요.",
+   "01-api-design-guidelines.md: DELETE /v1/collections/{collection_id} 202·JobKind는 여전히 (초안)(기존 미해결 이슈 8).",
+   "03-retrieval-api.md: 반영하지 않은 리뷰 항목 없음(3건 모두 반영). 단 (3)은 리뷰어 제안(§9.4만 인용) 대신 §5.5 RenderedContext·§9.4·§9.2 세 곳을 인용했다 — §9.2 1480행 '`r1`은 항상 마지막(질의 직전)'이 질의 후치 순서의 직접 근거이기 때문.",
+   "03-retrieval-api.md: 문서 기존 미해결 이슈 1~17은 그대로 유지(이번 리뷰 범위 밖). 특히 이슈 13 상류 불일치(09 §3 Cedar action=query vs 07 §4.1 search)와 이슈 14(보안 필드 거부 400 vs 바이블 422)는 상류 patch가 필요한 앵커 충돌로 남아 있다."
+  ]
+ },
+ "cycleRest": {
+  "done": [
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\04-pipelines\\02-fetching-and-source-resolution.md",
+    "review": "fixed_unverified",
+    "serious": 3,
+    "lines": 723
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\04-pipelines\\03-parsing-router-and-format-detection.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 676
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\04-pipelines\\04-parser-hwpx-and-hwp.md",
+    "review": "fixed_unverified",
+    "serious": 5,
+    "lines": 774
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\04-pipelines\\05-parser-pdf.md",
+    "review": "fixed_unverified",
+    "serious": 2,
+    "lines": 825
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\04-pipelines\\06-parser-doc-and-docx.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 633
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\04-pipelines\\07-parser-html.md",
+    "review": "fixed_unverified",
+    "serious": 2,
+    "lines": 692
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\04-pipelines\\08-parser-txt-md-and-others.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 894
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\04-pipelines\\09-normalization-and-cleaning.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 765
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\04-pipelines\\10-chunking-strategies.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 720
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\04-pipelines\\11-enrichment.md",
+    "review": "fixed_unverified",
+    "serious": 1,
+    "lines": 691
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\08-evaluation\\02-retrieval-metrics-and-harness.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 782
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\08-evaluation\\03-golden-dataset-construction.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 791
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\08-evaluation\\04-llm-judge-and-generation-quality.md",
+    "review": "fixed_unverified",
+    "serious": 6,
+    "lines": 951
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\08-evaluation\\05-benchmark-plan-and-baselines.md",
+    "review": "fixed_unverified",
+    "serious": 3,
+    "lines": 588
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\09-operations\\01-deployment-guide.md",
+    "review": "fixed_unverified",
+    "serious": 1,
+    "lines": 895
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\09-operations\\02-configuration-reference.md",
+    "review": "fixed_unverified",
+    "serious": 2,
+    "lines": 1006
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\09-operations\\03-observability.md",
+    "review": "fixed_unverified",
+    "serious": 2,
+    "lines": 850
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\09-operations\\04-scaling-and-performance.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 708
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\09-operations\\05-security-and-compliance.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 741
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\09-operations\\06-runbooks.md",
+    "review": "fixed_unverified",
+    "serious": 1,
+    "lines": 896
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\09-operations\\07-backup-and-disaster-recovery.md",
+    "review": "fixed_unverified",
+    "serious": 1,
+    "lines": 640
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\09-operations\\08-upgrade-and-migration.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 684
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\10-development\\01-repository-structure.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 673
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\10-development\\02-development-environment.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 677
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\10-development\\03-coding-standards.md",
+    "review": "fixed_unverified",
+    "serious": 1,
+    "lines": 872
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\10-development\\04-testing-strategy.md",
+    "review": "fixed_unverified",
+    "serious": 1,
+    "lines": 736
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\10-development\\06-plugin-development-guide.md",
+    "review": "minor_fixed",
+    "serious": 0,
+    "lines": 895
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\10-development\\07-contributing.md",
+    "review": "fixed_unverified",
+    "serious": 2,
+    "lines": 722
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\10-development\\08-release-process.md",
+    "review": "fixed_unverified",
+    "serious": 1,
+    "lines": 754
+   }
+  ],
+  "dropped": [],
+  "openIssues": [
+   "02-fetching-and-source-resolution.md: 리뷰 major 1이 매달린 참조로 지목한 §7.3 464행 '03-data-flow 미해결 이슈 18'은 이 문서가 아닌 03-data-flow 문서의 이슈 18(메타데이터 payload 갱신 경로 부재, 실제 존재)을 가리키는 외부 참조이므로 변경하지 않았다.",
+   "02-fetching-and-source-resolution.md: 리뷰 major 3이 제안한 전용 코드명 `fetch.storage_unavailable` 대신 depends_on 계약 02-source-document 미해결 이슈 7이 이미 제안한 `fetch.store_failed`를 채택했다(계약 문서와 이름 통일).",
+   "02-fetching-and-source-resolution.md: 리뷰 범위 밖이지만 같은 원칙(`fetch.upstream_error`는 원천 전용)에 따라 'KeyProvider 일시 불가'도 §9.1의 `fetch.upstream_error` 행에서 '플랫폼 내부 의존성 장애(코드 없음, 셸 재시도)' 행으로 옮겼다.",
+   "02-fetching-and-source-resolution.md: 13-error-model §3.2·02-source-document §7의 `fetch.scheme_unsupported` 설명 patch(미해결 이슈 18)는 이 문서가 요청만 하며 해당 문서는 수정하지 않았다(다른 에이전트 소유).",
+   "03-parsing-router-and-format-detection.md: 반영하지 않은 리뷰 항목 없음(3건 모두 반영). 리뷰어가 제시한 두 대안 중 §2.1 문장을 '0.6까지 허용'으로 바꾸는 안은 채택하지 않았다 — 정본 02 §4.1은 가산을 9~11행에만 두고 12행(힌트 전용)은 0.5이므로 §2.5 가산을 신호 기반 판정에 한정하는 두 번째 대안이 정본과 일치한다.",
+   "03-parsing-router-and-format-detection.md: profile_option의 PDF 외 값(hwpx_standard 등)은 바이블에 없어 제안으로만 남김 — 기존 미해결 이슈 18에서 04·05·15 문서와 확정 필요(문서 본문에 반영됨).",
+   "03-parsing-router-and-format-detection.md: 이 문서는 스키마 파일을 소유하지 않으므로 schemas/* 변경 없음; 02 문서(SourceDocument) 예시·Pydantic은 이미 정본 규칙과 일치해 변경 요청 없음.",
+   "04-parser-hwpx-and-hwp.md: 리뷰의 5개 major 항목은 모두 반영했으며 반영하지 않은 항목은 없다.",
+   "04-parser-hwpx-and-hwp.md: 타 문서에 남는 정정 요청(이 문서가 수정할 수 없어 미해결 이슈로만 등재): 03-contracts/03 §5.3 (e) 문구·§3.1 caption 경로·§5.1 flow 행 source=ocr, 바이블 §9.5 element_path 예시·§12 hwpx_hwpxlib_sidecar 등재, 04-pipelines/01 §3 원본 바이트 포트, 02-architecture/08 §5.2 parser-workers Object Storage egress, 04-pipelines/03 §7.2 변환기 digest 기록 규약.",
+   "04-parser-hwpx-and-hwp.md: lo-sidecar도 같은 convert 계약(input.uri 직접 읽기)을 쓰는데 08 §5.2·이 문서 §4.6은 egress 0으로 적는다 — 리뷰 범위 밖이라 미해결 이슈 20에 확인 요청으로만 덧붙였다.",
+   "05-parser-pdf.md: 04-pipelines/03 §4.5·미해결 이슈 9는 여전히 `parse.pdf.route` 값을 `auto | born_digital | scanned | mixed`(source_kind 강제)로 제안하고 있어 03-contracts/01 §2.5(라우트 이름)와 충돌한다. 이 문서는 03-contracts/01을 따랐고 충돌은 미해결 이슈 19로 기록했다. 04-pipelines/03 문서 자체의 정정은 이 작업 범위 밖(지정 파일만 수정).",
+   "05-parser-pdf.md: 리뷰 minor 3의 대안(해당 구간을 `empty`로 명시)은 채택하지 않고 `scanned`로 귀결시켰다. 이유: 작은 이미지 안에 글자가 있을 수 있어 OCR을 거치는 편이 정보 손실이 없고, 이미지가 실제로 비면 전면 OCR 결과가 비어 `page_break`만 남아 `empty`와 동일 결과가 된다(초안 규칙, 골든셋으로 조정).",
+   "05-parser-pdf.md: `decide_route`의 `tier` 인자는 이전 판과 마찬가지로 코드 안에서 쓰이지 않는다(등급별 허용 구성 검증은 입구 422로 처리한다고 적었음). 코드 예시 수준의 잔여 정리 항목.",
+   "06-parser-doc-and-docx.md: 리뷰 항목 미반영 없음 — 3건 모두 반영(전부 minor).",
+   "06-parser-doc-and-docx.md: 03 ParsedDocument 계약 §7 각주·미주 행이 HWPX 전제(마커 원문 유지)로 쓰여 있어 OOXML 규칙과 방향이 다름 → 이 문서 미해결 이슈 16으로 등재; 03 문서 patch는 03 소유자 몫(이 문서는 03 파일을 수정하지 않았다).",
+   "06-parser-doc-and-docx.md: Docling 잠금 버전은 문서 간 상이(기술 지형 03: 2.128.0 소스 확인 / 선정 매트릭스 이슈 8: 2.129.x 권고). 이 문서는 값을 단정하지 않고 uv.lock을 정본으로 위임했으므로 잠금 확정 시 §2.15 예시값만 갱신하면 된다(미해결 이슈 13과 연동).",
+   "06-parser-doc-and-docx.md: 브리프 전체·바이블 헤더 전수 재독은 사용자 지시('ADR 제외, 리뷰 빠르게')에 따라 생략하고 리뷰 항목에 해당하는 바이블 §5.3·03 계약 §7·기술 지형 03·선정 매트릭스 관련 행만 직접 확인했다.",
+   "07-parser-html.md: 리뷰 7건 모두 반영(미반영 항목 없음). 다만 major 2의 처리에서 `docling_direct`·표 컨테이너 DOM 모드를 degraded로 둔 근거('본문 영역 판정 실패로 보일러플레이트가 furniture=false로 잔존'은 03 §5.3 (a)~(d)에 없는 이 문서 고유 손실 조건)는 라우터 §6.4의 '어댑터가 손실을 직접 아는 경우 표기' 규칙에 의존하며, 03 §5.3 (e) 확정 시 재검토 대상으로 미해결 이슈 14에 남겼다.",
+   "07-parser-html.md: 교차 문서 충돌(이 문서 소유 아님): 03-parsed-document §5.3은 (e)를 미정으로 두는데 04-pipelines/03 §6.4는 (e)를 '실패 뒤 성공 = degraded'로 결정하고 03 문구 정정을 요청(라우터 미해결 12, 03 미해결 5). 이 문서는 두 문서와 모두 모순되지 않는 범위(어댑터 내부 사다리는 손실 기준)로 서술했으나 최종 정합은 03·라우터 문서 측 확정이 필요하다.",
+   "07-parser-html.md: 블록 상한 초과 코드: 이 문서는 파서 사전 중단을 `parse.conversion_failed`(detail too_many_blocks)로, 셸 검증 적발은 `contract.violation`(03 §9)로 병기했다. 03 §9는 전용 코드 제안을 미해결 이슈 2로 두고 있어 코드 확정 시 §13 행 동기화 필요.",
+   "07-parser-html.md: 리뷰어가 제안한 `parse.conversion_failed` 이외 경고 코드(parse.extractor_fallback 등, 이 문서 미해결 이슈 3)는 여전히 카탈로그 부재 상태로 ADR 제안에 머문다.",
+   "08-parser-txt-md-and-others.md: 리뷰 3건 모두 반영했으며 미반영 항목 없음.",
+   "08-parser-txt-md-and-others.md: 미해결 이슈 17(바이블 §7.1 TXT·MD 행에 하위 경로 라이브러리 병기 + §12 모듈 맵 주석 patch)이 반영되기 전까지 clevercsv·orjson/ijson·lxml·mdit_py_plugins는 문서 전체에서 '제안' 지위다 — 바이블 소유자가 patch를 적용하면 §1.2·§5.1·§6.1·§7.6·§8·결정 요약·이슈 17의 '제안' 표기를 '결정'으로 되돌리는 후속 수정이 필요하다.",
+   "08-parser-txt-md-and-others.md: 바이블 §4.4 parse(텍스트) 행의 resumable 열이 흐름 포맷 파서(TXT·MD·HTML·HWPX)에는 false로 채워지는 점은 이 문서·15 §3.4·03 라우터 §5.3이 서로 정합하지만, 바이블 §4.4 표 자체에 '후보별 Capabilities로 결정' 비고가 없어 독자 혼동 소지가 남는다(바이블 patch 제안은 03 라우터/15 문서 소관으로 두고 이 문서에는 새 이슈로 추가하지 않았다).",
+   "09-normalization-and-cleaning.md: 반영하지 않은 리뷰 항목 없음(4건 모두 반영).",
+   "09-normalization-and-cleaning.md: 계약 04 §3.3 M5 예시 문구(`CR LF→LF` 불투명 구간)와 이 문서의 M6 통일 표현 정합은 계약 04 소유 — 미해결 이슈 1에 patch 제안으로만 기록, 계약 04 파일은 수정하지 않음.",
+   "09-normalization-and-cleaning.md: PII tokenize 키 공급자의 설정 키 경로는 바이블 §7.3 미등재로 미확정 유지(미해결 이슈 13, 02-architecture/05 미해결 이슈 1과 합의 대상).",
+   "09-normalization-and-cleaning.md: 참조된 09-operations/02·10-development/04·06·05-api/04는 존재하나 status: review 상태 — 링크만 유지, 내용 정합은 마무리 단계 일괄 확인 대상.",
+   "10-chunking-strategies.md: 반영하지 않은 리뷰 항목 없음(minor 1건 전부 반영)",
+   "10-chunking-strategies.md: 바이블 §5.4 `Chunk.ordinal` 행 문구('부모 내 순서')를 05 C-3 형제 정의로 갱신하는 minor patch는 이 문서가 제안만 하며 바이블·05 문서 수정은 각 소유 문서에서 처리해야 한다(미해결 이슈 15)",
+   "11-enrichment.md: §12.4 예시의 호출당 입력 토큰(71,200/150 ≈ 475)은 문서 전체를 접두어로 넣는 모드 B에서 낮은 편이나(vLLM prompt_tokens는 접두어 캐시 적중분도 포함), 리뷰 범위 밖이고 예시 수치의 §12.2 식 일관성은 확보되어 수치 자체는 유지함 — 실측 후 미해결 이슈 13 절차로 교체 가능",
+   "11-enrichment.md: minor 4는 코드 교체 대신 06 §9·바이블 §5.7 patch 제안(미해결 이슈 3(b))으로 반영 — 06 §9가 이미 재시도 코드 enrich.extractor_timeout을 청크 경고로 쓰고 있어 동일 관행의 확장으로 판단, 정본 변경은 06/바이블 소유자 결정 사항",
+   "11-enrichment.md: 06 §10 캐시 엔트리 초안(kind/plugin_id/output 형식)으로 §11을 정렬했으나 06 미해결 이슈 12·17(바이블 §6.2 patch)은 아직 열려 있음 — 바이블 반영 시 이 문서 §1·§3·§9·§11 표기 재확인 필요",
+   "11-enrichment.md: 부속 스키마 파일은 이 문서 소유가 아니므로 미수정; BudgetUsed.charged_tokens(N) 추가 제안(미해결 이슈 2)은 06 문서 소유자가 반영해야 함",
+   "02-retrieval-metrics-and-harness.md: 리뷰 항목 2(`rag_eval_metric_value` 이름을 §6.5 `rag_<stage>_<name>_<unit>` 규약에 맞게 변경 또는 patch 제안 추가)는 반영하지 않음 — 바이블 §6.5 line 1207 정본 목록이 `rag_eval_metric_value{metric}`를 명시 등재하고 ADR-0036도 이를 유일한 예외로 적고 있어 앵커와 일치함. 이름 변경은 바이블·01·03·04·09-operations/03·10-development/05·11-roadmap 등 20여 문서에 걸친 변경이 되므로 이 문서 단독으로 다룰 사안이 아님. 대신 §12에 앵커 근거를 병기함.",
+   "02-retrieval-metrics-and-harness.md: 참조에 추가한 09-operations/03·10-development/04·05는 frontmatter·grep 수준으로만 확인했으며 depends_on에는 추가하지 않았다(본문을 전부 읽지 않았으므로). 후속 정합성 검토에서 세 문서의 `tests/eval/`·워크플로우 서술과 이 문서 §12가 어긋나면 갱신 필요.",
+   "03-golden-dataset-construction.md: 반영하지 않은 리뷰 항목 없음(3건 모두 반영)",
+   "03-golden-dataset-construction.md: `relevance_max`·`topics_ref`·`language`의 바이블 §5.6 등재 여부는 16 미해결 이슈 1·2와 이 문서 미해결 이슈 4에 위임(바이블 개정은 이 문서 범위 밖)",
+   "03-golden-dataset-construction.md: Sonnet 5·Opus 5의 `budget_tokens`·`temperature` 400 거부는 확인 필요(as of 2026-09)로 표기만 했고 실제 API 확인은 미해결 이슈 11 첫 배치 실행 시 수행",
+   "04-llm-judge-and-generation-quality.md: minor 7: 리뷰어가 제시한 두 선택지 중 '예시를 @20260601로 맞추기'는 근거 없는 날짜 수치가 되어 채택하지 않고, §7.1에서 @<revision> 접미를 선택(optional)으로 명시하는 쪽으로 반영함",
+   "04-llm-judge-and-generation-quality.md: major 3: 리뷰어 제안 ULID 01J9ZP7Q2W4E6R8T0Y1U3I5A7S는 Crockford base32 금지 문자 I·U를 포함해 스키마 패턴에 실패하므로 그대로 쓰지 않고 유효한 값으로 대체함",
+   "04-llm-judge-and-generation-quality.md: JudgeRecord.schema_version은 필드 추가에도 1.0.0 그대로 둠(계약 게시 전 제안 스키마이므로 버전 이력 없음)",
+   "04-llm-judge-and-generation-quality.md: PairwiseRecord와 온라인 judge.jsonl 경로는 이 문서 제안이며 바이블 §13.3 미등재 — 기존 미해결 이슈 6 범주에 속함(행 별도 추가 안 함)",
+   "05-benchmark-plan-and-baselines.md: major 1의 리뷰어 제안 fix(`postprocess.order: [dedup]` 또는 `tau 0`)는 미채택 — 바이블 §5.5 `RankedSet.final_score`가 리랭크 미적용 시 min-max `fused`로 정의하므로 리뷰어의 '전 질의 게이트 실패' 전제가 앵커와 다름. 대신 의미를 문서에 명시하고 게이트 점수 기준 확정을 미해결 이슈 1로 남김(바이블 §8.2·15 문서 소관).",
+   "05-benchmark-plan-and-baselines.md: minor 4의 '`ko-quality` 1 컬렉션' 제안은 2 컬렉션으로 조정 — E-O02 절차가 sparse 단독 교체 (i)와 ko-quality 전체 (ii) 두 섀도를 요구함.",
+   "05-benchmark-plan-and-baselines.md: 미반영(범위 외, 이번 리뷰 항목 아님): 2차 셋 `allganize-ko`에서 B0~B2를 돌리려면 그 코퍼스에도 `C_flat` 상당 컬렉션이 필요하다는 점은 §3.3 '계수하지 않음' 문장으로만 처리했고 별도 컬렉션 수를 추가 산정하지 않았음.",
+   "05-benchmark-plan-and-baselines.md: §8.1 T1 사다리 표 행에는 B3-norerank를 추가하지 않음(보조 단; §3.3 S0 구성 7과 표 행 6이 다르지만 T1은 '사다리' 표로 한정).",
+   "05-benchmark-plan-and-baselines.md: ADR 파일은 사용자 지시(ADR 제외)에 따라 읽지도 수정하지도 않음; ADR 번호·slug는 문서 기존 표기 유지.",
+   "01-deployment-guide.md: compose YAML 블록 4개는 파서(js-yaml/pyyaml/docker compose config)가 환경에 없어 기계 검증을 못 했다 — 구조 수동 확인만 수행",
+   "01-deployment-guide.md: temporal-sql-tool 플래그(--ep/-p/-u/--db)·SQL_PASSWORD 환경 변수·스키마 디렉터리 경로(./schema/postgresql/v12/{temporal,visibility}/versioned)는 Temporal 1.32 이미지로 확인 필요(문서 내 단서 유지, 미해결 이슈 7)",
+   "01-deployment-guide.md: 마이그레이션 로그인 역할의 rag_owner 멤버십(GRANT rag_owner TO rag_platform_admin)은 저장소 아키텍처 §2.4에 없는 이 문서의 제안이므로 미해결 이슈 3으로 남김(저장소 아키텍처 patch 또는 설정 레퍼런스 확정 필요)",
+   "01-deployment-guide.md: 바이블 §7.1 lite 열 머리 '컨테이너 5' 정밀화 patch는 배포 아키텍처 미해결 이슈 14로 이미 요청됨 — 이 문서에서는 중복 요청 대신 참조만 추가",
+   "02-configuration-reference.md: 리뷰어가 제시한 대안(S-6에 tier=lite 예외를 두어 기동 실패 대신 rerank 비활성 + degraded 경고)은 채택하지 않았다 — fail-closed 결정(§6.1, 결정 사항 요약)을 유지하고 내장 lite를 enabled: false로 두는 제1안이 바이블 §7.1·배포 가이드와 더 직접 정합하기 때문",
+   "02-configuration-reference.md: 내장 lite가 rerank.enabled: false가 되면서 standard 전문에 바이블 §7.3에는 없는 선택 키 `enabled: true`가 필요해졌다 — 바이블 §7.3 patch 또는 RerankConfig.enabled 생략 시 병합 해석 규칙(15 §3.8, ADR-0031 minor) 확정을 미해결 이슈 15로 등재",
+   "02-configuration-reference.md: `flip_order[] ⊆ backends[].role` 규칙은 15 불변식에 번호가 없어 §6.2에 '(제안)' 행으로만 두었다 — 03-contracts/15 등재 후 detail 접두를 그 번호로 바꿔야 함(미해결 이슈 5)",
+   "02-configuration-reference.md: P-2는 메타 불변식(규칙 3·6·10·11·12를 스키마가 강제)이라 별도 detail 메시지가 없다 — 검증기 구현 시 해당 규칙 번호로 보고한다고 표기",
+   "02-configuration-reference.md: YAML 블록은 실제 YAML 파서로 검증하지 못했다(환경에 PyYAML·js-yaml 없음, npm 레지스트리 접근 차단) — 구조 검사만 통과; CI 골든 예시 추출(10-development/05 tools/docs/extract_examples.py)에서 재검증 필요",
+   "03-observability.md: minor 6의 fix 제안 중 '§4.1·§4.3에 queue=serving 예외 명시' 대안은 채택하지 않고 별도 메트릭 분리 대안을 택했다(§9.3 원장 정합 검사와 충돌하기 때문). §4.3은 outcome 어휘 표라 queue 어휘를 넣지 않고 §4.1에 명시했다.",
+   "03-observability.md: query_hash의 바이블 §6.2 해시 표 등재(라벨 없는 식 vs H() 라벨 규약 병존 해소)는 이 문서 범위 밖이며 03-contracts/12 미해결 이슈 8에 위임한 상태를 §6.3에 기록했다. 바이블이 H(\"query\", …)로 확정하면 07-multi-tenancy §8.2·03-contracts/12·이 문서 세 곳을 함께 정정해야 한다.",
+   "03-observability.md: 제안 메트릭 2종 추가(rag_eval_last_run_timestamp_seconds, rag_serving_gpu_seconds_total)로 §6.5 minor 개정 대상이 38종으로 늘었다 — 미해결 이슈 2에 반영.",
+   "04-scaling-and-performance.md: 리뷰 항목 2건 모두 반영 — 미반영 항목 없음.",
+   "04-scaling-and-performance.md: 리뷰어 fix 문구 중 '바이블 §8.3은 ~10KB 상한 가정'은 바이블 원문(§5.1·§8.3 '100 × ~10KB')이 상한이 아니라 예산 가정이므로 '예산을 잡았고 04는 하향 가정으로 명시'로 표현을 바꿔 반영했다(내용상 차이 없음).",
+   "04-scaling-and-performance.md: §1.2 'GPU 워커' 행의 확장 단위 열은 여전히 큐 이름(`ingest-gpu-ocr`·`ingest-gpu-embed`)으로 워커 파드를 가리킨다 — 바로 위 행에 Deployment↔큐 매핑을 추가해 해석이 명확해졌으므로 추가 수정하지 않았다.",
+   "04-scaling-and-performance.md: 기존 미해결 이슈 1~16(문서당 청크 수 c 불일치, 읽기 복제 DSN, 리랭커 GPU 등급과 top_n_in, api 사이징 상수 등)은 이번 리뷰 범위 밖이며 그대로 유지.",
+   "05-security-and-compliance.md: None of the three review items were rejected; all applied.",
+   "05-security-and-compliance.md: Issue 17 (new): 422 rejection of body tenant_id/as_of has no matching error code in bible §5.7 (contract.violation is 400/500) — delegated to ../03-contracts/13-error-model.md; SB-02 checks status code only until resolved.",
+   "05-security-and-compliance.md: platform_admin API-key issuance scope note added in §3.5 is an operational narrowing (not a matrix change) and was not added to §3.6 decision block since it does not alter the RBAC matrix.",
+   "06-runbooks.md: 리뷰 항목 3의 대안('주 FMEA' 열 제목 변경)은 채택하지 않고 표를 헤더 목록에 맞추는 쪽을 택함 — 표·헤더가 완전 일치하므로 추가 설명 문장은 불필요",
+   "06-runbooks.md: RB-25~29 코드 블록의 k8s 배포 이름(deploy/rag-relay, app.kubernetes.io/name=rag-api|otel-collector)·컨테이너 포트(8080)·알림 규칙 경로는 배포 매니페스트·관측성 §8 제안 경로 기준이며 문서 내 주석으로 '매니페스트 기준' 표기(기존 RB-04~24와 동일 수준의 가정)",
+   "06-runbooks.md: 관측성 문서 §8 '런북' 열의 (제안) RB 번호 교체 요청은 기존 미해결 이슈 1로 유지(이 문서 범위 밖)",
+   "06-runbooks.md: 설계 브리프·바이블 전체 정독은 사용자 지시('리뷰는 빠르게')에 따라 생략하고, 리뷰 검증에 필요한 바이블 §5.7 이벤트 카탈로그(line 1111)·§6.5 메트릭 정본(line 1207)·§13 usage_ledger(line 1798)·JobState(line 1089)·Renderer(line 1086)와 관측성 §4.2·§8, 03-contracts/12·16 해당 행만 직접 확인함",
+   "07-backup-and-disaster-recovery.md: 리뷰 항목 중 미반영 항목 없음(4건 전부 반영).",
+   "07-backup-and-disaster-recovery.md: 관찰(리뷰 범위 밖, 수정하지 않음): §4.1 OpenSearch 물리 인덱스 행이 RB-03을 참조하는데 06-runbooks에는 전용 RB-16(OpenSearch 클러스터 red)이 있다. 장애 모드 §9 색인은 RB-01~RB-12까지만 정의하므로 이 문서의 참조 범위와 일관되지만, 런북 문서 소유자가 RB-16을 색인에 올리면 해당 행 갱신을 검토할 것.",
+   "07-backup-and-disaster-recovery.md: 관찰(수정하지 않음): §4.1 Object Storage 버킷 전체 손실 행이 'RB-05 준용'(디스크 풀 런북)을 쓴다. 전용 런북이 없어 준용으로 남긴 것이며 06-runbooks 소유자 판단 사항.",
+   "08-upgrade-and-migration.md: 리뷰 2의 대안 '검사 뒤 절 번호를 채우고 항목을 삭제' 중 '항목 삭제'는 채택하지 않음 — 09-operations/02·03·05·06 인용은 여전히 절 번호가 없고, 인용한 세 문서(릴리스 프로세스·CI/CD·관리 API)가 review 상태라 재검사 항목으로 미해결 17을 유지.",
+   "08-upgrade-and-migration.md: §1.2·§1.4·§2.2·§8.2의 '**제안:**' 표기는 유지 — 릴리스 프로세스(review)가 채택했으나 ADR(0039 slug 제안)이 아직 없어 앵커 규칙상 결정으로 승격하지 않음.",
+   "08-upgrade-and-migration.md: §8.2 release-manifest.json 예시에 릴리스 프로세스 §9.2가 추가한 필드(release_kind·git·artifacts[] 등)는 넣지 않고 '이 문서 정의 필드만의 발췌'로 명시 — 정본 예시는 그 문서 §9.2.",
+   "01-repository-structure.md: 리뷰 항목 1의 첫 대안(ADR-0035 표의 FastAPI 범위 이식)은 미반영 — ADR-0035에 FastAPI 버전 범위가 존재하지 않고 발췌 자체가 범위 없이 `fastapi`를 나열하므로(앵커 우선) 주석 방식으로만 반영",
+   "01-repository-structure.md: 문서 자체의 미해결 이슈 1~16은 그대로 유지(다른 문서 소유자 확정 대기)",
+   "02-development-environment.md: 리뷰 항목 중 미반영 항목 없음(minor 1건 전부 반영).",
+   "02-development-environment.md: 문서 자체 미해결 이슈 13건(justfile 등 제안 파일의 바이블 §12 등재, CLI 하위 명령 등재, 개발 부트스트랩 범위, compose 오버레이 표면, 개발 프로파일 형태, [kiwi] extra 복원, Windows wheel 확인, samples 원문 확정, 대용량 픽스처 보관, pre-commit rev 고정, TS 코드젠 도구, ALLOWED_ROOTS 마운트 정합, 두 셸 동등성 테스트 흐름)은 그대로 유지 — 타 문서·ADR 소유 사항이라 이 수정 범위에서 다루지 않음.",
+   "03-coding-standards.md: 리뷰 3건 모두 반영. 미반영 항목 없음.",
+   "03-coding-standards.md: 부수 관찰(수정 범위 밖): 문서 전반에서 '01 §x'가 10-development/01(저장소 구조)과 04-pipelines/01(파이프라인 프레임워크)을 모두 가리켜 모호함 — 이번 수정 지점(§2.2 주석·§10.2)만 '04-pipelines/01 §2.5'로 명시했고 나머지는 기존 표기 유지.",
+   "03-coding-standards.md: §3.1 mypy 멤버 검사 방식(--config-file 공유 vs 멤버별 [tool.mypy])은 01 §3.3 템플릿에 [tool.mypy]가 없다는 현재 상태를 근거로 공유 방식으로 서술했으며, 최종 확정은 미해결 이슈 1(CI 첫 잡 검증)·05-ci-cd에 맡김.",
+   "04-testing-strategy.md: 리뷰 minor의 대안 중 '§21에 dev 마커 추가'는 채택하지 않음 — 03 §13이 마커 확정을 이 문서에 위임했고 08/02 §12 자체가 '이 문서는 위치·마커·픽스처 규약만 배정한다'는 관계이므로 `slow` 재배정이 정본 규칙에 부합함. 08/02 §12의 'dev 마커' 표기 patch는 미해결 이슈 15로 08-evaluation 소유자에게 이관.",
+   "04-testing-strategy.md: 03-coding-standards §13 '마커(제안)' 12종 목록을 §21 인용으로 바꾸는 patch는 03 소유자 작업(03 미해결 이슈 10)이라 이 문서에서는 대응표와 미해결 이슈 15로만 남김.",
+   "04-testing-strategy.md: `test_public_baseline`의 `slow` 배정은 리뷰 항목이 아니며 P5(PR CI egress 금지)와의 일관성을 위해 이 문서 권한(마커 배정)으로 추가한 것 — 08/02 소유자가 PR 층 실행을 원하면 조정 필요.",
+   "06-plugin-development-guide.md: 리뷰 항목 중 반영하지 않은 것 없음(3건 모두 minor이며 합리적이어서 반영).",
+   "06-plugin-development-guide.md: 분량 조정 수단으로 본문 `---` 구분선 제거를 사용했다(내용 손실 없음). 다른 문서와의 시각적 일관성이 중요하면 §4.3·§9.3 코드 스케치를 추가 압축하는 방식으로 대체 가능.",
+   "06-plugin-development-guide.md: §5.4의 `self._physical`(등록된 물리 이름·alias 허용 목록)과 `BackendHit.identity_fields()`는 스케치용 보조 구조로 05 §3.8 `IndexBackend` 포트 정의에는 없는 구현 세부이며, 정본 인터페이스에 영향을 주지 않는다.",
+   "06-plugin-development-guide.md: `schemas/conformance-report.schema.json` 파일은 여전히 미생성(문서 미해결 이슈 5: 03-contracts/14·00 합의 후 생성).",
+   "07-contributing.md: 반영하지 않은 리뷰 항목 없음(5건 전부 반영).",
+   "07-contributing.md: minor 4 후속: 03-coding-standards §14 `plugin-{name}` 스코프·`Refs:` ADR 푸터·§15 브랜치 패턴이 이 문서(§7.1 `rag-plugin-{name}`, `ADR:` 푸터, §5.1 `{type}/{short-kebab}`)와 다르다 — 03 미해결 이슈 10에 따라 이 문서가 정본이므로 03 소유자에게 patch 인용 갱신 요청(이 문서 미해결 이슈 12로 기록).",
+   "07-contributing.md: CI/CD 미해결 이슈 11(봇 PR 자동 머지가 §5.4 '팀 1인' 규칙과 충돌)과 6(`Breaking-Kind`·`Cache-Invalidation` 트레일러의 PR 템플릿 반영)은 이 문서에서 결정하지 않고 미해결 이슈 13으로 기록 — CI/CD·릴리스 프로세스 소유자와 합의 필요.",
+   "07-contributing.md: DCO 검사 앱은 CI/CD 미해결 이슈 7에서도 확인 필요 상태라 §5.2·§6의 '확인 필요(as of 2026-09)' 표기를 유지(미해결 이슈 2에 대체 경로 `pr / meta` 명시).",
+   "07-contributing.md: status를 active로 바꿨으나 §8.2 규정상 `review → active`는 NFR M7 체크리스트 통과 후 owner가 하는 것이므로 마무리 단계의 일괄 처리 판단에 따름(지시대로 설정).",
+   "08-release-process.md: 리뷰 4건 모두 반영했으며 미반영 항목 없음.",
+   "08-release-process.md: 리뷰어 제안 중 §4.4 예시를 '한 줄 안내' 또는 '{field} 플레이스홀더' 택일로 제시했으나 둘 다 적용했다(오독 방지 효과가 겹치지 않으므로 중복 아님).",
+   "08-release-process.md: §5.4 릴리스 PR은 트레인 절단 시 PR만 기술하고 핫픽스 PR의 compat-matrix.json·CHANGELOG 갱신 주체는 명시하지 않는다 — §5.3 게이트 13이 '릴리스 파이프라인 재생성'으로 커버하지만 §5.4 표에 핫픽스 행을 추가할지는 리뷰 범위 밖이어서 손대지 않았다(후속 리뷰 시 검토 제안).",
+   "08-release-process.md: 미해결 이슈 15가 인용하는 04·05·06 문서는 아직 status: review이므로 절 번호 재검사는 해당 문서 active 전환 후 필요."
+  ]
+ },
+ "adrs": null,
+ "openapi": {
+  "openapi": "C:\\Workspaces\\rag-platform\\docs\\05-api\\openapi.yaml",
+  "operations": 51,
+  "reviewFindings": 9,
+  "fixed": true
+ },
+ "critic": {
+  "file": "C:\\Workspaces\\rag-platform\\docs\\12-appendix\\01-phase3-completeness-review.md",
+  "gaps": 12,
+  "stats": {
+   "docs": 149,
+   "schemas": 35,
+   "adrs": 38
+  }
+ }
+}

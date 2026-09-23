@@ -1,0 +1,504 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:job-status:1",
+  "title": "JobStatus",
+  "description": "PostgreSQL jobs 원장의 읽기 모델(바이블 §5.6·§11.5·§13.1, D-08, ADR-0017). 잡의 종류·상태·스테이지·진행률·시도·비용·오류·시각을 담는다. 봉투 계약이 아니며 산출물로 저장되지 않는다. 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/12-jobs-events-and-status.md",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "description": "계약 버전. 초기 \"1.0.0\""
+    },
+    "schema_type": {
+      "type": "string",
+      "const": "JobStatus",
+      "description": "선택(N). 바이블 §5.6 미등재 — 조회 응답·dataschema 소비자 편의"
+    },
+    "job_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "잡 ID = Temporal 워크플로우 ID"
+    },
+    "tenant_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "보안 삼중항 1"
+    },
+    "collection_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "보안 삼중항 2"
+    },
+    "kind": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/JobKind"
+    },
+    "state": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/JobState",
+      "description": "바이블 §11.5 상태 기계"
+    },
+    "stage": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 32
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Y(nullable). 현재/마지막 스테이지. 시작 전 queued는 null"
+    },
+    "progress": {
+      "$ref": "#/$defs/JobProgress"
+    },
+    "attempts": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "현재(마지막) 스테이지의 시도 번호. queued 0, 첫 시도 1, 재시도마다 +1, 새 스테이지 1로 재설정"
+    },
+    "workflow_run_id": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Y(nullable). Temporal run id. LocalRunner·시작 전은 null"
+    },
+    "workflow_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Y(nullable). Temporal 워크플로우 ID(문서 잡 = job_id). LocalRunner는 null"
+    },
+    "idempotency_key": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[!-~]{1,255}$"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Y(null 허용; 바이블 §1.2 1.3.0 제약 완화, AM-44). 접수 Idempotency-Key(가시 ASCII 1..255, (tenant_id, key) 유일). 배치 자식 잡은 null(배치 키는 idempotency_keys.job_ids 에만 저장); 내부 트리거 잡은 internal:{workflow_type}:{ulid}(초안)"
+    },
+    "request_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "선택(N). 접수 요청 ID"
+    },
+    "waiting_for": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "선택(N, null 허용). 문서 단위 직렬화로 대기 중인 앞 job_id. state=queued에서만 non-null"
+    },
+    "document_id": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "선택(N, null 허용). 문서 잡은 non-null 필수"
+    },
+    "index_commit_id": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "선택(N, null 허용). 이 잡의 IndexCommit.commit_id"
+    },
+    "from_stage": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/JobStatus.from_stage"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "선택(N, null 허용). 재처리·retry 시작 스테이지(바이블 §14)"
+    },
+    "last_error": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/StageError"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "선택(N, null 허용). 최근 실패 시도의 오류(13 J2). 콘텐츠 미포함, ≤4KB"
+    },
+    "degraded": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/DegradedEntry"
+      },
+      "maxItems": 64,
+      "description": "상류 DegradedEntry 합집합. 빈 배열 허용"
+    },
+    "cost": {
+      "$ref": "#/$defs/JobCost"
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9,
+      "description": "기본 5"
+    },
+    "status_url": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Uri",
+      "description": "GET /v1/jobs/{job_id} 절대 URL"
+    },
+    "events_url": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Uri",
+      "description": "= status_url + \"/events\""
+    },
+    "created_at": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime",
+      "description": "접수 시각"
+    },
+    "started_at": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "선택(N, null 허용). 첫 액티비티 시작 시각"
+    },
+    "updated_at": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime",
+      "description": "마지막 원장 갱신 시각"
+    },
+    "finished_at": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "선택(N, null 허용). 종결 시각. 종결 상태에서 non-null"
+    },
+    "deadline_at": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "선택(N, null 허용). IngestRequest.deadline_at"
+    }
+  },
+  "required": [
+    "schema_version",
+    "job_id",
+    "tenant_id",
+    "collection_id",
+    "kind",
+    "state",
+    "stage",
+    "progress",
+    "attempts",
+    "workflow_run_id",
+    "workflow_id",
+    "idempotency_key",
+    "degraded",
+    "cost",
+    "priority",
+    "status_url",
+    "events_url",
+    "created_at",
+    "updated_at"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "enum": [
+              "succeeded",
+              "partial",
+              "failed",
+              "cancelled"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "finished_at"
+        ],
+        "properties": {
+          "finished_at": {
+            "type": "string"
+          },
+          "waiting_for": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "enum": [
+              "running",
+              "cancelling"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "started_at"
+        ],
+        "properties": {
+          "started_at": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "waiting_for": {
+            "type": "null"
+          },
+          "finished_at": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "queued"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "finished_at": {
+            "type": "null"
+          },
+          "attempts": {
+            "const": 0
+          },
+          "last_error": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "succeeded"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "last_error": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "partial"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "last_error"
+        ],
+        "properties": {
+          "last_error": {
+            "not": {
+              "type": "null"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "failed"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "last_error"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "ingest_document",
+              "reprocess_document",
+              "delete_document",
+              "acl_update"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "document_id"
+        ],
+        "properties": {
+          "document_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "ingest_document",
+              "reprocess_document",
+              "delete_document"
+            ]
+          },
+          "state": {
+            "enum": [
+              "succeeded",
+              "partial"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "index_commit_id"
+        ],
+        "properties": {
+          "index_commit_id": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "JobProgress": {
+      "type": "object",
+      "description": "진행률 {done, total, unit}(바이블 §5.6). done ≤ total",
+      "properties": {
+        "done": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unit": {
+          "$ref": "#/$defs/JobStatus.progress.unit"
+        }
+      },
+      "required": [
+        "done",
+        "total",
+        "unit"
+      ],
+      "additionalProperties": false
+    },
+    "JobStatus.progress.unit": {
+      "type": "string",
+      "enum": [
+        "stage",
+        "page",
+        "chunk",
+        "document"
+      ],
+      "description": "바이블 §5.6 인라인 열거(§5.7 {Type}.{path} 규칙)"
+    },
+    "JobStatus.from_stage": {
+      "type": "string",
+      "enum": [
+        "parse",
+        "normalize",
+        "chunk",
+        "recount",
+        "enrich",
+        "embed",
+        "index"
+      ],
+      "description": "바이블 §14 reprocess.from_stage 값"
+    },
+    "JobCost": {
+      "type": "object",
+      "description": "누적 비용(바이블 §5.6). usage_ledger의 원천",
+      "properties": {
+        "llm_tokens_in": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "llm_tokens_out": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cost_usd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "gpu_seconds": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "llm_tokens_in",
+        "llm_tokens_out",
+        "cost_usd",
+        "gpu_seconds"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

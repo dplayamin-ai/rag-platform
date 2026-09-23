@@ -1,0 +1,100 @@
+{
+ "id": "0012",
+ "findings": [
+  {
+   "severity": "minor",
+   "location": "## 재검토 조건 6번째 항목(line 156) 및 ## 결과 › 긍정 첫 항목(line 115)",
+   "problem": "채널 수가 틀리다. `lite` 기본은 `dense` + `lexical`(sparse_bm25) 2채널이고, GPU 없이 `sparse_learned`를 추가하면 `dense`·`sparse`·`lexical` 3채널이 된다(바이블 §5.7 `Channel`, §7.1 인덱스 행). 그런데 line 156은 \"`lite`가 4채널이 되면\"이라 적고, line 115는 기본 상태의 `lite`가 \"D-07의 3-way 하이브리드를 실현한다\"고 서술해 두 곳이 서로도, 바이블과도 어긋난다.",
+   "fix": "line 156을 \"`lite`가 `dense`·`sparse`·`lexical` 3채널이 되면\"으로, line 115를 \"`lite`가 GPU 0·컨테이너 5를 유지하면서 D-07 하이브리드의 dense + lexical 두 레그를 실현하고, `sparse_learned` 생산 가능 노드에서는 3-way가 된다\"로 고친다(바이블 §7.1 인덱스 행 \"GPU 없이 sparse_learned 생성 가능 노드는 추가\", §5.7 `Channel`).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "frontmatter(lines 1~14)",
+   "problem": "브리프 §9.1 필수 frontmatter 필드 `owner`·`version`·`last_updated`가 없다. 같은 날 작성된 형제 ADR(0009·0013·0014)은 MADR 필드(`date`·`deciders`·`priority`·`related`)에 더해 `owner: architecture`, `version: 0.1.0`, `last_updated: 2026-09-22`를 함께 두고 있어 0012만 규약에서 벗어난다.",
+   "fix": "`related:` 다음에 `owner: architecture`, `version: 0.1.0`, `last_updated: 2026-09-22`를 추가한다(브리프 §9.1; ADR-0009·0013·0014 frontmatter와 동일 형식).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 › 포화식 강제 행(line 140)",
+   "problem": "bm25s 참조 점수 일치의 \"허용 오차 1e-6\"은 바이블·브리프·07-tech-landscape 어디에도 없는 수치다. 브리프 §9.8은 근거 없는 수치를 금지하고 출처 또는 \"초안 목표\" 표기를 요구한다(참고: 03-contracts/00 I-18은 Σ contribution 검증에 1e-9를 쓴다).",
+   "fix": "\"허용 오차 1e-6(초안 목표; 10-development/04-testing-strategy에서 확정)\"으로 표기하거나 수치를 빼고 \"부동소수 허용 오차는 테스트 전략 문서가 정한다\"로 바꾼다(브리프 §9.8, 바이블 §15 #5는 '일치 테스트'만 요구).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 › 코드 리뷰 항목 (3)(line 147) 및 ## 결정 표 포화식 행(line 76)",
+   "problem": "\"`k1`·`b`·`avgdl`이 프로파일 값이며 코드 상수가 아닌가\"라고 요구하지만 바이블 §7.2·§7.3에는 해당 YAML 경로가 없고, `CollectionSpec`(§5.6)에도 `bm25_params` 필드가 없다. 07-tech-landscape/06 §미해결 이슈 9의 `bm25_params{k1, b, avgdl_policy}`는 제안 단계다. 현 문장은 존재하지 않는 프로파일 키를 전제로 한 검증 항목이다.",
+   "fix": "\"(3) `k1`·`b`·`avgdl`을 코드 상수로 박지 않고 프로파일/`CollectionSpec` 값에서 읽는가 — 키 경로는 미정(06 §미해결 이슈 9 `bm25_params{k1, b, avgdl_policy}` 제안; 03-contracts/15·04-pipelines/13이 확정, 추가는 §1.2 minor)\"로 바꿔 미확정임을 드러낸다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결과 › 중립 첫 항목(line 129), `VectorBundle` 예시 도입문(line 98), ## 재검토 조건 4번째 항목(line 154)",
+   "problem": "`avgdl` 정책과 `indices` 해시의 확정 문서가 문서 안·depends_on 사이에서 엇갈린다. line 98은 `indices` 사상을 04-pipelines/12(임베딩)가, line 129·154는 `avgdl` 정책을 04-pipelines/13(인덱싱)이 확정한다고 적었는데, 07-tech-landscape/06 §미해결 이슈 7은 같은 `avgdl` 정책을 `04-pipelines/15-hybrid-search-and-fusion`에서 확정한다고 지정한다. 또 line 129의 \"사용 값은 재색인 단위로만 바뀐다\"는 06 §Qdrant 함정 (6)의 두 안 중 (b) 프로파일 상수안에만 해당하는 규칙을 (a) 컬렉션 통계 갱신안에도 단정적으로 적용한 새 규칙이다.",
+   "fix": "바이블 §12가 `sparse_bm25` 생성을 `adapters/embed/sparse_bm25`에 두므로 `avgdl`·`indices` 모두 04-pipelines/12(임베딩)를 확정 문서로 통일하고, 06 §미해결 이슈 7과의 차이를 \"06은 04-pipelines/15를 지정했으나 값 생성 위치(§12 embed)에 따라 12로 둔다\"고 한 줄 밝힌다. \"사용 값은 재색인 단위로만 바뀐다\"는 \"(b) 상수안에서는 재색인 시에만 바뀌고, (a) 통계 갱신안의 갱신 주기·기존 벡터 정합성은 미정\"으로 완화한다(06 §Qdrant 함정 (6), §미해결 이슈 7).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "major",
+   "location": "## 준수 확인 방법 (136~147행) — 보안 불변식 행 부재",
+   "problem": "이 ADR은 lite 전용 검색 경로(`retriever.qdrant_sparse_bm25` 질의, 단일 컬렉션 `prefetch` + `Fusion.RRF` 위임)를 도입하고 부정 결과(125행)에서 Qdrant가 `payload_filter` 등급에서 '사전 필터 단일 방어'임을 스스로 인정하지만, 준수 확인 표에는 §10.2 (a) 보안 불변식·E7(리트리버 어댑터 `tenant_id` 필터 필수·`security_context_hash` 서명)을 이 경로에 강제하는 항목이 없다. 특히 서버 융합 위임 시 Qdrant 필터는 각 prefetch에 개별 적용되므로 최상위 질의에만 필터를 두면 prefetch 결과가 필터되지 않는 함정이 있고, 이 ADR 외에는 그 경로를 검증할 문서가 없다.",
+   "fix": "준수 확인 표에 행 추가: '보안 불변식 | `retriever.qdrant_sparse_bm25`의 `query_points`와 `Fusion.RRF` 위임 시 **모든 prefetch**에 `QueryPlan.filters.security`(§10.2 (a): `tenant_id`·`collection_id`·`is_current`·`acl_*`·embargo·classification) 포함, 사후 필터 금지, `CandidateSet.security_context_hash` 서명; 필터 부재 시 `retrieve.security_context_missing` | 바이블 §10.2, §10.3 E7·E8(사전 필터 단일 방어), §15 #3; 적합성 키트 `security_invariants`(§12 `testing/`), ADR-0027'. 코드 리뷰 항목 (6)으로 'prefetch마다 보안 필터가 복제되는가'를 추가.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 재검토 조건 156행 (및 ### 긍정 115행)",
+   "problem": "'`lite`가 4채널이 되면'은 산술 오류다. lite 기본은 `dense` + `sparse_bm25`(=`channel=lexical`) 2채널이고, `sparse_learned`(`channel=sparse`)가 추가되면 3채널이다(바이블 §5.7 `Channel`, §7.1 인덱스 행). 115행 '`lite`가 … D-07의 3-way 하이브리드(dense + lexical, 선택 sparse)를 실현한다'도 기본 2채널을 3-way 실현으로 서술해 과장이다.",
+   "fix": "156행을 '`lite`가 3채널(dense·sparse·lexical)이 되면 §7.1·§7.2 채널 표를 갱신한다'로, 115행을 '`lite`는 dense + lexical 2채널을 기본으로 하고 `sparse_learned` 추가 시 D-07 3-way로 확장된다'로 정정.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 동인 32행 '라이선스(D-02)'",
+   "problem": "'플랫폼 측 분석기는 A 등급이어야 하며'는 바이블 §7.4 (1)보다 강하다. 바이블은 `license_grade ≤ license_policy.max_grade`를 요구하고 B 등급은 조건부 허용(동적 링크·선택 extra), `license_grade=B` + `linkage=static_bundled`만 기본 거부(명시 extra + optIn 시 허용)다. 같은 문서의 준수 확인 146행은 올바른 규칙을 적고 있어 내부 불일치다.",
+   "fix": "'기본 설치 분석기는 A 등급 wheel만으로 구성(python-mecab-ko BSD-3 + python-mecab-ko-dic Apache-2.0, ADR-0021); B 등급은 §7.4 (1) 조건 — `static_bundled` wheel(kiwipiepy 0.23.2)은 기본 설치 거부, 명시 `[kiwi]` extra + optIn만'으로 정정(바이블 §7.4 (1), ADR-0001).",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 140행 '포화식 강제(리스크 #5)' 및 ### 중립 130행",
+   "problem": "'bm25s 참조 구현과 문서 점수 일치(허용 오차 1e-6)'의 비교 대상이 불명확하다. 플랫폼은 IDF 없는 TF 포화값 `values`만 만들고 IDF는 서버(`modifier: idf`, 테넌트 범위)가 곱하므로, bm25s 최종 점수(코퍼스 IDF 포함)와 무엇을 어느 층에서 비교하는지 — (a) 색인 측 `values` vs 참조 포화 함수, (b) Qdrant 종단 점수 vs bm25s(IDF 식·코퍼스 범위 동일 조건) — 를 나눠 적어야 테스트가 작성 가능하다. `1e-6`은 근거가 없고 Qdrant sparse `values`는 float32라 상대 오차 기준이 더 적절하다. 또 130행은 질의 측 `values` 규약을 '이 ADR이 정하지 않는다'고만 하고, 98행의 `indices` 해시(04-pipelines/12 소유)와 달리 소유 문서를 지정하지 않아 bm25s 일치 조건이 간접 정의에 머문다.",
+   "fix": "140행을 2단으로 분리: '(a) 단위: `adapters/embed/sparse_bm25`의 `values`가 참조 포화 함수 `tf·(k1+1)/(tf+k1·(1−b+b·dl/avgdl))`(k1=1.2, b=0.75, 동일 `avgdl`)와 float32 상대 오차 이내 일치; (b) 통합: 동일 코퍼스(테넌트 범위)·동일 형태소 토큰으로 Qdrant 종단 상위 k 점수·순위가 bm25s(IDF 식 명시)와 순위 일치'. 130행에 '질의 측 `values` 규약은 04-pipelines/15가 (b) 테스트를 만족하도록 확정한다'를 추가.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "### 중립 129행, ## 재검토 조건 154행, ## 준수 확인 방법 147행 코드 리뷰 (3), 계약 요소 표 76행",
+   "problem": "`avgdl` 정책 확정 소유 문서가 07-tech-landscape/06 §미해결 이슈 7('04-pipelines/15-hybrid-search-and-fusion에서 확정')과 다르게 04-pipelines/13으로 적혀 있다. 코드 리뷰 (3) '`k1`·`b`·`avgdl`이 프로파일 값이며 코드 상수가 아닌가'는 중립 항에서 열어 둔 '컬렉션 통계 갱신' 옵션과 모순된다(그 경우 `avgdl`은 프로파일 값이 아니다). 또 바이블 §7.3 YAML 스키마 개요에는 k1/b/avgdl 키가 없어 '프로파일 값'을 어떤 경로로 검증하는지 알 수 없다(06 §미해결 이슈 9가 `CollectionSpec.bm25_params{k1, b, avgdl_policy}`를 제안).",
+   "fix": "소유 문서를 06과 맞추거나(04-pipelines/15) 13으로 두는 이유를 한 줄로 명시. 코드 리뷰 (3)을 '`k1`·`b`는 프로파일/컬렉션 값, `avgdl`은 `avgdl_policy`(프로파일 상수 또는 컬렉션 통계)에 따르며 어느 쪽이든 코드 상수가 아니다'로 수정. 계약 요소 표 76행에 '스키마 위치: 06 §미해결 이슈 9 제안 `bm25_params{k1, b, avgdl_policy}` — 03-contracts/15·ADR-0031이 확정(바이블 §7.3 미명시)'를 추가.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "계약 요소 표 82행 '융합', ## 준수 확인 방법 144행 '서버 융합 조건'",
+   "problem": "'요청에 `k=60` 명시(Qdrant 기본 k=2 금지)'를 사실로 서술하지만 07-tech-landscape/06 §Qdrant Query API는 'k 기본 2, 1.17부터 질의별 가중치'만 확정하고 `Fusion.RRF`의 `k`가 설정 가능한지 확인하지 않았다(06·00 모두 '플랫폼 fuser가 k를 명시한다'로 우회). 설정 불가면 단일 컬렉션 위임 자체가 성립하지 않는다.",
+   "fix": "144행에 '(Qdrant `Fusion.RRF` `k` 파라미터 지원 여부 확인 필요, as of 2026-09; 미지원이면 `lite`도 플랫폼 `fuser`만 사용)'을 병기하고 재검토 조건에 같은 항목을 추가(ADR-0013 재검토 조건 4와 정합).",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "### 대안 3 52행, ## 결정 동인 28행",
+   "problem": "'sentence-transformers ONNX int8은 `sparse_learned`를 생산하지 못한다'의 근거로 D-16 개정 이유 'TEI/Infinity로는 BGE-M3 sparse 생산 불가'를 인용했는데, 그 문장은 TEI·Infinity 서버에 관한 것이고 인프로세스 sentence-transformers에 대한 근거가 아니다.",
+   "fix": "근거를 ADR-0009 F4·'인프로세스' 행('sentence-transformers ONNX int8 dense + 플랫폼 `sparse_bm25`; FlagEmbedding 1.4.x는 sparse 참조 구현·폴백')과 바이블 §7.1 임베딩·서빙 행으로 교체.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "`VectorBundle` 예시 JSON 106행",
+   "problem": "`values` 유효숫자가 불일치한다: tf=2는 `1.479`(3자리), tf=1은 `1.1139`(4자리). 재계산 값은 1.4790 / 1.1139로 수치 자체는 맞다.",
+   "fix": "`[1.4790, 1.1139, 1.1139]`로 통일.",
+   "lens": "tech"
+  }
+ ],
+ "verdicts": {
+  "anchor": "revise",
+  "tech": "revise"
+ }
+}

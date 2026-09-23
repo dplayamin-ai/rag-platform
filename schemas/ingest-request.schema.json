@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:ingest-request:1",
+  "title": "IngestRequest",
+  "description": "수집 요청 계약(바이블 §5.4). 클라이언트가 POST /v1/ingest 로 제출하는 문서 위치(URI)·메타데이터·ACL·정책. tenant_id 는 본문에 없고(SecurityContext 에서 도출, E1) request_id 는 서버가 발급한다(readOnly). 비밀 값은 credentials_ref 간접 참조로만 받는다. 소비: fetch, API.",
+  "type": "object",
+  "properties": {
+    "schema_version": { "$ref": "urn:rag:schema:common-types:1#/$defs/Semver", "pattern": "^1\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$", "description": "계약 버전. 초기 \"1.0.0\"; 이 스키마($id major 1)는 1.x 만 수용" },
+    "request_id": { "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid", "readOnly": true, "description": "서버 발급(접수 시 ULID). 클라이언트 본문에 존재하면 400 contract.violation. 202 응답 IngestAccepted.request_id(N)로 job_id 와 함께 반환" },
+    "collection_id": { "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid", "description": "프로파일이 고정된 컬렉션. SecurityContext.collection_ids(Cedar allowed_collections) 밖이면 403 auth.forbidden(E2, 존재 비노출)" },
+    "source_uri": { "$ref": "urn:rag:schema:common-types:1#/$defs/Uri", "pattern": "^[a-z][a-z0-9+.-]*://[^\\s/@]*(/[^\\s]*)?$", "maxLength": 2048, "description": "절대 URI. s3://, gs://, az://, file://, http(s)://, smb://(플러그인). authority 에 userinfo(user:pass@) 금지. 스킴·호스트 허용 여부는 fetch 가 EgressPolicy(E16)로 판정 — 위반은 fetch.scheme_unsupported / fetch.egress_denied" },
+    "media_type_hint": { "$ref": "urn:rag:schema:common-types:1#/$defs/MediaType", "description": "힌트만. 시그니처 판정(detect)이 우선" },
+    "external_id": { "type": "string", "minLength": 1, "maxLength": 512, "description": "원천 시스템 문서 ID. document_id 재사용 키(갱신·삭제 조회 키)" },
+    "external_version": { "type": "string", "minLength": 1, "maxLength": 256, "description": "원천 버전 라벨(etag 등). 참고 정보이며 doc_version 은 content_hash 로만 결정된다(ADR-0005)" },
+    "metadata": { "$ref": "#/$defs/IngestMetadata", "description": "예약 메타데이터 키(바이블 §5.4)와 custom. 생략 시 {} 로 취급" },
+    "acl": { "$ref": "urn:rag:schema:common-types:1#/$defs/Acl", "description": "문서 단위 ACL(D-09, 바이블 §10.1). 모든 레벨 레코드·부모 번들이 상속" },
+    "pii_policy": { "$ref": "urn:rag:schema:common-types:1#/$defs/PiiPolicy", "description": "생략 시 컬렉션 기본값 상속(확정값은 SourceDocument.pii_policy)" },
+    "pii_tokenize_mode": { "$ref": "urn:rag:schema:common-types:1#/$defs/PiiTokenizeMode", "description": "pii_policy=tokenize 일 때만 존재 가능. 생략 시 encrypt" },
+    "credentials_ref": { "$ref": "#/$defs/CredentialsRef", "description": "KeyProvider 간접 참조(암호화 문서 비밀번호·원천 토큰). 비밀 값 자체를 본문에 넣으면 400 contract.violation" },
+    "allow_distribution_documents": { "type": "boolean", "description": "배포용 HWP 텍스트 폴백 허용(테넌트 정책과 AND). 생략 시 false" },
+    "llm_enrichment_allowed": { "type": "boolean", "description": "외부 LLM 보강 옵트인(테넌트·컬렉션 정책과 AND). 생략 시 false" },
+    "dedup_policy": { "$ref": "urn:rag:schema:common-types:1#/$defs/DedupPolicy", "description": "생략 시 skip_if_same_hash. reindex_always 는 같은 chunk_id 집합이라도 새 index_generation 으로 적재(§11.4)" },
+    "priority": { "type": "integer", "minimum": 0, "maximum": 9, "description": "생략 시 5. PATCH /v1/jobs/{job_id} 로 변경 가능" },
+    "callback": { "$ref": "#/$defs/IngestCallback", "description": "잡 단위 웹훅 콜백. 릴레이가 EgressPolicy(E16)로 검사하고 subscriptions.secret_ref 로 HMAC 서명" },
+    "split_hint": { "$ref": "urn:rag:schema:common-types:1#/$defs/SplitHint", "description": "컨테이너 내 다중 문서 분할. 생략 시 none. json_array 는 멤버 분할 후 txt 라우팅(바이블 §7.3)" },
+    "profile_overrides": { "$ref": "#/$defs/ProfileOverrides", "description": "컬렉션 프로파일이 허용한 키만(parse.pdf.route, enrich.generated_prefix). 그 외 키는 422 profile.invalid" },
+    "deadline_at": { "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime", "description": "이 시각까지 시작하지 못하면 cancelled. requested_at 보다 뒤여야 한다" },
+    "requested_at": { "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime", "description": "클라이언트 요청 시각(RFC 3339 UTC). 멱등 본문 지문에 포함되므로 재전송 시 같은 값을 보낸다" }
+  },
+  "required": ["schema_version", "request_id", "collection_id", "source_uri", "acl", "requested_at"],
+  "additionalProperties": false,
+  "dependentRequired": { "pii_tokenize_mode": ["pii_policy"] },
+  "allOf": [
+    { "if": { "required": ["pii_tokenize_mode"] }, "then": { "properties": { "pii_policy": { "const": "tokenize" } } } },
+    { "if": { "required": ["split_hint"], "properties": { "split_hint": { "enum": ["json_array", "zip_members"] } } }, "then": { "properties": { "source_uri": { "pattern": "^[^#]*$" } } } }
+  ],
+  "$defs": {
+    "IngestMetadata": {
+      "type": "object",
+      "description": "예약 메타데이터 키(바이블 §5.4). doc_date·doc_type·department·tags·language_hint(→lang)·genre 는 §5.7 FilterableField 와 정합. 정규화(01-ingest-request §6)는 스키마 검증 전에 수행되므로 uniqueItems·패턴·길이는 정규화된 저장 인스턴스에 대한 제약이다. canonical_json 크기 ≤ 16KB(바이블 §5.1). authors·tags·custom 상한은 02 SourceMetadata 와 동일.",
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 512, "description": "문서 제목. NFC·trim·공백 축약. 부재 시 파서 메타 → 첫 heading level 0 → source_uri 마지막 경로 요소 순으로 보완" },
+        "authors": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 256 }, "maxItems": 64, "description": "작성자·작성 기관(NFC·trim·순서 보존 중복 제거 후)" },
+        "doc_date": { "$ref": "urn:rag:schema:common-types:1#/$defs/Date", "description": "문서 일자(YYYY-MM-DD). 팩 헤더·상충 판정·필터 doc_date" },
+        "doc_type": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "문서 종류 keyword(snake_case). 예 regulation, press_release, report. 필터 doc_type" },
+        "department": { "type": "string", "minLength": 1, "maxLength": 256, "description": "소관 부서·기관(NFC·trim). 필터 department" },
+        "language_hint": { "$ref": "urn:rag:schema:common-types:1#/$defs/Bcp47", "description": "기본 ko. 힌트만(블록 단위 lang 은 normalize 가 판정). 필터 lang 의 문서 기본값" },
+        "tags": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "maxItems": 64, "uniqueItems": true, "description": "필터용 keyword(정확 일치). NFC·trim·순서 보존 중복 제거(정규화) 후의 값에 uniqueItems 적용" },
+        "genre": { "$ref": "urn:rag:schema:common-types:1#/$defs/Genre", "description": "청커 장르 라우팅(law_article 등). 생략 시 unknown" },
+        "custom": { "$ref": "#/$defs/CustomMetadata", "description": "테넌트 정의 keyword 메타. 컬렉션 filterable_fields 에 선언된 키만 필터·IndexRecord.custom 투영" }
+      },
+      "additionalProperties": false
+    },
+    "CustomMetadata": {
+      "type": "object",
+      "description": "열린 객체(00-contract-overview §8.2). 키는 snake_case ≤ 64자, 값은 스칼라(string ≤ 1,024 | number | boolean). 키 ≤ 64개(02 SourceMetadata.custom 과 동일).",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+      "additionalProperties": { "anyOf": [ { "type": "string", "maxLength": 1024 }, { "type": "number" }, { "type": "boolean" } ] },
+      "maxProperties": 64
+    },
+    "IngestCallback": {
+      "type": "object",
+      "description": "잡 단위 웹훅 콜백. webhook_url 은 테넌트의 등록 구독(subscriptions.webhook_url)과 일치해야 서명 키(secret_ref)를 해소할 수 있다.",
+      "properties": {
+        "webhook_url": { "$ref": "urn:rag:schema:common-types:1#/$defs/Uri", "pattern": "^https?://[^\\s/@]+(/[^\\s]*)?$", "maxLength": 2048, "description": "https 기본, http 는 테넌트 옵트인(EgressPolicy.allowed_schemes). userinfo 금지" },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/EventType",
+            "enum": ["job.state.changed", "ingest.document.fetched", "ingest.document.parsed", "ingest.document.normalized", "ingest.document.chunked", "ingest.document.enriched", "ingest.document.embedded", "ingest.document.indexed", "ingest.document.retried", "ingest.document.failed", "index.commit.published", "index.commit.rolled_back"]
+          },
+          "minItems": 1,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "description": "구독 이벤트(바이블 §5.7 카탈로그 중 이 잡이 발행하는 부분집합). 생략 시 [job.state.changed]"
+        }
+      },
+      "required": ["webhook_url"],
+      "additionalProperties": false
+    },
+    "ProfileOverrides": {
+      "type": "object",
+      "description": "요청 단위 프로파일 오버라이드. 키는 프로파일 YAML 경로(점 구분). 허용 키 집합은 컬렉션 프로파일이 선언하며 스키마는 바이블 §5.4 의 두 예시 키만 형태를 고정한다. 허용 밖 키·값은 422 profile.invalid.",
+      "properties": {
+        "parse.pdf.route": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "PDF 라우트 이름(pdf_fast_cpu, pdf_standard, pdf_scanned_gpu, pdf_airgapped 등 프로파일 정의)" },
+        "enrich.generated_prefix": { "type": "object", "properties": { "enabled": { "type": "boolean" } }, "required": ["enabled"], "additionalProperties": false, "description": "LLM 접두어 켬/끔. 켜려면 llm_enrichment_allowed 와 테넌트·컬렉션 정책이 모두 참이어야 한다(O-05)" }
+      },
+      "propertyNames": { "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$", "maxLength": 128 },
+      "additionalProperties": true,
+      "maxProperties": 16
+    },
+    "CredentialsRef": { "type": "string", "pattern": "^[a-z][a-z0-9_]*:[^\\s]{1,240}$", "minLength": 1, "maxLength": 256, "description": "{provider}:{path}. 형식만 검증하며 provider(RAG_SECRETS__PROVIDER env|openbao|aws_kms, 바이블 §6.6) 유효성은 KeyProvider 해소 시 워커가 판정한다. 상한 256 은 SourceDocument.credentials_ref(02)와 동일. 값은 SourceDocument·ConvertRequest 로 그대로 전파되고 로그·트레이스·이벤트에는 기록하지 않는다" },
+    "IdempotencyKey": { "type": "string", "minLength": 1, "maxLength": 255, "pattern": "^[\\x21-\\x7E]+$", "description": "Idempotency-Key 헤더 값(draft-ietf-httpapi-idempotency-key-header-07). 가시 ASCII, 서버에 불투명. 권장 UUIDv4 또는 ULID. 스코프 (tenant_id, key), TTL 24h(초안 목표)" },
+    "IngestAccepted": {
+      "type": "object",
+      "description": "POST /v1/ingest 202 응답 본문(D-08, 바이블 §14 {job_id, status_url, events_url}). request_id·document_id 는 선택(N; 바이블 §14 반영 제안). 같은 Idempotency-Key 재전송의 200 응답도 동일 본문.",
+      "properties": {
+        "job_id": { "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid", "description": "ingest.document.v1 워크플로우 ID" },
+        "request_id": { "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid", "description": "서버 발급 IngestRequest.request_id. 선택(N) — 바이블 §14 응답 표에 없음(§5.4 와 상충), 반영 제안" },
+        "document_id": { "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid", "description": "접수 시 확정된 문서 ID(바이블 §11.2). 선택(N) — 바이블 §14 응답 표에 없어 반영 제안" },
+        "status_url": { "$ref": "urn:rag:schema:common-types:1#/$defs/Uri", "description": "GET /v1/jobs/{job_id} 절대 URL" },
+        "events_url": { "$ref": "urn:rag:schema:common-types:1#/$defs/Uri", "description": "GET /v1/jobs/{job_id}/events SSE 절대 URL" }
+      },
+      "required": ["job_id", "status_url", "events_url"],
+      "additionalProperties": false
+    },
+    "IngestBatchRequest": { "type": "array", "items": { "$ref": "#" }, "minItems": 1, "maxItems": 100, "description": "POST /v1/ingest/batch 본문: IngestRequest 배열(1..100, 바이블 §14). 배열 순서가 응답 jobs[] 순서다. 검증은 전체 원자적(한 건이라도 위반이면 400 + errors[].location.pointer /{index}/{field})." },
+    "IngestBatchAccepted": {
+      "type": "object",
+      "description": "POST /v1/ingest/batch 202 응답 본문. jobs[i] 는 요청 배열 i 번째 항목의 접수 결과.",
+      "properties": { "jobs": { "type": "array", "items": { "$ref": "#/$defs/IngestAccepted" }, "minItems": 1, "maxItems": 100 } },
+      "required": ["jobs"],
+      "additionalProperties": false
+    }
+  }
+}

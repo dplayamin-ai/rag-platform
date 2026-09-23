@@ -1,0 +1,184 @@
+{
+ "date": "2026-09-23",
+ "adrs": [
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0001-license-grade-table-and-d02-interpretation.md",
+   "review": "fixed_from_prereview"
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0002-provenance-element-path-and-nullable-page-bbox.md",
+   "review": "fixed_from_prereview"
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md",
+   "review": "fixed_from_prereview"
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0004-deterministic-chunk-id-scoped-record-id-and-ulid-exception.md",
+   "review": "fixed_from_prereview"
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0005-doc-version-content-hash-only-and-acl-payload-update.md",
+   "review": "fixed_from_prereview"
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0006-pdf-fast-path-pypdfium2-pdftext-replaces-pymupdf.md",
+   "review": "fixed_from_prereview"
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0007-hwp5-java-sidecar-first-pyhwp-demoted.md",
+   "review": "fixed_from_prereview"
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0008-ocr-default-rapidocr-ppocrv5-korean.md",
+   "review": "fixed_from_prereview"
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0009-embedding-serving-vllm-pooling-tei-inprocess.md",
+   "review": "fixed_from_prereview"
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0010-bge-m3-rationale-and-late-interaction-slot.md",
+   "review": "fixed_from_prereview"
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0011-kv-and-object-storage-valkey-rustfs-seaweedfs.md",
+   "review": "fixed_from_prereview"
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0012-lite-profile-qdrant-only-client-bm25.md",
+   "review": "fixed_from_prereview"
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0013-fusion-rrf-k60-then-convex-combination-and-postprocess-order.md",
+   "review": "fixed_from_prereview"
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0014-sparse-representation-bge-m3-lexical-leg-kept.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0015-graph-rag-external-plugin-raptor-core-option.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0016-llm-enrichment-default-off-and-budget-policy.md",
+   "review": "fixed_unverified",
+   "serious": 1
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0017-event-delivery-outbox-cloudevents-no-broker.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0018-api-rest-sse-mcp-no-grpc-rfc9457.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0019-chunk-size-tokenizer-defaults-and-recount-stage.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0020-default-chunker-structure-aware-and-dependency-locks.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0021-korean-analyzer-kiwi-promotion-and-interim-mecab-kss.md",
+   "review": "fixed_unverified",
+   "serious": 1
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0022-observability-genai-semconv-pin-and-license-boundary.md",
+   "review": "pass",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0023-evaluation-qrels-answer-spans-and-linear-ndcg.md",
+   "review": "fixed_unverified",
+   "serious": 1
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0024-context-pack-ordering-and-anthropic-search-result-renderer.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0025-mcp-cursor-pagination-and-tool-set.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0026-index-commit-generation-saga-and-ledger.md",
+   "review": "pass",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0027-security-context-injection-and-acl-enforcement-points.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0028-tenant-isolation-tiering-policy.md",
+   "review": "fixed_unverified",
+   "serious": 1
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0029-three-text-rule-and-deterministic-context-prefix.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0030-single-coordinate-system-and-score-ledger.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0031-profile-schema-extends-and-quality-gates.md",
+   "review": "fixed_unverified",
+   "serious": 2
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0032-plugin-sdk-stage-protocol-and-conformance-kit.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0033-sidecar-convert-contract-and-isolation-ladder.md",
+   "review": "fixed_unverified",
+   "serious": 1
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0034-retrieval-hot-path-postgres-independence-and-hydrate.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0035-python-version-and-toolchain-pins.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0036-naming-and-identifier-conventions.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0037-artifact-cache-scope-and-stage-key-composition.md",
+   "review": "minor_fixed",
+   "serious": 0
+  },
+  {
+   "file": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\0038-outbound-egress-policy-and-webhook-signing.md",
+   "review": "minor_fixed",
+   "serious": 0
+  }
+ ],
+ "failed": [],
+ "index": "C:\\Workspaces\\rag-platform\\docs\\06-adr\\README.md"
+}

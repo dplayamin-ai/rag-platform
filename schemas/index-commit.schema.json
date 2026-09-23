@@ -1,0 +1,912 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:index-commit:1",
+  "title": "IndexCommit",
+  "description": "index 사가의 출력이자 PostgreSQL index_commits 원장 행(바이블 §5.4·§11.4·§13.1, ADR-0026). 한 문서 세대(index_generation)의 색인 결과 단위로 9단 CommitStatus, 세대 관계(previous_commit_id·supersedes_commit_ids·superseded_by), 재현성 지문, commit_hash, 백엔드별 결과, 재적재용 artifact_refs, 보상 기록을 담는다. 정본은 원장 행이며 오브젝트 스토리지 산출물이 아니다. 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. embedding_space_ids는 urn:rag:schema:embedded-chunk-set:1#/$defs/EmbeddingSpaceIds 와 같은 정의의 사본을 자기 $defs에 둔다(계약 간 교차 $ref 회피 — 00 §2·15 결정; CI가 두 정의의 동치를 대조한다). artifact_refs.source·lineage_refs.source는 detect 출력 SourceDocument 산출물 참조다(원본 바이트가 아님; 00 §3.2 대응표). 소유 문서: docs/03-contracts/08-index-commit.md",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "description": "계약 버전. 초기 \"1.0.0\"",
+      "pattern": "^1.(0|[1-9]d*).(0|[1-9]d*)$"
+    },
+    "schema_type": {
+      "type": "string",
+      "const": "IndexCommit",
+      "description": "PascalCase 타입명"
+    },
+    "tenant_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "보안 삼중항 1"
+    },
+    "collection_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "보안 삼중항 2(수집 측 단수)"
+    },
+    "producer": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Producer",
+      "description": "index 사가 지문. plugin_id는 플랫폼 합성 index_backend.pipeline, image_digest는 null. 백엔드 버전은 backend_results[].backend_version"
+    },
+    "quality": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Quality",
+      "description": "입력 EmbeddedChunkSet.quality 전파(kind=delete는 full)"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/Warning"
+      },
+      "maxItems": 64,
+      "description": "품질 삼중항 2. 콘텐츠 미포함. v1 카탈로그에 index.* 경고 코드가 없어 보통 빈 배열"
+    },
+    "created_at": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime",
+      "description": "원장 행 INSERT 시각(= started_at)"
+    },
+    "lineage_refs": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/LineageRefs",
+      "description": "kind=upsert면 {source, parsed, normalized, chunk_set, enriched, embedded} 6키 전부, kind=delete면 빈 객체. artifact_refs와 같은 값"
+    },
+    "commit_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "워크플로우가 1회 발급(액티비티 재시도에 불변, 바이블 §11.4 (6))"
+    },
+    "document_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+    },
+    "doc_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "= SourceDocument.content_hash(ADR-0005). kind=delete면 삭제 시점 documents.current_doc_version"
+    },
+    "job_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "이 커밋을 만든 잡(jobs.index_commit_id 역참조)"
+    },
+    "kind": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/CommitKind",
+      "description": "upsert(새 세대 적재) / delete(tombstone, record_count=0)"
+    },
+    "previous_commit_id": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "세대 할당 시점 documents.current_commit_id(없으면 null). 플립 후 보상이 복원하는 세대의 커밋"
+    },
+    "supersedes_commit_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+      },
+      "uniqueItems": true,
+      "maxItems": 64,
+      "description": "이 커밋이 committed가 될 때 is_current=false로 전환되거나 물리 삭제 대상이 되는 같은 문서의 이전 커밋. previous_commit_id(non-null)를 포함"
+    },
+    "superseded_by": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "선택(N, null 허용 — 바이블 §5.4 표기 string(ulid) | null, 00 §8.1 4행). 이 커밋을 대체한 다음 커밋. status=committed 행에만 값이 있으며 다음 커밋의 committed 트랜잭션(재색인 모드 A는 ledger.advance_pointers)에서 기록된다"
+    },
+    "status": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/CommitStatus",
+      "description": "사가 상태 9단(바이블 §11.4). flipping_lexical·flipping_vector가 플립 실패 지점을 남긴다"
+    },
+    "index_generation": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "문서 단위 단조 증가. documents 행 FOR UPDATE 잠금 아래 그 문서의 max(index_commits.index_generation) + 1로 할당(current_generation + 1 아님; 롤백·폐기된 세대 번호 재사용 없음, 02-architecture/06 §2.5·§3.2). record_id 합성 요소"
+    },
+    "profile_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "maxLength": 64,
+      "description": "kebab-case(바이블 §6.1)"
+    },
+    "profile_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"profile\", canonical_json(해소된 프로파일)). 커밋 시점 CollectionSpec.profile_hash"
+    },
+    "parser_fingerprint_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"parser\", parser_id, parser_version, \",\".join(model_ids), sidecar_image_digest or \"\", profile_option)(바이블 §6.2). 재현성 조건 1"
+    },
+    "normalizer_fingerprint": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"normalizer\", plugin_id, plugin_version, config_hash, analyzer_id, dictionary_hash, pii_policy, pii_detector_version)"
+    },
+    "chunker_config_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"config\", canonical_json(chunker config)). chunk_id 결합 요소"
+    },
+    "enricher_fingerprint": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "= EnrichedChunkSet.enricher_fingerprint"
+    },
+    "embedder_fingerprint": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "= EmbeddedChunkSet.embedder_fingerprint(서빙 이미지 digest 포함)"
+    },
+    "embedding_space_ids": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/EmbeddingSpaceIds",
+      "description": "= EmbeddedChunkSet.embedding_space_ids 복사(07 §2.2 정본과 동일한 사본 $defs; index-record·collection-spec과 같은 방식, CI 동치 대조). {dense, sparse_learned | sparse_bm25, late_interaction?}"
+    },
+    "embedding_profile_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"spaces\", sorted name=id). Qdrant 물리 컬렉션 rag_vec_{[:12]} 결정"
+    },
+    "analyzer_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*:[^:\\s]+:[^\\s]+$",
+      "maxLength": 128,
+      "description": "{engine}:{version}:{dictionary}(바이블 §6.1). 변경 시 렉시컬 재색인 트리거"
+    },
+    "dictionary_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"dict\", sorted entries). 변경 시 렉시컬 재색인 트리거"
+    },
+    "record_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "이 커밋이 적재한 IndexRecord 수(리프 + level 2 파생 항목; 부모 제외). kind=delete는 0"
+    },
+    "commit_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"commit\", profile_hash, *sorted(f\"{chunk_id}:{content_hash}:{embed_text_hash}\")). commit_id·세대·시각과 무관(브리프 §7 재현성)"
+    },
+    "backend_results": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/BackendResult"
+      },
+      "maxItems": 8,
+      "description": "백엔드별 결과. 사가 진행에 따라 항목이 추가되며 backend_id는 유일"
+    },
+    "artifact_refs": {
+      "$ref": "#/$defs/CommitArtifactRefs"
+    },
+    "stats": {
+      "$ref": "#/$defs/CommitStats"
+    },
+    "compensation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Compensation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "선택(N, null 허용). status ∈ {rolled_back, failed}에서만 non-null"
+    },
+    "error": {
+      "oneOf": [
+        {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/StageError"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "선택(N, null 허용). 롤백·실패 사유(최종 인스턴스, retryable=false). 취소로 인한 롤백은 없음"
+    },
+    "events_emitted": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+      },
+      "uniqueItems": true,
+      "maxItems": 32,
+      "description": "이 커밋의 상태 전이 트랜잭션에서 outbox에 기록한 event_id(index.commit.published / index.commit.rolled_back / index.consistency.mismatch)"
+    },
+    "started_at": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime",
+      "description": "pending INSERT 시각"
+    },
+    "committed_at": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime",
+      "description": "선택(N). status=committed일 때만 존재"
+    },
+    "updated_at": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime",
+      "description": "선택(N). 이 문서 추가. 마지막 상태 전이(또는 superseded_by 기록) 시각"
+    }
+  },
+  "required": [
+    "schema_version",
+    "schema_type",
+    "tenant_id",
+    "collection_id",
+    "producer",
+    "quality",
+    "warnings",
+    "created_at",
+    "lineage_refs",
+    "commit_id",
+    "document_id",
+    "doc_version",
+    "job_id",
+    "kind",
+    "previous_commit_id",
+    "supersedes_commit_ids",
+    "status",
+    "index_generation",
+    "profile_id",
+    "profile_hash",
+    "parser_fingerprint_hash",
+    "normalizer_fingerprint",
+    "chunker_config_hash",
+    "enricher_fingerprint",
+    "embedder_fingerprint",
+    "embedding_space_ids",
+    "embedding_profile_hash",
+    "analyzer_id",
+    "dictionary_hash",
+    "record_count",
+    "commit_hash",
+    "backend_results",
+    "artifact_refs",
+    "stats",
+    "events_emitted",
+    "started_at"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "committed"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "committed_at"
+        ],
+        "properties": {
+          "events_emitted": {
+            "minItems": 1
+          },
+          "backend_results": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "status": {
+                  "const": "ok"
+                }
+              }
+            }
+          },
+          "compensation": {
+            "type": "null"
+          },
+          "error": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "rolled_back",
+              "failed"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "compensation"
+        ],
+        "properties": {
+          "compensation": {
+            "type": "object"
+          },
+          "events_emitted": {
+            "minItems": 1
+          },
+          "backend_results": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "rolled_back"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "backend_results": {
+            "items": {
+              "properties": {
+                "status": {
+                  "const": "compensated"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "failed"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object"
+          },
+          "backend_results": {
+            "contains": {
+              "properties": {
+                "status": {
+                  "const": "failed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "rolled_back"
+          },
+          "compensation": {
+            "properties": {
+              "reason": {
+                "not": {
+                  "const": "job_cancelled"
+                }
+              }
+            },
+            "required": [
+              "reason"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "compensation"
+        ]
+      },
+      "then": {
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "not": {
+              "const": "committed"
+            }
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "committed_at"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "not": {
+              "enum": [
+                "rolled_back",
+                "failed"
+              ]
+            }
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "compensation": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "pending",
+              "vector_written",
+              "lexical_written",
+              "flipping_lexical",
+              "flipping_vector"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "events_emitted": {
+            "maxItems": 0
+          },
+          "error": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "rolling_back"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "events_emitted": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "superseded_by": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "superseded_by"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": "committed"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "upsert"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "artifact_refs": {
+            "required": [
+              "source",
+              "parsed",
+              "normalized",
+              "chunk_set",
+              "enriched",
+              "embedded"
+            ]
+          },
+          "lineage_refs": {
+            "required": [
+              "source",
+              "parsed",
+              "normalized",
+              "chunk_set",
+              "enriched",
+              "embedded"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "delete"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "record_count": {
+            "const": 0
+          },
+          "artifact_refs": {
+            "maxProperties": 0
+          },
+          "lineage_refs": {
+            "maxProperties": 0
+          },
+          "previous_commit_id": {
+            "type": "string"
+          },
+          "backend_results": {
+            "items": {
+              "properties": {
+                "upserted": {
+                  "const": 0
+                }
+              }
+            }
+          },
+          "stats": {
+            "properties": {
+              "bytes_dense": {
+                "const": 0
+              },
+              "bytes_sparse": {
+                "const": 0
+              },
+              "bytes_lexical": {
+                "const": 0
+              },
+              "bytes_late_interaction": {
+                "const": 0
+              },
+              "leaf_count": {
+                "const": 0
+              },
+              "parent_count": {
+                "const": 0
+              },
+              "llm_tokens": {
+                "const": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "IndexCommit.backend_results.status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "failed",
+        "compensated"
+      ],
+      "description": "바이블 §5.4 backend_results[].status 인라인 열거({Type}.{path} 등재 규칙 §5.7). ok=쓰기 성공·유지, failed=이 백엔드의 쓰기 또는 보상 실패, compensated=보상(삭제·복원) 완료"
+    },
+    "BackendResult": {
+      "type": "object",
+      "description": "바이블 §5.4 backend_results[] 한 항목. backend_id는 CollectionSpec.backends[].backend_id(플러그인 ID)",
+      "properties": {
+        "backend_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId",
+          "description": "예 index_backend.qdrant, index_backend.opensearch"
+        },
+        "backend_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "서버 버전 문자열(capabilities 보고값)"
+        },
+        "physical_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "description": "물리 컬렉션·인덱스 이름(바이블 §13.4: rag_vec_{hash12}, rag_lex_{hash12}, 테넌트 전용 _t_{tenant_id})"
+        },
+        "alias": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "description": "논리 alias(col_{collection_id}_vec / col_{collection_id}_lex). blue/green 중에는 아직 이 물리명을 가리키지 않을 수 있다"
+        },
+        "upserted": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "이 커밋으로 upsert한 레코드 수(kind=upsert·status ok면 = record_count)"
+        },
+        "deleted": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "이 커밋이 삭제한 레코드 수(kind=delete의 delete_by_filter 또는 보상 삭제)"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "이 백엔드에 대한 쓰기·플립·보상 호출 시간 합"
+        },
+        "status": {
+          "$ref": "#/$defs/IndexCommit.backend_results.status"
+        }
+      },
+      "required": [
+        "backend_id",
+        "backend_version",
+        "physical_name",
+        "alias",
+        "upserted",
+        "deleted",
+        "duration_ms",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "CommitArtifactRefs": {
+      "type": "object",
+      "description": "바이블 §5.4 artifact_refs {source, parsed, normalized, chunk_set, enriched, embedded} — 재적재(replay) 복구 1순위. lineage_refs와 같은 키·같은 값. 여섯 키 모두 계약 산출물이며 키별 schema_type은 00 §3.2 대응표와 1:1(const). 원본 바이트는 source가 가리키는 SourceDocument.artifact(02) 또는 ParsedDocument.source_ref(03)로 도달한다",
+      "properties": {
+        "source": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef",
+          "properties": {
+            "schema_type": {
+              "const": "SourceDocument"
+            }
+          },
+          "required": [
+            "schema_type"
+          ],
+          "description": "detect 출력 SourceDocument 산출물(media_type application/vnd.rag.source-document+json, schema_version 동반; 바이블 §5.2·§4.1 index requires_lineage). index가 acl·metadata를 읽는 원천. 원본 바이트(sources/{blake3})가 아니다"
+        },
+        "parsed": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef",
+          "properties": {
+            "schema_type": {
+              "const": "ParsedDocument"
+            }
+          },
+          "required": [
+            "schema_type"
+          ]
+        },
+        "normalized": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef",
+          "properties": {
+            "schema_type": {
+              "const": "NormalizedDocument"
+            }
+          },
+          "required": [
+            "schema_type"
+          ]
+        },
+        "chunk_set": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef",
+          "properties": {
+            "schema_type": {
+              "const": "ChunkSet"
+            }
+          },
+          "required": [
+            "schema_type"
+          ]
+        },
+        "enriched": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef",
+          "properties": {
+            "schema_type": {
+              "const": "EnrichedChunkSet"
+            }
+          },
+          "required": [
+            "schema_type"
+          ]
+        },
+        "embedded": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef",
+          "properties": {
+            "schema_type": {
+              "const": "EmbeddedChunkSet"
+            }
+          },
+          "required": [
+            "schema_type"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "CommitStats": {
+      "type": "object",
+      "description": "바이블 §5.4 stats → usage_ledger(bytes_indexed, llm_tokens)·rag_index_bytes_total{vector}",
+      "properties": {
+        "bytes_dense": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "dense 벡터 바이트(레코드 수 × dim × 4, fp32 기준)"
+        },
+        "bytes_sparse": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "sparse_learned·sparse_bm25 바이트 합"
+        },
+        "bytes_lexical": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "index_text·context_prefix·lexical_terms 바이트(OpenSearch 적재분; lite는 0)"
+        },
+        "bytes_late_interaction": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "late_interaction 멀티벡터 바이트(끔이면 0)"
+        },
+        "leaf_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "level=0 리프 수(색인됨)"
+        },
+        "parent_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "level=1 부모 수(색인 안 됨; ChunkTextStore 번들)"
+        },
+        "llm_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "EnrichedChunkSet.budget_used.llm_tokens_in + llm_tokens_out"
+        },
+        "wall_seconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "pending → 종결 상태까지 벽시계 초"
+        }
+      },
+      "required": [
+        "bytes_dense",
+        "bytes_sparse",
+        "bytes_lexical",
+        "bytes_late_interaction",
+        "leaf_count",
+        "parent_count",
+        "llm_tokens",
+        "wall_seconds"
+      ],
+      "additionalProperties": false
+    },
+    "Compensation": {
+      "type": "object",
+      "description": "바이블 §5.4 compensation. 플립 전 실패(pending~lexical_written)는 새 세대 삭제만(restored_generation=null), 플립 후 실패(flipping_*)는 previous_commit_id 세대 복원 후 새 세대 삭제(restored_generation=이전 세대). 취소(reason=job_cancelled)는 다섯 전종결 상태 모두에서 가능하며 같은 모드 규칙을 따른다(§3 규칙 (6); 바이블 §11.5 cancelling → cancelled는 보상 완료 전제)",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)?$",
+          "maxLength": 64,
+          "description": "롤백 사유: 최종 error.code({stage}.{reason}, 13-error-model; 예 index.partial_commit — ADR-0026 예시와 같은 어휘) 또는 job_cancelled(취소 시그널, error 없음)"
+        },
+        "failed_at_status": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/CommitStatus",
+          "enum": [
+            "pending",
+            "vector_written",
+            "lexical_written",
+            "flipping_lexical",
+            "flipping_vector"
+          ],
+          "description": "실패 시점 상태(종결·rolling_back 불가). reason=job_cancelled도 다섯 값 모두 가능(플립 구간 취소는 진행 중 플립 호출 완료 후 상태 경계에서 수용, 플립 후 모드 보상)"
+        },
+        "deleted_counts": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": "{backend_id: 삭제된 새 세대 레코드 수}(열린 객체, 14 §2.3)"
+        },
+        "restored_generation": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "description": "복원한 이전 세대(플립 후 실패이고 previous_commit_id가 있을 때만 non-null)"
+        },
+        "completed_at": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime",
+          "description": "보상 절차 종료 시각(성공·실패 무관)"
+        }
+      },
+      "required": [
+        "reason",
+        "failed_at_status",
+        "deleted_counts",
+        "restored_generation",
+        "completed_at"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "failed_at_status": {
+                "enum": [
+                  "pending",
+                  "vector_written",
+                  "lexical_written"
+                ]
+              }
+            },
+            "required": [
+              "failed_at_status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "restored_generation": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,121 @@
+{
+ "id": "0003",
+ "findings": [
+  {
+   "severity": "minor",
+   "location": "## 참조 — 마지막 항목(\"이 결정을 전제로 하는 설계 문서\", 219행)",
+   "problem": "링크 5개 중 3개가 존재하지 않는 파일이다: ../04-pipelines/01-pipeline-framework.md, ../03-contracts/12-jobs-events-and-status.md, ../10-development/04-testing-strategy.md (Glob 확인: 03-contracts에는 00·13·14만, 04-pipelines·10-development 디렉터리는 .md 없음). 경로 자체는 브리프 §8 문서 맵에 있으나 브리프 §9.6은 '존재하지 않는 문서를 링크하지 않는다'고 규정하며 현재는 깨진 링크다.",
+   "fix": "세 항목을 링크 대신 문서 맵 경로의 코드 표기(`04-pipelines/01-pipeline-framework.md` 등)로 두고 '작성 예정' 표시, 또는 08 문서 미해결 이슈 9의 관례(미작성 문서 링크는 린트 경고)를 따르기로 한 경우 그 관례를 참조 절에 한 줄로 명시. 존재하는 두 링크(02-architecture/06, 02-architecture/08)는 유지.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 동인 표 — '라이선스 A 등급 우선' 행(40행)",
+   "problem": "'Temporal(MIT), DBOS(MIT), Dapr(Apache-2.0)만 후보'라고 적었으나 같은 문서의 고려한 대안 표·대안 D·E는 Hatchet(MIT), Celery(BSD-3), Prefect·Airflow·Dagster(Apache-2.0)도 후보로 평가한다(08 문서 §선정 근거 점수표에도 모두 A 등급으로 채점). 문서 내부 불일치.",
+   "fix": "'A 등급(MIT·Apache-2.0·BSD) 후보만 평가; Restate(서버 BSL 1.1)·Inngest(서버 SSPL)·Windmill(AGPL 제품형)·Redpanda(BSL)는 제외'로 고친다(08 문서 §후보 목록 A절, §Restate, Inngest, Windmill; 매트릭스 `orchestrator` 행 라이선스 열 MIT / MIT / Apache-2.0 / BSD-3).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "### 대안 A — 판정(63행)",
+   "problem": "인용문 \"`@workflow.defn` 직접 재사용은 로컬 실행 불가·내구성 미명시\"를 '매트릭스 D-17 행의 근거'로 귀속했으나, 매트릭스 D-17 행(00-summary 232행)의 실제 문구는 \"`@workflow.defn` 직접 재사용은 로컬 모드에서 실행 불가\" / \"내구성·재사용 방식을 명시하지 않음\"이다. 인용한 문구는 바이블 §3.1 D-17 '근거·개정 이유' 열(및 브리프 §4 D-17 근거 열)의 것이다.",
+   "fix": "'바이블 §3.1 D-17 근거 열(매트릭스 D-17 행·ADR 발의 P0 항목 요약)'로 출처를 바꾸거나, 매트릭스 원문을 그대로 인용한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "### 대안 E — 판정(91행)",
+   "problem": "'이들(Dapr·Hatchet·Restate·Inngest)은 컨텍스트 구현 하나로 흡수 가능하며 계약(03-contracts)에는 영향이 없다(08 문서 §Cadence·Absurd·Resonate)'로 적었으나, 인용된 08 문서 229행의 문장은 Cadence·Absurd·Resonate 세 후보에 대한 것이다. Dapr에 대한 같은 취지의 판정은 08 문서 §Dapr Workflows 표 '판정' 열(254행, \"`PipelineContext` 구현 하나로 수용 가능\")에 있고, Restate는 '사용자가 이미 운영 중이면 플러그인으로 수용 가능'(217행), Hatchet·Inngest에는 해당 서술이 없다.",
+   "fix": "출처를 '08 문서 §Dapr Workflows 판정(Dapr), §Restate·Inngest·Windmill D-02 판정(Restate)'으로 바꾸고, 주장 범위를 'Dapr는 컨텍스트 구현 하나로 수용 가능(계약 영향 없음); Restate는 사용자 보유 인프라 연동 플러그인으로만'으로 좁힌다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 재검토 조건 첫 항목(206행) 및 대안 F mermaid(122행)",
+   "problem": "`DbosContext`는 바이블 어디에도 없는 임의 식별자다(바이블 §11.1·§12는 `TemporalContext`·`LocalContext`만 정한다). mermaid의 `ActivityWrapper` 클래스명도 바이블 정본 명칭이 아니다(바이블 §2.3 `worker`·§12 `orchestration/temporal/activities`는 '제네릭 액티비티 래퍼 1개'로만 지칭).",
+   "fix": "`DbosContext`는 '(가칭)'을 붙이거나 'DBOS용 `PipelineContext` 구현'으로 서술로 바꾼다. mermaid 박스는 `activities 제네릭 래퍼(§12)` 같은 설명 라벨로 두어 새 타입명으로 읽히지 않게 한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 재검토 조건 네 번째 항목(209행)",
+   "problem": "'브리프 §7 처리량·§11.6 기동 목표'에서 §11.6은 바이블 절(개발 모드 5분 기동)인데 앞의 '브리프'에 걸려 읽힌다. 브리프에는 §11.6이 없다(브리프 §11은 '작성자(에이전트)에게').",
+   "fix": "'브리프 §7 처리량 목표·바이블 §11.6 기동 목표'로 고친다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 — '바이블 §4.1 경계 페이로드' 인용(144행) 및 ## 준수 확인 방법 2행(192행)",
+   "problem": "바이블 §4.1 경계 페이로드 행의 세 번째 규칙 — 스테이지가 `requires_lineage: [schema_type…]`로 선언한 상류 산출물은 셸이 입력 봉투의 `lineage_refs`(§5.2)에서 함께 로드해 `ctx.lineage[schema_type]`로 제공하며(`index`만: `EnrichedChunkSet`·`ChunkSet`·`SourceDocument`) 경계 페이로드는 여전히 `ArtifactRef` 1개 — 가 인용에서 빠졌다. 준수 확인 2행의 '경계 페이로드 `ArtifactRef` 1개' 규칙이 다중 상류 입력(`index`)에서도 성립하는 근거가 바로 이 규칙이므로 ADR에 반영되어야 한다.",
+   "fix": "144행 인용 뒤에 '스테이지가 `requires_lineage`로 선언한 상류 산출물은 셸이 `lineage_refs`(§5.2)에서 함께 로드해 `ctx.lineage[schema_type]`로 제공한다(`index`만); 경계 페이로드는 여전히 `ArtifactRef` 1개'를 추가하고, 준수 확인 2행 강제 수단에 '`requires_lineage` 로드는 셸(§4.1)'을 병기한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "문서 전체 분량",
+   "problem": "wc -l 219(마지막 줄 포함 220행)로 브리프 §9.11의 ADR 상한 200행을 넘는다(감사 지시의 90~220행 범위 안에는 든다). '결정에 딸린 정본 세부' 불릿(155~161행)과 준수 확인 표 1·6·7·9·10행이 같은 바이블 규칙(§12 의존 방향, §5.6 orchestrator 열거, §6.1 workflow_run_id, §4.4 StagePolicy, §6.7 명명)을 중복 서술한다.",
+   "fix": "중복되는 '정본 세부' 불릿을 준수 확인 표 행의 '강제 수단' 열로 흡수해 약 20행을 줄여 200행 이하로 맞춘다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "major",
+   "location": "## 고려한 대안 › 대안 F 다이어그램(95~131행)·설명 133행 vs ## 결정 `query` 행(151행)·준수 확인 8(198행)",
+   "problem": "다이어그램은 `PipelineContext <|.. LocalContext : local, query`와 `LocalContext --> ActivityWrapper : 인프로세스 호출`로 query 모드까지 `ActivityWrapper`(\"ArtifactRef 로드 - Stage.run - 콘텐츠 주소화 저장 - 계보 기록\")를 지나게 그리고, 133행도 \"스테이지 실행·ArtifactRef 로드·저장·계보 기록은 셸의 제네릭 액티비티 래퍼 1개가 맡는다\"고 일반화한다. 그러나 계보 기록은 PostgreSQL `lineage` 테이블에 산출물 저장과 같은 트랜잭션으로 쓰는 것(바이블 §4.1 계보 행, §13.1)이므로, 결정 표 `query` 행 \"무상태 / 오케스트레이터·PostgreSQL 미경유\"와 준수 확인 8(`retrieval`이 `ledger`를 모른다)과 문서 내부에서 모순된다. 아울러 `PipelineContext.run(...) -> ArtifactRef` 시그니처를 query 경로(p95 800ms, 바이블 §4.3 \"멱등성/캐시 키: 없음\")에 적용하면 `plan→retrieve→fuse→…` 매 경계마다 산출물 저장이 강제되는지, 인메모리 참조인지 바이블이 정하지 않았는데(§4.3·§11.1·§13.3에 인메모리 ArtifactRef 규약 없음) ADR은 이를 짚지 않는다. P0 ADR로서 02-architecture/06·04-pipelines/01이 전제로 삼는 경계 정의가 불명확하다.",
+   "fix": "(1) 다이어그램의 `LocalContext --> ActivityWrapper` 관계와 133행 서술을 수집 셸(`local` 모드)에 한정하고, `query` 모드는 바이블 §4.3 표대로 \"산출물 저장·계보 기록 없음, 인프로세스 어댑터 직접 호출\"로 구분해 그리거나 라벨을 `local 모드만`으로 명시한다(예: `LocalContext --> ActivityWrapper : local 모드 인프로세스 호출`, `LocalContext --> retrieval 어댑터 : query 모드(저장·계보 없음, §4.3)`). (2) 결과(부정) 절에 emit 트랜잭션 경계 항목과 같은 방식으로 \"query 모드에서 `ctx.run`의 페이로드(`ArtifactRef` vs 인메모리 계약 인스턴스)와 저장 생략 규칙은 바이블 §4.3·§11.1이 정하지 않았으므로 02-architecture/06·04-pipelines/01에서 확정\"을 추가한다. 새 결정을 만들지 말고 확정 필요 항목으로만 기록한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 동인 표 40행 \"라이선스 A 등급 우선\" 행",
+   "problem": "\"Temporal(MIT), DBOS(MIT), Dapr(Apache-2.0)만 후보\"라고 적었으나, 같은 문서의 대안 D·E가 Celery 5.6(BSD-3)·Prefect 3(Apache-2.0)·Hatchet 0.108(MIT) 등 A 등급 후보를 비교하고 08 문서 점수표도 이들을 포함한다. \"만 후보\"는 문서 내부 모순이자 ADR-0001 등급표의 함의(A 등급이면 후보 가능)를 축소 서술한다.",
+   "fix": "함의 열을 \"A 등급 후보만 비교(Temporal MIT, DBOS MIT, Dapr Apache-2.0, Hatchet MIT, Celery BSD-3, Prefect Apache-2.0 등); Restate(BSL 1.1)·Inngest(SSPL)·Windmill(AGPL 제품형)은 ADR-0001 C/X 등급으로 제외\"로 고친다(08 문서 §Restate, Inngest, Windmill D-02 판정 행 근거).",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 고려한 대안 › 대안 E 판정 91행",
+   "problem": "\"이들은 컨텍스트 구현 하나로 흡수 가능하며 계약(03-contracts)에는 영향이 없다(08 문서 §Cadence·Absurd·Resonate)\"의 인용 절은 Cadence·Absurd·Resonate 세 후보에 대한 문장(08 문서 229행)이며, 대안 E의 대상인 Dapr·Hatchet·Restate·Inngest에 대한 근거가 아니다. Dapr는 §Dapr Workflows 판정 열(\"`PipelineContext` 구현 하나로 수용 가능\"), Restate·Inngest는 §Restate, Inngest, Windmill의 D-02 판정(\"이미 운영 중이면 플러그인으로 수용 가능\")이 실제 근거다.",
+   "fix": "인용을 \"(08 문서 §Dapr Workflows 등 추가 비교군 판정 열, §Restate, Inngest, Windmill D-02 판정)\"으로 바꾸고, Hatchet은 08 문서에 흡수 가능성 언급이 없으므로 대상에서 빼거나 \"Hatchet은 미평가\"로 표기한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 고려한 대안 › 대안 B 판정 70행, ## 결정 표 `local` 행 150행, ## 결과 › 부정 176행",
+   "problem": "\"크래시 시 잡은 `failed`\"는 바이블 §11.1 문구 그대로이지만, 프로세스가 크래시하면 스스로 `failed`를 원장에 기록할 수 없다. 누가 언제(api 재기동 시 조정, `jobs.state=running AND workflow_run_id IS NULL` 정리, 디스패처 조정 스케줄 등) 기록하는지 바이블 §11.1·§11.5·§11.2 어디에도 없고(Grep 확인), ADR은 이 실패 모드를 \"`failed`로만 남긴다\"고 단정해 메커니즘 공백을 감춘다.",
+   "fix": "결과(부정) 176행에 \"크래시한 `LocalRunner` 잡을 `failed`로 전이시키는 주체·시점(예: api 프로세스 재기동 시 `state=running AND workflow_run_id IS NULL` 잡 조정)은 바이블 미정 → 02-architecture/06(잡 상태 기계)에서 확정\"을 emit 항목과 같은 형식으로 추가한다. ADR이 방식을 정하지는 않는다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 표 5·6행(195~196행)",
+   "problem": "강제 수단 표 안에 \"제안(바이블 미명시)\" 항목 2건(두 셸 동등성 적합성 키트, 프로덕션 values `orchestrator: local` 금지 리뷰)이 CI 게이트 행과 같은 열에 섞여 있어, 구현자가 이를 바이블이 정한 게이트로 오독할 수 있다. 바이블 §1.1은 제안은 결정과 분리해 남기라고 규정한다.",
+   "fix": "표에는 바이블·08 문서가 근거인 강제 수단만 남기고, 5·6행의 제안 부분은 표 아래 \"제안(바이블 미명시, 10-development/04·02-architecture/08에서 확정)\" 2줄로 분리 표기한다. 재검토 조건 210행의 \"준수 확인 6의 제안\" 참조도 그에 맞춰 갱신한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 고려한 대안 표 53행 vs 대안 C 소절 77행",
+   "problem": "표의 판정은 \"보류(안정화 후 ADR)\", 소절은 \"현시점 기각·보류\"로 판정 어휘가 다르다. 지시(outline)는 DBOS를 '기각 대안(안정화 후 ADR)'으로 기록하라고 하므로 표와 소절의 판정을 같은 어휘로 맞춰야 한다.",
+   "fix": "두 곳 모두 \"기각(현시점; DBOS 3.x 안정화 후 별도 ADR로 재검토 — 바이블 §11.1 `temporal-lite` 제약)\"으로 통일한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 재검토 조건 209행",
+   "problem": "\"브리프 §7 처리량·§11.6 기동 목표\"에서 §11.6은 브리프가 아니라 바이블 절(개발 모드 5분 기동)이어서 출처가 오독된다.",
+   "fix": "\"브리프 §7 처리량·바이블 §11.6 기동 목표\"로 출처를 명시한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "도입 문단 20행",
+   "problem": "\"MADR(Markdown Architectural Decision Records)\"로 전개했으나 ADR-0001 20행은 \"MADR(Markdown Any Decision Records)\"로 전개한다. MADR 공식 명칭은 v3 이후 'Markdown Any Decision Records'이며, 시리즈 내 표기가 불일치한다.",
+   "fix": "ADR-0001과 동일하게 \"MADR(Markdown Any Decision Records)\"로 통일한다.",
+   "lens": "tech"
+  }
+ ],
+ "verdicts": {
+  "anchor": "accept",
+  "tech": "revise"
+ }
+}

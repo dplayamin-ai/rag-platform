@@ -1,0 +1,239 @@
+{
+ "group": "contracts",
+ "date": "2026-09-22",
+ "t0": {
+  "done": [
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\00-contract-overview.md",
+    "review": "verified",
+    "serious": 6,
+    "lines": 1367
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\13-error-model.md",
+    "review": "verified",
+    "serious": 7,
+    "lines": 1218
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\14-schema-versioning-and-compatibility.md",
+    "review": "verified",
+    "serious": 12,
+    "lines": 670
+   }
+  ],
+  "dropped": [],
+  "openIssues": [
+   "00-contract-overview.md: 13-error-model 소유 파일(schemas/stage-error.schema.json, problem-details.schema.json)은 이 작업 범위 밖이라 수정하지 않았다. 00의 $defs와 필드 집합·제약은 동치로 맞췄으나, 두 파일을 $ref 래퍼로 전환하고 자기 $defs/ErrorCode·$defs/ErrorLocation을 제거하는 작업은 13 문서 개정(13 미해결 이슈 12)에서 해야 한다. 또한 13 §2.2 본문은 '제안 필드는 스키마·모델·예시에 없다'고 하는데 실제 13 파일에는 있어 13 내부 불일치가 남아 있다.",
+   "00-contract-overview.md: ProblemDetails.instance를 바이블 §5.3 표기 string(uri)와 다르게 string(uri-reference)로 두었다(RFC 9457 §3.1.5, 13 파일, 두 리뷰어 일치). 바이블 patch 제안으로 U-12(b)에 기록했으며 바이블 개정 전까지는 표기상 차이가 남는다.",
+   "00-contract-overview.md: StageError.cause의 '중첩 깊이 ≤ 3'은 JSON Schema로 표현하지 않고 Pydantic 검증에만 두었다(스키마는 무제한 재귀). 스키마 수준 강제가 필요하면 unrolled 정의가 필요하다.",
+   "00-contract-overview.md: 리뷰 항목 '샘플링 수치는 04-pipelines/01 실측 후 기입'은 실측 자료가 없어 수치를 넣지 않고 U-5 절차로만 남겼다(반영 보류가 아니라 의도된 미확정).",
+   "00-contract-overview.md: ajv·Python이 로컬에 없어(npm install 네트워크 실패) 골든 예시 검증은 common-types가 쓰는 키워드 서브셋을 구현한 자체 검증기로 수행했고, Pydantic 블록은 실행 없이 정독으로만 문법을 확인했다. CI의 §10.3 게이트(ajv/jsonschema + Pydantic 동치)에서 재확인이 필요하다.",
+   "00-contract-overview.md: depends_on은 브리프·바이블·선정 매트릭스 3개를 유지했다. 13-error-model 파일을 대조용으로 읽었지만 13이 00에 의존하므로 순환을 피해 depends_on에 추가하지 않았다.",
+   "00-contract-overview.md: HWPX/HWP 미디어 타입(application/hwp+zip vs application/vnd.hancom.hwpx, application/x-hwp)은 확인 필요(as of 2026-09)로 표기했고 정본 확정은 02-source-document에 위임했다.",
+   "13-error-model.md: 리뷰 blocker/major (anchor·tech) '제안 필드 제거' 지시는 문자 그대로 반영하지 않음: 작업 중 depends_on 00 문서가 U-12로 해당 7필드·ErrorLocation·instance uri-reference를 common-types $defs에 선택(N) 필드로 수용해 두 정의가 동치가 되었고 바이블 §5 서문이 N 필드 추가를 허용하므로, 리뷰어의 대안 (b)에 해당하는 상태로 정합했다(필드는 N(U-12) 표기, 바이블 §5.3 표 갱신 ADR은 이슈 1로 유지). 00 §2 '전환 상태' 문단·§10.3 전환 규칙은 00 소유라 수정하지 않았고 전환 완료 갱신을 이슈 12에서 00에 요청했다.",
+   "13-error-model.md: 리뷰 minor 'instance 필드 표 타입 셀에 string(uri-reference)(바이블 표기 string(uri), 정정 제안) 병기'는 반영했으나, 리뷰어가 제안한 common-types 변경은 00 소유라 직접 하지 않음(00이 이미 uri-reference로 변경함을 확인하고 인용).",
+   "13-error-model.md: 리뷰 minor 'retrieve.security_context_missing 500 → 미정': 반영. 단 E7 문구가 400을 뜻하는지 별도 코드를 뜻하는지는 바이블 소유자 확인 필요로 남김(이슈 5).",
+   "13-error-model.md: 리뷰 minor(tech) 'H7 404 → §7.1 404 행 추가': 채택 코드가 없어 '채택 전 임시: 400 contract.violation + detail'로 두었다. 이는 이 문서가 정한 초안 규칙이며 api.not_found 조기 채택(이슈 3)으로 해소된다.",
+   "13-error-model.md: normalize·chunk의 Temporal 타임아웃은 의미가 맞는 기존 코드가 없어 매핑 없음(미정)으로 두었고 그동안 JobStatus.last_error가 null인 failed가 가능함을 I12 예외로 명시했다 — {stage}.timeout 조기 채택 필요(이슈 3). 12 문서(JobStatus 소유)에 반영 제안 상태.",
+   "13-error-model.md: I12·I13은 각각 12·10 문서 소유 타입에 대한 불변식이라 '반영 제안'으로 출처 표기했으며, 두 문서가 아직 없어 링크는 문서 맵 경로만 걸었다.",
+   "13-error-model.md: temporalio ApplicationError 시그니처(details 가변 위치 인자)는 07-tech-landscape/08에 직접 근거가 없어 '확인 필요(as of 2026-09)'로 표기했다.",
+   "13-error-model.md: 예시 JSON은 ajv가 없어 자체 미니 검증기(type/required/additionalProperties/pattern/enum/min·max/$ref/dependentRequired/uri·date-time·json-pointer format)로 검증했다; 메타스키마 검증과 완전한 format 어설션은 CI(00 §10.3)에서 수행되어야 한다.",
+   "13-error-model.md: frontmatter version은 지시에 없어 0.1.0 유지(status만 active로).",
+   "14-schema-versioning-and-compatibility.md: [anchor major 3 — 부분 반영] 리뷰어는 산출물·응답 계약의 필수→선택화·제약 완화를 major로 재분류하라 했으나, 리뷰어가 제시한 대안('조건부 minor')을 택했다: §4.2 행 7이 상위 minor 산출물을 거부하므로 소비자 minor ≥ 생산자 minor가 구조적으로 보장되고, 선택화·완화는 이전 minor 인스턴스를 모두 유효하게 유지(G1)해 저장 산출물·기존 요청을 깨지 않는다. 바이블 §1.2가 열거하지 않은 항목임을 §2.1 표에 별도 행으로 명시하고 바이블 개정 제안을 미해결 이슈 3으로 기록. 대신 리뷰어가 지적하지 않은 내부 모순(산출물 제약 강화 = minor가 G1·저장 산출물과 충돌)을 발견해 강화를 모든 계약에서 major로 바꾸고 예시 2·§10.2·불변식 5를 함께 수정했다.",
+   "14-schema-versioning-and-compatibility.md: [anchor minor §5.1 골든 예시 — 리뷰어 주장 불일치] 리뷰어가 인용한 '00 §10.3 schemas/examples/(초안 위치)'와 '00 미해결 U-12'는 00-contract-overview에 존재하지 않는다(00 미해결 이슈는 U-1~U-10, §10.3은 '골든 인스턴스의 정본은 문서 자체'). 00 §10.3 실제 문구에 맞춰 정본 = 문서 `## 예시`, 이전 버전 파일 보존 경로 tests/contracts/golden/은 제안(10-development/04 확정)으로 두었다.",
+   "14-schema-versioning-and-compatibility.md: [tech minor VersionedEnvelope additionalProperties] additionalProperties를 추가하는 대신 00 §3.1 결정(봉투는 별도 $defs 없음)에 따라 `$defs/VersionedEnvelope` 자체를 삭제해 해소했다. Pydantic 베이스 클래스는 코드 수준으로만 유지.",
+   "14-schema-versioning-and-compatibility.md: [tech minor §2.4 ADR-0032 대안] 리뷰어가 두 릴리스 규칙 근거로 ADR-0032(플러그인 SDK) 인용 대안을 제시했으나 범위 밖이라 채택하지 않고 신규 ADR 필요로 강등(미해결 이슈 2).",
+   "14-schema-versioning-and-compatibility.md: [tech major §5.4 dataschema] 리뷰어의 두 대안 중 (2) dataschema 생략 + API 조회를 채택; (1) 이벤트 데이터 스키마 인벤토리 추가는 12 문서 결정으로 미해결 이슈 17에 남김.",
+   "14-schema-versioning-and-compatibility.md: 부속 파일 없음: 이 문서는 schemas/*.schema.json을 소유하지 않으며(범위 절) common-types는 00 소유라 수정하지 않았다. 00 소유자에게 넘길 제안: KebabName·ContractsCompat 승격, Capabilities.contracts_compat 패턴, SchemaVersion 원시 형식, §8.2 보완 목록(미해결 이슈 1·5·6).",
+   "14-schema-versioning-and-compatibility.md: Python 블록은 환경에 python이 없어 ast 파싱을 못했다(육안 검토만). JSON 5블록은 node로 파싱·구조 검증 완료.",
+   "14-schema-versioning-and-compatibility.md: 13-error-model §3.3 제안 표에 contract.schema_type_mismatch·contract.upcast_failed·render.template_unsupported 추가 요청(미해결 이슈 8) — 13 문서 소유자 반영 필요."
+  ]
+ },
+ "t1": {
+  "done": [
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\01-ingest-request.md",
+    "review": "verified",
+    "serious": 6,
+    "lines": 934
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\02-source-document.md",
+    "review": "verified",
+    "serious": 4,
+    "lines": 828
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\03-parsed-document.md",
+    "review": "verified",
+    "serious": 6,
+    "lines": 1424
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\04-normalized-document.md",
+    "review": "fixed_twice",
+    "serious": 6,
+    "lines": 1019
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\05-chunk-set.md",
+    "review": "verified",
+    "serious": 8,
+    "lines": 1040
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\06-enriched-chunk-set.md",
+    "review": "fixed_twice",
+    "serious": 9,
+    "lines": 1022
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\07-embedded-chunk-set-and-index-record.md",
+    "review": "verified",
+    "serious": 3,
+    "lines": 1240
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\08-index-commit.md",
+    "review": "verified",
+    "serious": 6,
+    "lines": 895
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\09-query-request-and-query-plan.md",
+    "review": "fixed_twice",
+    "serious": 5,
+    "lines": 1248
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\10-candidate-set-and-ranked-set.md",
+    "review": "verified",
+    "serious": 6,
+    "lines": 1620
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\11-context-pack.md",
+    "review": "verified",
+    "serious": 7,
+    "lines": 1382
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\12-jobs-events-and-status.md",
+    "review": "verified",
+    "serious": 8,
+    "lines": 1160
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\15-collection-profile-and-policy-contracts.md",
+    "review": "verified",
+    "serious": 6,
+    "lines": 1840
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\03-contracts\\16-eval-feedback-and-sidecar-contracts.md",
+    "review": "verified",
+    "serious": 9,
+    "lines": 1621
+   }
+  ],
+  "dropped": [],
+  "openIssues": [
+   "01-ingest-request.md: [tech minor, dry_run] 리뷰가 제시한 두 대안 중 '필드 추가 + 예시' 대신 '범위 절 제외 명시 + 이슈 9 보강'을 택했다. 이유: dry_run은 N 필드 하나가 아니라 응답 상태(202→200)·본문(IngestDryRunResult)·Idempotency-Key 소비 여부까지 바꾸는 엔드포인트 의미 변경이라 바이블 §14 행 개정(minor)이 선행되어야 한다고 판단(브리프 §11).",
+   "01-ingest-request.md: [anchor minor, ACL A4] 리뷰의 '채택 전 400 대신 warnings/접수 허용으로 완화' 안은 본문 규칙으로 채택하지 않고 이슈 14에 완화안으로만 병기했다. 이유: 완화하면 Warning 코드(contract.acl_deny_all)가 또 카탈로그 밖 제안 코드가 되어 I-14와 충돌하므로, 바이블 §10.1 등재 결정까지 이 계약 불변식(IR-5)으로 400 유지가 더 일관적이다.",
+   "01-ingest-request.md: [anchor/tech major, 배치 멱등성] 리뷰 요구대로 잠정안으로 격하했으나 정본 개정 없이는 구현할 수 없는 상태다. 잠정안의 파생 키 '{key}#{i}'는 '#'를 포함한 단건 키와 이론상 충돌할 수 있음을 본문에 명시했다. 바이블 §13.1(idempotency_keys.job_ids 또는 response jsonb, jobs.idempotency_key NULL 허용) 개정이 필요하며 이 문서가 결정할 수 없다(이슈 12).",
+   "01-ingest-request.md: [anchor major, 503] 13 §3.3이 contract.violation 대용을 부적절로 판정해 503의 채택 전 대안 코드가 존재하지 않는다. api.orchestrator_unavailable·api.dependency_unavailable 조기 채택을 '구현 전제'로 적었으나 채택 여부는 13·바이블 소유자 결정(이슈 13).",
+   "01-ingest-request.md: [검증 한계] 이 머신에 Python이 없어 Pydantic 블록은 AST 파싱 대신 육안 검토만 했다(224행). 예시 검증은 ajv가 없어 스크래치패드의 자체 JSON Schema 2020-12 부분집합 validator(ir-validate.js)로 수행했다 — $ref·pattern·uniqueItems·maxProperties·required·if/then은 검사하지만 format 검증은 하지 않는다.",
+   "01-ingest-request.md: [schema_version] IngestAccepted.required 축소·CredentialsRef 상한 축소·배열 상한 상향은 스키마 변경이지만 게시 전 초판이라 schema_version 1.0.0을 유지하고 버전 이력 1.0.0 행에 '리뷰 1차 반영'으로 기록했다. 이미 게시된 것으로 취급해야 하면 1.1.0(가산)/2.0.0(CredentialsRef 축소는 강화) 판단이 필요하다.",
+   "01-ingest-request.md: [frontmatter version] 지시에 없어 문서 version 0.1.0을 유지했다(status만 active로).",
+   "01-ingest-request.md: [미반영 없음 확인] 리뷰 18항목 중 blocker/major 6건 전부 반영, minor 12건 전부 반영(dry_run·A4 완화안은 위 사유로 대안 경로 선택).",
+   "02-source-document.md: [미반영] 리뷰(anchor·tech) 'authors 32 / tags 항목 64자 / custom 32키'로 맞추라는 지시: 01-ingest-request 실제 스키마·§2.2·§2.3·V10·IR-8은 authors 64, tags 항목 128자, custom 64키이며 01이 이미 02와 정합해 둔 값이라 01 정본을 유지했다(title 512·doc_type 패턴·uniqueItems·custom 키 패턴·string 1,024는 반영).",
+   "02-source-document.md: [미반영] 리뷰(anchor) 'credentials_ref maxLength 512·패턴 {1,480}': 01 $defs/CredentialsRef 실제 값은 maxLength 256·{1,240}(01 §8.3이 02의 256에 맞춰 개정)이라 256 유지, 패턴만 추가.",
+   "02-source-document.md: [미반영] 리뷰(anchor) 'dependentRequired {pii_tokenize_mode: [pii_policy]} 추가': pii_policy가 required라 중복 제약이어서 생략, if/then/else만으로 S-5와 동치.",
+   "02-source-document.md: [미반영] 리뷰(anchor) 'container_flags를 fetch 출력에서 생략 가능(조건부)': 바이블 §5.4가 Y로 고정하므로 계약을 바꾸지 않고 자리표 판별 규약 명시 + 미해결 이슈 13(바이블 patch 또는 ADR)으로 남김.",
+   "02-source-document.md: [미반영] 리뷰(tech) 'detector_plugin_id == producer.plugin_id 불변식 추가' 대안: 필드를 제거하는 쪽을 택해 불변식은 불필요.",
+   "02-source-document.md: [미반영] 리뷰(tech) 'S-13 완화(not_modified ⇒ source_bytes_reused만)': 검증자 원천을 커밋된 세대로 한정하는 쪽을 택해 S-13 원문 유지.",
+   "02-source-document.md: [미반영] 리뷰(anchor) 'PluginId를 common에서 임포트': detector_plugin_id 제거로 사용처가 없어져 로컬 정의만 삭제(임포트 불필요). Bcp47은 00 Pydantic 절에 없어 로컬 유지 + 미해결 이슈 15.",
+   "02-source-document.md: [후속] 미해결 이슈 8·12·13·14·15·16은 00(common-types $defs 승격, §3.2 detect 행, Pydantic Bcp47), 15(EgressPolicy strip_query_keys), 바이블(§4.2·§5.4 fetch 잠정값 규약, §7.1 standard 열 Tika 표기) 소유자 반영이 필요하다.",
+   "02-source-document.md: [후속] 01 §8.3·미해결 이슈 15와 버전 이력이 02를 'string ≤256만·예시 kp://'로 서술하고 있어, 01 소유자가 02 패턴 채택 사실로 문구를 갱신하면 좋다(02 소유 범위 밖이라 수정하지 않음).",
+   "03-parsed-document.md: 예시 2 `model_ids`의 RapidOCR 항목은 `RapidAI/RapidOCR@<40-hex>` 플레이스홀더로 두었다 — 기술 지형 02는 GitHub 리포만 확인하고 HF 리포·revision 표기 근거가 없어 '확인 필요(as of 2026-09)'로 표기하고 미해결 이슈 14로 등재(리뷰어 제안 'ADR-0008이 정한 모델 식별자'는 ADR-0008에 존재하지 않아 그대로 반영하지 못함)",
+   "03-parsed-document.md: 리뷰어가 제안한 P-5 대안(페이지 가구를 최내부 섹션의 자식으로 두기)은 채택하지 않고 '루트 형제 + 전위 순회 동치 제외' 안을 택했다 — 바이블 §5.7 `page_header/page_footer`는 furniture=true 루트 성격이고 기존 예시·§4.2 읽기 순서와 호환되기 때문",
+   "03-parsed-document.md: Pydantic `LineageRefs`·`Producer`·`Warning`은 00 게시 블록에 없지만 00 도입부 문구('나머지 공용 타입은 $defs와 1:1')와 04-normalized-document의 동일 임포트 관행을 근거로 임포트를 유지하고, 원시 별칭 3개만 로컬 선언했다(00 명시 추가 제안은 미해결 이슈 11)",
+   "03-parsed-document.md: §8.1 체크박스 라벨 → form_field 매핑은 삭제하지 않고 별도 행 + '확인 필요·바이블 §5.7 주석 보강 제안'으로 유지했다(04-pipelines/05 확정 위임)",
+   "03-parsed-document.md: §6 선형화 비가역성은 리뷰어의 두 대안 중 'U+2028 치환 규칙'이 아닌 '파생 문자열·경계 복원 금지 명시' 안을 택했다(셀 text 원문 보존 원칙 유지)",
+   "03-parsed-document.md: schemas/parsed-document.schema.json은 변경하지 않았다 — 반영 항목이 모두 JSON Schema로 표현 불가한 불변식·문서 서술·Pydantic·예시 수준이며 문서 내 블록과 저장 파일이 바이트 동일함을 확인",
+   "03-parsed-document.md: 리뷰 항목 외 잔여 사항: 예시 2가 통과한다고 선언한 JSON Schema 검증(ajv 등)은 이 환경에 검증기가 없어 node 스크립트로 불변식·구조만 검증했고 스키마 엔진 검증은 00 §10.3 CI 게이트에 위임",
+   "04-normalized-document.md: 미반영 항목 없음 — 3건 모두 반영. 다만 major 항목의 두 대안 중 reviewer의 1안(NFKC 앞 forward 사상, 2단계 확장)을 채택하고 2안(NFKC 뒤 역사상)은 채택하지 않았다: 2안은 원문 유래 조합형 자모까지 접지만 호환 자모 연쇄 'ㄱㅏ'를 '가'로 합성해 풀어쓰기를 잃고(node 검증), 조각별 NFKC의 기존 결정 문구와 충돌하기 때문. 원문 유래 조합형 자모(옛한글) 문제는 바이블 §5.4 불변식·§4.2 실패 정책 개정이 필요해 미해결 이슈 18로 남겼다.",
+   "04-normalized-document.md: Python이 이 머신에 없어 Pydantic 블록의 py_compile을 수행하지 못했다. 같은 알고리즘(fold + 조각별 NFKC)을 node로 실행해 ㉠/㈀/ﾡ/ﾠ 사상·고정점·조합형 자모 부재를 확인했고 추가 코드는 표준 구문(str.maketrans 단일 문자 키 dict, 스타 튜플)만 사용했다.",
+   "04-normalized-document.md: analyzer_token_count 70(예시 2)은 Kiwi 실행 없이 추정한 예시값(N 필드, 이전 판 58도 동일 성격).",
+   "04-normalized-document.md: 타 문서 patch는 요청만 기록(이 문서 범위 밖): 09 §3.11·§3.14·N14 행, 05 미해결 이슈 13, common-types $defs/NormalizedBlock.lexical_text description(00 소유), 바이블 §5.4·§6.3.",
+   "05-chunk-set.md: ADR-0020 '표시 html(1차)/markdown' 대비 Chunk.text 기본 markdown은 (a) html 기본 전환이 아니라 (b) 역할 분담 명시 + ADR-0020 patch 제안(이슈 14)으로 처리 — 앵커 우선 규칙상 ADR은 Chunk.text 직렬화를 특정하지 않고 바이블 §5.7도 기본값이 없어 patch 제안이 적절하다고 판단; 편집 오케스트레이터가 (a)를 원하면 예시 2·sentence_spans·해시 재계산 필요",
+   "05-chunk-set.md: 청커의 ParsedDocument 접근(ctx.lineage)은 바이블 §4.1 '`requires_lineage`는 index만' 문구와 어긋나므로 문서는 전제로만 두고 바이블 §4.1·§4.2 개정 제안(이슈 12)으로 남김 — 바이블 소유자 확정 필요",
+   "05-chunk-set.md: table_cell_views 채택으로 `type=table` 블록 + pii_policy_applied≠keep 문서는 뷰가 실질 필수가 되어 04 §2.9 필수 조건·바이블 §5.4 등재(이슈 13, 04 이슈 2)가 함께 확정되어야 함 — 04 문서 측 갱신은 이 작업 범위 밖",
+   "05-chunk-set.md: 리뷰어 제안 중 '표 블록에 pii_spans가 없을 때 TableData.cells[].text 허용'은 채택하지 않음: 04 pii_spans는 블록 display_text 기준이고 표 블록 display_text가 \"\"라 셀 PII를 표현할 수 없어 조건이 항상 공허하게 참이 됨 — keep 정책만 허용으로 좁힘",
+   "05-chunk-set.md: 리뷰어 제안 '규칙 3에서 item_kind ∈ {table, figure, page_image} 구간 제외' 중 figure·page_image는 text가 캡션/alt_text이면 display_text 부분 문자열이므로 텍스트 ref로 두고 table_ref 보유 구간만 재직렬화 ref로 면제; 빈 text 리프는 금지(C-19)하고 그림 text 원천 순서는 04-pipelines/10 위임(이슈 11)",
+   "05-chunk-set.md: 문서 version을 0.1.0→0.2.0으로 올렸으나 schema_version은 1.0.0 유지(게시 전 초판에 흡수) — 버전 정책이 다르면 조정 필요",
+   "05-chunk-set.md: 문서 길이 1,040행(브리프 §9.11 250~900행 초과; 계약 문서는 스키마 전문·Pydantic·예시 2개 포함이라 불가피)",
+   "05-chunk-set.md: AnalyzerId는 여전히 이 계약 $defs 로컬 정의(이슈 6; common-types 등재는 00 소유)",
+   "05-chunk-set.md: level 2(RAPTOR) 표현 불가 사실은 기록했으나 해소는 ADR-0015 후속(이슈 2)",
+   "05-chunk-set.md: Pydantic 검증은 rag_platform.* 스텁으로 수행(실제 패키지 부재); 계보 필요 검증(규칙 3·4 텍스트 대조, C-11 heading_tree 대조, C-12 격자 범위)은 적합성 키트 몫으로 명시",
+   "06-enriched-chunk-set.md: 04-pipelines/11 §3 `G` 행의 \"≤ 100토큰\"은 규칙 2(b)(generated == summary ≤ 1,024 코드포인트)와 여전히 충돌한다 — 지정 파일이 아니어서 수정하지 않았고 미해결 이슈 13에 patch 요청으로만 기록했다(04-pipelines/11 소유자가 예외 문구 추가 필요).",
+   "06-enriched-chunk-set.md: 리뷰 1건(major)의 2안(같은 섹션의 2..N번째 청크를 cache_hit=true·llm_cache_hits += 1로 계수)은 채택하지 않았다 — 섹션 단위 1회 생성 후 배정하는 구현 루프와 맞지 않고 적중 수를 부풀리기 때문. 대신 1안(고유 쌍 계수)을 택했으며 근거를 미해결 이슈 7에 남겼다. 바이블 §5.4 Enrichment.summary 행·stats.llm_cache_hits 계수 단위 명시는 바이블 소유자 patch로 남아 있다.",
+   "06-enriched-chunk-set.md: 예시 2개는 node JSON.parse와 변경 조건(E-7/E-8/E-10, then 분기 엔티티 조항)에 대한 수기 스크립트 검사만 통과했다 — 이 환경에 ajv 등 JSON Schema 검증기가 없어 common-types $ref 해석을 포함한 전체 스키마 검증은 CI 게이트(00 §10.3)에서 확인해야 한다.",
+   "07-embedded-chunk-set-and-index-record.md: 미반영(tech minor): `../04-pipelines/12-embedding.md`·`13-indexing.md`·`17-post-processing-and-context-packing.md`·`19-update-delete-and-reindexing.md` 링크(10곳)는 저장소에 아직 없지만 브리프 §8 산출물 맵에 있는 경로이고 공통 규약이 '문서 맵 경로만 링크'를 허용하므로 유지했다('(작성 예정)' 표기는 05·06·08 등 형제 문서와의 관행 불일치를 만들어 추가하지 않음). 후속 단계에서 해당 파이프라인 문서 생성이 워크플로우에 등재되어야 한다.",
+   "07-embedded-chunk-set-and-index-record.md: 리뷰어 fix 중 택1: quality 쟁점은 '초안 표기 + 미해결 이슈' 대신 13 §5.2 손실 규칙에 맞춰 `truncated → quality=degraded`를 초안 규칙으로 채택하고 V-5·Pydantic에 반영했다(리뷰어의 두 번째 대안). 바이블 §4.2 embed 행이 반대로 확정되면 V-5·검증기 완화 필요(미해결 이슈 12).",
+   "07-embedded-chunk-set-and-index-record.md: 리뷰어 fix 중 택1: acl_embargo_until/acl_expires_at는 Y(nullable) 승격이 아니라 '명시적 null = to_payload 백엔드 전용, 계약 인스턴스는 00 §8.1 4행(N | null)' 방식으로 정합했다(바이블 §5.4 N 유지, 필수화(major) 회피).",
+   "07-embedded-chunk-set-and-index-record.md: Pydantic 블록은 이 머신에 Python이 없어 AST 파싱 검증을 못 했고 수동 검토만 했다(변경은 `_invariants` 검증기에 3줄 추가).",
+   "07-embedded-chunk-set-and-index-record.md: 새로 등재한 미해결 이슈 11~13은 바이블 §4.1·§4.2·§6.2 patch 및 ADR-0012 문구 정합 제안이므로 architecture 소유자의 바이블/ADR 반영이 필요하다.",
+   "07-embedded-chunk-set-and-index-record.md: 미해결 이슈 4 확장: `EmbeddingSpaceIds`가 embedded-chunk-set·index-record(+ IndexCommit) 세 계약에 사본으로 존재하므로 00 문서(common-types 소유)가 `$defs/EmbeddingSpaceIds`·`$defs/TableRef` 승격(minor)을 처리해야 사본 드리프트가 해소된다.",
+   "08-index-commit.md: [미반영] anchor 리뷰 이슈 1의 대안 경로(\"비재사용 주장 삭제\")는 채택하지 않음 — 02-architecture/06 §2.5·§3.2와 03 §8.1이 이미 max+1·비재사용을 확정했으므로 권장안(max+1 통일)을 택했다. 바이블 §13.1에 `last_generation` 컬럼을 추가하는 안은 바이블에 없어 결정으로 쓰지 않고 미해결 14의 대안으로만 등재.",
+   "08-index-commit.md: [미반영] tech 리뷰가 언급한 `CommitStatus` 값 추가(예: discarded)는 채택하지 않음 — 06 §2.5 A-6이 폐기 green 커밋을 committed로 유지하기로 결정했고 열거 추가는 CI 열거 대조·소비자 배포 순서(14 §2.2 부류 A) 영향이 커서 미해결 6에 비권장으로 기록.",
+   "08-index-commit.md: [부분 반영] 존재하지 않는 문서 링크(04-pipelines/19, 05-api/04, 09-operations/07)는 삭제하지 않고 브리프 §8 문서 맵 경로 + \"(작성 예정)\" 표기로 유지(공통 규약 \"링크만 문서 맵 경로로 건다\"). validate-contracts.mjs의 '링크 대상 미존재' 경고 9건은 그 문서들이 게시되면 사라진다.",
+   "08-index-commit.md: [미반영·타 문서] 07 미해결 이슈 3(visual-pages 변형의 `page_*` 공간 키)에 08의 기존 `page_*` 3키를 합류시키는 것은 07 문서 소유이므로 08 §2.3에서 참조만 했다. 07 편집자가 `EmbeddingSpaceIds` 변형을 추가하면 08은 `$ref`로 자동 반영.",
+   "08-index-commit.md: [미반영·타 문서] 12 예시 3(`ingest.document.indexed`, \"08 예시 1의 문서\")의 `doc_version`(3e5f7092…)·`commit_hash`(e4d3c2b1…)·`record_count`(218)가 08 예시 1(cf266a7a…, 4ac76a64…, 2)과 다르다 — 12 문서 편집자가 08 값으로 정렬해야 함(08은 commit_id·commit_hash·record_count를 바꾸지 않았다).",
+   "08-index-commit.md: [플레이스홀더 유지] 예시 1·3의 `artifact_refs.embedded`(stage_key 117b5acd…)는 07 예시 1이 자기 stage_key를 싸지 않으므로 독립 플레이스홀더로 남겼다(형식 규약 준수, 스키마 통과).",
+   "08-index-commit.md: [정합 필요] 예시 1·3의 OpenSearch `physical_name` rag_lex_e6df9c850d31은 `lexical_profile_hash` 플레이스홀더에서 유도된 값으로 15 문서 `CollectionSpec` 예시와 대조 필요(15 게시본 확인 전).",
+   "08-index-commit.md: [제안 전달 필요] 미해결 14(바이블 §11.4 (6) N 원천 정밀화 patch), 15(05-api/04 commits 목록 정렬·커서·노출), 16(바이블 §11.5 `cancelling → succeeded` patch; 06 미해결 6·12 미해결 5와 공동), 12(`index.consistency.mismatch.expected_record_count`의 모드 A 기준 커밋을 12·06 §2.7에 명시)는 각 소유 문서에 전달해야 한다.",
+   "08-index-commit.md: [검증 범위] Pydantic 블록은 정적 검토만 했다(저장소에 Python 런타임 없음). 스키마·예시는 tools/validate-contracts.mjs(2020-12 서브셋 검증기)로 통과·거부를 확인했으며, ajv 등 완전한 검증기로의 재확인은 CI에 맡긴다.",
+   "08-index-commit.md: [모드 B 미결] 02-architecture/06 §2.5 모드 B(롤링 세대 플립)와 02-architecture/03 §9.1(불채택) 사이의 상충은 이 계약이 결정하지 않는다(§9 말미에 양쪽 미해결 번호만 인용; 어느 쪽이든 필드 의미 불변).",
+   "09-query-request-and-query-plan.md: 리뷰 항목 중 반영하지 않은 것 없음. 단 §8.1 '저장 내용'의 제외 목록에서 `timeout`을 뺐다 — QueryPlan의 §6.1 degraded 목록에 plan 단계가 내는 `timeout` 항목이 없어(LLM 라우터 타임아웃은 `llm_failed`) 정합성을 위해 `latency_budget`·`unavailable`만 명시했다.",
+   "09-query-request-and-query-plan.md: §11 canonical_json 바이트 수는 직렬화기의 실수 최단 표현 규약(`1.0` vs `1`)에 따라 7,115/7,147로 갈린다 — 바이블 §6.2 '부동소수 최단 표현' 정의의 정밀화(정수값 실수 표기)는 00 문서·바이블 patch 대상으로 남아 있다(이 문서 미해결 이슈에는 추가하지 않고 본문 괄호로만 병기).",
+   "09-query-request-and-query-plan.md: 플랜 캐시 템플릿을 '저하 적용 전 상태'로 확정한 것은 바이블 §4.3·§6.2가 정하지 않은 이 문서의 규칙이며, 기존 미해결 이슈 16(바이블 §6.2 plan 캐시 키 patch 제안)에 함께 실릴 내용이다 — 별도 이슈 번호는 추가하지 않았다.",
+   "10-candidate-set-and-ranked-set.md: 분량 축소(1620행 vs 목표 ≤1000, anchor·tech 공통 minor) 미반영: 예시 1(RRF 계산표)·2·3이 6후보 단일 시나리오로 상호 검증되어 후보 수를 줄이면 fused_score·fused_rank·n_in/candidates_in 등을 전부 재계산해야 하고, 저장소의 다른 계약 문서(09 1185행, 11 1682행, 16 1610행)와 같은 수준이라 국소 수정 범위를 넘는다고 판단. 2차에서 Pydantic 블록 별도 파일 분리 여부와 함께 판단 필요",
+   "10-candidate-set-and-ranked-set.md: `text_truncated`를 RankedResult 선택 필드로 직접 추가하지 않음(tech minor): RankedResult는 common-types $defs(additionalProperties: false, 00 문서 소유)라 이 문서가 필드를 추가하면 스키마 위반이 되므로 §6 명시 + 미해결 이슈 12(바이블 §5.5 patch → 00 minor)로만 남김",
+   "10-candidate-set-and-ranked-set.md: Pydantic 블록은 Python 미설치로 ast 검증을 못 했고 눈으로만 확인함(JSON 블록·스키마 파일은 node로 검증)",
+   "10-candidate-set-and-ranked-set.md: `retriever.pipeline`(producer.plugin_id 합성 값)은 09의 `query_transformer.pipeline` 선례를 따른 제안이며 바이블 §5.2/§6.1 미등재 — 이슈 11로 patch 제안",
+   "10-candidate-set-and-ranked-set.md: TREC 문서 접기 집계(max) 및 `fused` 단계 export 범위(hydrate.top_n)는 초안이며 16 §4.1·08-evaluation/02(미게시)에서 확정 필요(이슈 8)",
+   "10-candidate-set-and-ranked-set.md: 09 §6.7 `RerankPlan.enabled=false`일 때도 `RankedSet.rerank`(applied=false)를 필수 출력하는 규칙은 이 문서 결정이라 09 측 병기 제안(이슈 1 잔여)",
+   "11-context-pack.md: 분량 축소 방식: 리뷰가 제안한 §8.2 MCP 슬림 팩·§2.9 PackExplain·§15 API 표 삭제 대신 예시·스키마 JSON 재직렬화와 Pydantic 압축으로 1382행을 맞췌 세 절은 유지했다(내용 손실 회피).",
+   "11-context-pack.md: 빈 segments(level 2 파생 항목): 리뷰의 두 안 중 합성 block_id 발명을 피해 `segment_range=[0, 0]` 완화안을 채택했다(§3.4·R-1). 합성 세그먼트가 필요하면 05/06 문서의 level 2 block_id 규약 확정 후 재검토.",
+   "11-context-pack.md: `exact_*`에 safety_margin을 적용할지는 바이블 §9.1에 근거가 없어 미정으로 두고(미해결 이슈 14) 근사 경로에만 적용했다 — 리뷰가 허용한 선택지.",
+   "11-context-pack.md: `relaxed_keys` 개명(`relaxed_applied_keys`)은 실제 개명 없이 미해결 이슈 3에 검토 항목으로만 기록했다(계약 필드명 변경은 바이블 반영 후).",
+   "11-context-pack.md: `TokenizerSpec.name`의 형식은 09 문서를 따랐지만 바이블 §5.5·§9.5는 `name` 형식을 명시하지 않는다(§9.5 예시 `\"<target-model-id>\"`) — 바이블 patch 제안으로 이슈 4에 병기.",
+   "11-context-pack.md: tools/validate-contracts.mjs 펜스 정규식을 줄 시작 앵커로 강화하라는 제안은 이 문서 범위 밖(도구 파일 미수정); 대신 문서에서 인라인 삼중 백틱을 제거해 우회했다.",
+   "11-context-pack.md: Pydantic 블록은 Python 런타임이 없어 기계 검증 없이 수동 검토만 했다(한 줄 클래스·`;` 구문 포함).",
+   "11-context-pack.md: 검증기가 여전히 보고하는 오류 3건(00 §예시 1 ParsedDocument, 14 schema-diff-report 스키마 파일 부재·ParsedDocument 예시)은 다른 문서 소유라 건드리지 않았다.",
+   "12-jobs-events-and-status.md: 분량(anchor minor #5·tech minor #13): 1168→1160행으로만 축소. 리뷰어 제안대로 Pydantic data 모델 17개를 축약하거나 §8·§9 운영 규약을 삭제하면 00 §10.3 Pydantic 동치 게이트·계약 문서 '스키마 전체 포함' 규약과 상충하고 major 수정(접수 이벤트·커서·I-19·I-20)으로 내용이 늘었으므로, 형식 압축(required 배열 한 줄, §12 중복 행 제거)만 적용하고 미해결 이슈 18로 등록",
+   "12-jobs-events-and-status.md: SSE 커서(tech major #2): 리뷰어 제안 seq IDENTITY 컬럼은 바이블 §13.1 outbox 컬럼에 없어 단정할 수 없고, IDENTITY는 INSERT 시점 할당이라 늦은 커밋 문제를 해결하지 못하므로 채택하지 않음. 대신 바이블 컬럼만으로 발행 순 (published_at, event_id) 커서를 정의하고(단일 릴레이가 단조 부여) 전용 published_seq 컬럼은 미해결 이슈 16 제안으로 남김",
+   "12-jobs-events-and-status.md: 접수 이벤트(anchor major #4·tech major #1): ADR-0017·03-data-flow를 따라 '접수 시 job.state.changed 발행'으로 확정. 02-architecture/06 §6.2 'queued 생성 — 이벤트 없음' 행 정정은 이 문서가 고칠 수 없어 미해결 이슈 14에 등록(06 문서 소유자 patch 필요)",
+   "12-jobs-events-and-status.md: 진행률 SSE(tech major #4): (a) 스테이지 경계 진행률 명시 + I-20으로 반영. (b) job.progress.updated 이벤트 추가는 바이블 §5.7 카탈로그 개정이 필요해 미해결 이슈 15 제안으로만 남김",
+   "12-jobs-events-and-status.md: source 집합(tech minor #11): eval을 독립 값에서 제외하고 api·worker로 확정했으나 바이블 §6.5 열거 명시·common-types 패턴 축소·14 예시 4 정정은 다른 문서 소유(미해결 이슈 6)",
+   "12-jobs-events-and-status.md: query_hash(anchor minor #11): §6.4·스키마 description은 07 §8.2 정의(라벨 없음)를 인용했고 바이블 §6.2 H() 라벨 규약과의 택1은 미해결 이슈 8에 남김",
+   "12-jobs-events-and-status.md: Pydantic 코드 블록은 이 환경에 Python이 없어 ast 파싱을 못 했고 육안 검토만 수행(변경 부분: _invariants I-3/I-4 검사, _transition progress 검사, _STAGES 튜플화, verify_webhook 재작성)",
+   "12-jobs-events-and-status.md: 종결 event_id 최대 규약(I-19)은 02-architecture/06 §3.2 _event_ids 발급 코드가 단조 ULID·state_changed 마지막 순서를 따라야 성립하며, 그 정합은 미해결 이슈 14(b)로 06 문서에 위임",
+   "15-collection-profile-and-policy-contracts.md: [minor, 부분 반영] 문서 분량: 1,840행으로 검토 기준 1,300행을 초과. 스키마 7종 전문·예시·Pydantic 동치 모델(major 요구)을 모두 유지해야 하므로 축약 대신 브리프 §9.11 계약 문서 예외를 근거로 '결정'으로 명시(이슈 12 종결). §3.10·§11 축약은 정보 손실 대비 절감이 작아 미반영.",
+   "15-collection-profile-and-policy-contracts.md: [minor, 대안 채택] capabilities.schema.json `$defs` 별칭: 00 §10.3 patch는 이 문서 권한 밖(00 문서·common-types는 00만 수정)이라 별칭을 제거하고 순수 래퍼로 전환, 바이블 §5.1 행 patch 제안만 남김.",
+   "15-collection-profile-and-policy-contracts.md: [minor, 대안 채택] 계약 간 교차 `$ref`: common-types 승격은 00 문서 권한이라 미해결 이슈 13으로 제안하고, 그때까지 profile/collection-spec 자기 `$defs` 사본 + CI 동치 대조로 처리(07 §2.2 선례).",
+   "15-collection-profile-and-policy-contracts.md: [minor, 미반영] `allowed_hosts` 항목 pattern·`DateTime` 등 Annotated 타입의 common-types/00 게시는 00 소유라 제안(이슈 13)만 남기고 이 문서는 로더 검사·패턴 사본으로 대체.",
+   "15-collection-profile-and-policy-contracts.md: [tech minor, 부분 반영] 예시 2 `revision` SHA: models.lock 정본 대조 불가(저장소에 models.lock 없음)라 값 확정 대신 '형식 예시, 확인 필요(as of 2026-09)' 문구 추가.",
+   "15-collection-profile-and-policy-contracts.md: [신규] 테넌트 정책 등록(`PATCH /v1/tenants/{tenant_id}/policies`)에서 합성 공집합 거부 코드를 `profile.invalid`(422 초안)로 두었으나 13 §7.1에 전용 행이 없음 — 05-api/04·13 확정 필요(이슈 15).",
+   "15-collection-profile-and-policy-contracts.md: [검증 한계] Python 런타임·ajv가 환경에 없어 Pydantic 블록은 구조 검사(괄호 균형·클래스 중복·전방 참조)만, 스키마 검증은 자체 최소 검증기(사용 키워드 부분집합)로 수행.",
+   "16-eval-feedback-and-sidecar-contracts.md: 분량(1,621행)은 검토 기준 600~1100행을 초과하지만 브리프 §9.11(계약 문서는 스키마 전체 포함)에 따라 스키마 7개·Pydantic·예시 17개를 유지했다 — 압축(예시 병합·결정 요약 축약)은 하지 않음.",
+   "16-eval-feedback-and-sidecar-contracts.md: `../08-evaluation/02·03·04·06`, `../05-api/04` 링크는 파일이 아직 없지만 공통 규약('링크만 문서 맵 경로로 건다')과 브리프 §9.6 괄호('문서 맵에 있는 경로만')에 따라 유지했다(다른 계약 문서 12개도 같은 경로를 링크 중). `04-pipelines/09`는 실제로 존재하므로 리뷰 지적은 오류.",
+   "16-eval-feedback-and-sidecar-contracts.md: `EvalRun.index_commit_ids` 상한 2,000은 유지했다(64KB 도출). 12 `EvalRunCompletedData.index_commit_ids` maxItems 1,000과의 정렬은 이벤트 data에 앞 1,000개만 싣는 규칙 + 12에 `index_commits_hash`(N) 추가 제안으로 미해결 이슈 4에 기록 — 12와 합의 후 값 통일 필요.",
+   "16-eval-feedback-and-sidecar-contracts.md: Mermaid 5개 블록은 렉서 규칙(`;`·`#` 부재)으로만 점검했고 실제 렌더링(mermaid-cli)은 npm 미가용으로 미실행.",
+   "16-eval-feedback-and-sidecar-contracts.md: 예시↔스키마 검증은 ajv 미설치로 Node 자체 스크립트(required·additionalProperties·condition enum·derived URI·pii≠reject)로 구조 검증만 수행; $ref 해소를 포함한 완전 검증은 CI 골든 예시 회귀에 위임.",
+   "16-eval-feedback-and-sidecar-contracts.md: PII 정책 원천(미해결 이슈 18)과 `name` 유일성(이슈 17), 파생물 `{kind}` 열거(이슈 19), 게이트 통과 조건 세 해석 규칙(이슈 20)은 초안 결정으로 남겨 바이블/12/15/02-architecture/04/08-evaluation/02와 공동 확정이 필요하다."
+  ]
+ }
+}

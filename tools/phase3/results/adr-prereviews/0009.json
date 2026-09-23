@@ -1,0 +1,114 @@
+{
+ "id": "0009",
+ "findings": [
+  {
+   "severity": "major",
+   "location": "결정 절 서빙 표 line 79 (인프로세스 행 프로파일 열), 고려한 대안 A4 line 65, mermaid line 97",
+   "problem": "평가 하네스를 인프로세스 임베딩 경로(sentence-transformers ONNX int8)에 고정하고 있다. 브리프 D-12는 하네스가 \"프로덕션과 동일한 인프로세스 스테이지\"(= LocalRunner 실행 셸)로 평가 대상 프로파일을 실행한다는 뜻이고(바이블 §2.3 eval harness \"동일 스테이지 실행\", §11.1 두 실행기·하나의 정의), `standard` 프로파일의 임베더는 `embedder.vllm_pooling_bge_m3`(sidecar HTTP)다. ADR 자신도 line 124에서 ONNX int8과 vLLM fp16은 `quantization`이 달라 다른 `embedding_space_id`라고 했으므로, 하네스가 인프로세스로 임베딩하면 `standard`·`premium` 게이트(nDCG@10 ≥ 0.80, `ko-quality` +2p)가 프로덕션 벡터 공간을 검증하지 못한다. line 135(하네스가 신·구 서빙 스택 벡터를 비교)와도 내부 모순이다.",
+   "fix": "인프로세스 행의 프로파일 열을 \"`lite`, 개발(`rag up --profile lite` + `LocalRunner`)\"로 한정하고, 하네스는 \"평가 대상 프로파일이 바인딩한 임베더를 그대로 사용(`standard` → `embedder.vllm_pooling_bge_m3`, `lite` → `embedder.inprocess_sentence_transformers`); 실행 셸만 `LocalRunner`\"로 기술한다(브리프 D-12, 바이블 §2.3 `eval harness` 행, §11.1, §7.4 게이트 규칙). A4 문장 \"`lite`·개발·하네스에서만 채택\"과 mermaid 라벨 \"lite · LocalRunner · 하네스\"도 동일하게 고친다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "고려한 대안 A2 line 63",
+   "problem": "\"바이블 §15 리스크 #2는 Infinity를 '정체' 항목으로 든다\"는 인용이 부정확하다. 바이블 §15 #2는 Infinity를 라이선스 지뢰 목록(PyMuPDF·pyhwp·H2Orestart·MinIO·Redis 8·jina·Infinity)에 수식어 없이 나열할 뿐이며, \"정체\" 사유는 선정 매트릭스 종합 리스크 #2(\"AGPL/GPL/비상업/정체\")와 05 §실패 모드에 있다.",
+   "fix": "\"바이블 §15 리스크 #2 목록에 Infinity가 포함되나 라이선스는 MIT(A)이며, 제외 사유인 '정체'는 매트릭스 종합 리스크 #2·05 §실패 모드 '유지보수 정지'가 근거다\"로 인용을 정정한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "고려한 대안 A3 line 64",
+   "problem": "\"한국어 ModernBERT ColBERT·ColQwen3 계열도 같은 스택으로 서빙 가능하다\"를 단정한다. 05 §서빙 스택 비교(텍스트 ColBERT 행)는 KURE-v2·colbert-ko 계열의 vLLM `token_embed` 서빙을 \"실측 확인 필요\"로, 05 미해결 이슈 17과 ADR-0010(line 69·115)도 \"실측 확인 필요(as of 2026-09)\"로 표기한다. 브리프 §9.10·§11 규약 위반.",
+   "fix": "\"ColQwen3 계열은 vLLM 네이티브, ModernBERT ColBERT(KURE-v2)는 `token_embed` 서빙 실측 확인 필요(as of 2026-09; 05 미해결 이슈 17, ADR-0010 범위)\"로 표기한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "결정 절 규칙 3 line 86, 준수 확인 방법 동등성 게이트 행 line 135",
+   "problem": "동등성 게이트 실패 시 \"다른 공간으로 취급해 컬렉션 blue/green 재색인\"이라 하지만, 바이블 §6.2 `embedding_space_id = H(\"space\", model_id, revision, str(dim), str(normalized), prompt_hash, quantization, vocab_id or \"\")`에는 서빙 스택·이미지 digest가 들어가지 않으므로 게이트 실패만으로 다른 `embedding_space_id`가 생기지 않는다. 앵커에 없는 절차를 단정적으로 도입한 셈이다.",
+   "fix": "\"게이트 실패 시 전환 차단. 전환이 필요하면 공간 정의 요소(`quantization`·`revision`·`prompt_hash` 등, §6.2)를 바꿔 새 `embedding_space_id`로 컬렉션 blue/green 재색인(§7.4)\"으로 고치거나, 실패 처리 절차 확정을 04-pipelines/12에 위임한다고 명시한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "준수 확인 방법 `rag profile validate` 행 line 133 vs PluginMeta 예시 line 158~166",
+   "problem": "게이트 (2)는 `embed.dense`·`embed.sparse`에 바인딩된 플러그인의 `capabilities()`가 요구 벡터(dense/sparse)를 `Capabilities.extra`로 선언해야 한다고 강제하는데, 바로 아래 3-in-1 플러그인 `PluginMeta` 예시는 `\"extra\": null`이다. 예시가 ADR 자신의 게이트를 통과하지 못한다.",
+   "fix": "예시 `capabilities.extra`에 제안 표기임을 명시한 플레이스홀더(예: `{\"dense\": true, \"sparse\": true, \"multivector\": false, \"max_input_tokens\": 8192, \"requires_instruction\": false}` — 필드 정본은 03-contracts/00·07 확정)를 넣거나, `extra: null`이 예시 단순화임을 각주로 밝힌다(바이블 §5.3 `Capabilities.extra`, 매트릭스 공통 요구 5).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "고려한 대안 표 line 60 및 A7 설명 line 68",
+   "problem": "outline은 각 대안에 설명·장점·단점을 요구하나 A7(SGLang/Ollama/OVMS/Triton/Xinference)은 설명·단점만 있고 장점이 없다.",
+   "fix": "05 §서빙 스택·08 §E 근거로 장점 한 줄 추가(예: SGLang은 LLM 스택 통일 환경의 vLLM 대안, Ollama는 개발자 로컬 최단 경로, OVMS는 GPU 없는 `lite`의 서버형 후보, Triton은 멀티 프레임워크·동적 배칭, Xinference는 임베더+리랭커+LLM 단일 서버).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "결정 절 서빙 표 line 74~80 (누락), 재검토 조건 4 line 175",
+   "problem": "바이블 §7.1 `premium` 임베딩 행이 `ko-quality`(KURE-v1 + PIXIE-Splade-v1.5)를 명시하는데, 서빙 표에는 dense 전용(TEI) 행만 있고 sparse 전용 인코더(PIXIE-Splade-v1.5, ModernBERT SPLADE)의 서빙 경로가 없다. 재검토 조건 4에서만 \"TEI `/embed_sparse` 지원 확인 필요\"로 언급된다.",
+   "fix": "표에 \"sparse 전용 모델(`ko-quality` PIXIE-Splade-v1.5, `vocab_id=ax-encoder-50k`): TEI `/embed_sparse`의 ModernBERT MaskedLM 지원 확인 필요(as of 2026-09; 05 미해결 이슈 2) — 확인 전 인프로세스 sentence-transformers `SparseEncoder` 경로\" 행을 미확정 표기로 추가한다(바이블 §7.1 premium 행, §3.2 O-02, 매트릭스 `sparse_encoder` 행). 새 결정이 아니라 확인 필요 항목으로 남긴다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "major",
+   "location": "## 결정 — 역할 표(line 74-80) 및 Mermaid 다이어그램(line 92-102)",
+   "problem": "`ko-quality`(KURE-v1 + PIXIE-Splade-v1.5)의 learned sparse 인코더 서빙 경로가 없다. 바이블 §7.1 premium 임베딩 행이 `ko-quality`를 명시하고, ADR-0014 line 99는 \"`premium` `ko-quality` PIXIE-Splade-v1.5 — 별도 `SparseEncoder` 경로, 서빙 세부는 ADR-0009\"로 이 문서에 위임하지만 이 ADR의 표에는 BGE-M3 3-in-1·dense 전용·리랭커·인프로세스·제외 행만 있고 sparse 인코더 행이 없다. 다이어그램은 `premium`을 무조건 vLLM(`AD -->|standard · premium · korean-gov| V`)으로 라우팅하고 dense 전용 엣지만 있어 `ko-quality`의 sparse 벡터가 어디서 생산되는지 표현되지 않는다. 02-architecture/08 line 578은 \"ADR-0009 결정은 BGE-M3에 한정된다\"고 적고 `sparse-encoder-server`를 자체 정의했으므로 ADR-0014 → ADR-0009 → 02-architecture/08로 정의 위치가 순환·누락된다. 재검토 조건 4에서만 언급된다.",
+   "fix": "표에 \"learned sparse 인코더(`ko-quality`)\" 행 추가: 프로파일 `premium` `ko-quality`; 컨테이너 `sparse-encoder-server`(sentence-transformers `SparseEncoder.encode_query/encode_document` 래퍼, 02-architecture/08 §6.3·line 146; 07-tech-landscape/05 §Learned sparse 표 \"서빙\" 열, 매트릭스 \"프로파일별 기본 조합\" 임베딩 행); 격리 `sidecar`; 산출 `sparse_learned`(`vocab_id=ax-encoder-50k`, ADR-0014); TEI `/embed_sparse`의 ModernBERT 지원은 \"확인 필요(as of 2026-09)\"(05 미해결 이슈 2)로 표기. 다이어그램에 `AD -->|ko-quality sparse| S[\"sparse-encoder-server ...\"] --> O4[\"sparse_learned(ax-encoder-50k)\"]` 엣지를 추가하고 vLLM 엣지 라벨의 `premium`을 \"premium(standard 상속분)\"으로 한정한다. 새 결정이 아니라 ADR-0014·02-architecture/08이 이미 쓰는 경로를 기록하는 것임을 명시.",
+   "lens": "tech"
+  },
+  {
+   "severity": "major",
+   "location": "## 결정 동인 DR5(line 46), ## 결과 긍정 4번(line 111) vs 역할 표 2행(line 77)",
+   "problem": "문서 내부 모순. DR5는 \"3-in-1·디코더 계열은 LLM 서빙과 같은 스택(vLLM)\"이라 하고 결과도 \"vLLM(3-in-1·디코더 계열)\"로 반복하는데, 역할 표 2행은 디코더 모델인 `quality-max`(Qwen3-Embedding-4B)를 TEI 1.9 `embedder.tei_dense`에 배정한다. 하위 문서 02-architecture/08 line 584는 `quality-max`: vLLM Qwen3-Embedding-4B로 배포하므로 ADR 표와도 어긋난다. 07-tech-landscape/05는 TEI(Qwen3 아키텍처 등재 0.6B/4B/8B)와 vLLM `--runner pooling` 모두 지원한다고 기록하므로 기술적으로는 어느 쪽도 가능하나 결정 문서 안에서 방향이 둘이다.",
+   "fix": "한 방향으로 정합: (a) DR5·결과대로 Qwen3-Embedding-4B를 vLLM 행(또는 \"디코더 dense\" 별도 행, `POST /v1/embeddings`, 어댑터 소유 인스트럭션 프롬프트 부착)으로 옮기고 표 2행을 인코더(XLM-R) dense 전용 모델(KURE-v1 등)로 한정하거나, (b) D-16 문구 \"TEI(dense 전용 모델·리랭커)\"를 우선해 TEI를 유지하고 DR5·line 111을 \"디코더 **리랭커**(Qwen3-Reranker, TEI 미지원 — 07-tech-landscape/07 §리랭커 서빙 PR #835)만 vLLM/SGLang\"으로 좁힌다. 어느 쪽이든 02-architecture/08 line 578·584와 동일하게 맞추고 근거 절을 인용.",
+   "lens": "tech"
+  },
+  {
+   "severity": "major",
+   "location": "## 결정 규칙 3(line 86), ## 준수 확인 방법 \"동등성 게이트\" 행(line 135)",
+   "problem": "게이트 실패 시 \"다른 공간으로 취급해 컬렉션 blue/green 재색인\"이라 하지만 그 메커니즘이 없다. §6.2 `embedding_space_id = H(\"space\", model_id, revision, dim, normalized, prompt_hash, quantization, vocab_id)`에는 서빙 스택·이미지 digest 성분이 없어(ADR 자신도 line 85에서 \"스택이 달라도 같은 공간\"이라 명시) 같은 dtype이면 새 공간 ID를 만들 수 없다. 구체 시나리오: vLLM 0.29 → 0.30 이미지 교체, 골든 샘플 코사인 최솟값 0.9995로 게이트 실패 → 운영자가 \"새 공간 blue/green\" 재색인 시작 → 청크 캐시 키 `H(\"embed\", embedding_space_id, \"document\", embed_text)`에 fingerprint·digest가 없으므로 캐시된 청크는 구 스택 벡터가 히트, 미캐시 청크만 신 스택으로 계산 → 게이트가 막으려던 신·구 스택 혼합 인덱스가 만들어진다(§15 리스크 #8 \"지문 누락 시 낡은 산출물 재사용\" 그대로).",
+   "fix": "규칙 3과 준수 표에 실패 시 절차를 명시(새 결정 없이 바이블 장치 인용): (a) 신 스택의 dtype/양자화가 다르면 프로파일 `embed.dense.dtype` 변경이 `quantization` 성분을 바꿔 자연히 새 `embedding_space_id`(§6.2, 이 ADR line 124와 동일 논리); (b) 같은 dtype이면 전환 전 `rag cache invalidate --stage embed`(바이블 §15 리스크 #8)로 테넌트 청크 캐시를 비운 뒤 새 이미지로 전량 재계산하고, 캐시 키에 스택 식별자를 넣을지는 03-contracts/07·04-pipelines/12 미해결 이슈로 위임. 코드 리뷰 체크리스트에 \"게이트 실패 배포는 캐시 무효화 없이 재색인 금지\" 항목 추가.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 고려한 대안 A2(line 63)",
+   "problem": "\"바이블 §15 리스크 #2는 Infinity를 '정체' 항목으로 든다\" — 바이블 §15 #2는 Infinity를 \"라이선스 지뢰\" 열거에 넣었을 뿐 '정체'라는 분류는 없다. '정체'는 매트릭스 종합 리스크 #2(\"AGPL/GPL/비상업/정체\")의 표현이다.",
+   "fix": "출처를 \"매트릭스 종합 리스크 #2\"로 바꾸거나 \"바이블 §15 #2는 Infinity를 라이선스 지뢰 목록에 포함하지만 이 ADR의 제외 사유는 능력(sparse 미지원)·유지보수(릴리스 정체)다\"로 정확히 서술.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 고려한 대안 A3 장점(line 64)",
+   "problem": "\"한국어 ModernBERT ColBERT·ColQwen3 계열도 같은 스택으로 서빙 가능하다\"는 07-tech-landscape/05보다 강한 주장이다. 05 §Late interaction \"서빙\"·§서빙 스택 비교 표는 ColQwen3는 네이티브 확인, ModernBERT ColBERT(KURE-v2)는 \"실측 확인 필요, as of 2026-09\"(미해결 이슈 17)로 기록한다.",
+   "fix": "\"ColQwen3 계열은 vLLM 네이티브, ModernBERT ColBERT(KURE-v2)는 `token_embed` 경로 확인 필요(as of 2026-09, 05 미해결 이슈 17)\"로 바이블 §1.2 표기 규칙(`확인 필요(as of 2026-09)`)에 맞게 수정.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 고려한 대안 A7(line 60, 68)",
+   "problem": "outline이 각 대안에 설명·장점·단점을 요구하는데 A7(SGLang/Ollama/OVMS/Triton/Xinference)은 설명과 단점만 있고 장점이 없다.",
+   "fix": "05 §서빙 스택 표·08 §E 표에서 한 줄씩 인용: SGLang(LLM 스택을 SGLang으로 통일한 환경의 vLLM 대안), Ollama(개발자 로컬 최단 경로), OVMS(GPU 없는 CPU 서버형 1차 후보), Triton(엔터프라이즈 다중 모델·동적 배칭), Xinference(임베더+리랭커+LLM 단일 서버로 컨테이너 수 축소).",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 — 코드 리뷰 체크리스트 (h)(line 139)",
+   "problem": "\"인프로세스 경로는 ONNX 산출물 해시·런타임 버전을 `config_hash`에 포함\"은 바이블 §4.1·§6.2에 없는 새 규칙이다(outline: 새 결정을 만들지 않는다). 재현성 취지는 타당하나 정본 위치가 없다.",
+   "fix": "\"(제안; 04-pipelines/12에서 확정)\"으로 표기하거나, 바이블 §4.1 \"SDK가 fingerprint() 구성요소(image digest·embedding_space_id) 포함을 검증\"의 인프로세스 대응으로 해석임을 명시하고 §15 리스크 #8을 근거로 인용.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 표 정의 위치 열, ## 참조 하위 설계 문서(line 133-139, 188)",
+   "problem": "링크 대상이 존재하지 않는다: 04-pipelines/12-embedding.md, 04-pipelines/16-reranking.md, 03-contracts/07-embedded-chunk-set-and-index-record.md, 10-development/05-ci-cd.md, 10-development/07-contributing.md, 09-operations/04-scaling-and-performance.md, 06-adr/README.md(ls로 확인; 02-architecture/08만 존재). 다른 ADR(0014 등)도 같은 전방 참조를 쓰므로 관례로 보이나 링크 검사에서 깨진다.",
+   "fix": "문서 생성 전까지 \"(예정)\" 표기 또는 링크 대신 경로 텍스트로 두고, 생성 시 링크로 전환. 관례를 유지한다면 ADR README 또는 docs/README에 전방 참조 규약을 한 줄 명시.",
+   "lens": "tech"
+  }
+ ],
+ "verdicts": {
+  "anchor": "revise",
+  "tech": "revise"
+ }
+}

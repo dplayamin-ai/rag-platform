@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:eval-run:1",
+  "title": "EvalRun",
+  "description": "평가 실행 계약(바이블 §5.6, ADR-0023). 하나의 골든셋(dataset_id)을 하나의 해소된 프로파일(profile_hash)로, 평가 시작 시점의 문서별 current 커밋 집합(index_commit_ids; documents.current_commit_id 가 가리키는 커밋, 08-index-commit §8·IC-5)에 대해 실행한 기록이다. run_id 는 EvalRun 전용 식별자(바이블 §6.1·§6.4). 정본은 PostgreSQL eval_runs 원장 행. 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+  "type": "object",
+  "properties": {
+    "schema_version": {"$ref": "urn:rag:schema:common-types:1#/$defs/Semver", "description": "선택(N). 계약 버전 \"1.0.0\". 바이블 §5.6 미등재(미해결 이슈 1)"},
+    "run_id": {"$ref": "urn:rag:schema:common-types:1#/$defs/Ulid", "readOnly": true, "description": "EvalRun 전용 식별자(바이블 §6.1). 서버 발급"},
+    "tenant_id": {"$ref": "urn:rag:schema:common-types:1#/$defs/Ulid", "readOnly": true, "description": "선택(N). 데이터셋 소유 테넌트(서버 도출). 바이블 §5.6 미등재(미해결 이슈 1)"},
+    "dataset_id": {"$ref": "urn:rag:schema:common-types:1#/$defs/Ulid", "description": "EvalDataset.dataset_id"},
+    "profile_id": {"type": "string", "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$", "maxLength": 64, "description": "kebab-case(바이블 §6.1). 평가 대상 프로파일"},
+    "profile_hash": {"$ref": "urn:rag:schema:common-types:1#/$defs/Hex64", "readOnly": true, "description": "H(\"profile\", canonical_json(해소된 프로파일)). 실행된 모든 QueryPlan.profile_hash 와 같아야 한다(ADR-0023 준수 5)"},
+    "index_commit_ids": {"type": "array", "items": {"$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"}, "minItems": 1, "maxItems": 1000, "uniqueItems": true, "readOnly": true, "description": "평가 시작 시점 corpus_collection_id 의 문서별 current 커밋 = documents.current_commit_id 가 가리키는 커밋(08-index-commit §8·IC-5; committed ∧ superseded_by 없음은 필요조건일 뿐이며 재색인 모드 A 채움 중의 green 커밋은 포함하지 않는다) ULID 오름차순. 1,000 초과 코퍼스는 앞 1,000개만 두고 전체는 index_commits_ref, 완전성은 index_commits_hash 로 검증(12 EvalRunCompletedData maxItems 1000 과 동일; 이 문서 §8, 미해결 이슈 4)"},
+    "index_commits_hash": {"$ref": "urn:rag:schema:common-types:1#/$defs/Hex64", "readOnly": true, "description": "선택(N). H(\"commits\", *sorted(전체 current commit_id)). 스키마상 N 이지만 하네스가 항상 채운다(EF-9); index_commits_ref 가 있으면 필수(allOf). 바이블 §5.6 미등재(미해결 이슈 4)"},
+    "index_commits_ref": {"$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef", "properties": {"media_type": {"const": "application/x-ndjson"}}, "readOnly": true, "description": "선택(N). eval/runs/{run_id}/index_commits.jsonl(행 = $defs/IndexCommitRecord). 커밋이 1,000개를 넘을 때만(전체 current 커밋 목록). 바이블 §5.6 미등재(미해결 이슈 4)"},
+    "status": {"$ref": "urn:rag:schema:common-types:1#/$defs/EvalRunStatus", "readOnly": true, "description": "running → completed | failed(이 문서 §3.2 상태 기계)"},
+    "judge_model": {"type": ["string", "null"], "minLength": 1, "maxLength": 256, "description": "LLM-judge 모델({repo}@{revision} 표기 권장, 바이블 §6.1). 평가 대상 프로파일의 리랭커·LLM 보강 모델과 다른 계열(ADR-0023 준수 10). 판정 미사용은 null 또는 생략"},
+    "experiment_id": {"type": ["string", "null"], "minLength": 1, "maxLength": 128, "description": "인터리빙·A/B 실험 ID(QueryRequest.experiment_id 와 같은 값 공간). FeedbackEvent.experiment_id 귀속 키"},
+    "baseline_run_id": {"$ref": "urn:rag:schema:common-types:1#/$defs/Ulid", "description": "선택(N). 비교 기준 런. EvalReport.comparison.baseline_run_id 와 같아야 한다. 바이블 §5.6 미등재(미해결 이슈 1)"},
+    "metrics_requested": {"type": "array", "items": {"$ref": "#/$defs/MetricKey"}, "minItems": 1, "maxItems": 64, "uniqueItems": true, "description": "요청 메트릭 키. completed 리포트의 metrics 는 이 집합을 포함한다"},
+    "started_at": {"$ref": "urn:rag:schema:common-types:1#/$defs/DateTime", "readOnly": true},
+    "finished_at": {"oneOf": [{"$ref": "urn:rag:schema:common-types:1#/$defs/DateTime"}, {"type": "null"}], "readOnly": true, "description": "running 이면 null 또는 생략, 종결 상태면 필수(allOf)"},
+    "job_id": {"$ref": "urn:rag:schema:common-types:1#/$defs/Ulid", "readOnly": true, "description": "선택(N). JobKind=evaluate 잡(eval.run.v1 워크플로우 ID). 바이블 §5.6 미등재(미해결 이슈 1)"},
+    "error": {"oneOf": [{"$ref": "urn:rag:schema:common-types:1#/$defs/StageError"}, {"type": "null"}], "readOnly": true, "description": "선택(N). status=failed 의 최종 오류(retryable=false). LocalRunner 크래시·잡 취소는 error 없이 failed 가 허용된다(13-error-model §4.3 예외). 콘텐츠·질의 문자열 미포함. 바이블 §5.6 미등재(미해결 이슈 1)"}
+  },
+  "required": ["run_id", "dataset_id", "profile_id", "profile_hash", "index_commit_ids", "status", "metrics_requested", "started_at"],
+  "additionalProperties": false,
+  "allOf": [
+    {"if": {"properties": {"status": {"const": "running"}}, "required": ["status"]}, "then": {"properties": {"finished_at": {"type": "null"}, "error": {"type": "null"}}}},
+    {"if": {"properties": {"status": {"enum": ["completed", "failed"]}}, "required": ["status"]}, "then": {"required": ["finished_at"], "properties": {"finished_at": {"type": "string"}}}},
+    {"if": {"properties": {"status": {"const": "completed"}}, "required": ["status"]}, "then": {"properties": {"error": {"type": "null"}}}},
+    {"if": {"properties": {"error": {"type": "object"}}, "required": ["error"]}, "then": {"properties": {"error": {"properties": {"retryable": {"const": false}}}}}},
+    {"if": {"required": ["index_commits_ref"]}, "then": {"required": ["index_commits_hash"]}}
+  ],
+  "$defs": {
+    "MetricKey": {"type": "string", "pattern": "^[a-z][a-z0-9_]*(@[1-9][0-9]*)?$", "maxLength": 64, "description": "메트릭 키 {metric}[@{k}]. 정본 키 ndcg@10, recall@20, mrr, span_hit_rate@10, judged@10(바이블 §5.6); 지수 이득은 ndcg_exp@k 로만(ADR-0023). EvalReport.metrics·comparison·GateOutcome.metric 이 참조"},
+    "IndexCommitRecord": {
+      "type": "object",
+      "description": "index_commits.jsonl 한 행(커밋 1,000개 초과 코퍼스의 전체 current 커밋 목록; 08-index-commit §8 정의)",
+      "properties": {
+        "commit_id": {"$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"},
+        "document_id": {"$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"},
+        "index_generation": {"type": "integer", "minimum": 1}
+      },
+      "required": ["commit_id", "document_id", "index_generation"],
+      "additionalProperties": false
+    }
+  }
+}

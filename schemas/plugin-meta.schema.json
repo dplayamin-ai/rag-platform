@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:plugin-meta:1",
+  "title": "PluginMeta",
+  "description": "플러그인 자기 선언 메타데이터(바이블 §5.6). 플러그인 pyproject.toml [tool.rag_platform.plugin] 테이블이 생산하고 레지스트리·라이선스 게이트(ADR-0001)·프로파일 검증기(§7.4 (1)(2))가 소비한다. plugin_id 접두는 extension_point와 같고 entry point 그룹은 rag_platform.{extension_point}(D-10 14종, ADR-0032). 봉투 없음. 공용 타입·열거는 urn:rag:schema:common-types:1 을 참조한다. 소유 문서: docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+  "type": "object",
+  "properties": {
+    "plugin_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId",
+      "description": "{extension_point}.{implementation}(§6.1). Producer.plugin_id와 동일 문자열"
+    },
+    "extension_point": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/ExtensionPoint",
+      "description": "D-10 14종. plugin_id의 접두와 일치"
+    },
+    "role": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "maxLength": 64,
+      "description": "서브 역할(korean_analyzer, sentence_splitter, pii_detector, format_detector, token_counter, renderer 등). 확장 지점 수를 늘리지 않는 축(ADR-0032)"
+    },
+    "version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "description": "패키지 버전 = Producer.plugin_version"
+    },
+    "license": {
+      "$ref": "#/$defs/SpdxExpression",
+      "description": "배포 wheel 메타데이터 기준 SPDX 식별자·표현식"
+    },
+    "license_grade": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/LicenseGrade",
+      "description": "A/B/C/D/X(D-02, ADR-0001). X는 로딩 불가"
+    },
+    "territory": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Territory"
+      },
+      "uniqueItems": true,
+      "description": "사용 허가 지역(ISO 3166-1 alpha-2). 빈 배열 = 제한 없음. license_policy.territory 전부를 포함해야 로딩"
+    },
+    "linkage": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Linkage",
+      "description": "플러그인 자기 배포물에 번들된 네이티브 코드 링크 형태. license_grade=B 이고 static_bundled 이면 기본 프로파일 거부(§7.4 (1))"
+    },
+    "isolation_supported": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/IsolationMode"
+      },
+      "minItems": 1,
+      "uniqueItems": true,
+      "description": "= capabilities.isolation_modes(집합 동치). C 등급은 [sidecar]만"
+    },
+    "model_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/ModelId"
+      },
+      "uniqueItems": true,
+      "description": "{repo}@{revision}. models.lock 행과 대응"
+    },
+    "model_license_ack_required": {
+      "type": "boolean",
+      "description": "D 등급 모델 포함 시 true(사용자 model_license_ack 필요)"
+    },
+    "sidecar_image": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z0-9][a-z0-9._/-]*(:[A-Za-z0-9._-]+)?$",
+      "maxLength": 255,
+      "description": "sidecar 격리 시 이미지 참조(태그까지; digest는 런타임 Producer.image_digest)"
+    },
+    "contracts_compat": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/ContractsCompat",
+      "description": "수용하는 계약 schema_version 범위. = capabilities.contracts_compat"
+    },
+    "capabilities": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Capabilities",
+      "description": "capabilities() 정적 사본. index_backend 는 extra = IndexBackendCapabilities"
+    }
+  },
+  "required": [
+    "plugin_id",
+    "extension_point",
+    "version",
+    "license",
+    "license_grade",
+    "territory",
+    "linkage",
+    "isolation_supported",
+    "contracts_compat",
+    "capabilities"
+  ],
+  "if": {
+    "properties": {
+      "extension_point": {
+        "const": "index_backend"
+      }
+    },
+    "required": [
+      "extension_point"
+    ]
+  },
+  "then": {
+    "properties": {
+      "capabilities": {
+        "properties": {
+          "extra": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/IndexBackendCapabilities"
+          }
+        },
+        "required": [
+          "extra"
+        ]
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "SpdxExpression": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9.+-]+( (AND|OR|WITH) [A-Za-z0-9.+-]+)*$",
+      "maxLength": 256,
+      "description": "SPDX 라이선스 식별자 또는 단순 표현식(Apache-2.0, LGPL-3.0-only, MIT OR Apache-2.0)"
+    },
+    "Territory": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$",
+      "description": "ISO 3166-1 alpha-2(KR, US)"
+    }
+  }
+}

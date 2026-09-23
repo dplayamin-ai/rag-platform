@@ -1,0 +1,623 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:normalized-document:1",
+  "title": "NormalizedDocument",
+  "description": "normalize 스테이지 출력(설계 바이블 §5.4 NormalizedDocument·NormalizedBlock, §6.3). ParsedDocument 블록과 block_id로 1:1 대응하는 텍스트 뷰 계층 — display_text(NFC, 표시·인용 원문) / lexical_text(NFKC, BM25·키워드 입력) / offset_map(display → 원문 Block.text 코드포인트 사상) — 과 문장 구간, furniture 판정, 장르, 언어, PII 정책 적용 기록, 정규화 리포트를 담는다. 구조(type·parent_block_id·provenance·table)는 parsed_ref가 가리키는 ParsedDocument가 정본이다. 소유 문서: docs/03-contracts/04-normalized-document.md",
+  "$comment": "schema_version 1.0.0 (2026-09-22, 리뷰 반영). 공용 타입·열거는 urn:rag:schema:common-types:1 $defs를 참조하고 재정의하지 않는다. 바이블 §5.4에 없는 필드: genre_source, pii_report.tokenize_mode_applied, stats, PiiSpan.row/col은 선택(N); table_cell_views는 조건 필수(pii_report.policy_applied != keep이면 required, 최상위 if/then). lineage_refs는 정확히 {source, parsed}이며 자기 자신(normalized)·하류 키(chunk_set, enriched, embedded)는 not으로 금지한다(00 I-7; 03·05·06·07과 같은 방식). lexical_text는 호환 자모(U+3131~U+318E)를 보존하는 NFKC이며 반각·둘러싸인 한글 자모(U+FFA0~U+FFDC, U+3200~U+320D, U+3260~U+326D)는 NFKC 앞에서 호환 자모로 접는다(문서 §3.2).",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "description": "봉투. 계약 버전, 초기 \"1.0.0\"",
+      "pattern": "^1.(0|[1-9]d*).(0|[1-9]d*)$"
+    },
+    "schema_type": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/SchemaTypeName",
+      "const": "NormalizedDocument",
+      "description": "봉투. ArtifactRef.schema_type과 일치해야 로드"
+    },
+    "tenant_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "봉투. 보안 삼중항 1"
+    },
+    "collection_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "봉투. 보안 삼중항 2(수집 측 단수)"
+    },
+    "producer": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Producer",
+      "description": "봉투. normalize 스테이지 플러그인 지문"
+    },
+    "quality": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Quality",
+      "description": "봉투. 입력 ParsedDocument가 degraded이거나 warnings가 비어 있지 않으면 degraded"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/Warning"
+      },
+      "description": "봉투. 경고 코드(normalize.segmenter_fallback 등), 콘텐츠 미포함, 빈 배열 허용"
+    },
+    "created_at": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime",
+      "description": "봉투. RFC 3339 UTC"
+    },
+    "lineage_refs": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/LineageRefs",
+      "required": [
+        "source",
+        "parsed"
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "normalized"
+            ]
+          },
+          {
+            "required": [
+              "chunk_set"
+            ]
+          },
+          {
+            "required": [
+              "enriched"
+            ]
+          },
+          {
+            "required": [
+              "embedded"
+            ]
+          }
+        ]
+      },
+      "description": "봉투. 정확히 {source, parsed}. parsed는 parsed_ref와 같은 참조. 자기 자신(normalized)과 하류 키(chunk_set, enriched, embedded) 미포함(I-3, 00 I-7)"
+    },
+    "document_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+    },
+    "doc_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "= SourceDocument.content_hash(ADR-0005). ParsedDocument.doc_version과 동일"
+    },
+    "parsed_ref": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef",
+      "properties": {
+        "schema_type": {
+          "const": "ParsedDocument"
+        }
+      },
+      "required": [
+        "schema_type",
+        "schema_version"
+      ],
+      "description": "원 ParsedDocument 산출물. 구조 계층의 정본"
+    },
+    "normalizer_fingerprint": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"normalizer\", plugin_id, plugin_version, config_hash, analyzer_id, dictionary_hash, pii_policy, pii_detector_version)(바이블 §6.2)"
+    },
+    "analyzer_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/AnalyzerId"
+    },
+    "dictionary_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "컬렉션 사용자 사전 해시 H(\"dict\", *sorted(entry 정규화 행))"
+    },
+    "language": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Bcp47",
+      "description": "문서 주 언어(= ParsedDocument.language)"
+    },
+    "genre": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Genre",
+      "description": "최종 장르(요청 힌트 > 파서 > 휴리스틱). ChunkSet.genre_route의 원천"
+    },
+    "genre_source": {
+      "$ref": "#/$defs/NormalizedDocument.genre_source",
+      "description": "N. genre를 결정한 원천"
+    },
+    "blocks": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/NormalizedBlock"
+      },
+      "maxItems": 200000,
+      "description": "ParsedDocument.blocks와 block_id 집합·순서가 같다(1:1). furniture는 제거하지 않고 boilerplate=true로 표시"
+    },
+    "heading_tree": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/HeadingNode"
+      },
+      "description": "boilerplate=false인 heading 블록의 문서 순서 목록. 청커·결정적 접두어용 사전 계산"
+    },
+    "derived_meta": {
+      "$ref": "#/$defs/DerivedMeta"
+    },
+    "annotations": {
+      "$ref": "#/$defs/Annotations"
+    },
+    "pii_report": {
+      "$ref": "#/$defs/PiiReport"
+    },
+    "normalization_report": {
+      "$ref": "#/$defs/NormalizationReport"
+    },
+    "stats": {
+      "$ref": "#/$defs/NormalizationStats"
+    },
+    "table_cell_views": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TableCellView"
+      },
+      "description": "조건. type=table 블록의 모든 앵커 셀 텍스트 뷰(TableData.cells[].text의 display/lexical/offset_map). pii_report.policy_applied != keep이면 필수(표가 없으면 [])이고 앵커 셀과 (block_id,row,col) 1:1(I-22); keep이면 선택. 셀 PII가 Chunk.text로 새는 것을 막는 경로(문서 §2.9)"
+    }
+  },
+  "required": [
+    "schema_version",
+    "schema_type",
+    "tenant_id",
+    "collection_id",
+    "producer",
+    "quality",
+    "warnings",
+    "created_at",
+    "lineage_refs",
+    "document_id",
+    "doc_version",
+    "parsed_ref",
+    "normalizer_fingerprint",
+    "analyzer_id",
+    "dictionary_hash",
+    "language",
+    "genre",
+    "blocks",
+    "heading_tree",
+    "annotations",
+    "pii_report",
+    "normalization_report"
+  ],
+  "additionalProperties": false,
+  "if": {
+    "required": [
+      "pii_report"
+    ],
+    "properties": {
+      "pii_report": {
+        "required": [
+          "policy_applied"
+        ],
+        "properties": {
+          "policy_applied": {
+            "not": {
+              "const": "keep"
+            }
+          }
+        }
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "table_cell_views"
+    ]
+  },
+  "$defs": {
+    "NormalizedDocument.genre_source": {
+      "type": "string",
+      "enum": [
+        "request_hint",
+        "parser",
+        "heuristic"
+      ],
+      "description": "request_hint = IngestRequest.metadata.genre, parser = ParsedDocument.metadata.genre, heuristic = normalize 규칙"
+    },
+    "HeadingNode": {
+      "type": "object",
+      "description": "heading_tree[] 원소. path는 조상 heading의 display_text(루트→현재), 마지막 원소 = 이 블록의 display_text.",
+      "properties": {
+        "block_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex32"
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6,
+          "description": "Block.level 복사(0 = 문서 제목)"
+        },
+        "path": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "maxItems": 7
+        }
+      },
+      "required": [
+        "block_id",
+        "level",
+        "path"
+      ],
+      "additionalProperties": false
+    },
+    "DerivedMeta": {
+      "type": "object",
+      "description": "규칙 기반 파생 메타(LLM 미사용). 필터·부스트·법령 경로 원천. 모든 필드 N.",
+      "properties": {
+        "dates": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/Date"
+          },
+          "description": "ISO 변환(연도 필수 패턴만), 중복 제거·정렬"
+        },
+        "law_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[^/\\s][^/]*(/제[0-9]+조(의[0-9]+)?)?(/제[0-9]+항)?$"
+          },
+          "description": "{법령명}/제n조/제m항 경로, 중복 제거·정렬"
+        },
+        "entities_normalized": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EntityNormalized"
+          },
+          "maxItems": 100000,
+          "description": "규칙 기반 엔티티 구간. 상한 100,000(초안 목표)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "NormalizedDocument.derived_meta.entities_normalized.kind": {
+      "type": "string",
+      "enum": [
+        "date",
+        "law_article",
+        "unit",
+        "org"
+      ]
+    },
+    "EntityNormalized": {
+      "type": "object",
+      "description": "display_text 기준 코드포인트 구간과 정규화 값.",
+      "properties": {
+        "block_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex32"
+        },
+        "kind": {
+          "$ref": "#/$defs/NormalizedDocument.derived_meta.entities_normalized.kind"
+        },
+        "char_start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "char_end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "date: YYYY-MM-DD, law_article: {법령명}/제n조[/제m항], unit: SI 정규화 값, org: 정규 기관명"
+        }
+      },
+      "required": [
+        "block_id",
+        "kind",
+        "char_start",
+        "char_end",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "Annotations": {
+      "type": "object",
+      "properties": {
+        "pii_spans": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PiiSpan"
+          },
+          "maxItems": 100000,
+          "description": "Y. 탐지·적용된 PII 구간(빈 배열 허용). display_text 기준(치환 후 자리); row·col이 있으면 table_cell_views 셀 뷰 기준. 상한 100,000(초안 목표)"
+        },
+        "content_risk": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ContentRisk"
+          },
+          "description": "N. 인젠션 L1 규칙 판정"
+        }
+      },
+      "required": [
+        "pii_spans"
+      ],
+      "additionalProperties": false
+    },
+    "NormalizedDocument.annotations.pii_spans.operator": {
+      "type": "string",
+      "enum": [
+        "mask",
+        "tokenize",
+        "exclude",
+        "keep"
+      ]
+    },
+    "PiiSpan": {
+      "type": "object",
+      "description": "display_text 기준 구간(row·col이 있으면 table_cell_views 셀 뷰의 display_text 기준). exclude는 start == end(빈 구간, 원문 범위는 offset_map 경계 마커로 복원). 바이블 §5.4 필드 + 선택 row/col(N, 둘 다 있거나 둘 다 없음).",
+      "properties": {
+        "block_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex32"
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "N. 셀 뷰 좌표(TableCell.row). col과 함께만"
+        },
+        "col": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "N. 셀 뷰 좌표(TableCell.col). row와 함께만"
+        },
+        "entity_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "maxLength": 64,
+          "description": "탐지기 엔티티 타입(KR_RRN, KR_PHONE, EMAIL_ADDRESS 등)"
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "operator": {
+          "$ref": "#/$defs/NormalizedDocument.annotations.pii_spans.operator",
+          "description": "v1에서는 pii_report.policy_applied와 같다"
+        }
+      },
+      "required": [
+        "block_id",
+        "entity_type",
+        "start",
+        "end",
+        "score",
+        "operator"
+      ],
+      "dependentRequired": {
+        "row": [
+          "col"
+        ],
+        "col": [
+          "row"
+        ]
+      },
+      "additionalProperties": false
+    },
+    "ContentRisk": {
+      "type": "object",
+      "properties": {
+        "block_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex32"
+        },
+        "kind": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 64,
+          "description": "예 injection_pattern, hidden_text, encoded_payload"
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "block_id",
+        "kind",
+        "score"
+      ],
+      "additionalProperties": false
+    },
+    "PiiReport": {
+      "type": "object",
+      "properties": {
+        "policy_applied": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PiiPolicy",
+          "description": "실제 적용 정책(= SourceDocument.pii_policy). ChunkSet·IndexRecord.pii_policy_applied로 전파"
+        },
+        "entity_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "propertyNames": {
+            "pattern": "^[A-Z][A-Z0-9_]*$"
+          },
+          "description": "엔티티 타입별 구간 수(= pii_spans 집계)"
+        },
+        "detector_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "탐지기 플러그인·모델 버전 문자열(normalizer_fingerprint 입력)"
+        },
+        "tokenize_mode_applied": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PiiTokenizeMode",
+          "description": "N. policy_applied=tokenize일 때 적용된 모드(= SourceDocument.pii_tokenize_mode)"
+        }
+      },
+      "required": [
+        "policy_applied",
+        "entity_counts",
+        "detector_version"
+      ],
+      "additionalProperties": false
+    },
+    "NormalizationReport": {
+      "type": "object",
+      "description": "감사·재현성용 집계. 콘텐츠는 boilerplate_removed(정규화된 furniture 문자열)만.",
+      "properties": {
+        "removed_control_chars": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "제거된 제어·PUA·zero-width·BOM 코드포인트 수(문서 합)"
+        },
+        "nfd_composed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "NFC 합성으로 줄어든 코드포인트 수(문서 합)"
+        },
+        "hanja_replaced": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "lexical_text에서 독음으로 치환된 한자 코드포인트 수"
+        },
+        "spacing_corrected": {
+          "type": "boolean",
+          "description": "띄어쓰기 교정(opt-in, lexical_text만) 적용 여부"
+        },
+        "boilerplate_removed": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "maxItems": 1000,
+          "description": "boilerplate=true 블록의 display_text(중복 제거·코드포인트 순 정렬). 512 코드포인트 초과 display_text는 \"h:\" + blake3_hex(utf8(display_text))로 대체 기록; 서로 다른 항목이 1,000개를 넘으면 문서 순 앞 1,000개만(I-12)"
+        }
+      },
+      "required": [
+        "removed_control_chars",
+        "nfd_composed",
+        "hanja_replaced",
+        "spacing_corrected",
+        "boilerplate_removed"
+      ],
+      "additionalProperties": false
+    },
+    "NormalizationStats": {
+      "type": "object",
+      "description": "N. 통계(계량·크기 검증). analyzer_token_count는 형태소 분석기 토큰 수이며 임베딩 토크나이저 토큰 수는 Chunk.token_counts(TokenCounts)가 정본.",
+      "properties": {
+        "block_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "body_block_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "boilerplate=false 블록 수"
+        },
+        "furniture_block_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "boilerplate=true 블록 수"
+        },
+        "display_chars": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "display_text 코드포인트 합"
+        },
+        "lexical_chars": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "lexical_text 코드포인트 합"
+        },
+        "sentence_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pii_span_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "analyzer_token_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "N. ctx.analyzer(analyzer_id) 형태소 토큰 수(lexical_text 합)"
+        }
+      },
+      "required": [
+        "block_count",
+        "body_block_count",
+        "furniture_block_count",
+        "display_chars",
+        "lexical_chars",
+        "sentence_count",
+        "pii_span_count"
+      ],
+      "additionalProperties": false
+    },
+    "TableCellView": {
+      "type": "object",
+      "description": "조건(policy_applied != keep이면 필수). TableData.cells[] 앵커 셀 text의 텍스트 뷰(display_text NFC + PII 연산자, lexical_text NFKC 호환 자모 보존). offset_map은 셀 text 기준(NormalizedBlock.offset_map과 같은 정규형).",
+      "properties": {
+        "block_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex32"
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "col": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "display_text": {
+          "type": "string"
+        },
+        "lexical_text": {
+          "type": "string"
+        },
+        "offset_map": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "integer",
+                "minimum": 0
+              }
+            ],
+            "items": false,
+            "minItems": 3
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "block_id",
+        "row",
+        "col",
+        "display_text",
+        "lexical_text",
+        "offset_map"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

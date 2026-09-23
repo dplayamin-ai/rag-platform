@@ -1,0 +1,17 @@
+RAG Platform
+Copyright 2026 RAG Platform contributors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party notices
+-------------------
+This repository currently contains design documentation and JSON Schemas only.
+Third-party software is not redistributed here. The technology landscape survey
+(docs/07-tech-landscape/) and the license grade table (docs/06-adr/0001-*.md) record
+the licenses of every candidate dependency and model; the CI license gate described in
+docs/10-development/05-ci-cd.md enforces them once code exists.
+
+docs/12-appendix/sources/otel-genai-semconv/ contains reference copies of the
+OpenTelemetry GenAI semantic conventions (Apache License 2.0, Copyright The OpenTelemetry
+Authors), kept for citation stability. They are not part of this project's normative
+documentation.

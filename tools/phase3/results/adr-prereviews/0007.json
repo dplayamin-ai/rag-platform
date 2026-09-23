@@ -1,0 +1,114 @@
+{
+ "id": "0007",
+ "findings": [
+  {
+   "severity": "major",
+   "location": "## 준수 확인 방법 — 적합성 키트 행(160행)",
+   "problem": "검사 항목 \"`parser_chain[]` 첫 원소 = 실제 성공 플러그인\"은 바이블 §5.4 `ParsedDocument.parser_chain`의 의미(\"실제 시도 순서\", 예시 `[\"parser.hwp5_java_sidecar\", \"parser.hwp5_unhwp\"]` — 첫 원소는 먼저 시도해 실패한 사이드카, 마지막 원소가 성공한 unhwp)와 정반대다. 이 검사대로 구현하면 폴백이 발생한 문서에서 적합성 키트가 오탐하거나, 어댑터가 성공 플러그인을 앞에 넣어 시도 순서 기록(O-07 해결 문구 \"실제 시도 순서 기록\")을 깨뜨린다. 같은 문서 133행·164행은 바이블대로 \"시도 순서\"로 쓰고 있어 내부 모순이기도 하다.",
+   "fix": "\"`parser_chain[]`은 시도 순서이며 마지막 원소 = 실제 성공 플러그인(= `parser_fingerprint.parser_id`), 앞 원소들은 실패한 시도\"로 고친다(바이블 §5.4 `ParsedDocument` 표 `parser_chain` 행, §3.2 O-07).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 — `standard` 체인 표 순서 0 `detect` 행(89행)",
+   "problem": "`detect` 단계 행에서 `encrypted`+`credentials_ref` 없음 → `parse.document_encrypted`, HWP 3.x → `parse.unsupported_variant`를 내는 것처럼 서술한다. 바이블 §4.2 `detect` 행은 \"암호·배포 플래그는 판정만(오류는 `parse`가 결정)\"이고 §4.4 detect의 비재시도 코드는 `parse.unsupported_format`·`parse.corrupt_container`만이다.",
+   "fix": "`detect`는 `format`·`container_flags`만 채우고, 타입드 오류(`parse.document_encrypted`·`parse.distribution_document`·`parse.unsupported_variant`)는 `parse` 스테이지(라우터 진입 시)가 낸다고 명시한다(바이블 §4.2 `detect`·`parse` 행, §4.4).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 — 정본 YAML 문단(103행)",
+   "problem": "\"`lo-sidecar`는 `optIn` 꺼짐이 기본이라 정본 YAML에 없으며\"는 부정확하다. 바이블 §7.3 정본 YAML은 `doc`/`rtf`/`odt` 라우터에 `{plugin: parser.office_lo_sidecar, isolation: sidecar, image: lo-sidecar, then: docx}`를 포함한다. `hwp5` 라우터에만 없다.",
+   "fix": "\"`hwp5` 라우터 항목에는 없으며(§7.3; `doc`/`rtf`/`odt` 라우터에는 `parser.office_lo_sidecar` 항목이 있다)\"로 한정한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 — `PluginMeta` 스키마 제약 행(159행)",
+   "problem": "`parser.hwp5_unhwp`에 대해 \"`isolation_supported = [helper_process]`(`in_process` 선언 시 거부)\"를 스키마 제약으로 적었으나 바이블 §7.4 검증 규칙(1)~(12)에 이런 규칙은 없고, 거부 근거가 될 `linkage` 값도 명시하지 않아 기계 검증이 불가능하다. 바이블 §4.1 격리 모드(ctypes·네이티브 → `helper_process`)에서 파생되는 제안이라는 점이 드러나지 않는다.",
+   "fix": "unhwp 플러그인의 `linkage`를 §5.7 `Linkage` 값(`dynamic` 또는 `static_bundled`; ctypes 번들 네이티브)으로 명시하고, \"`linkage ≠ pure_python`이면 `in_process` 선언 거부\"를 §4.1 격리 모드 규칙에서 파생한 검증 제안으로 표기(정본 규칙은 04-pipelines/04·§7.4 개정에서 확정)한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 — 정책·오류 계약 테스트 행(161행)",
+   "problem": "\"비밀번호 평문이 `IngestRequest` 본문에 오면 422\"는 바이블에 없는 응답 규정이다. §5.4 `credentials_ref`는 \"본문 평문 금지\"만 정하고 §5.7 오류 카탈로그·§14에 해당 코드/상태가 없다.",
+   "fix": "\"`IngestRequest` 스키마에 비밀번호 필드가 없으므로 미정의 필드는 계약 검증 실패(`contract.violation`, §5.7)로 거부\"처럼 바이블 코드로 표현하거나, 상태 코드는 03-contracts/01·05-api/02가 확정한다고 적는다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 재검토 조건 4·5·7(201·202·204행)",
+   "problem": "조건 충족 시의 조치를 단정형으로 적었다(\"hwp-hwpx-parser를 2차로 승격한다\", \"`hwpcat` 사이드카 동거로 바꾸거나 … 되돌린다\", \"`hwpfilter` 경로를 opt-in 변환으로 추가하고\"). 앵커(브리프 D-18, 바이블 §3.2 O-07·§7.3)에 없는 결정을 조건부로 선결하는 것이며, 바이블 §1.1은 ADR이 바이블 표를 바꾸지 못한다고 정한다. 조건 3은 \"ADR 개정을 발의한다\"로 바르게 쓰여 있어 표기가 일관되지 않다.",
+   "fix": "조건 3과 같이 \"… ADR 개정을 발의해 재검토한다(후보: …)\"로 바꾼다(바이블 §1.1, §1.2 변경 절차).",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 — 프로파일 표 `standard` 행(99행)",
+   "problem": "`standard`의 배포용 문서를 \"테넌트 옵트인 시 Tika 텍스트(`degraded`)\"로 적었다. 바이블 §3.2 O-07·§2.3 `parser-workers` 행은 프로파일 제한 없이 이를 허용하지만, §7.1 \"HWP 5.0\" 행은 Tika 배포용 텍스트를 `korean-gov` 열에만(\"+ Tika `HwpV5Parser` 배포용 텍스트(옵트인, degraded)\") 적어 두 절이 어긋난다. ADR이 이 불일치를 언급 없이 한쪽으로 해소했다.",
+   "fix": "§3.2·§2.3을 근거로 `standard`에도 허용된다고 쓰되, §7.1 표의 `korean-gov` 열 표기와 차이가 있음을 각주로 남기고 바이블 patch(§1.2 \"설명 보강\") 대상으로 지목한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "major",
+   "location": "## 결정 — standard 체인 표, 순서 1 행(line 90) 및 ## 준수 확인 방법 — 코드 리뷰 체크리스트 (c)(line 165)",
+   "problem": "HWPX 변환 바이트가 `ConvertResponse.derived`로 반환된다고 적었으나, 바이블 §5.6 `ConvertResponse`는 `output`(ArtifactRef|null, 주 산출물)과 `derived`(array<ArtifactRef>, 부속 파생물)를 구분하고 ADR-0033은 명시적으로 \"`output` = 요청된 주 산출물 1개(HWPX 변환본·DOCX 변환본·OCR 결과)\", \"`derived` = 부속 파생물(페이지 이미지·변환 보고서·표 HTML)\"이며 예시 JSON도 `output`에 .hwpx, `derived: []`다. 저장 키 접두 `derived/`(§13.3)와 응답 필드 `derived`를 혼동한 계약 불일치로, 그대로 구현하면 ADR-0033의 `output=null → error 필수` 불변식과 `SidecarStage`의 `derived` 캐시 처리가 어긋난다.",
+   "fix": "line 90 출력 열을 \"HWPX 바이트 = `ConvertResponse.output`(§13.3 `tenants/{tenant_id}/derived/derived_source/` 키에 콘텐츠 주소화 저장, `ParsedDocument.artifacts[].kind = derived_source`); 변환 보고서 등 부속물만 `ConvertResponse.derived[]`\"로, line 165 (c)를 \"변환본은 `ConvertResponse.output`으로 반환하고 `derived/` 키에 저장, 부속 파생물은 `derived[]`\"로 정정(바이블 §5.6 `ConvertResponse` 행, ADR-0033 §결정 ConvertResponse 표).",
+   "lens": "tech"
+  },
+  {
+   "severity": "major",
+   "location": "## 준수 확인 방법 — 적합성 키트 행(line 160)",
+   "problem": "검사 항목 \"`parser_chain[]` 첫 원소 = 실제 성공 플러그인\"은 바이블 §5.4 `ParsedDocument.parser_chain`의 의미(\"실제 시도 순서\", 예 `[\"parser.hwp5_java_sidecar\", \"parser.hwp5_unhwp\"]` — Java가 실패하고 unhwp가 성공한 경우)와 정반대이며, 이 문서의 ## 결과 긍정 4번째 항목(\"`parser_chain[]`에 실제 시도 순서가 … 남아\")과도 모순된다. 이 검사대로 테스트를 쓰면 정상 폴백 결과가 전부 실패 판정된다.",
+   "fix": "\"`parser_chain[]`은 실제 시도 순서이며 **마지막 원소** = 성공 플러그인 = `parser_fingerprint.parser_id`; 앞 원소들은 실패한 시도(`warnings[]`에 실패 코드 기록)\"로 수정(바이블 §5.4 `parser_chain` 행 예시와 일치시킬 것).",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 — 프로파일 표 `korean-gov` 행, 컨테이너 열(line 101)",
+   "problem": "\"standard + hwpxlib 사이드카(암호화 HWPX, `credentials_ref` 제공 시)\"는 추가 컨테이너를 암시하지만 바이블 §2.3 `parser-workers` 행은 \"HWP 5.0 → HWPX, 암호화 HWPX, 배포용 텍스트\"를 같은 이미지의 책임으로 둔다(§2.2 C4 Container도 동일). 또한 암호화 HWPX는 이 ADR(HWP 5.0)의 범위 밖이다.",
+   "fix": "컨테이너 열을 \"standard 동일(`parser-workers`가 암호화 HWPX도 담당, §2.3)\"로 바꾸거나 HWPX 관련 문구를 삭제.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 — standard 체인 표 \"배포용\" 행(line 94) 및 정본 YAML 단락(line 103)",
+   "problem": "다른 단계는 모두 `plugin_id`(`parser.hwp5_java_sidecar` 등)를 갖는데 배포용 Tika 경로만 \"Tika `HwpV5Parser`(`parser-workers` 동거)\"로 플러그인 ID·라우터 훅이 없다. `parser_chain[]`·`PluginMeta`·`ingest.parse.router.hwp5`에 이 경로를 어떻게 표현하는지(바이블 §7.3 라우터에도 항목 없음) 문서가 침묵한다. `lo-sidecar` 라우터 항목 형식은 04-pipelines/04·02-architecture/08로 위임을 명시했으나 Tika 경로는 그런 명시조차 없어 관측성(어느 경로가 문서를 만들었는지) 요구와 어긋난다.",
+   "fix": "line 103과 같은 방식으로 \"배포용 텍스트 경로의 `plugin_id`(예: `parser.hwp5_tika_text` — 가칭)와 라우터 훅(`container_flags.distribution` 분기)은 04-pipelines/04가 확정하며, `parser_chain[]`에는 해당 ID가 기록된다\"를 표 아래에 한 문장 추가(새 결정을 만들지 않도록 '확정 위치'만 명시).",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 — 프로파일 표 `standard`·`korean-gov` 행(line 99·101)",
+   "problem": "`standard` 행은 배포용 문서를 \"테넌트 옵트인 시 Tika 텍스트(degraded)\"로, `korean-gov` 행은 \"standard + Tika `HwpV5Parser` 배포용 텍스트(옵트인, degraded)\"로 적어 같은 기능을 두 번 더한다. 바이블 §7.1과 매트릭스 프로파일 표는 Tika를 `korean-gov` 열에만 표기하고, O-07(§3.2)·§2.3은 프로파일 제한 없이 `parser-workers`+테넌트 옵트인으로 정의해 정본 간 표기 차가 있는데, 이 ADR은 그 차이를 해소하지 않고 두 표기를 그대로 병치했다.",
+   "fix": "표 아래에 \"Tika 배포용 텍스트는 `parser-workers`가 존재하는 standard 이상에서 테넌트 `allow_distribution_documents` 옵트인으로 동작(O-07, §2.3); `korean-gov`는 여기에 배포용·암호 플래그 처리의 감사 로그 정책을 더한다(§7.1 포맷 판별 행). §7.1 HWP 5.0 행이 Tika를 `korean-gov` 열에만 표기한 것은 이 옵트인 정책의 소유 프로파일을 가리킨다\"를 한 문장으로 명시하고, `korean-gov` 행 체인 열은 \"standard + 감사 로그 정책 + `spacing_corrector` opt-in\"으로 정리.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 — 적합성 키트 행(line 160)",
+   "problem": "\"동일 바이트 + 동일 이미지 digest → `derived` 캐시 히트로 변환 생략\" 뒤에 \"두 테넌트가 같은 HWP를 수집해도 `stage_key`는 각자(E17)\"만 있어, `derived/`가 테넌트 간 공유되는 것처럼 읽힐 수 있다. 바이블 §4.1·§13.3은 `derived`를 \"봉투 없음, **테넌트 내** 공유\"(`tenants/{tenant_id}/derived/`)로 정의하고 ADR-0033 적합성 항목도 \"`derived/`는 테넌트 접두 아래\"를 검사한다.",
+   "fix": "\"(같은 테넌트 내) 동일 바이트 + 동일 이미지 digest → `derived` 캐시 히트; 다른 테넌트는 재변환(`derived/`는 `tenants/{tenant_id}/` 접두, §13.3·E17)\"로 명시.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 표 \"정의 위치\" 열, ## 참조 하위 설계 문서 항목, line 93·103",
+   "problem": "링크 검사 결과 9개 대상이 존재하지 않는다: ../04-pipelines/03, ../04-pipelines/04, ../03-contracts/16, ../10-development/03·05·07, ../08-evaluation/05, ../09-operations/03, ./README.md(docs/README.md는 해당 디렉터리를 '예정'으로 표기). 준수 확인 표 11개 게이트 중 5개의 정의 위치가 미작성 문서만 가리켜 현재 시점에서 강제 수단의 정본이 없다.",
+   "fix": "01 문서 관례대로 미작성 대상에 \"(작성 예정)\" 표기를 붙이고, 각 게이트에 현존 정본(바이블 §7.4·§12 `testing/`·§6.5, ADR-0033 준수 표)을 병기해 임시 정본을 지정. `./README.md`(ADR 인덱스)는 생성 후 링크하거나 제거.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 첫 단락(line 83, 1,788자 단일 행) 및 line 23·27·70·73·211·217(600자 초과)",
+   "problem": "결정 단락이 D-18 v1.1 인용, O-07 해결 인용, HWP 3.x, §6.7 인용, §16 용어 변경을 한 줄에 이어 붙여 가독성이 낮다(인용 내용 자체는 브리프 §4 D-18·바이블 §3.2 O-07과 정확히 일치함을 확인). 또한 §6.7 인용은 원문 말미 \"(D-02 C 등급, ADR-0001·0007)\"를 \"(D-02 C 등급)\"로 잘라 넣었는데 따옴표로 원문 인용 형식을 취하고 있다.",
+   "fix": "내용 변경 없이 (a) `**결정:**` + D-18 인용, (b) O-07 해결 인용, (c) HWP 3.x·§6.7·§16 후속 규정의 세 단락으로 나누고, §6.7 인용은 원문 그대로 두거나 인용부호를 풀어 요지 서술로 바꾼다.",
+   "lens": "tech"
+  }
+ ],
+ "verdicts": {
+  "anchor": "revise",
+  "tech": "revise"
+ }
+}

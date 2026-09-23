@@ -1,0 +1,86 @@
+{
+ "id": "0006",
+ "findings": [
+  {
+   "severity": "major",
+   "location": "## 결과 > 중립, 113행 (파서 지문 결합식)",
+   "problem": "파서 지문 결합식을 `H(\"parser\", parser_id, parser_version, model_ids, sidecar_image_digest, profile_option)`으로 적어 바이블 §6.2 정본과 다르다(정본은 `\",\".join(model_ids)`와 `sidecar_image_digest or \"\"`로 직렬화 규칙을 명시). 해시 결합식은 기계 대조 대상이라 철자가 달라지면 구현 간 지문 불일치를 낳는다. 또 '`stage_key`가 바뀐다'의 근거로 §6.2만 인용했는데, parse 스테이지 키가 `parser_fingerprint`를 직접 포함한다는 규칙은 §4.2 parse 행(`H(\"stage\",\"parse\", scope_key, content_hash, parser_fingerprint)`)에 있다.",
+   "fix": "바이블 §6.2 정본 그대로 `parser_fingerprint_hash = H(\"parser\", parser_id, parser_version, \",\".join(model_ids), sidecar_image_digest or \"\", profile_option)`로 고치고, 재파싱 근거는 '바이블 §4.2 parse 행의 `stage_key = H(\"stage\",\"parse\", scope_key, content_hash, parser_fingerprint)`'를 함께 인용한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "major",
+   "location": "## 고려한 대안 표 A3 행(54행) 및 ## 결정 프로파일 표 `standard`·`premium`·`korean-gov` 행(75행) 등급 열",
+   "problem": "Docling 모델 라이선스 CDLA-Permissive-2.0을 `A`로 단정했다(\"CDLA-Permissive-2.0(A, 법무 검토)\", \"A(코드 MIT, 모델 CDLA-Permissive-2.0은 법무 검토)\"). 앵커는 등급을 확정하지 않았다: 바이블 §5.7 `LicenseGrade`·12 §6.1 A 목록에 CDLA가 없고, ADR-0001 맥락 표(34행)는 'Docling 모델 CDLA-Permissive-2.0 … 법무 검토 전에는 등급을 단정할 수 없음', 매트릭스 미해결 이슈 7은 법무 검토 대기로 둔다. `license_grade`는 PluginMeta 필수 필드이자 §7.4 (1) 게이트 입력이므로 앵커에 없는 등급 판정을 ADR이 도입한 셈이다.",
+   "fix": "등급 열을 '코드 MIT(A); 모델 CDLA-Permissive-2.0은 등급 미확정(법무 검토 대기 — ADR-0001 맥락 표, 매트릭스 미해결 이슈 7)'로 바꾸고, 재검토 조건 6에 'CDLA 법무 판정 결과가 `pdf_standard`의 `license_grade`를 바꾸면 갱신'을 덧붙인다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 동인 DR1(41행)·DR6(46행), PluginMeta 예시 `linkage`(140행)",
+   "problem": "DR1이 바이블 §12 '코어는 A 등급 순수 Python만 인프로세스 의존'을 인용하고 DR6이 '순수 Python wheel'을 동인으로 들지만, 채택한 pypdfium2는 PDFium 네이티브 라이브러리를 번들한 ctypes 바인딩이며 예시 PluginMeta도 `linkage: dynamic`으로 선언한다. 바이블 §4.1은 `in_process`를 'A 등급 순수 Python', ctypes를 `helper_process` 사유로 적으면서도 §4.2·§7.1에서 pdftext를 in_process로 두므로, ADR이 이 긴장을 언급하지 않으면 동인과 결정이 서로 어긋나 보인다.",
+   "fix": "DR1을 'A 등급 인프로세스 의존만(바이블 §12)'로 줄이고 DR6의 '순수 Python wheel'을 'pdftext는 순수 Python, pypdfium2는 PDFium 번들 바이너리 wheel(`linkage=dynamic`)'로 고친다. 결정 표 `lite` 행 또는 중립 결과에 'pypdfium2는 ctypes 바인딩이나 격리 모드는 바이블 §4.2 parse 행·§7.1에 따라 `in_process`'라고 한 줄 명시한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 맥락과 문제 F1(29행), ## 결정 §6.7 인용(70행)",
+   "problem": "인용부호 안 문장이 앵커 원문과 다르다. F1의 D-02 인용 \"C 등급(GPL/AGPL/SSPL/ELv2/BUSL)은 별도 컨테이너 + 네트워크 API만, 코어 이미지 미포함\"은 브리프 §4 D-02 원문 'C(GPL/AGPL/SSPL/ELv2/BUSL 서버·라이브러리) 별도 컨테이너 + 네트워크 API만·코어 이미지 미포함·별도 저장소 고지·Helm opt-in'의 의역이고, §6.7 인용은 원문 끝의 '(D-02 C 등급, ADR-0001·0007)'에서 'ADR-0001·0007'을 빠뜨렸다. 결정 절은 '바이블 문장과 정확히 일치'가 요구된다.",
+   "fix": "인용부호를 쓰는 곳은 브리프 §4 D-02·바이블 §6.7 원문을 그대로 옮기거나(§6.7은 '(D-02 C 등급, ADR-0001·0007)'까지), 의역이면 인용부호를 제거하고 '요지'로 표기한다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결과 > 부정, 108행",
+   "problem": "'pypdfium2·pdftext·Docling 세 패키지가 각각 PDFium 버전을 끌어오므로'는 사실과 다르다. pdftext와 Docling(docling-parse 경로)은 모두 pypdfium2 패키지에 의존하므로 PDFium 사본이 세 개 생기는 것이 아니라 pypdfium2 버전 제약이 충돌할 위험이 있는 것이다(02 §B docling-parse 행, 매트릭스 `pdf_text_parser`·`pdf_layout_parser` 행).",
+   "fix": "'pdftext·Docling이 모두 pypdfium2에 의존하므로 세 패키지의 pypdfium2 버전 제약이 잠금 파일에서 단일 버전으로 해소되는지 CI(`uv lock --check`)가 확인해야 한다(pin-and-bump)'로 고친다.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "major",
+   "location": "## 결정 동인 DR6 (line 46), PluginMeta JSON `\"linkage\": \"dynamic\"` + `\"isolation_supported\": [\"in_process\"]` (lines 140-141), ## 결과 부정 (lines 103-108)",
+   "problem": "DR6은 pypdfium2+pdftext를 '순수 Python wheel'이라 하지만 pypdfium2는 PDFium 네이티브 바이너리를 번들해 ctypes로 로드하는 바인딩이다(07/02 §B 'pypdfium2 (PDFium) … Chromium PDF 엔진'; pdftext만 순수 Python). 문서 자신의 JSON은 이를 인정해 `linkage: dynamic`으로 선언하면서 `isolation_supported: [in_process]`만 두는데, ADR-0033 §결정 격리 사다리 표(line 88-89)는 `in_process` 조건을 `linkage = pure_python`으로, `linkage ∈ {dynamic, static_bundled}`인 A 등급 네이티브는 `helper_process`로 배정하고 어댑터의 직접 ctypes 로딩을 금지한다(line 169). 즉 예시 JSON이 ADR-0033의 스키마 제약과 모순되고, DR1이 인용한 바이블 §12 '코어는 A 등급 순수 Python만 인프로세스 의존'과도 자기모순이다. 이로 인한 실패 모드(PDFium 세그폴트가 워커 프로세스와 같은 워커의 다른 액티비티를 함께 죽여 D-17 재시도·하트비트 모델 훼손)가 '결과 부정'과 '재검토 조건' 어디에도 없다.",
+   "fix": "(1) DR6 문구를 'pdftext는 순수 Python, pypdfium2는 PDFium 바이너리 번들 ctypes 바인딩(`linkage=dynamic`, 빌드 불필요 wheel)'로 정정. (2) 바이블 §4.2 `parse` 행이 'pdftext … in_process'로 배치를 확정했음을 명시적으로 인용하고, ADR-0033 line 88이 `parser.pdf_fast_pdftext`를 `in_process` 예로 열거하는 사실과 함께 'ADR-0033 `dynamic → helper_process` 규칙의 명시적 예외'임을 결정 절에 한 문장으로 기록(새 결정 아님, 바이블 인용). JSON의 `linkage` 값은 ADR-0033 line 88 조건과 하나로 맞추거나 예외 주석을 표 아래에 둔다. (3) '결과 부정'에 'PDFium 네이티브 크래시가 인프로세스 워커를 죽일 수 있음(01/ADR-0033 F2와 동일 유형)'을 추가하고, '재검토 조건'에 '`pdf_fast_cpu` 워커 비정상 종료율이 임계를 넘으면 ADR-0033 사다리대로 `helper_process` 승격을 재검토(`isolation_supported`에 `helper_process` 병기)'를 추가.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 표 `rag profile validate` (1) 행 (line 122)",
+   "problem": "C 등급 사이드카 플러그인이 `optIn` 없이 선언될 때의 거부 코드를 `profile.invalid`로 적었다. ADR-0033 line 90도 같은 코드를 쓰지만, 라이선스 정본인 ADR-0001 등급표 C 행(line 94)은 '`optIn` 명시 없으면 `plugin.license_denied`'로 규정한다. 바이블 §5.7 카탈로그(line 1127)에 두 코드가 모두 있어 어느 쪽인지 문서 간 불일치가 남는다.",
+   "fix": "ADR-0001 line 94의 `plugin.license_denied`(플러그인 등급 위반)와 `profile.invalid`(프로파일 검증 실패)를 구분해 기재하거나 'ADR-0001 §결정 등급표 C 행과 동일 코드'로 통일. 바이블 §7.4 (1)·§5.7 참조 유지.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 동인 DR4 (line 44), ## 결과 긍정 3번째 항목 (line 99)",
+   "problem": "'판별 프로브·고속 텍스트·Docling 백엔드가 같은 PDFium 엔진을 공유해 … bbox 좌표 원점 변환 코드도 한 곳에 모인다'는 근거가 없다. Docling `pdf_standard`의 기본 백엔드는 `THREADED_DOCLING_PARSE`(docling-parse)이고 출력 bbox는 DoclingDocument bottom-left 원점이라 어댑터에서 별도 변환이 필요하다(07/02 §Docling 함정 (2), §어댑터 계약 '좌표' 행). pdftext 출력은 다른 좌표 경로이므로 변환 코드는 최소 두 곳이다. 공유되는 것은 pypdfium2 패키지(프로브·렌더·Docling 의존성)까지다.",
+   "fix": "DR4와 결과 항목을 '네이티브 PDF 의존성이 pypdfium2 하나로 수렴한다(Docling도 docling-parse + pypdfium2에 의존, F2)'로 축소하고 '좌표 변환 코드 통합' 주장은 삭제. 좌표 규약은 D-04·ADR-0002(좌상단 원점·PDF 포인트)를 두 어댑터가 각각 만족한다고 기술.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결과 부정 4번째 항목 (line 108)",
+   "problem": "'pypdfium2·pdftext·Docling 세 패키지가 각각 PDFium 버전을 끌어오므로'는 부정확하다. pdftext와 Docling은 모두 `pypdfium2` 패키지에 의존하며 PDFium 바이너리는 pypdfium2 하나가 제공한다. 실제 리스크는 세 곳의 pypdfium2 버전 범위(pdftext 핀·Docling 핀·자체 핀 5.13)의 교집합이 비거나 원치 않는 버전으로 해소되는 것이다.",
+   "fix": "'pdftext·Docling이 각각 pypdfium2 버전 범위를 선언하므로 `uv lock --check`에서 pypdfium2가 §7.1의 5.13 단일 버전으로 해소되는지, 범프 시 계약 코퍼스를 통과하는지 CI가 확인한다(pin-and-bump, 매트릭스 §어댑터·플러그인 공통 요구 3)'로 정정.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 (lines 70-78), ## 결과 부정 (lines 103-108)",
+   "problem": "채택 경로 자체의 실패 모드·폴백 체인이 비어 있다. A3(Docling `PYPDFIUM2`)와 A4(pdfplumber)는 각각 '손상 PDF 백엔드 폴백'과 '표 구조 실패 폴백'으로만 언급되고, `parser.pdf_fast_pdftext`가 pdftext 예외·깨진 텍스트(PUA/ToUnicode 누락)·암호화에서 어떤 오류 코드로 끝나고 `lite`에서 어떤 2차/폴백으로 이어져 `parser_chain[]`에 남는지가 없다. 매트릭스 `pdf_text_parser` 행은 2차/폴백을 'Docling `PYPDFIUM2` 백엔드 → pdfminer.six / pdfplumber'로 정하고, 바이블 §4.2 `parse` 행은 `parse.conversion_failed` 폴백 체인·`parse.document_encrypted` 비재시도를 정본으로 둔다.",
+   "fix": "결정 절 라우터 문단(line 78)에 한 문장 추가: '`lite` `born_digital` 체인은 매트릭스 `pdf_text_parser` 행대로 `parser.pdf_fast_pdftext` → 2차(Docling `PYPDFIUM2` 백엔드, A3) → 폴백(pdfminer.six/pdfplumber, A4)이며, 암호화는 `parse.document_encrypted`(비재시도), 그 외 실패는 `parse.conversion_failed` 후 체인 진행, 깨진 텍스트(`garbled_text`)는 OCR 경로(ADR-0008)로 넘긴다(바이블 §4.2 `parse` 행, 07/02 §실패 모드). 세부 임계·블록 매핑은 04-pipelines/05.'",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 고려한 대안 A2 (line 53, 61), ## 재검토 조건 (lines 160-165)",
+   "problem": "pypdfium2 라이선스를 A 등급으로 단정하지만 07/12 §6.2 지도(line 514)는 pypdfium2를 'BSD-3/Apache-2.0, 확인 필요'로 표기하고, ADR-0001 재검토 조건(line 182)은 '12 §6.2 확인 필요 항목(pypdfium2 …)이 A가 아닌 것으로 확인되면 ADR-0006을 즉시 재검토'라고 본 ADR을 지명한다. 본 ADR에는 대응하는 재검토 조건이나 '07/02 §B에서 Apache-2.0 OR BSD-3-Clause 듀얼로 확인됨' 언급이 없어 두 ADR의 재검토 트리거가 어긋난다.",
+   "fix": "재검토 조건 7 추가: 'pypdfium2 라이선스가 07/12 §6.2 \"확인 필요\" 상태에서 A 등급이 아닌 것으로 확인되면 ADR-0001 재검토 조건대로 본 ADR을 즉시 재검토한다(현재 근거: 07/02 §B Apache-2.0 OR BSD-3-Clause)'. A2 설명에 07/02 §B 근거를 명시.",
+   "lens": "tech"
+  }
+ ],
+ "verdicts": {
+  "anchor": "revise",
+  "tech": "revise"
+ }
+}

@@ -1,0 +1,473 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:candidate-set:1",
+  "title": "CandidateSet",
+  "description": "retrieve 스테이지의 출력(바이블 §5.5). 채널 × 컬렉션 × 질의 변형 단위의 채널 런(channel_runs[])과 각 런의 후보(원점수·순위·payload_slim)를 담는다. 소비자는 fuse. 봉투(질의 측)·공용 타입·열거는 urn:rag:schema:common-types:1의 $defs를 참조하며 재정의하지 않는다. 소유 문서: docs/03-contracts/10-candidate-set-and-ranked-set.md.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "pattern": "^1\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+      "description": "계약 버전. 초기 \"1.0.0\"; 이 스키마($id major 1)는 1.x 만 수용(바이블 §6.4)"
+    },
+    "schema_type": {
+      "const": "CandidateSet",
+      "description": "PascalCase 타입명"
+    },
+    "tenant_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "보안 삼중항 1(SecurityContext.tenant_id와 동일)"
+    },
+    "collection_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+      },
+      "minItems": 1,
+      "maxItems": 20,
+      "uniqueItems": true,
+      "description": "질의 측 봉투(복수). QueryPlan.collection_ids와 동일"
+    },
+    "producer": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Producer",
+      "description": "retrieve 팬아웃 코디네이터의 재현성 지문. plugin_id는 합성 값 retriever.pipeline(09 QueryPlan.producer의 query_transformer.pipeline 규약과 동일), 채널별 retriever는 channel_runs[].retriever_id"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/Warning"
+      },
+      "description": "품질 삼중항 2(빈 배열 허용)"
+    },
+    "degraded": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/DegradedEntry"
+      },
+      "description": "품질 삼중항 3. 채널 제외는 {channel.*, timeout|unavailable}"
+    },
+    "created_at": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime",
+      "description": "RFC 3339 UTC"
+    },
+    "candidate_set_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "발급형 ID"
+    },
+    "plan_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "입력 QueryPlan.plan_id"
+    },
+    "query_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "QueryRequest.query_id"
+    },
+    "channel_runs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ChannelRun"
+      },
+      "minItems": 1,
+      "description": "채널 × 컬렉션 × 질의 변형 단위. 실패·비활성 런도 status로 남긴다(최소 1개 ok, 불변식 CS-4)"
+    },
+    "filters_applied": {
+      "$ref": "#/$defs/FiltersApplied",
+      "description": "백엔드에 실제 전송된 필터(감사, 바이블 §5.5). security·strategy·user·self_query 구분 + 실전송 해시 effective_hash"
+    },
+    "security_context_hash": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+      "description": "H(\"sec\", tenant_id, \",\".join(sorted(principals)), \",\".join(sorted(collection_ids)), as_of, classification_max, \",\".join(visible_set))(바이블 §6.2 그대로). 어댑터가 \"필터에 tenant_id 포함\"을 서명"
+    },
+    "total_unique": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "전 런의 서로 다른 record_id 수(= fusion.candidates_in)"
+    },
+    "total_latency_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "병렬 검색 전체 경과(max(took_ms) 이상)"
+    }
+  },
+  "required": [
+    "schema_version",
+    "schema_type",
+    "tenant_id",
+    "collection_ids",
+    "producer",
+    "warnings",
+    "degraded",
+    "created_at",
+    "candidate_set_id",
+    "plan_id",
+    "query_id",
+    "channel_runs",
+    "filters_applied",
+    "security_context_hash",
+    "total_unique",
+    "total_latency_ms"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "RetrieverId": {
+      "type": "string",
+      "pattern": "^retriever\\.[a-z][a-z0-9_]*$",
+      "description": "retriever 확장 지점의 plugin_id(바이블 §6.1). 예 retriever.qdrant_sparse_bm25"
+    },
+    "ChannelRun": {
+      "type": "object",
+      "description": "채널 런 하나(채널 × 컬렉션 × 변형). 후보는 정확히 하나의 컬렉션에 속한다",
+      "properties": {
+        "channel_run_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ChannelRunId"
+        },
+        "channel": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Channel",
+          "description": "lite의 sparse_bm25 벡터 질의는 channel=lexical"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "variant_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+          "description": "QueryPlan.rewritten_queries[].variant_id(original은 query_id)"
+        },
+        "retriever_id": {
+          "$ref": "#/$defs/RetrieverId",
+          "description": "= QueryPlan.channels[].retriever_id(09 §6.5)"
+        },
+        "backend_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PluginId",
+          "description": "= QueryPlan.channels[].backend_id(index_backend.{implementation}, 09 §6.5) = 컬렉션 backends[].backend_id(15 §2.2)"
+        },
+        "collection_alias": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "물리 alias(col_{collection_id}_vec | _lex, 바이블 §13.4)"
+        },
+        "embedding_profile_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "컬렉션의 embedding_profile_hash(convex_* 적격성 판정 근거)"
+        },
+        "index_generation_seen": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "uniqueItems": true,
+          "description": "이 런의 후보가 속한 문서 세대 집합(ContextPack.diagnostics.index_generations_seen 원천)"
+        },
+        "status": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ChannelRunStatus"
+        },
+        "took_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "returned": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300,
+          "description": "= candidates.length"
+        },
+        "total_hits": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "필터 후 총량(recall 진단; 근사 허용, 백엔드 미제공 시 null)"
+        },
+        "truncated": {
+          "type": "boolean",
+          "description": "top_k 또는 런당 상한 300으로 절단되었는가"
+        },
+        "error": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/StageError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "채널 제외 사유(retrieve.channel_timeout, retrieve.backend_error 등). status ∈ {timeout, error}면 필수"
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Candidate"
+          },
+          "maxItems": 300,
+          "description": "채널 원점수 내림차순, rank 1..n(런당 상한 300)"
+        }
+      },
+      "required": [
+        "channel_run_id",
+        "channel",
+        "collection_id",
+        "variant_id",
+        "retriever_id",
+        "backend_id",
+        "collection_alias",
+        "embedding_profile_hash",
+        "index_generation_seen",
+        "status",
+        "took_ms",
+        "returned",
+        "total_hits",
+        "truncated",
+        "candidates"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "timeout",
+                  "error"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "$ref": "urn:rag:schema:common-types:1#/$defs/StageError"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "timeout",
+                  "error",
+                  "disabled"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "candidates": {
+                "maxItems": 0
+              },
+              "returned": {
+                "const": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Candidate": {
+      "type": "object",
+      "description": "개별 리트리버가 반환한 후보(브리프 §10 Candidate). 본문·인용 좌표·전체 ACL은 hydrate가 채운다",
+      "properties": {
+        "record_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "H(\"record\", tenant_id, collection_id, document_id, str(index_generation), chunk_id). hydrate 조회 키이자 융합 후 후보 식별자"
+        },
+        "chunk_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "콘텐츠 주소 청크 ID(세대·스코프 무관)"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+          "description": "= 소속 런의 collection_id"
+        },
+        "document_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "doc_version": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "item_kind": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ItemKind",
+          "description": "전략 필터 item_kinds 안의 값(parent는 후보가 될 수 없다)"
+        },
+        "level": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ChunkLevel",
+          "description": "전략 필터 level_in 안의 값"
+        },
+        "parent_chunk_id": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "small-to-big 확장 키"
+        },
+        "score": {
+          "type": "number",
+          "description": "채널 원점수(cosine / dot / BM25 / MaxSim)"
+        },
+        "rank": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 300,
+          "description": "채널 내 1-based 순위"
+        },
+        "payload_slim": {
+          "$ref": "#/$defs/PayloadSlim"
+        },
+        "graph_path": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "description": "그래프 채널 설명(엔티티·관계 경로)"
+        }
+      },
+      "required": [
+        "record_id",
+        "chunk_id",
+        "collection_id",
+        "document_id",
+        "doc_version",
+        "item_kind",
+        "level",
+        "parent_chunk_id",
+        "score",
+        "rank",
+        "payload_slim"
+      ],
+      "additionalProperties": false
+    },
+    "PayloadSlim": {
+      "type": "object",
+      "description": "IndexRecord payload의 슬림 투영(≤ 1KB). 융합·설명·사전 예산에 필요한 값만",
+      "properties": {
+        "heading_path": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "page_start": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "page_end": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "doc_date": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/Date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acl_classification": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Classification"
+        },
+        "acl_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "E9 회수 힌트 대조 키"
+        },
+        "token_count_primary": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "임베딩 토크나이저 기준 토큰 수(패킹 사전 예산)"
+        },
+        "text_preview": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "≤ 200자(MCP concise·디버그). 본문 대체 불가"
+        },
+        "content_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "blake3_hex(utf8(Chunk.text)). 1차 dedup 키"
+        },
+        "text_source": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/BlockSource"
+        }
+      },
+      "required": [
+        "heading_path",
+        "page_start",
+        "page_end",
+        "doc_date",
+        "acl_classification",
+        "acl_hash",
+        "token_count_primary",
+        "text_preview",
+        "content_hash",
+        "text_source"
+      ],
+      "additionalProperties": false
+    },
+    "FiltersApplied": {
+      "type": "object",
+      "description": "백엔드에 실제 전송된 필터 트리(바이블 §5.5 filters_applied·§10.2 (a)(b)(c) 구분). security·strategy는 QueryPlan.filters와 동일(변경 불가), user·self_query는 page 변환·0건 완화를 반영한 전송 트리(원형은 QueryPlan.filters에 남음, 09 §5.4), effective_hash는 그 전송 트리의 해시. security·strategy 정의는 09 query-plan $defs의 사본(#/$defs/SecurityFilter·StrategyFilter)",
+      "properties": {
+        "security": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/SecurityFilter",
+          "description": "= QueryPlan.filters.security(보안 불변식 (a), 09 §5.1). 제거·완화·변환 불가"
+        },
+        "strategy": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/StrategyFilter",
+          "description": "= QueryPlan.filters.strategy(전략 필터 (b), 09 §5.2)"
+        },
+        "user": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/FilterNode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Y(nullable). 실제 전송된 사용자 필터 트리(page 변환·0건 완화 반영 후). 원형은 QueryPlan.filters.user"
+        },
+        "self_query": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/FilterNode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Y(nullable). 실제 전송된 추출 필터 트리(완화 반영 후). 원형은 QueryPlan.filters.self_query"
+        },
+        "effective_hash": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "실전송 해시 H(\"filters\", canonical_json(security + strategy + user + self_query; as_of는 바인드 이름 \":as_of\"))(바이블 §6.2, 09 §5.4 잠정 해석) — 이 객체의 네 필드로 계산. page 변환·완화가 없으면 QueryPlan.filters.effective_hash(계획 트리 해시)와 같고 있으면 다르다(대조로 변환·완화 유무 판정). audit.query.executed·ContextPack.diagnostics.filters_applied가 복사. Y(바이블 §5.5 patch 전제, 문서 미해결 이슈 3)"
+        }
+      },
+      "required": [
+        "security",
+        "strategy",
+        "user",
+        "self_query",
+        "effective_hash"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

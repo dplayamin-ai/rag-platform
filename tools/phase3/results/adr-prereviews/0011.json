@@ -1,0 +1,93 @@
+{
+ "id": "0011",
+ "findings": [
+  {
+   "severity": "minor",
+   "location": "## 재검토 조건 4행(179행) — \"D-08·바이블 §2.3 개정(major 절차, §1.2)\"",
+   "problem": "바이블 §1.2 변경 절차 표에서 '브리프 확정 결정(D-xx) 개정'은 바이블 버전 minor(ADR 발의 → §3 amended → 브리프 §4 행 갱신)이다. major는 필드 제거·의미 변경·타입명·스테이지 경계·명명 규약 변경에 해당하므로 'major 절차'는 §1.2 인용 오류다.",
+   "fix": "\"D-08·바이블 §2.3 개정(§1.2 'D-xx 개정' 절차: ADR 발의 → §3 amended → 브리프 §4 v1.x 갱신, 바이블 minor)\"로 정정.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 표 '정확성 분리 계약 테스트' 행(169행) — import-linter 계약 추가",
+   "problem": "\"`ledger`·`orchestration/dispatcher`는 `storage/valkey`를 임포트하지 않는다\"는 바이블 §12 의존 방향(같은 층 `orchestration | ledger | storage | security`; 금지 규칙은 `adapters`→`storage`, `pipelines`·`retrieval`·`render`→`temporalio`·`fastapi`·`ledger`만)에 없는 새 규칙을 단정적으로 도입한다. ADR은 바이블 표를 바꾸지 못한다(§1.1).",
+   "fix": "바이블 §12 개정 제안임을 명시(\"…계약 추가를 바이블 §12에 제안(minor)\") 하거나, 바이블 §12에 이미 있는 규칙만 인용하고 이 문구를 삭제.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 고려한 대안 K2(63행) \"§13.4 키는 모두 TTL 문자열·해시·카운터\" 및 ## 결과 긍정 3항(146행) \"모든 키에 TTL\"",
+   "problem": "바이블 §13.4 Valkey 행은 키 이름·TTL·용도만 정하고 자료형(문자열·해시·카운터)은 규정하지 않는다. 또 `collspec:{collection_id}`는 TTL이 아니라 '이벤트 무효화'이고 `rl:{tenant}:{window}`는 TTL 미명시이므로 '모든 키에 TTL'은 §13.4와 다르다.",
+   "fix": "63행: \"플랫폼이 쓰는 명령은 Redis 7.2 명령 집합 범위로 한정한다(§13.4 키 규약에서 Redis 8 신규 자료구조를 요구하는 키는 없다)\"로 완화. 146행: \"모든 키에 TTL\" → \"§13.4 키는 TTL 또는 이벤트 무효화(`collspec`)로 소멸하며 손실 시 재계산 또는 PG 판정\".",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 재검토 조건 2행(177행) — \"12개월 이상 릴리스가 없거나\"",
+   "problem": "12개월 임계는 브리프·바이블·매트릭스·12 문서 어디에도 없는 수치다(브리프 §9.8 근거 없는 수치 금지 — 출처 또는 '초안 목표' 명시).",
+   "fix": "\"(초안 기준 12개월; 매트릭스 리스크 #2 '릴리스 정체' 판정과 함께 실측 시 확정)\"처럼 초안 표기를 붙이거나 수치를 제거하고 '매트릭스 리스크 #2의 정체 판정'을 인용.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결과 중립 2항(159행) — \"Redis Streams를 이벤트 버스로 쓰는 안은 ADR-0017의 조건부 대안\"",
+   "problem": "ADR-0017은 대안 E \"Redis Streams(Valkey) 이벤트 버스 / CDC 릴레이\"를 '기각(폴백·후속)'으로 판정했고, O-06(바이블 §3.2)의 조건부 도입 대상은 NATS JetStream이다. '조건부 대안'은 ADR-0017 판정과 다른 표현이다.",
+   "fix": "\"Redis Streams(Valkey) 이벤트 버스는 ADR-0017 대안 E로 기각(폴백·후속)되었고, 조건부 도입 대상은 O-06의 NATS JetStream이다\"로 정정.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 실측 표·## 준수 확인 방법·## 참조 링크(126·129·166·167·170·172·192행)",
+   "problem": "`06-adr/README.md`, `09-operations/01·02·07`, `10-development/03·04·05·07`, `08-evaluation/05`는 브리프 §8 문서 맵에 있는 경로지만 현재 파일이 존재하지 않는다(바이블 미해결 이슈 11: 링크 검사 CI는 경고 처리). 다른 ADR 35건도 같은 관행이므로 blocker는 아니나 링크 검사에서 경고가 난다.",
+   "fix": "유지 가능(브리프 §9.6 '문서 맵에 있는 경로만' 충족). 경고를 피하려면 해당 문서 작성 전까지 링크 대신 문서 맵 경로 텍스트(예: `09-operations/07-backup-and-disaster-recovery`)로 표기.",
+   "lens": "anchor"
+  },
+  {
+   "severity": "major",
+   "location": "## 결과 > 긍정 3번째 항목(146행) 및 ## 고려한 대안 K2(63행)",
+   "problem": "\"영속화 없이 운영할 수 있고(모든 키에 TTL, 손실 시 재계산 또는 PG 판정)\"라고 단언하지만, 같은 문서의 키 표(104행) `collspec:{collection_id}` 행은 TTL이 '이벤트 무효화'(즉 TTL 없음)이고 02-architecture/04 §6.2도 \"TTL 없는 `collspec:`는 소량, `maxmemory-policy volatile-lru`\"로 명시한다. 본문 서술과 표가 모순된다. 63행의 \"§13.4 키는 모두 TTL 문자열·해시·카운터\"도 같은 오류를 반복한다.",
+   "fix": "146행을 \"`collspec:`(이벤트 무효화, 소량)을 제외한 모든 키에 TTL — 04 §6.2 `volatile-lru`; 손실 시 재계산 또는 PG 판정, `collspec`은 api 인메모리 사본·기동 시 PG 1회 로드\"로 고치고, 63행 괄호를 \"§13.4 키는 `collspec:`을 제외하고 모두 TTL을 가진다\"로 정정한다(바이블 §13.4 Valkey 행, 02-architecture/04 §6.1~6.2).",
+   "lens": "tech"
+  },
+  {
+   "severity": "major",
+   "location": "## 준수 확인 방법 > 정확성 분리 계약 테스트 행(169행)",
+   "problem": "\"import-linter에 '`ledger`·`orchestration/dispatcher`는 `storage/valkey`를 임포트하지 않는다' 계약 추가\"는 바이블 §12 의존 방향(orchestration | ledger | storage | security는 같은 층, 역방향만 금지)에 없는 새 제약이며, 02-architecture/06 §2.3·§2.4는 `ledger.begin_delete`·`ledger.update_acl` 액티비티가 백엔드 갱신 **전에** Valkey `aclrev:{tenant_id}:{document_id}` 힌트를 기록한다고 정의한다(02-architecture/08 NetworkPolicy 표 `worker-io` 행도 동일). 힌트 기록 코드가 어디에 사는지(`security/acl_recheck(aclrev)` vs `ledger`)를 말하지 않아 이 CI 계약은 E9·E11 흐름을 막거나(ledger가 힌트를 쓰면 위반) 해석에 따라 무의미해진다.",
+   "fix": "계약을 \"`ledger`는 `storage/valkey`를 임포트하지 않는다; `aclrev:` 힌트 기록은 바이블 §12 `security/acl_recheck(aclrev)`가 담당하고 `ledger.begin_delete`·`ledger.update_acl`은 `orchestration/temporal/activities`의 래퍼가 `ledger` 트랜잭션 커밋 → `security.aclrev` 기록 순서로 합성한다(02-architecture/06 §2.3·§2.4, 바이블 §10.3 E9·E11)\"로 정밀화하고, 이 계약이 바이블 §12를 바꾸지 않는 준수 장치임을 한 문장으로 명시한다. 그렇지 않으면 `ledger` 부분을 계약에서 제거한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 > 키 규약 단위 테스트 행(168행), ## 결정 동인 DR4(45행)",
+   "problem": "\"테넌트 스코프 키는 `{tenant}` 위치 필수, 예외는 `qemb`·`tok`·`rr`만\"이라는 테스트 규칙은 같은 문서 키 표의 `collspec:{collection_id}`(테넌트 접두 없음, 콘텐츠 해시 키도 아님)를 처리하지 못한다 — 그대로 구현하면 `collspec`에서 실패하거나 암묵적 예외가 생긴다. DR4 \"콘텐츠 해시 키만 예외\"도 같은 공백을 가진다(바이블 §13.4 원문을 그대로 옮긴 데서 온 상속 문제).",
+   "fix": "테스트 명세에 \"`collspec:{collection_id}`는 전역 유일 ULID 키(비테넌트 스코프, 컬렉션은 `allowed_collections`로 접근 통제)로 분류\"를 명시하고, 바이블 §13.4 예외 목록에 `collspec` 추가를 patch(§1.2 '설명 보강')로 제안하는 문장을 재검토 조건 또는 준수 확인 표 비고에 추가한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 고려한 대안 K2(63행)",
+   "problem": "\"플랫폼은 Redis 7.2 명령 집합만 쓴다(§13.4 키는 모두 TTL 문자열·해시·카운터)\"의 괄호 근거는 바이블·07 문서 어디에도 없고 부정확하다: `limits` 슬라이딩/이동 윈도 Redis 스토리지는 정렬 집합 + Lua(EVALSHA)를 쓰고(12 §3.5, 02-architecture/04 §6.1 `rl:` 행 '슬라이딩 윈도 카운터(limits)'), `collspec`은 TTL이 없다.",
+   "fix": "\"플랫폼과 `limits` Redis 스토리지가 쓰는 명령(문자열·해시·정렬 집합·Lua 스크립트)은 모두 Redis 7.2 명령 집합 안에 있다\"로 바꾸고 12 §격리 및 저장 계층(Valkey 'Redis 7.2 호환')·§어댑터 계약 `RateLimiter`를 인용한다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 결정 키 표 `aclrev` 행(100행), ## 준수 확인 방법 정확성 분리 (b)(169행)",
+   "problem": "`pack.acl_hint_unavailable`을 \"경고\"로 표기했지만 바이블 §5.7 오류 카탈로그는 이 코드를 \"(폴백, `degraded{acl_recheck, unavailable}`)\"로 분류하고 '(경고)' 표기는 `pack.budget_overflow`·`pack.conflict_unlabeled` 등에만 붙인다.",
+   "fix": "\"경고 `pack.acl_hint_unavailable`\" → \"폴백 코드 `pack.acl_hint_unavailable` + `degraded{acl_recheck, unavailable}`\"로 바이블 §5.7 철자·분류에 맞춘다.",
+   "lens": "tech"
+  },
+  {
+   "severity": "minor",
+   "location": "## 준수 확인 방법 > 정확성 분리 계약 테스트 행(169행), ## 결과",
+   "problem": "Valkey 불가 경로의 관측성이 비어 있다. 12 §실패 모드는 `rag_ratelimit_backend_unavailable`, 바이블 E11은 `rag_acl_propagation_seconds`를 정의하지만 ADR은 degraded/경고만 검증 항목으로 두고 메트릭·알림을 언급하지 않아 '불가 시 PG 판정 또는 degraded'가 운영에서 감지되는지 확인할 수 없다.",
+   "fix": "정확성 분리 계약 테스트 행에 \"(e) Valkey 정지 시 `rag_ratelimit_backend_unavailable` 증가와 `degraded[]` 기록을 단언, `aclrev` 손실 창은 `rag_acl_propagation_seconds` SLO 알림으로 관측\"을 추가하고 12 §실패 모드·바이블 §10.3 E11을 인용한다.",
+   "lens": "tech"
+  }
+ ],
+ "verdicts": {
+  "anchor": "accept",
+  "tech": "revise"
+ }
+}

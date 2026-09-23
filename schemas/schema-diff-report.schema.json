@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:schema-diff-report:1",
+  "title": "SchemaDiffReport",
+  "description": "두 버전의 계약 JSON Schema를 비교해 변경을 분류하고 선언된 버전 증분(declared_level)이 계산된 등급(computed_level) 이상인지, 이전 minor 골든 예시가 새 스키마에 유효한지, 열거가 바이블 §5.7과 일치하는지를 기록하는 CI 도구 산출물. schemas/ 인벤토리에 속하지 않는다.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "schema_type",
+    "contract",
+    "schema_id",
+    "base_version",
+    "head_version",
+    "declared_level",
+    "computed_level",
+    "passed",
+    "changes",
+    "golden_examples",
+    "enum_check",
+    "generated_at",
+    "tool_version"
+  ],
+  "properties": {
+    "schema_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "description": "이 리포트 형식의 버전. 1.0.0. 사전 릴리스·빌드 메타데이터 없음(§1.2, 불변식 1)"
+    },
+    "schema_type": {
+      "type": "string",
+      "const": "SchemaDiffReport"
+    },
+    "contract": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/KebabName",
+      "description": "비교 대상 스키마 파일 이름(kebab-name)"
+    },
+    "schema_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/SchemaId",
+      "description": "head 스키마의 $id"
+    },
+    "base_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "description": "비교 기준(배포된 최신) 계약 버전"
+    },
+    "head_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "description": "제안 계약 버전"
+    },
+    "declared_level": {
+      "$ref": "#/$defs/CompatLevel",
+      "description": "base→head 버전 증분에서 계산한 선언 등급"
+    },
+    "computed_level": {
+      "$ref": "#/$defs/CompatLevel",
+      "description": "changes[].level의 최댓값"
+    },
+    "passed": {
+      "type": "boolean",
+      "description": "declared_level ≥ computed_level AND golden_examples.failed = [] AND enum_check.passed"
+    },
+    "changes": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "$ref": "#/$defs/SchemaChange"
+      }
+    },
+    "golden_examples": {
+      "$ref": "#/$defs/GoldenExampleResult"
+    },
+    "enum_check": {
+      "$ref": "#/$defs/EnumCheckResult"
+    },
+    "generated_at": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime"
+    },
+    "tool_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "description": "rag schema diff 도구 버전(사전 릴리스 허용)"
+    }
+  },
+  "$defs": {
+    "CompatLevel": {
+      "type": "string",
+      "enum": [
+        "patch",
+        "minor",
+        "major"
+      ]
+    },
+    "SchemaChangeKind": {
+      "type": "string",
+      "enum": [
+        "annotation_changed",
+        "property_added_optional",
+        "property_added_required",
+        "property_removed",
+        "property_required_added",
+        "property_required_removed",
+        "type_changed",
+        "nullable_added",
+        "nullable_removed",
+        "enum_value_added",
+        "enum_value_removed",
+        "const_changed",
+        "constraint_relaxed",
+        "constraint_tightened",
+        "additional_properties_opened",
+        "additional_properties_closed",
+        "ref_target_changed",
+        "deprecated_added",
+        "default_changed",
+        "defs_renamed",
+        "id_changed"
+      ]
+    },
+    "SchemaChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "level",
+        "path"
+      ],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/SchemaChangeKind"
+        },
+        "level": {
+          "$ref": "#/$defs/CompatLevel"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^(/[^/]*)*$",
+          "description": "head 스키마 내 위치(JSON Pointer, RFC 6901); 제거는 base 기준 경로"
+        },
+        "detail": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "사람이 읽는 설명(콘텐츠 미포함)"
+        },
+        "before": {
+          "description": "base 값(선택; 임의 JSON)"
+        },
+        "after": {
+          "description": "head 값(선택; 임의 JSON)"
+        }
+      }
+    },
+    "GoldenExampleResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checked",
+        "passed",
+        "failed"
+      ],
+      "properties": {
+        "checked": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "새 스키마에 유효하지 않은 이전 minor(또는 업캐스팅된 이전 major) 골든 예시 경로"
+        }
+      }
+    },
+    "EnumMismatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type_name",
+        "missing_in_schema",
+        "missing_in_bible"
+      ],
+      "properties": {
+        "type_name": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/SchemaTypeName",
+          "description": "열거 타입명(바이블 §5.7 첫 열)"
+        },
+        "missing_in_schema": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing_in_bible": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "EnumCheckResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "passed",
+        "mismatches"
+      ],
+      "properties": {
+        "passed": {
+          "type": "boolean"
+        },
+        "mismatches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EnumMismatch"
+          }
+        }
+      }
+    }
+  }
+}

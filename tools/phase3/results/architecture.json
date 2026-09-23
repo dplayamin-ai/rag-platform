@@ -1,0 +1,114 @@
+{
+ "group": "architecture",
+ "date": "2026-09-22",
+ "architecture": {
+  "done": [
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\02-architecture\\01-system-overview.md",
+    "review": "verified",
+    "serious": 1,
+    "lines": 631
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\02-architecture\\02-component-architecture.md",
+    "review": "verified",
+    "serious": 10,
+    "lines": 993
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\02-architecture\\03-data-flow-and-document-lifecycle.md",
+    "review": "fixed_twice",
+    "serious": 11,
+    "lines": 647
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\02-architecture\\04-storage-architecture.md",
+    "review": "verified",
+    "serious": 13,
+    "lines": 899
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\02-architecture\\05-plugin-architecture.md",
+    "review": "fixed_twice",
+    "serious": 16,
+    "lines": 979
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\02-architecture\\06-orchestration-and-workflows.md",
+    "review": "fixed_twice",
+    "serious": 11,
+    "lines": 1023
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\02-architecture\\07-multi-tenancy-and-security-architecture.md",
+    "review": "fixed_twice",
+    "serious": 7,
+    "lines": 910
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\02-architecture\\08-deployment-architecture.md",
+    "review": "fixed_twice",
+    "serious": 11,
+    "lines": 818
+   },
+   {
+    "file": "C:\\Workspaces\\rag-platform\\docs\\02-architecture\\09-failure-modes-and-resilience.md",
+    "review": "fixed_twice",
+    "serious": 5,
+    "lines": 646
+   }
+  ],
+  "dropped": [],
+  "openIssues": [
+   "01-system-overview.md: 리뷰 항목 'C-17 → 각주 이동'은 각주 대신 §3.2 표 아래 '표 밖 항목' 목록으로 구현했고, 결정 사항의 '(+ 외부 관측 백엔드)' 표현은 리뷰 제안대로 유지했다(의미 동일, 형식만 차이).",
+   "01-system-overview.md: 리뷰 대안 '컨테이너 라벨에 (standard+)/(premium) 접미 일관 부여'는 채택하지 않고 §3.2 표의 lite 포함 열 참조 방식을 택했다(parser-workers 라벨에만 'standard 이상' 추가). 라벨 접미 일관화가 필요하면 후속 개정에서 처리.",
+   "01-system-overview.md: frontmatter version은 0.1.0 유지(지시가 status·last_updated만 명시). 개정 이력이 필요하면 0.1.1로 올릴 것.",
+   "01-system-overview.md: 바이블 §2.2 C4 다이어그램의 Rel(api, s3) 누락과 §14 테넌트 생성 API 부재는 본 문서 권한 밖이라 미해결 이슈 11·12로 바이블 소유자에게 갱신 요청만 등록했다(바이블 §1.2 절차).",
+   "01-system-overview.md: 바이블 §4.2 index 행('commit_id·index_generation은 워크플로우가 1회 발급·할당')과 §11.4 (6)('index_generation은 원장 documents 행 잠금 아래 할당') 사이의 표현 차이는 §11.4 (6)을 따랐다. 바이블 내부 표현 통일은 바이블 소유자 판단 사항.",
+   "02-component-architecture.md: [미반영] 리뷰 tech-minor '`VectorBundle`은 바이블에 없는 새 타입' — 바이블 §5.1 공용 타입 목록과 §5.4 `EmbeddedChunkSet` 표(L349, L689)에 `VectorBundle`이 정본으로 존재하므로 '제안' 표기·미해결 이슈 등재를 하지 않았다(앵커 우선).",
+   "02-component-architecture.md: [미반영] 리뷰 tech-minor 'ADR-0026/0027/0031/0032/0033 링크 끊김' — 현재 저장소에 해당 파일이 존재하므로(0001~0033) '작성 예정' 표기는 실제 미작성인 0034·0035·0037과 04-pipelines/01·09-operations/02·10-development/01에만 붙였다.",
+   "02-component-architecture.md: [부분 반영] 리뷰 anchor-minor '브리프 §9.11 900행 이내' — 998행 → 993행. §6.3 ProblemDetails 예시 삭제, 배포 단위 표를 08-deployment 소유로 이관, 다이어그램 축약 등을 했으나 major 수정(QueryContext·DerivedArtifacts·Settings 클래스 정의·미해결 이슈 확장)으로 순증이 있어 900행 미달성. 남은 후보(§5.2 Settings 절 모델 일부를 09-operations/02로 이관, §3.2 표 축약)는 architecture 소유자가 브리프 §9.11 vs 감사 지시(500~1000행) 우선순위를 확정한 뒤 2차에서 처리 요청.",
+   "02-component-architecture.md: [설계 판단, 2차 리뷰 확인 요청] 질의 측 5종 확장 지점을 별도 프로토콜(리뷰 대안 b) 대신 `Stage[In, Out]` 특수화(대안 a)로 통일했다. 이는 바이블 §4.1(모든 스테이지 5멤버)·ADR-0032·D-10을 따르는 선택이지만 05-plugin-architecture의 `search(channel, variant, plan, security, ctx)`·`fuse(candidates, fusion, top_n)`와 시그니처가 갈리므로 05 문서 개정이 필요하다(미해결 이슈 4에 명시). 또 `StageContext.plan`(질의 측 QueryPlan) 멤버 추가가 바이블 §4.1 patch를 전제한다(미해결 이슈 2).",
+   "02-component-architecture.md: [설계 판단] `Settings`를 새 최상위 모듈 `rag_platform.settings`(L5, security|profiles와 같은 계층)로 두었다 — 바이블 §12 트리에 없는 패키지이므로 '제안'으로 표기하고 트리 등재 또는 `orchestration/settings.py` 격하 여부를 미해결 이슈 9로 남겼다. 리뷰어 두 명이 각각 `rag_platform.settings`/`rag_platform.config`를 제안했는데 이름은 앵커 리뷰어 제안(`settings`)을 택했다.",
+   "02-component-architecture.md: [설계 판단] Valkey 설정을 필수(`ValkeySettings.url: str`, `RuntimeServices.kv`·`acl_hints` 비Optional)로 바꿨다(바이블 §2.2·§11.6 lite 필수 컨테이너 근거). `backend_tokens`만 Optional 유지(OpenSearch 없는 lite).",
+   "02-component-architecture.md: [확인 필요] `BackendClientFactory.qdrant()/opensearch()` 반환 타입 주석의 `AsyncQdrantClient`·`AsyncOpenSearch`는 라이브러리 클래스명이며 07-tech-landscape 근거를 직접 확인하지 않았다(코드에서는 `Any`로 두어 단정하지 않음).",
+   "02-component-architecture.md: [문서 간 불일치 발견, 미수정(타 문서)] 06-orchestration-and-workflows 스케치는 셸 모듈을 `orchestration/stage_shell.py`로 적었고 바이블 §12는 `orchestration/context.py`다. 이 문서는 바이블을 따르고 미해결 이슈 11로 06 문서 정정을 요청했다.",
+   "02-component-architecture.md: [검증 범위] JSON 코드 블록은 §6.3 삭제로 문서에 남아 있지 않아 node 파싱 검증 대상이 없다. 부속 schemas/*.json 파일은 이 문서 소유가 아니어서 수정하지 않았다. import-linter INI(uvx import-linter, Python 3.12 스텁 트리)와 §5.2 Settings 블록(pydantic-settings 실행 + pyflakes)은 실증했으나, 다른 Python 코드 블록(sdk/stage.py·ports.py·retrieval.py 시그니처 조각)은 타 블록·계약에 정의된 이름을 참조하는 스케치라 실행 검증하지 않았다.",
+   "02-component-architecture.md: [eval.run.v1 실행 위치] §7.1에서 worker 열에 `maintenance` 큐 `eval.run.v1`을 ●로 적었으나 운영 기본 실행 위치(CI 프로세스/maintenance 워커/별도 Job)는 01-system-overview 미해결 이슈 6이 06 문서에 위임한 상태라 이 문서에서는 확정하지 않았다.",
+   "03-data-flow-and-document-lifecycle.md: [major 일부 미반영] 리뷰어의 (c) 주장 'A-6 `rollback_green`이 current_commit_id를 previous_commit_id로 되돌리고 green 커밋을 rolled_back으로 표시' 는 현재 06-orchestration §2.5(199행 A-6 `ledger.discard_green`, 283행 본문 결정)에 존재하지 않는다 — 06이 검증 중 개정되어 본 문서 제안을 채택했으므로 '상충'이 아닌 '채택·ADR-0026 개정 발의'로 기술했다. 리뷰어의 '바이블 §11.4 (5) 기준 06 개정 요청' 도 그대로 쓰지 않았다: 바이블 §13.4가 두 해시 불변 변경의 green 이름을 정하지 않아 대안 (a)(b) 모두 바이블 개정이 필요하므로, 본 문서는 모드 B 불채택 입장만 명시하고 택1·개정 방향은 미해결 11(=06 미해결 15)의 ADR로 넘겼다.",
+   "03-data-flow-and-document-lifecycle.md: [minor 5 부분 반영] 리뷰어는 NFR 02 419행의 ≤ 5 s를 '목표값'으로 읽었으나 NFR §9 표의 열은 '논리 삭제 데드라인(최대)' / '물리 소거 데드라인(최대)' 로 둘 다 최대값이다. 따라서 헤더를 '목표/최대'로 바꾸지 않고 두 행을 논리 삭제/물리 소거로 명확히 라벨링하는 방식만 적용했다.",
+   "03-data-flow-and-document-lifecycle.md: [minor 6 링크] 15개 미작성 링크는 공통 규약('depends_on 문서가 없으면 링크만 문서 맵 경로로 건다')에 따라 유지하고 '(미작성)' 코드 스팬 대체는 하지 않았다. 미해결 1에 전체 목록과 게시 후 재검사 규칙을 추가했다. 리뷰어가 13개로 집계했으나 열거된 경로는 15개다.",
+   "03-data-flow-and-document-lifecycle.md: [minor 3 부분] O-11·O-12 번호는 '후보'로만 제안했다. 바이블 §3.2(및 브리프 §5)의 개방 결정 목록은 O-01~O-10으로 닫혀 있어 새 번호 배정은 바이블 소유자(patch)의 몫이며, 배정 전까지 `**미정(O-xx 미배정, 미해결 n):**` 표기를 쓴다.",
+   "03-data-flow-and-document-lifecycle.md: [후속 대조 필요] 06-orchestration 미해결 17(b)의 `index.commit.published`·`ingest.document.deleted` 발행 주체 통일(`stage.index` 사가 vs `stage.publish`)은 본 문서 §10 표의 '발행 주체 = publish' 표기와 다를 수 있어 03-contracts/12 게시 후 대조 항목으로 미해결 1에 남겼다(본문 표는 바꾸지 않음).",
+   "03-data-flow-and-document-lifecycle.md: [후속] 03-contracts/02-source-document가 fetch 출력(`fetch_key`, artifacts 행 없음)/detect 출력(`stage_key`, artifacts 등재) 이원화를 결정했으므로 §2.1 fetch 행과 §5.3 (d)·§7.3의 임시 규칙은 fetch 출력 봉투에만 해당한다 — 바이블 §13.3 patch 확정 후 본문 정리가 필요하며 미해결 19에 기록했다.",
+   "04-storage-architecture.md: Tech minor `_id` citation: kept brief D-06 as the primary cite (brief D-06 v1.2 explicitly states `OpenSearch _id = record_id`, so the reviewer's claim that D-06 only covers content-hash versioning is incorrect); added bible §5.4 `record_id` row and ADR-0004 alongside rather than replacing.",
+   "04-storage-architecture.md: Anchor major (compression): the reviewer described 03-contracts/00 §9.2 as specifying '1MB threshold, zstd level 3, derived uncompressed'; the current file's §9.2 contains only 미정(U-4) delegating to this document with stored-bytes semantics. Applied the substantive fix (ADR-0011 removed, §9.2/U-4 anchoring, difference table, issue #6 rewritten) but the difference table reflects the actual current §9.2 text, not the quoted content. No new ADR number assigned (bible §3.3 governs numbering) — slug proposed only.",
+   "04-storage-architecture.md: Tech major (RLS for relay): chose the separate `rag_maintenance` role with cross_tenant policies rather than the alternative of excluding `outbox` from RLS, to stay within bible §13.1 'all tables RLS FORCE'.",
+   "04-storage-architecture.md: Tech major (heading_path): did not introduce a `heading_path_top2` field (would add an IndexRecord field beyond bible §5.4); indexed the full `heading_path` keyword array with filter-builder depth limiting and left the separate-field idea as open issue #17 for 03-contracts/07.",
+   "04-storage-architecture.md: Tech minor (Nori DEFAULT_STOP_TAGS count): changed to 'Lucene DEFAULT_STOP_TAGS 18개; 07-tech-landscape/13 122행의 30개는 세분 표기 — 확인 필요(as of 2026-09)' because the reviewer's count is an external fact not verifiable from repository sources; 07-tech-landscape/13 itself was not edited (not this task's file).",
+   "04-storage-architecture.md: `optimizers_config.default_segment_number` per-profile row added as 초안 목표 (lite 2 / others 4) — values are unmeasured assumptions pending 09-operations/04.",
+   "04-storage-architecture.md: `outbox` retention implemented as daily RANGE partitions + DROP; the reviewer's alternative (no partition + DELETE WHERE published_at < now()-7d) was not adopted.",
+   "04-storage-architecture.md: Length: reduced to 899 lines (limit 900) mainly by compacting JSON blocks and ER attribute blocks; further growth from future edits will need offsetting cuts.",
+   "05-plugin-architecture.md: 모든 리뷰 항목(major 2, minor 3)을 반영했다. 미반영 항목 없음.",
+   "05-plugin-architecture.md: index_backend 처리: 리뷰 fix는 포트 4개 한정만 요구했으나 02 §2.4 표는 index_backend를 Stage[EmbeddedChunkSet, IndexCommit] 행으로 적으면서 실제 진입점은 IndexBackend 포트 메서드다. 두 표현을 그대로 병기하고(§3.1 표 '형태' 열) run()의 의미 합의를 미해결 이슈 11(a)에 등재했다 — 02 §2.4·04-pipelines/13 확정 필요.",
+   "05-plugin-architecture.md: build() -> Stage[Any, Any] 반환 타입: 질의 측을 Stage로 되돌려 리트리버·퓨저 문제는 해소됐지만 IndexBackend·role 포트(ContextRenderer·TokenCounter·KoreanAnalyzer)는 여전히 Stage가 아니므로 정적 타입 불일치가 남는다. 02 §2.3 개정 제안(반환 타입 합집합 또는 build_port())으로 §6.3 표·미해결 이슈 11에 명시했다.",
+   "05-plugin-architecture.md: Evaluator 입력 전달: Stage 형태로 바꾸면서 기존 `evaluate(run, packs: AsyncIterator[ContextPack], ctx)`의 packs 스트리밍 인자가 사라졌다. 골든셋·ContextPack 집합을 ctx.lineage로 받는 requires_lineage 확장은 바이블 §4.1('index만 사용')과 어긋나므로 새 미해결 이슈 19로 등재했다(08-evaluation/02·03-contracts/16 합의 필요).",
+   "05-plugin-architecture.md: ContextRenderer의 plugin_id: 02 §2.4 코드에는 없으나 05는 레지스트리 조회 키로 유지하고 '보완 제안'으로 표기했다(미해결 이슈 11). TokenCounter·KoreanAnalyzer 코드(§2.2)는 02와 동일하게 plugin_id 없이 두었다.",
+   "05-plugin-architecture.md: StageContext.plan·artifacts(DerivedArtifacts)는 02에서도 제안 지위이므로 05도 제안으로 표기했다. 바이블 §4.1 표 갱신(02 미해결 이슈 2·10)이 선행돼야 결정으로 승격 가능.",
+   "06-orchestration-and-workflows.md: 리뷰 minor 7(깨진 링크) 중 ADR-0037은 파일 `06-adr/0037-artifact-cache-scope-and-stage-key-composition.md`가 이미 존재해 변경하지 않았다; 나머지 미게시 문서 링크는 삭제 대신 '동시 작성 중' 표기로 두었다(관행 유지, 링크 검사 CI는 문서 세트 게시 시).",
+   "06-orchestration-and-workflows.md: 모드 A 원장 포인터 결정은 바이블 §11.4 사가의 예외이므로 바이블 자체는 수정하지 않았고 ADR-0026 개정 제안(미해결 이슈 18)으로만 등재했다. 03-data-flow 미해결 이슈 17·20의 정정·확정은 그 문서 소유자가 반영해야 한다(이 문서 미해결 17 (c)·18에 요청 기록).",
+   "06-orchestration-and-workflows.md: `ledger.advance_pointers`가 alias 교체 뒤에 실행되므로 교체~전진 사이 짧은 창에 alias는 green을, `documents.current_*`는 blue를 가리킨다. 03-data-flow §9.2 (3)의 '조회 API는 CollectionSpec.profile_hash 일치 최신 committed 커밋을 서빙 중으로 표시' 규칙으로 흡수했으나 순서(전진 먼저 vs 교체 먼저)의 최종 선택은 04-pipelines/19 실측 후 확정.",
+   "06-orchestration-and-workflows.md: 문서 길이 1023행으로 브리프 §9 권고(250~900행)를 초과한다. 1차 편집 시점(997행)에도 초과 상태였고 이번 지시가 국소 수정이라 분할하지 않았다; §9(처리량·사이징)를 09-operations/04로 이관하는 안을 검토할 것.",
+   "07-multi-tenancy-and-security-architecture.md: 리뷰 4건 모두 반영했으며 미반영 항목은 없다. 리뷰어가 지목하지 않은 §12.1 L800 Note 텍스트의 `;`도 같은 mermaid 결함이라 추가로 수정했다.",
+   "07-multi-tenancy-and-security-architecture.md: ADR-0037·0038 대조 결과 불일치가 없어 새 미해결 이슈는 등록하지 않았다. 다만 ADR-0038 자체가 남긴 개방 항목(프로파일 AND 테넌트 합성 규칙·allowed_hosts 일치 방식은 03-contracts/15, s3/gs/az 클라이언트 엔드포인트 취급은 04-pipelines/02)은 이 문서 범위 밖이라 옮겨 적지 않았다.",
+   "07-multi-tenancy-and-security-architecture.md: §4.1 수정으로 '`tenant_admin`이 스스로에게 `pii_officer`를 부여'하는 경로의 직무 분리 통제는 09-operations/05(ISMS-P 매핑)로 위임됐다 — 해당 문서가 이를 받아야 한다(기존 미해결 이슈에 별도 항목으로 추가하지는 않았고 본문 문장으로만 위임).",
+   "08-deployment-architecture.md: minor(링크 12건): 링크 대상 미작성 문서는 브리프 §8 문서 맵 경로이므로 링크를 제거하지 않고 범위 절에 '전방 참조(작성 예정, depends_on 아님)' 1행만 추가했다 — 공통 규약('링크는 브리프 §8 산출물 맵에 있는 경로만 상대 경로로 쓴다')상 허용되는 전방 참조이며, 리뷰어도 verdict 미반영 항목으로 분류했다.",
+   "08-deployment-architecture.md: minor(models.lock): RapidOCR ONNX 변환본의 저장소 id를 예시에서 `RapidAI/RapidOCR`로 두었으나 07-tech-landscape/02는 RapidAI GitHub·모델 목록 URL만 제공하므로 id·revision은 본문에 '확인 필요(as of 2026-09)'로 표기했고, 형식 확정(포맷별 항목 분리 vs consumers[] 객체 배열)은 미해결 이슈 5로 10-development/05에 위임했다.",
+   "08-deployment-architecture.md: major 수정의 파급: 원 1차 리뷰 지시가 06 §6.4를 잘못 읽은 데서 비롯되었으므로, 1차 지시를 낸 리뷰 결과(또는 이를 참조한 다른 문서)가 relay→api SSE 푸시 전제를 가진다면 그쪽도 점검이 필요하다(이 문서 범위 밖).",
+   "09-failure-modes-and-resilience.md: 리뷰 minor #3(03-contracts/08·10·11·12·15, 04-pipelines/*, 09-operations/*, 10-development/*, 11-roadmap/03 등 21개 상대 링크 대상 미작성): 리뷰어 권고대로 변경 없음 — 저장소 전체의 선참조 관행이며 브리프 §8 문서 맵 경로와 일치. 문서 생성 시 경로·파일명 변동 시 일괄 갱신 대상.",
+   "09-failure-modes-and-resilience.md: frontmatter version은 0.1.0 유지(지시가 status·last_updated만 지정; 08 문서는 0.1.1이나 이 문서의 버전 상향은 소유자 판단에 맡김).",
+   "09-failure-modes-and-resilience.md: 08 §10.2가 GET /healthz를 liveness 프로브로 쓰는 것과 이 문서의 '/healthz 의존성 상태 노출'의 관계(의존성 down이 liveness 실패로 번지지 않게 하는 규칙)는 미해결 이슈 17(a)에 제안으로만 추가했고 결정하지 않음 — 05-api/04 또는 09-operations/03에서 확정 필요.",
+   "09-failure-modes-and-resilience.md: 인그레스 503 본문의 application/problem+json 여부는 13 문서 §7.1 '확인 필요' 항목을 그대로 인용했으며 이 문서가 확정하지 않음(09-operations/01 소유)."
+  ]
+ }
+}

@@ -1,0 +1,745 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rag:schema:ranked-set:1",
+  "title": "RankedSet",
+  "description": "fuse(fused) → hydrate(fused, hydrated=true) → rerank(reranked) → postprocess(postprocessed)가 갱신하는 질의 측 계약(바이블 §5.5). 같은 타입이 stage로 구분되며 단계별 조건 필수는 if/then으로 표현한다. results[]는 RankedResult(common-types $defs), 점수 원장은 ScoreBreakdown(Σ contribution = fused). 소비자는 pack과 평가(TREC run). 소유 문서: docs/03-contracts/10-candidate-set-and-ranked-set.md.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Semver",
+      "pattern": "^1\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+      "description": "계약 버전. 초기 \"1.0.0\"; 이 스키마($id major 1)는 1.x 만 수용"
+    },
+    "schema_type": {
+      "const": "RankedSet"
+    },
+    "tenant_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+    },
+    "collection_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+      },
+      "minItems": 1,
+      "maxItems": 20,
+      "uniqueItems": true
+    },
+    "producer": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Producer",
+      "description": "이 인스턴스를 마지막으로 쓴 스테이지의 플러그인(fused: fuser.*, reranked: reranker.*, postprocessed: postprocessor.*). hydrate는 서브스텝이라 producer를 바꾸지 않는다(stage=fused, hydrated=true도 fuser.*; index_backend.* 어댑터 지문은 기록하지 않음)"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/Warning"
+      }
+    },
+    "degraded": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:rag:schema:common-types:1#/$defs/DegradedEntry"
+      },
+      "description": "입력 CandidateSet.degraded를 상속하고 fusion·hydrate·rerank·postprocess 항목을 더한다"
+    },
+    "created_at": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/DateTime"
+    },
+    "ranked_set_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "발급형 ID. 세 단계 갱신 동안 유지된다"
+    },
+    "plan_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+    },
+    "query_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+    },
+    "candidate_set_id": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid",
+      "description": "선택(N). 입력 CandidateSet.candidate_set_id(바이블 §5.5 미등재, 미해결 이슈 2)"
+    },
+    "stage": {
+      "$ref": "urn:rag:schema:common-types:1#/$defs/RankedStage"
+    },
+    "hydrated": {
+      "type": "boolean",
+      "description": "hydrate 완료 여부. fuse 직후 false, hydrate 뒤 true, reranked 이후 항상 true"
+    },
+    "fusion": {
+      "$ref": "#/$defs/FusionReport"
+    },
+    "rerank": {
+      "$ref": "#/$defs/RerankReport",
+      "description": "조건: stage ∈ {reranked, postprocessed}"
+    },
+    "late_interaction_rerank": {
+      "$ref": "#/$defs/LateInteractionRerankReport",
+      "description": "선택(N). O-04 실험 슬롯(stage ∈ {reranked, postprocessed})"
+    },
+    "relevance_gate": {
+      "$ref": "#/$defs/RelevanceGateReport",
+      "description": "조건: stage = postprocessed"
+    },
+    "calibration_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 128,
+      "description": "선택(N). 컬렉션별 리랭크 점수 분포(calibrations 표) 참조"
+    },
+    "postprocess_report": {
+      "$ref": "#/$defs/PostprocessReport",
+      "description": "조건: stage = postprocessed"
+    },
+    "channel_runs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ChannelRunSummary"
+      },
+      "minItems": 1,
+      "description": "선택(N). CandidateSet.channel_runs의 후보 없는 요약(pack diagnostics·explain 원천; 미해결 이슈 2)"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/RankedResult"
+          },
+          {
+            "$ref": "#/$defs/ResultParentRule"
+          }
+        ]
+      },
+      "maxItems": 100,
+      "description": "final_rank 오름차순(1..n 연속). 상한 100"
+    },
+    "omitted": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RankedOmittedEntry"
+      },
+      "description": "선택(N). hydrate·postprocess가 results에서 제거한 항목. 플랫폼 구현은 항상 채운다(없으면 []); pack이 11의 PackOmittedEntry{chunk_id, collection_id, document_id, reason}로 투영해 ContextPack.omitted에 넣는다(미해결 이슈 2)"
+    },
+    "stats": {
+      "$ref": "#/$defs/RankedSetStats"
+    },
+    "timings_ms": {
+      "$ref": "#/$defs/TimingsMs",
+      "description": "선택(N). 스테이지별 경과(ContextPack.diagnostics.latency_ms 원천; 미해결 이슈 2)"
+    }
+  },
+  "required": [
+    "schema_version",
+    "schema_type",
+    "tenant_id",
+    "collection_ids",
+    "producer",
+    "warnings",
+    "degraded",
+    "created_at",
+    "ranked_set_id",
+    "plan_id",
+    "query_id",
+    "stage",
+    "hydrated",
+    "fusion",
+    "results",
+    "stats"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "enum": [
+              "reranked",
+              "postprocessed"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "rerank"
+        ],
+        "properties": {
+          "hydrated": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "const": "postprocessed"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "relevance_gate",
+          "postprocess_report"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "hydrated": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/$defs/HydratedRequired"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "rerank"
+        ],
+        "properties": {
+          "rerank": {
+            "required": [
+              "applied"
+            ],
+            "properties": {
+              "applied": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "results": {
+            "items": {
+              "required": [
+                "rerank_raw_score",
+                "rerank_normalized_score",
+                "rerank_rank"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "RerankerId": {
+      "type": "string",
+      "pattern": "^reranker\\.[a-z][a-z0-9_]*$",
+      "description": "reranker 확장 지점의 plugin_id(바이블 §6.1)"
+    },
+    "FusionWeights": {
+      "type": "object",
+      "description": "채널 가중(키는 Channel 열거로 닫힘). 기본 dense:sparse:lexical = 1:1:1",
+      "properties": {
+        "dense": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sparse": {
+          "type": "number",
+          "minimum": 0
+        },
+        "lexical": {
+          "type": "number",
+          "minimum": 0
+        },
+        "graph": {
+          "type": "number",
+          "minimum": 0
+        },
+        "tree": {
+          "type": "number",
+          "minimum": 0
+        },
+        "visual": {
+          "type": "number",
+          "minimum": 0
+        },
+        "late_interaction": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "minProperties": 1,
+      "additionalProperties": false
+    },
+    "FusionReport": {
+      "type": "object",
+      "description": "실제 적용된 융합 설정과 결과 수(바이블 §5.5 fusion)",
+      "properties": {
+        "method": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/FusionMethod"
+        },
+        "k": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "RRF k(기본 60). 프로파일 필수값의 사본"
+        },
+        "weights": {
+          "$ref": "#/$defs/FusionWeights"
+        },
+        "variant_query_weight": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "description": "변형 질의 런의 가중(기본 0.5; original은 1.0). = QueryPlan.fusion.variant_query_weight(09 §6.6과 같은 범위)"
+        },
+        "candidates_in": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "= CandidateSet.total_unique"
+        },
+        "candidates_out": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "hydrate.top_n 절단 후 수(= fused 단계 results.length)"
+        },
+        "downgraded_from": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/FusionMethod",
+          "description": "convex_* → rrf 강등 시 원 방식(degraded{fusion, profile_mismatch} 동반)"
+        }
+      },
+      "required": [
+        "method",
+        "k",
+        "weights",
+        "variant_query_weight",
+        "candidates_in",
+        "candidates_out"
+      ],
+      "additionalProperties": false
+    },
+    "RerankReport": {
+      "type": "object",
+      "description": "리랭크 적용 보고(바이블 §5.5 rerank). applied=false면 fused 순서 폴백 + results[].explain에 rerank_skipped",
+      "properties": {
+        "applied": {
+          "type": "boolean"
+        },
+        "plugin_id": {
+          "$ref": "#/$defs/RerankerId"
+        },
+        "model_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ModelId"
+        },
+        "backend": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/RerankBackend"
+        },
+        "response_schema": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/RerankResponseSchema"
+        },
+        "normalization": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ScoreNormalization"
+        },
+        "top_n_in": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "top_n_out": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "took_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped_reason": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "applied=false일 때 필수. 카탈로그 코드 rerank.timeout(타임아웃; degraded{rerank, timeout}) 또는 DegradedReason 값 unavailable(리랭커 5xx·연결 실패; degraded{rerank, unavailable}), latency_budget, skipped_by_policy(문서 §7)"
+        }
+      },
+      "required": [
+        "applied",
+        "plugin_id",
+        "model_id",
+        "backend",
+        "response_schema",
+        "normalization",
+        "top_n_in",
+        "top_n_out",
+        "took_ms"
+      ],
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "applied": {
+            "const": false
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "skipped_reason"
+        ]
+      }
+    },
+    "LateInteractionRerankReport": {
+      "type": "object",
+      "description": "2단 리랭크 1단(MaxSim) 보고. 현재는 순서 필터(재융합 없음)",
+      "properties": {
+        "applied": {
+          "type": "boolean"
+        },
+        "model_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ModelId"
+        },
+        "top_n_in": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "top_n_out": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "took_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "applied",
+        "model_id",
+        "top_n_in",
+        "top_n_out",
+        "took_ms"
+      ],
+      "additionalProperties": false
+    },
+    "RelevanceGateReport": {
+      "type": "object",
+      "description": "relevance_gate 결과. passed = (max_score >= tau)",
+      "properties": {
+        "tau": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "게이트 평가 시점 max(final_score); 입력이 비었으면 0"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "quality 변형의 재작성·필터 완화 재검색 횟수(최대 1)"
+        }
+      },
+      "required": [
+        "tau",
+        "max_score",
+        "passed",
+        "retries"
+      ],
+      "additionalProperties": false
+    },
+    "PostprocessStepReport": {
+      "type": "object",
+      "properties": {
+        "step": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/PostprocessStep"
+        },
+        "removed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "results에서 omitted로 옮긴 수"
+        },
+        "added": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "results에 추가된 수(parent_expand의 부모 항목)"
+        },
+        "took_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "step",
+        "removed",
+        "added",
+        "took_ms"
+      ],
+      "additionalProperties": false
+    },
+    "PostprocessReport": {
+      "type": "object",
+      "description": "실행된 단계 보고. 순서는 고정 순서 relevance_gate → dedup → mmr → parent_expand → dedup → sentence_window → compress의 부분 수열(생략된 옵션 단계는 기록하지 않음)",
+      "properties": {
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PostprocessStepReport"
+          },
+          "maxItems": 7
+        }
+      },
+      "required": [
+        "steps"
+      ],
+      "additionalProperties": false
+    },
+    "ChannelRunSummary": {
+      "type": "object",
+      "description": "CandidateSet.channel_runs[]의 후보·오류 없는 요약(선택 필드 channel_runs의 원소)",
+      "properties": {
+        "channel_run_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ChannelRunId"
+        },
+        "channel": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Channel"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "variant_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "status": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/ChannelRunStatus"
+        },
+        "returned": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300
+        },
+        "total_hits": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "took_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "index_generation_seen": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "channel_run_id",
+        "channel",
+        "collection_id",
+        "variant_id",
+        "status",
+        "returned",
+        "total_hits",
+        "truncated",
+        "took_ms",
+        "index_generation_seen"
+      ],
+      "additionalProperties": false
+    },
+    "RankedOmittedEntry": {
+      "type": "object",
+      "description": "hydrate·postprocess가 results에서 제거한 항목. reason은 OmitReason의 부분집합(below_threshold, duplicate, parent_merged, hydrate_missing). 11-context-pack의 PackOmittedEntry(4필드)와 형태가 달라 이름을 구별한다; pack이 4필드로 투영하고 acl_denied·budget_exceeded·risk_flagged·item_kind_excluded를 더해 ContextPack.omitted를 만든다",
+      "properties": {
+        "chunk_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64"
+        },
+        "collection_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "document_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Ulid"
+        },
+        "reason": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/OmitReason",
+          "enum": [
+            "below_threshold",
+            "duplicate",
+            "parent_merged",
+            "hydrate_missing"
+          ]
+        },
+        "step": {
+          "oneOf": [
+            {
+              "$ref": "urn:rag:schema:common-types:1#/$defs/PostprocessStep"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "제거한 후처리 단계. hydrate_missing은 null"
+        },
+        "related_chunk_id": {
+          "$ref": "urn:rag:schema:common-types:1#/$defs/Hex64",
+          "description": "duplicate면 대표 chunk_id, parent_merged면 부모 chunk_id"
+        },
+        "explain": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rag:schema:common-types:1#/$defs/ExplainCode"
+          },
+          "description": "제거 시점의 explain 코드(hydrate_missing, below_gate, deduped 포함)"
+        }
+      },
+      "required": [
+        "chunk_id",
+        "collection_id",
+        "document_id",
+        "reason",
+        "step"
+      ],
+      "additionalProperties": false
+    },
+    "RankedSetStats": {
+      "type": "object",
+      "description": "바이블 §5.5 stats",
+      "properties": {
+        "n_in": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "이 스테이지 입력 항목 수(fused: candidates_in; reranked: hydrated_n; postprocessed: rerank 출력 수)"
+        },
+        "n_out": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "= results.length"
+        },
+        "hydrated_n": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "hydrate가 채운 항목 수(hydrated=false면 0)"
+        },
+        "gate_passed": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "relevance_gate.passed의 사본. postprocessed 이전은 null"
+        }
+      },
+      "required": [
+        "n_in",
+        "n_out",
+        "hydrated_n",
+        "gate_passed"
+      ],
+      "additionalProperties": false
+    },
+    "TimingsMs": {
+      "type": "object",
+      "description": "스테이지별 경과(ms). 값이 없는 스테이지는 키를 생략",
+      "properties": {
+        "retrieve": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fuse": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hydrate": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rerank": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "postprocess": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "minProperties": 1,
+      "additionalProperties": false
+    },
+    "ResultParentRule": {
+      "description": "record_id = null ⇔ item_kind = parent(부모 확장 항목은 인덱스 레코드가 없다); 부모는 level 1, parent_chunk_id = null(level 1 위로는 확장하지 않는다)이고 expanded_from을 갖는다",
+      "if": {
+        "properties": {
+          "item_kind": {
+            "const": "parent"
+          }
+        },
+        "required": [
+          "item_kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "record_id": {
+            "type": "null"
+          },
+          "level": {
+            "const": 1
+          },
+          "parent_chunk_id": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "expanded_from"
+        ]
+      },
+      "else": {
+        "properties": {
+          "record_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "HydratedRequired": {
+      "description": "hydrated=true일 때 results[] 조건 필수(바이블 §5.5; hydrate가 IndexRecord payload에서 채운다)",
+      "required": [
+        "text",
+        "context_prefix",
+        "heading_path",
+        "numbering_path",
+        "title",
+        "source_uri",
+        "external_id",
+        "doc_date",
+        "doc_type",
+        "page_start",
+        "page_end",
+        "lang",
+        "text_source",
+        "ocr_confidence_min",
+        "chunk_set_blake3",
+        "acl",
+        "block_refs",
+        "sentence_spans"
+      ]
+    }
+  }
+}
