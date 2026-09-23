@@ -1,0 +1,2388 @@
+{
+ "date": "2026-09-23T07:19:01.257Z",
+ "root": "C:\\Workspaces\\rag-platform",
+ "A1_links": [],
+ "A2_frontmatter": [],
+ "A3_spelling": [
+  {
+   "file": "00-vision/00-design-brief.md",
+   "line": 24,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "ed-Here 금지**. 파서(Docling, Unstructured, PyMuPDF, python-hwpx 등), 청커(Docling HybridChunk",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/00-design-brief.md",
+   "line": 66,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "ing(레이아웃·표) + pypdfium2/pdftext(고속 텍스트; PyMuPDF는 AGPL이라 인프로세스 제외, 옵트인 사이드카만) + OCR(기본 R",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/00-design-brief.md",
+   "line": 66,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "ADR-0006, ADR-0007, ADR-0008) | R1, R2; PyMuPDF AGPL 인프로세스 링크, pyhwp AGPL·2020년 이후 무릴리스",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/00-design-brief.md",
+   "line": 66,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "t(GPLv3, 격리 컨테이너 `lo-sidecar`, opt-in); pyhwp는 AGPL 선택 플러그인; 배포용 문서는 테넌트 옵트인 시 Tika `",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/00-design-brief.md",
+   "line": 66,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "-0008) | R1, R2; PyMuPDF AGPL 인프로세스 링크, pyhwp AGPL·2020년 이후 무릴리스, H2Orestart GPLv3(MI",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/00-design-brief.md",
+   "line": 62,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": "eaweedFS**(둘 다 Apache-2.0, ADR 실측 후 택1; MinIO는 2026-04 아카이브·AGPL 소스 전용 전환으로 제외), 개발은 ",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/00-design-brief.md",
+   "line": 62,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": "edis 8.0+ RSALv2/SSPLv1/AGPLv3 삼중 라이선스, MinIO 유지보수 종료 | | D-15 | 벡터 인덱스 **기본 Qdrant**",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/00-design-brief.md",
+   "line": 62,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": " 제외), 개발은 `file://`), **Valkey**(BSD-3, Redis 프로토콜 호환; 캐시·레이트리밋·멱등 키·MCP 커서·질의 임베딩 캐시",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/00-design-brief.md",
+   "line": 62,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "로토콜 호환; 캐시·레이트리밋·멱등 키·MCP 커서·질의 임베딩 캐시; Redis 8은 호환 옵션), 벡터/렉시컬 인덱스는 D-15에 따름 (개정 v1.",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/00-design-brief.md",
+   "line": 62,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "5에 따름 (개정 v1.1, 근거: ADR-0011) | 검증된 표준; Redis 8.0+ RSALv2/SSPLv1/AGPLv3 삼중 라이선스, MinI",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/00-design-brief.md",
+   "line": 64,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "TEI(dense 전용 모델·리랭커) + 인프로세스(개발·lite)**(Infinity는 sparse 미지원·릴리스 정체로 제외; 같은 공간 내 서빙 교체는 ",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/00-design-brief.md",
+   "line": 64,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "9, ADR-0010) | 다국어·한국어 성능, 오픈 라이선스; TEI/Infinity로는 BGE-M3 sparse를 생산할 수 없어 원 결정이 실현 불가 |",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/00-design-brief.md",
+   "line": 75,
+   "token": "SPLADE-v3",
+   "hint": "제외(O-02)",
+   "context": "셋 기준 - O-02 sparse 표현: BGE-M3 sparse vs SPLADE-v3 vs OpenSearch neural sparse - O-03 Grap",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/01-vision-and-goals.md",
+   "line": 354,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "greSQL, S3 호환(RustFS·SeaweedFS), Valkey(Redis 호환), Qdrant, OpenSearch)으로 운영. 관측 가능한 파",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 168,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": " | `IsolationMode` 열거(§7.4). AGPL 라이브러리(PyMuPDF, pyhwp)는 sidecar 격리 대상이다. | | 사이드카 변환 계",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 385,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "ADR] | ADR-0001. 아래 \"기본 구성요소\"의 라이선스 재검토(PyMuPDF·pyhwp·MinIO·Redis 등)가 이 등급표를 근거로 한다. | ",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 456,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "ListItem 등). 어댑터로 변환한다. | [PL-03] | | | PyMuPDF | PyMuPDF (fitz) | MuPDF 기반 고속 PDF 텍스트·",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 456,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "). 어댑터로 변환한다. | [PL-03] | | | PyMuPDF | PyMuPDF (fitz) | MuPDF 기반 고속 PDF 텍스트·이미지 추출 라이브",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 456,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "um2 + pdftext로 대체(D-18 개정, ADR-0006);** PyMuPDF는 AGPL 옵트인 사이드카로만 허용된다. | [PL-05] | 대안·기",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 168,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "tionMode` 열거(§7.4). AGPL 라이브러리(PyMuPDF, pyhwp)는 sidecar 격리 대상이다. | | 사이드카 변환 계약 | `PO",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 385,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "DR-0001. 아래 \"기본 구성요소\"의 라이선스 재검토(PyMuPDF·pyhwp·MinIO·Redis 등)가 이 등급표를 근거로 한다. | ### 기",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 437,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "wp-hwpx-parser → LibreOffice(opt-in)`다. pyhwp는 AGPL 선택 플러그인으로 강등된다. | | HWPX | HWPX |",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 445,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": ", [PL-06] | Python olefile로 열 수 있다. | | pyhwp | pyhwp (hwp5) | HWP 5.0 파서 Python 라이브러",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 445,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "] | Python olefile로 열 수 있다. | | pyhwp | pyhwp (hwp5) | HWP 5.0 파서 Python 라이브러리(`hwp5t",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 370,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": " 로컬은 RustFS 또는 SeaweedFS(D-14 v1.3 변경 → MinIO 대체, ADR-0011). | [A-04] | | | 스냅샷 | Sna",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 385,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": "1. 아래 \"기본 구성요소\"의 라이선스 재검토(PyMuPDF·pyhwp·MinIO·Redis 등)가 이 등급표를 근거로 한다. | ### 기본 구성요소",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 398,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": "0011). | [A-04], [OPS-01] | **v1.3 변경 → MinIO 대체(ADR-0011).** MinIO는 2026-04 아카이브·AGP",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 398,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": "01] | **v1.3 변경 → MinIO 대체(ADR-0011).** MinIO는 2026-04 아카이브·AGPL 전환으로 대안·기각됐다. | ## ",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 299,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "재처리 비용을 줄인다. | [PL-12], [A-04] | Valkey(Redis 호환, D-14 v1.3 변경 → ADR-0011) 또는 아티팩트 저장",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 359,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "te Limit | 테넌트·API 키 단위 요청 수 제한. Valkey(Redis 호환 KV) 기반(D-14 v1.3 변경 → ADR-0011). | [",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 385,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "\"기본 구성요소\"의 라이선스 재검토(PyMuPDF·pyhwp·MinIO·Redis 등)가 이 등급표를 근거로 한다. | ### 기본 구성요소 D-14",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 394,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "y | 캐시(임베딩 캐시 등)와 레이트 리밋의 기본 저장소(D-14). Redis 호환 API를 제공하는 BSD 라이선스 포크. | [A-04], [AP",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 394,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "선스 포크. | [A-04], [API-01] | **v1.3 변경 → Redis 대체(ADR-0011).** Redis는 8.x 삼중 라이선스 전환으로",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 181,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "점. 모델과 서빙 백엔드(vLLM pooling, TEI, 인프로세스; Infinity는 기각—ADR-0009)를 감싼다. | [PL-12] | | | 인덱스",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 298,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "ADR-0010):** vLLM pooling + TEI + 인프로세스(Infinity는 BGE-M3 sparse 생산이 불가해 기각). | [PL-12], ",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "line": 289,
+   "token": "SPLADE-v3",
+   "hint": "제외(O-02)",
+   "context": "장한다. | [C-07] | 기본 BGE-M3 sparse(O-02). SPLADE-v3는 검토 후 기각(ADR-0014); OpenSearch neural s",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 466,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "ypdfium2 + pdftext(고속 텍스트, D-18 v1.1) | PyMuPDF(AGPL)는 인프로세스 제외, 기각·대체(ADR-0006) — 필요 시",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 520,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "Java 사이드카) | AGPL-3.0(확인 필요) | 사이드카 | | PyMuPDF | PDF 고속 텍스트(기본 경로 아님 — ADR-0006, D-18 ",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 668,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "uest.md), I-17 | | I-09 | 해소(ADR-0006): PyMuPDF(AGPL 추정)의 사이드카 격리 vs Docling 자체 PDF 백엔드",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 668,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "pache-2.0) + pdftext로 대체 확정(D-18 v1.1). PyMuPDF는 인프로세스 제외, 필요 시 옵트인 사이드카만 | [기술 조사 요약](",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 464,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "eOffice(H2Orestart, GPLv3 격리, opt-in) | pyhwp는 AGPL 선택 플러그인(기본 경로 아님, 기각·대체 — ADR-000",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 519,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "e), H2Orestart 확인 필요 | 사이드카(변환 서비스) | | pyhwp/hwp5 | HWP 5.0 파싱(선택 플러그인 — ADR-0007, 기",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 546,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": "----| | `s3://` | **1급** | 코어 | AWS S3, MinIO, Ceph RGW 등 S3 호환 | IAM 역할, 액세스 키, STS ",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 55,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "로우 엔진(Temporal), 저장소(PostgreSQL, S3 호환, Redis — 라이선스 확인 필요, I-13) | 어댑터로 감싸서 계약에 맞춘다.",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 415,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "트리벌 결과 캐싱(동일 질의) | **포함** | D-14 Valkey(Redis 호환) 캐시(ADR-0011; 잔여 라이선스 확인 범위는 I-13). ",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 672,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "parser-txt-md-and-others.md) | | I-13 | Redis 라이선스 변경(RSAL/SSPL, 이후 AGPL 옵션) 대응 | D-0",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 672,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "후 AGPL 옵션) 대응 | D-02상 네트워크 분리 서비스로 실행하는 Redis 서버 자체는 위반이 아니다. D-14 기본값은 이미 Valkey(BSD",
+   "likely_ok": false
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 672,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "자체는 위반이 아니다. D-14 기본값은 이미 Valkey(BSD-3, Redis 호환)로 확정되었다(ADR-0011). 잔여 확인 범위는 (a) 배포 ",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 55,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": " 청커, 임베딩·리랭커 모델과 서빙 엔진 TEI·vLLM pooling(Infinity는 제외, D-16 v1.1), 인덱스 백엔드(Qdrant, OpenSe",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 216,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "3 dense·sparse, TEI·vLLM pooling 서빙 어댑터(Infinity는 sparse 미지원으로 제외 — D-16 v1.1, ADR-0009)",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 336,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "----|------| | **제외 이유** | D-16은 TEI 또는 Infinity를 서빙으로 채택한다. 추론 최적화(배칭·양자화·커널)는 전문 프로젝트의",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 337,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "하는 훅** | `embedder`·`reranker` 어댑터(TEI, Infinity, sentence-transformers 인프로세스, OpenAI 호환",
+   "likely_ok": true
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "line": 567,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "ling CPU 또는 인프로세스 sentence-transformers(Infinity 제외 — D-16 v1.1) | 로컬 개발, 데모, CI 통합 테스트 ",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "line": 582,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "러리) | 파서 | Apache-2.0 | 허용 | 코어 어댑터 | | PyMuPDF(MuPDF) | 고속 PDF 텍스트 | AGPL-3.0(상업 라이선스 ",
+   "likely_ok": false
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "line": 745,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "-|---|---| | ISS-NFR-01 | 해소(ADR-0006): PyMuPDF는 AGPL-3.0이라 D-18의 \"PDF 고속 텍스트\" 경로에서 기각(",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "line": 589,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "미분류 | 확인 후 어댑터 또는 자체 OWPML 파서(D-18) | | pyhwp | HWP 5.0 파서 | AGPL-3.0(확인 필요) | 조건부 | ",
+   "likely_ok": false
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "line": 747,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "4, §14.3 | | ISS-NFR-03 | 해소(ADR-0007): pyhwp(AGPL 추정), Surya(GPL) 등 GPL 계열 파서·OCR의 사",
+   "likely_ok": false
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "line": 747,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": " 1차 경로는 Apache-2.0 Java 사이드카(ADR-0007), pyhwp는 AGPL 선택 플러그인으로 격리. Surya(OCR)는 별도 서비스·",
+   "likely_ok": false
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "line": 502,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": " | | NFR-PORT-05 | S3 호환 스토리지 어디서나 동작한다(MinIO, Ceph RGW, AWS S3, 호환 게이트웨이) | 호환성 테스트 ",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "line": 552,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": "GPL-3.0 | 금지 | 허용(D-02: 네트워크 분리 컨테이너, 예 MinIO) | 조건부(가중치는 별도 검토) | 코어 이미지에 포함 금지, 수정 ",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "line": 579,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": " 8은 호환 옵션 — ISS-NFR-02 해소(ADR-0011) | | MinIO | 로컬 오브젝트 스토리지 | AGPL-3.0 | 조건부 | 별도 컨테",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "line": 90,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "U/32 GB), PostgreSQL HA(2, 스트리밍 복제), 캐시(Redis 호환, ISS-NFR-02) 복제 2 + 자동 페일오버, Tempora",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "line": 272,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "가 시 세션 친화성 요구 | 없음(모든 상태는 PostgreSQL·캐시(Redis 호환)·Temporal) | M7, M1 | P0 | | NFR-SCA",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "line": 578,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "덱스(Nori) | Apache-2.0 | 허용 | 별도 서비스 | | Redis | 캐시·레이트리밋 | 7.2 이하 BSD-3; 7.4 이후 RSALv",
+   "likely_ok": false
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "line": 578,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "추가(확인 필요) | 조건부 | Valkey 기본(D-14 v1.1), Redis 8은 호환 옵션 — ISS-NFR-02 해소(ADR-0011) | | ",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "line": 746,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "R-CMP-03 | | ISS-NFR-02 | 해소(ADR-0011): Redis 7.4 이후 라이선스 변경(RSALv2/SSPL, 8.x AGPL 추가",
+   "likely_ok": false
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "line": 595,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "빙 | Apache-2.0(확인 필요) | 허용 | 별도 서비스 | | Infinity | 임베딩 서빙 대안 | MIT | 허용 | 별도 서비스 | | sen",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "line": 621,
+   "token": "SPLADE-v3",
+   "hint": "제외(O-02)",
+   "context": "RE 계열 | 한국어 특화 대체 | 확인 필요 | 확인 후 결정 | | SPLADE-v3 | sparse 대체(O-02) | 확인 필요(이전 버전 비상업 조건 ",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/03-personas-and-use-cases.md",
+   "line": 865,
+   "token": "exclude_chunk_ids",
+   "hint": "exclude_ids",
+   "context": "가 없다. | `QueryRequest`에 제외 청크 ID 목록(예: `exclude_chunk_ids`) 또는 세션 ID 기반 서버 측 중복 제거를 계약 문서에서 검토한다.",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/03-personas-and-use-cases.md",
+   "line": 360,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "한다(pypdfium2 + pdftext 고속 텍스트 추출, D-18; PyMuPDF는 AGPL로 기각, ADR-0006). 3. 텍스트 레이어가 없거나 페",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/03-personas-and-use-cases.md",
+   "line": 298,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "| | 대안 흐름 | A1(5단계): 파일이 HWP 5.0 바이너리이면 pyhwp/hwp5 → LibreOffice 폴백 경로로 파싱한다(D-18, **",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/03-personas-and-use-cases.md",
+   "line": 62,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "로 제공한다. 표준 스택(PostgreSQL, S3 호환, Valkey(Redis 호환, D-14 v1.1), Qdrant, OpenSearch, Tem",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/03-personas-and-use-cases.md",
+   "line": 266,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "nts/{tenant_id}`, 1.3.0). 레이트리밋은 Valkey(Redis 호환) 기반(D-14 v1.1). 4. 플랫폼이 테넌트 격리 자원을 준",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/03-personas-and-use-cases.md",
+   "line": 460,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "또는 보존 기간 후 삭제로 표시한다. 5. 리트리벌 캐시(Valkey, Redis 호환)에서 해당 문서 관련 항목을 무효화한다. 6. 모든 백엔드에서 제",
+   "likely_ok": true
+  },
+  {
+   "file": "01-requirements/04-user-stories-and-acceptance-criteria.md",
+   "line": 209,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "pache-2.0 Java 사이드카 → HWPX → OWPML 어댑터; pyhwp는 AGPL 선택 플러그인)가 본문 텍스트·단락 구조·표·이미지를 추출하",
+   "likely_ok": false
+  },
+  {
+   "file": "02-architecture/01-system-overview.md",
+   "line": 185,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "5.0 폴백 파서)·`rag-plugin-pymupdf-sidecar`(PyMuPDF, PDF 파서) — 라이선스 C 등급(AGPL), 격리 등급 `side",
+   "likely_ok": false
+  },
+  {
+   "file": "02-architecture/01-system-overview.md",
+   "line": 580,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": " 폴백 Tesseract 5.5 `kor+eng`·`kor_vert`; PyMuPDF는 AGPL이라 옵트인 사이드카만([ADR-0006](../06-adr/",
+   "likely_ok": false
+  },
+  {
+   "file": "02-architecture/01-system-overview.md",
+   "line": 185,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "-06 `lo-sidecar`와 동일 패턴)**: `rag-plugin-pyhwp-sidecar`(pyhwp, HWP 5.0 폴백 파서)·`rag-plu",
+   "likely_ok": false
+  },
+  {
+   "file": "02-architecture/01-system-overview.md",
+   "line": 185,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "`와 동일 패턴)**: `rag-plugin-pyhwp-sidecar`(pyhwp, HWP 5.0 폴백 파서)·`rag-plugin-pymupdf-sid",
+   "likely_ok": false
+  },
+  {
+   "file": "02-architecture/01-system-overview.md",
+   "line": 185,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md)). ### 3.3 핵심 아이디어(K1~K7)의 ",
+   "likely_ok": false
+  },
+  {
+   "file": "02-architecture/01-system-overview.md",
+   "line": 231,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "AGPL 이미지·플러그인(`lo-sidecar`, `rag-plugin-pyhwp-sidecar`, `rag-plugin-pymupdf-sidecar`)",
+   "likely_ok": false
+  },
+  {
+   "file": "02-architecture/01-system-overview.md",
+   "line": 579,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "hwpx-parser 1.0 → `lo-sidecar`(opt-in); pyhwp는 AGPL 선택 플러그인([ADR-0007](../06-adr/0007",
+   "likely_ok": false
+  },
+  {
+   "file": "02-architecture/01-system-overview.md",
+   "line": 572,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": " `file://` | A | 클라우드 S3, Apache Ozone; MinIO 제외(2026-04 아카이브·AGPL)([ADR-0011](../06-",
+   "likely_ok": true
+  },
+  {
+   "file": "02-architecture/01-system-overview.md",
+   "line": 178,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "그룹 확장 캐시, 부모 텍스트 캐시 | Valkey 9.x(BSD-3, Redis 프로토콜 호환) | 복제 + 자동 페일오버(ENV-M) | 휘발(정확성",
+   "likely_ok": true
+  },
+  {
+   "file": "02-architecture/01-system-overview.md",
+   "line": 573,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "-13 | | KV 캐시 | Valkey 9.x(BSD-3) | A | Redis 8은 C 등급 분리 서비스 옵션 | C-14 | | 벡터 인덱스 | Q",
+   "likely_ok": false
+  },
+  {
+   "file": "02-architecture/01-system-overview.md",
+   "line": 576,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "ality-max` Qwen3-Embedding-4B(게이트 +2p); Infinity·jina 계열 제외([ADR-0009](../06-adr/0009-em",
+   "likely_ok": true
+  },
+  {
+   "file": "02-architecture/02-component-architecture.md",
+   "line": 850,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "al]`(ranx·ir_measures·ragas·deepeval) | PyMuPDF·pyhwp(둘 다 AGPL, 대안·기각 — [ADR-0006](../0",
+   "likely_ok": true
+  },
+  {
+   "file": "02-architecture/02-component-architecture.md",
+   "line": 850,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "x·ir_measures·ragas·deepeval) | PyMuPDF·pyhwp(둘 다 AGPL, 대안·기각 — [ADR-0006](../06-adr/",
+   "likely_ok": true
+  },
+  {
+   "file": "02-architecture/02-component-architecture.md",
+   "line": 850,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md))·H2Orestart 등 C 등급, Grafana",
+   "likely_ok": false
+  },
+  {
+   "file": "02-architecture/04-storage-architecture.md",
+   "line": 367,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": "-2.0; ADR-0011 실측 후 택1, 바이블 미해결 이슈 #6). MinIO는 제외(2026-04 아카이브·AGPL) | | 개발 | `file:/",
+   "likely_ok": true
+  },
+  {
+   "file": "02-architecture/04-storage-architecture.md",
+   "line": 695,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "h | ## 6. Valkey 용도 Valkey 9.x(BSD-3, Redis 프로토콜 호환; [ADR-0011](../06-adr/0011-kv-a",
+   "likely_ok": true
+  },
+  {
+   "file": "02-architecture/04-storage-architecture.md",
+   "line": 723,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "는 `valkey-py`) 버전 확인 필요(as of 2026-09); Redis 8은 호환 옵션(C 등급 분리 컨테이너) | ## 7. 일관성 모델 ",
+   "likely_ok": true
+  },
+  {
+   "file": "02-architecture/05-plugin-architecture.md",
+   "line": 847,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": " Helm `optIn.loSidecar` | | `rag-plugin-pyhwp-sidecar`(대안·기각 후 격리 사이드카 — pyhwp는 ADR-0",
+   "likely_ok": true
+  },
+  {
+   "file": "02-architecture/05-plugin-architecture.md",
+   "line": 847,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "plugin-pyhwp-sidecar`(대안·기각 후 격리 사이드카 — pyhwp는 ADR-0007이 정본 경로에서 대안·기각하고 최후 폴백으로만 격리)",
+   "likely_ok": true
+  },
+  {
+   "file": "02-architecture/05-plugin-architecture.md",
+   "line": 847,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "g-platform-gpl-sidecars` | `parser.hwp5_pyhwp_sidecar` / `parser.pdf_pymupdf_sidecar`",
+   "likely_ok": false
+  },
+  {
+   "file": "02-architecture/05-plugin-architecture.md",
+   "line": 857,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md)). - **결정:** 격리는 `in_process",
+   "likely_ok": false
+  },
+  {
+   "file": "02-architecture/05-plugin-architecture.md",
+   "line": 899,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [0009](../06-adr/0009-embe",
+   "likely_ok": false
+  },
+  {
+   "file": "02-architecture/08-deployment-architecture.md",
+   "line": 133,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": " AGPL 불가 대안 | AGPL 파서 사이드카(`rag-plugin-pyhwp-sidecar`, `rag-plugin-pymupdf-sidecar`)",
+   "likely_ok": true
+  },
+  {
+   "file": "02-architecture/08-deployment-architecture.md",
+   "line": 148,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "단 | C(GPL-3.0) | 없음 | 예 | | `rag-plugin-pyhwp-sidecar`(정본 경로 대안·기각 후 최후 폴백, ADR-0007)",
+   "likely_ok": true
+  },
+  {
+   "file": "02-architecture/08-deployment-architecture.md",
+   "line": 166,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "sidecar-agpl-parsers` | 이미지 `rag-plugin-pyhwp-sidecar`(정본 경로 대안·기각 후 옵트인 최후 폴백, ADR-0",
+   "likely_ok": true
+  },
+  {
+   "file": "02-architecture/08-deployment-architecture.md",
+   "line": 337,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "로파일 `parse.router.doc` 사용 가능 | | `optIn.pyhwpSidecar`(대안·기각 후 옵트인, ADR-0007), `optIn.",
+   "likely_ok": true
+  },
+  {
+   "file": "02-architecture/08-deployment-architecture.md",
+   "line": 770,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "pl-sidecars`의 `lo-sidecar`·`rag-plugin-{pyhwp,pymupdf}-sidecar`다(둘 다 정본 경로에서 대안·기각된 A",
+   "likely_ok": true
+  },
+  {
+   "file": "03-contracts/00-contract-overview.md",
+   "line": 507,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "`repr(float)`(최단 왕복 표현)와 같아야 하며, `NaN`/`Infinity`는 금지한다. 참조 구현(Python): ",
+   "likely_ok": true
+  },
+  {
+   "file": "03-contracts/00-contract-overview.md",
+   "line": 599,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "수: 정수 필드는 JSON 정수, 실수는 최단 왕복 표현, `NaN`/`Infinity` 금지, 64비트 초과 정수 없음. 시각·날짜·기간·언어는 §6.2 형",
+   "likely_ok": true
+  },
+  {
+   "file": "03-contracts/01-ingest-request.md",
+   "line": 289,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "pplication/json`, UTF-8, BOM 없음, `NaN`/`Infinity` 없음 | 00 §8.3 | 400 `contract.violation",
+   "likely_ok": false
+  },
+  {
+   "file": "03-contracts/02-source-document.md",
+   "line": 310,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md)). `SourceDocument.quality`는",
+   "likely_ok": false
+  },
+  {
+   "file": "03-contracts/02-source-document.md",
+   "line": 824,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [ADR-0036](../06-adr/0036-",
+   "likely_ok": false
+  },
+  {
+   "file": "03-contracts/02-source-document.md",
+   "line": 860,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [0027](../06-adr/0027-secu",
+   "likely_ok": false
+  },
+  {
+   "file": "03-contracts/03-parsed-document.md",
+   "line": 1398,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md)); 폴백 산출을 `degraded`로 볼지는 미정",
+   "likely_ok": false
+  },
+  {
+   "file": "03-contracts/03-parsed-document.md",
+   "line": 1425,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [0008](../06-adr/0008-ocr-",
+   "likely_ok": false
+  },
+  {
+   "file": "03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+   "line": 1626,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [0017](../06-adr/0017-even",
+   "likely_ok": false
+  },
+  {
+   "file": "03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+   "line": 1555,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "ics` 키 ⊇ `metrics_requested`, 값은 유한(NaN·Infinity 금지); `ndcg@k`는 선형 이득만이고 지수 이득은 `ndcg_ex",
+   "likely_ok": true
+  },
+  {
+   "file": "04-pipelines/03-parsing-router-and-format-detection.md",
+   "line": 661,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": " HWP 5.0 \"pyhwp + LibreOffice 폴백\", PDF \"PyMuPDF\", PDF(암호화) \"비지원\" 문구가 D-18 v1.1·ADR-0006",
+   "likely_ok": false
+  },
+  {
+   "file": "04-pipelines/03-parsing-router-and-format-detection.md",
+   "line": 24,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": " ../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md - ../06-adr/0008-ocr-defau",
+   "likely_ok": false
+  },
+  {
+   "file": "04-pipelines/03-parsing-router-and-format-detection.md",
+   "line": 51,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [ADR-0033](../06-adr/0033-",
+   "likely_ok": false
+  },
+  {
+   "file": "04-pipelines/03-parsing-router-and-format-detection.md",
+   "line": 643,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [ADR-0033](../06-adr/0033-",
+   "likely_ok": false
+  },
+  {
+   "file": "04-pipelines/03-parsing-router-and-format-detection.md",
+   "line": 647,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md). - **결정:** 폴백 진행 조건은 `parse",
+   "likely_ok": false
+  },
+  {
+   "file": "04-pipelines/03-parsing-router-and-format-detection.md",
+   "line": 661,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "-scope-and-non-goals.md) §6.2의 HWP 5.0 \"pyhwp + LibreOffice 폴백\", PDF \"PyMuPDF\", PDF(암",
+   "likely_ok": false
+  },
+  {
+   "file": "04-pipelines/04-parser-hwpx-and-hwp.md",
+   "line": 19,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": " ../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md - ../06-adr/0033-sidecar-c",
+   "likely_ok": false
+  },
+  {
+   "file": "04-pipelines/04-parser-hwpx-and-hwp.md",
+   "line": 155,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md) 재검토 조건 8). 라이브러리의 Markdown·",
+   "likely_ok": false
+  },
+  {
+   "file": "04-pipelines/04-parser-hwpx-and-hwp.md",
+   "line": 464,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md)가 이 문서와 [02-architecture/08]",
+   "likely_ok": false
+  },
+  {
+   "file": "04-pipelines/04-parser-hwpx-and-hwp.md",
+   "line": 472,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md) A4·DR3). 계약은 [ADR-0033](../",
+   "likely_ok": false
+  },
+  {
+   "file": "04-pipelines/04-parser-hwpx-and-hwp.md",
+   "line": 590,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md) 재검토 조건 7: 수요 확인 시 `lo-sidec",
+   "likely_ok": false
+  },
+  {
+   "file": "04-pipelines/04-parser-hwpx-and-hwp.md",
+   "line": 131,
+   "token": "pageBreak",
+   "hint": "열거값 camelCase 변형 → page_break"
+  },
+  {
+   "file": "04-pipelines/04-parser-hwpx-and-hwp.md",
+   "line": 136,
+   "token": "pageBreak",
+   "hint": "열거값 camelCase 변형 → page_break"
+  },
+  {
+   "file": "04-pipelines/04-parser-hwpx-and-hwp.md",
+   "line": 411,
+   "token": "pageBreak",
+   "hint": "열거값 camelCase 변형 → page_break"
+  },
+  {
+   "file": "04-pipelines/04-parser-hwpx-and-hwp.md",
+   "line": 411,
+   "token": "pageBreak",
+   "hint": "열거값 camelCase 변형 → page_break"
+  },
+  {
+   "file": "04-pipelines/05-parser-pdf.md",
+   "line": 78,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": " 플러그인 선언 | `sidecar` | C(옵트인, 별도 저장소) | PyMuPDF(AGPL-3.0/Artifex 상용 듀얼 — 인프로세스 기각, ADR-",
+   "likely_ok": true
+  },
+  {
+   "file": "04-pipelines/05-parser-pdf.md",
+   "line": 95,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "r-default-rapidocr-ppocrv5-korean.md)). PyMuPDF(AGPL-3.0, 대안·기각 — ADR-0006)·Poppler는 코어",
+   "likely_ok": true
+  },
+  {
+   "file": "04-pipelines/05-parser-pdf.md",
+   "line": 762,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": " 엔진만), `sidecar_image_digest`(`ocr-gpu`·PyMuPDF(AGPL) 옵트인 사이드카 경로만 non-null), `profile_",
+   "likely_ok": false
+  },
+  {
+   "file": "04-pipelines/05-parser-pdf.md",
+   "line": 784,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": " Tesseract(`kor_vert`·`pdf_airgapped`), PyMuPDF(AGPL-3.0)는 대안·기각 — C 등급 옵트인 사이드카만 허용([A",
+   "likely_ok": true
+  },
+  {
+   "file": "04-pipelines/06-parser-doc-and-docx.md",
+   "line": 597,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md)·[ADR-0008](../06-adr/0008-o",
+   "likely_ok": false
+  },
+  {
+   "file": "04-pipelines/06-parser-doc-and-docx.md",
+   "line": 635,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [0008](../06-adr/0008-ocr-",
+   "likely_ok": false
+  },
+  {
+   "file": "04-pipelines/12-embedding.md",
+   "line": 250,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "dense 전용 모델·리랭커) + 인프로세스(개발·`lite`)**이며 Infinity는 sparse 미지원·릴리스 정체로 제외한다. 같은 공간 내 서빙 교체",
+   "likely_ok": true
+  },
+  {
+   "file": "04-pipelines/12-embedding.md",
+   "line": 304,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "128]` 토큰 벡터 | 토큰 벡터별 L2 | 없음 | ### 4.3 Infinity 제외 Infinity(`infinity-emb`)는 README에 \"",
+   "likely_ok": true
+  },
+  {
+   "file": "04-pipelines/12-embedding.md",
+   "line": 306,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": " 토큰 벡터별 L2 | 없음 | ### 4.3 Infinity 제외 Infinity(`infinity-emb`)는 README에 \"BAAI/bge-m3, ",
+   "likely_ok": true
+  },
+  {
+   "file": "04-pipelines/12-embedding.md",
+   "line": 677,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "transformers ONNX int8, `lite`·개발·하네스); Infinity 제외; `batch_max_tokens`(8,192/32,768/65,",
+   "likely_ok": true
+  },
+  {
+   "file": "04-pipelines/12-embedding.md",
+   "line": 244,
+   "token": "SPLADE-v3",
+   "hint": "제외(O-02)",
+   "context": " 후보 | | jina v3/v4/v5, jina-colbert-v2, SPLADE-v3(`naver/splade-v3`, CC BY-NC-SA 4.0·영어 전",
+   "likely_ok": false
+  },
+  {
+   "file": "04-pipelines/12-embedding.md",
+   "line": 244,
+   "token": "SPLADE-v3",
+   "hint": "제외(O-02)",
+   "context": "(D) | — | — | **대안·기각**(O-02 sparse 결정 \"SPLADE-v3 제외\"; [ADR-0014](../06-adr/0014-sparse-r",
+   "likely_ok": true
+  },
+  {
+   "file": "04-pipelines/15-hybrid-search-and-fusion.md",
+   "line": 228,
+   "token": "SPLADE-v3",
+   "hint": "제외(O-02)",
+   "context": "erta-250k`)를 dense와 **같은 단일 패스**에서 얻는다. SPLADE-v3는 라이선스(CC BY-NC-SA)로 제외한다(바이블 §3.2 O-02,",
+   "likely_ok": true
+  },
+  {
+   "file": "04-pipelines/15-hybrid-search-and-fusion.md",
+   "line": 650,
+   "token": "SPLADE-v3",
+   "hint": "제외(O-02)",
+   "context": "14 §5.4). sparse 질의 인코딩은 BGE-M3 단일 패스이며 SPLADE-v3는 제외한다([ADR-0013](../06-adr/0013-fusion-",
+   "likely_ok": true
+  },
+  {
+   "file": "04-pipelines/16-reranking.md",
+   "line": 294,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "델·리랭커 1차, vLLM pooling = BGE-M3 3-in-1, Infinity 제외)를 따른다. | `backend` | 서버 | 엔드포인트·요청 ",
+   "likely_ok": true
+  },
+  {
+   "file": "04-pipelines/16-reranking.md",
+   "line": 305,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "rank` 고유 스키마(`texts`/`score`)라(07 §3.5; Infinity는 ADR-0009로 제외) 어댑터 하나가 요청·응답 필드 차이만 분기하",
+   "likely_ok": true
+  },
+  {
+   "file": "04-pipelines/16-reranking.md",
+   "line": 751,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "E-M3 colbert), 서빙 스택 조사(TEI·vLLM·SGLang·Infinity — Infinity는 대안·기각: sparse 미지원·릴리스 정체, 브",
+   "likely_ok": true
+  },
+  {
+   "file": "04-pipelines/16-reranking.md",
+   "line": 751,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "t), 서빙 스택 조사(TEI·vLLM·SGLang·Infinity — Infinity는 대안·기각: sparse 미지원·릴리스 정체, 브리프 D-16 개정 ",
+   "likely_ok": true
+  },
+  {
+   "file": "05-api/01-api-design-guidelines.md",
+   "line": 555,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "nguage` | | 수 | JSON 정수 / 최단 실수, `NaN`·`Infinity` 금지, 64비트 초과 없음 | 십진 문자열 | — | | 불리언 | ",
+   "likely_ok": true
+  },
+  {
+   "file": "06-adr/README.md",
+   "line": 132,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "pdate.md) | | ADR-0006 | PDF 고속 텍스트 경로: PyMuPDF 제거, pypdfium2 + pdftext | accepted | P1",
+   "likely_ok": false
+  },
+  {
+   "file": "06-adr/README.md",
+   "line": 132,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "t(`lite`), 레이아웃·표는 Docling(`standard`); PyMuPDF(AGPL, 인프로세스 대안·기각)는 별도 저장소의 옵트인 사이드카만 |",
+   "likely_ok": true
+  },
+  {
+   "file": "06-adr/README.md",
+   "line": 179,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": " 대안·기각, Redis 호환 Valkey로 전환), 0006·0007(PyMuPDF·pyhwp 대안·기각, AGPL·GPL 파서 격리). ### 4.2 ",
+   "likely_ok": true
+  },
+  {
+   "file": "06-adr/README.md",
+   "line": 184,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": " 텍스트 경로 — pypdfium2 + pdftext, Docling, PyMuPDF 제외. - [ADR-0007](0007-hwp5-java-sidecar",
+   "likely_ok": true
+  },
+  {
+   "file": "06-adr/README.md",
+   "line": 133,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": " | HWP 5.0 기본 경로: Apache-2.0 Java 사이드카, pyhwp 강등, H2Orestart GPL 격리 | accepted | P1 |",
+   "likely_ok": false
+  },
+  {
+   "file": "06-adr/README.md",
+   "line": 133,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "hwp-hwpx-parser → `lo-sidecar`(opt-in); pyhwp·H2Orestart는 대안·기각(GPL/AGPL 격리), `parser",
+   "likely_ok": true
+  },
+  {
+   "file": "06-adr/README.md",
+   "line": 133,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "록 | [0007](0007-hwp5-java-sidecar-first-pyhwp-demoted.md) | | ADR-0008 | OCR 기본값 Rapi",
+   "likely_ok": false
+  },
+  {
+   "file": "06-adr/README.md",
+   "line": 179,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "Redis 호환 Valkey로 전환), 0006·0007(PyMuPDF·pyhwp 대안·기각, AGPL·GPL 파서 격리). ### 4.2 파싱·문서 ",
+   "likely_ok": true
+  },
+  {
+   "file": "06-adr/README.md",
+   "line": 185,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "[ADR-0007](0007-hwp5-java-sidecar-first-pyhwp-demoted.md) HWP 5.0 기본 경로 — Java 사이드카 →",
+   "likely_ok": false
+  },
+  {
+   "file": "06-adr/README.md",
+   "line": 137,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": "L + S3 호환(RustFS 또는 SeaweedFS, 실측 후 택1; MinIO 대안·기각) + Valkey(Redis 호환 대체); Valkey는 가",
+   "likely_ok": true
+  },
+  {
+   "file": "06-adr/README.md",
+   "line": 179,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": " 링크 거부), 0022(관측 스택 AGPL·ELv2 경계), 0011(MinIO 대안·기각, Redis 호환 Valkey로 전환), 0006·0007(",
+   "likely_ok": true
+  },
+  {
+   "file": "06-adr/README.md",
+   "line": 137,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "aweedFS, 실측 후 택1; MinIO 대안·기각) + Valkey(Redis 호환 대체); Valkey는 가속기만이고 멱등 판정·ACL·잡 상태 정",
+   "likely_ok": true
+  },
+  {
+   "file": "06-adr/README.md",
+   "line": 179,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "(관측 스택 AGPL·ELv2 경계), 0011(MinIO 대안·기각, Redis 호환 Valkey로 전환), 0006·0007(PyMuPDF·pyhwp",
+   "likely_ok": true
+  },
+  {
+   "file": "06-adr/README.md",
+   "line": 135,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "9 | 임베딩 서빙: vLLM pooling + TEI + 인프로세스, Infinity 제외 | accepted | P1 | D-16 | 서빙은 vLLM po",
+   "likely_ok": true
+  },
+  {
+   "file": "06-adr/README.md",
+   "line": 135,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "in-1) + TEI(dense·리랭커) + 인프로세스(`lite`); Infinity 제외; 같은 `embedding_space_id` 안의 스택 교체는 코",
+   "likely_ok": true
+  },
+  {
+   "file": "09-operations/01-deployment-guide.md",
+   "line": 127,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "| | Valkey | 9 | compose | 3노드 또는 관리형 | Redis 7.2 명령 집합 호환([ADR-0011](../06-adr/0011-",
+   "likely_ok": true
+  },
+  {
+   "file": "09-operations/01-deployment-guide.md",
+   "line": 426,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "lica, Sentinel 또는 Cluster) | 관리형 Valkey/Redis 호환(Redis 8은 호환 옵션) | Redis 7.2 명령 집합, `",
+   "likely_ok": true
+  },
+  {
+   "file": "09-operations/01-deployment-guide.md",
+   "line": 426,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "tinel 또는 Cluster) | 관리형 Valkey/Redis 호환(Redis 8은 호환 옵션) | Redis 7.2 명령 집합, `maxmemory",
+   "likely_ok": true
+  },
+  {
+   "file": "09-operations/01-deployment-guide.md",
+   "line": 426,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "| 관리형 Valkey/Redis 호환(Redis 8은 호환 옵션) | Redis 7.2 명령 집합, `maxmemory-policy volatile-l",
+   "likely_ok": true
+  },
+  {
+   "file": "09-operations/02-configuration-reference.md",
+   "line": 147,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": ") | 필수 | `redis://` 또는 `rediss://`(TLS) Redis 호환 프로토콜 URL 하나 — 기본 배포는 Valkey이고 다른 호환 ",
+   "likely_ok": true
+  },
+  {
+   "file": "09-operations/05-security-and-compliance.md",
+   "line": 463,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "옵트인 사이드카), `rag-plugin-pymupdf-sidecar`(PyMuPDF, AGPL — 인프로세스 제외, ADR-0006 옵트인 사이드카), R",
+   "likely_ok": true
+  },
+  {
+   "file": "09-operations/05-security-and-compliance.md",
+   "line": 685,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "스트림(LibreOffice·H2Orestart, 대안·기각 pyhwp·PyMuPDF — §7.3, ADR-0006·ADR-0007) 결함은 업스트림으로 전",
+   "likely_ok": true
+  },
+  {
+   "file": "09-operations/05-security-and-compliance.md",
+   "line": 463,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": ", ADR-0006 대안·기각 후 옵트인 격리), `rag-plugin-pyhwp-sidecar`(pyhwp, GPL — 기본 파서 체인 제외, ADR-",
+   "likely_ok": true
+  },
+  {
+   "file": "09-operations/05-security-and-compliance.md",
+   "line": 463,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "각 후 옵트인 격리), `rag-plugin-pyhwp-sidecar`(pyhwp, GPL — 기본 파서 체인 제외, ADR-0007 옵트인 사이드카),",
+   "likely_ok": true
+  },
+  {
+   "file": "09-operations/05-security-and-compliance.md",
+   "line": 685,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "해 쓰는 업스트림(LibreOffice·H2Orestart, 대안·기각 pyhwp·PyMuPDF — §7.3, ADR-0006·ADR-0007) 결함은 ",
+   "likely_ok": true
+  },
+  {
+   "file": "09-operations/05-security-and-compliance.md",
+   "line": 463,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "F, AGPL — 인프로세스 제외, ADR-0006 옵트인 사이드카), Redis 8(SSPL/RSAL — 기본은 Valkey이며 Redis 8은 관리형",
+   "likely_ok": true
+  },
+  {
+   "file": "09-operations/05-security-and-compliance.md",
+   "line": 463,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "사이드카), Redis 8(SSPL/RSAL — 기본은 Valkey이며 Redis 8은 관리형 호환 옵션에 한정, ADR-0011)·Loki·Grafan",
+   "likely_ok": true
+  },
+  {
+   "file": "10-development/01-repository-structure.md",
+   "line": 39,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [ADR-0035](../06-adr/0035-",
+   "likely_ok": false
+  },
+  {
+   "file": "10-development/01-repository-structure.md",
+   "line": 44,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "ffice + H2Orestart, GPLv3), `rag-plugin-pyhwp-sidecar`·`rag-plugin-pymupdf-sidecar`(A",
+   "likely_ok": false
+  },
+  {
+   "file": "10-development/01-repository-structure.md",
+   "line": 634,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md)). - **결정:** 최상위 레이아웃은 바이블 §",
+   "likely_ok": false
+  },
+  {
+   "file": "10-development/01-repository-structure.md",
+   "line": 674,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [0018 API 규약](../06-adr/00",
+   "likely_ok": false
+  },
+  {
+   "file": "10-development/02-development-environment.md",
+   "line": 91,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md)). `lite` 프로파일에서 DOC은 `parse",
+   "likely_ok": false
+  },
+  {
+   "file": "10-development/02-development-environment.md",
+   "line": 93,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "는 PR은 거부한다 | | `fitz`/`pymupdf`, `hwp5`(pyhwp) | C 등급 임포트 금지(import-linter `forbidden",
+   "likely_ok": true
+  },
+  {
+   "file": "10-development/02-development-environment.md",
+   "line": 706,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [0008 OCR 기본값](../06-adr/0",
+   "likely_ok": false
+  },
+  {
+   "file": "10-development/03-coding-standards.md",
+   "line": 634,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "ity·jina 계열 모델(임베딩 서빙 대안·기각, ADR-0009), PyMuPDF·pyhwp(AGPL, 대안·기각, ADR-0001·ADR-0007), ",
+   "likely_ok": true
+  },
+  {
+   "file": "10-development/03-coding-standards.md",
+   "line": 631,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "----| | `fitz`, `pymupdf`(AGPL), `hwp5`(pyhwp, AGPL) | 저장소 전체 임포트 금지(import-linter 계약",
+   "likely_ok": true
+  },
+  {
+   "file": "10-development/03-coding-standards.md",
+   "line": 634,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": " 계열 모델(임베딩 서빙 대안·기각, ADR-0009), PyMuPDF·pyhwp(AGPL, 대안·기각, ADR-0001·ADR-0007), MinIO·",
+   "likely_ok": true
+  },
+  {
+   "file": "10-development/03-coding-standards.md",
+   "line": 634,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": "·pyhwp(AGPL, 대안·기각, ADR-0001·ADR-0007), MinIO·Redis 8(대안·기각, ADR-0011; Redis는 호환 클라이언",
+   "likely_ok": true
+  },
+  {
+   "file": "10-development/03-coding-standards.md",
+   "line": 634,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "(AGPL, 대안·기각, ADR-0001·ADR-0007), MinIO·Redis 8(대안·기각, ADR-0011; Redis는 호환 클라이언트로 Val",
+   "likely_ok": true
+  },
+  {
+   "file": "10-development/03-coding-standards.md",
+   "line": 634,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "R-0007), MinIO·Redis 8(대안·기각, ADR-0011; Redis는 호환 클라이언트로 Valkey만 허용) | 채택 제외 또는 C/D 등",
+   "likely_ok": true
+  },
+  {
+   "file": "10-development/03-coding-standards.md",
+   "line": 634,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "의존 금지, HTTP 어댑터만 | ADR-0035 부정 결과 5 | | Infinity·jina 계열 모델(임베딩 서빙 대안·기각, ADR-0009), PyM",
+   "likely_ok": true
+  },
+  {
+   "file": "10-development/07-contributing.md",
+   "line": 642,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": " | 항목 | 근거 | |---|------|------| | P1 | PyMuPDF(AGPL, 대안·기각 — ADR-0006)·Poppler·pyhwp(대",
+   "likely_ok": true
+  },
+  {
+   "file": "10-development/07-contributing.md",
+   "line": 642,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "PyMuPDF(AGPL, 대안·기각 — ADR-0006)·Poppler·pyhwp(대안·기각 — ADR-0007)·JPype·LibreOffice 임포트",
+   "likely_ok": true
+  },
+  {
+   "file": "10-development/07-contributing.md",
+   "line": 724,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [0008 OCR 기본값](../06-adr/0",
+   "likely_ok": false
+  },
+  {
+   "file": "10-development/07-contributing.md",
+   "line": 668,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "시 동작 명시; 판정 로직이 Valkey 값만으로 결정을 끝내지 않음; Redis 7.2 명령 집합만 | ADR-0011 (a)(b)(c) | | S2 ",
+   "likely_ok": true
+  },
+  {
+   "file": "11-roadmap/01-milestones.md",
+   "line": 648,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [ADR-0033](../06-adr/0033-",
+   "likely_ok": false
+  },
+  {
+   "file": "11-roadmap/01-milestones.md",
+   "line": 695,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [0008](../06-adr/0008-ocr-",
+   "likely_ok": false
+  },
+  {
+   "file": "11-roadmap/02-epics-and-backlog.md",
+   "line": 740,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [0008](../06-adr/0008-ocr-",
+   "likely_ok": false
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 113,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "된다. (1) 대안·기각(회귀 재유입 금지, 코어에 아예 쓰지 않음): PyMuPDF(대안·기각, ADR-0006 — `pdf_fast_cpu`로 대체), ",
+   "likely_ok": true
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 230,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": " 바이블 동기화 대상에 포함한다. 바이블 §15 #2의 기각 기술 문구(PyMuPDF·pyhwp·H2Orestart·MinIO·Redis 8·jina·Inf",
+   "likely_ok": true
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 230,
+   "token": "PyMuPDF",
+   "hint": "기본 경로 아님(ADR-0006) — 언급은 대안·기각 문맥이어야 함",
+   "context": "is 8·jina·Infinity·모델 지역/매출 제한)는 이 문서에서 PyMuPDF·pyhwp·H2Orestart·MinIO·Redis 8 → R-L-01",
+   "likely_ok": false
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 98,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md)) | 릴리스 파손 시 잠금 유지·범프 보류; 회귀",
+   "likely_ok": false
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 113,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(대안·기각, ADR-0006 — `pdf_fast_cpu`로 대체), pyhwp(대안·기각, ADR-0007 — Java 사이드카로 대체), MinIO",
+   "likely_ok": true
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 230,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": " 대상에 포함한다. 바이블 §15 #2의 기각 기술 문구(PyMuPDF·pyhwp·H2Orestart·MinIO·Redis 8·jina·Infinity·",
+   "likely_ok": true
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 230,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "a·Infinity·모델 지역/매출 제한)는 이 문서에서 PyMuPDF·pyhwp·H2Orestart·MinIO·Redis 8 → R-L-01, jina",
+   "likely_ok": false
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 440,
+   "token": "pyhwp",
+   "hint": "선택 플러그인(ADR-0007) — 기본 경로 문맥이면 위반",
+   "context": "(../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [0008](../06-adr/0008-ocr-",
+   "likely_ok": false
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 113,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": "pyhwp(대안·기각, ADR-0007 — Java 사이드카로 대체), MinIO(AGPLv3; 대안·기각, ADR-0011 — RustFS/Seawee",
+   "likely_ok": true
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 230,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": "5 #2의 기각 기술 문구(PyMuPDF·pyhwp·H2Orestart·MinIO·Redis 8·jina·Infinity·모델 지역/매출 제한)는 이 문",
+   "likely_ok": true
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 230,
+   "token": "MinIO",
+   "hint": "RustFS/SeaweedFS(ADR-0011)",
+   "context": "매출 제한)는 이 문서에서 PyMuPDF·pyhwp·H2Orestart·MinIO·Redis 8 → R-L-01, jina → R-L-02, 모델 지역/",
+   "likely_ok": false
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 113,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "기각, ADR-0011 — RustFS/SeaweedFS로 대체), 실 Redis(AGPLv3; 대안·기각, ADR-0011 — Valkey로 대체, \"",
+   "likely_ok": true
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 113,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "(AGPLv3; 대안·기각, ADR-0011 — Valkey로 대체, \"Redis 호환(Valkey)\"만 허용). (2) 옵트인 격리 사이드카(별도 저장",
+   "likely_ok": true
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 230,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "기각 기술 문구(PyMuPDF·pyhwp·H2Orestart·MinIO·Redis 8·jina·Infinity·모델 지역/매출 제한)는 이 문서에서 Py",
+   "likely_ok": true
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 230,
+   "token": "Redis",
+   "hint": "Valkey(ADR-0011) — \"Redis 호환\" 표현만 허용",
+   "context": "는 이 문서에서 PyMuPDF·pyhwp·H2Orestart·MinIO·Redis 8 → R-L-01, jina → R-L-02, 모델 지역/매출 제한 ",
+   "likely_ok": false
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 105,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "ooling` + `bge_m3_sparse_plugin` 하나(TEI·Infinity 대안·기각, ADR-0009). vLLM 릴리스로 pooling API",
+   "likely_ok": true
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 230,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "PDF·pyhwp·H2Orestart·MinIO·Redis 8·jina·Infinity·모델 지역/매출 제한)는 이 문서에서 PyMuPDF·pyhwp·H2Or",
+   "likely_ok": false
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 230,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "a → R-L-02, 모델 지역/매출 제한 → R-L-04로 대응한다. Infinity는 기각 사유가 라이선스가 아니라 실현 불가(TEI·Infinity로는 ",
+   "likely_ok": true
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 230,
+   "token": "Infinity",
+   "hint": "vLLM pooling + TEI(ADR-0009)",
+   "context": "다. Infinity는 기각 사유가 라이선스가 아니라 실현 불가(TEI·Infinity로는 BGE-M3 sparse 생산 불가, 바이블 D-16)이므로 이 문",
+   "likely_ok": true
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "line": 114,
+   "token": "SPLADE-v3",
+   "hint": "제외(O-02)",
+   "context": "BY-NC/Qwen Research), kanana(CC-BY-NC), SPLADE-v3(CC BY-NC-SA, 대안·기각 O-02/ADR-0014), ColQ",
+   "likely_ok": true
+  }
+ ],
+ "A4_id_prefix": {
+  "PB": {
+   "00-vision/01-vision-and-goals.md": 30,
+   "01-requirements/03-personas-and-use-cases.md": 16
+  },
+  "G": {
+   "00-vision/01-vision-and-goals.md": 57,
+   "01-requirements/03-personas-and-use-cases.md": 24,
+   "10-development/07-contributing.md": 1,
+   "11-roadmap/01-milestones.md": 5
+  },
+  "KPI": {
+   "00-vision/01-vision-and-goals.md": 70,
+   "01-requirements/03-personas-and-use-cases.md": 68,
+   "01-requirements/04-user-stories-and-acceptance-criteria.md": 12,
+   "08-evaluation/01-evaluation-strategy.md": 2,
+   "10-development/07-contributing.md": 13,
+   "11-roadmap/01-milestones.md": 54,
+   "11-roadmap/02-epics-and-backlog.md": 13
+  },
+  "SC": {
+   "00-vision/01-vision-and-goals.md": 25,
+   "01-requirements/03-personas-and-use-cases.md": 1
+  },
+  "DF": {
+   "00-vision/01-vision-and-goals.md": 23,
+   "01-requirements/03-personas-and-use-cases.md": 12
+  },
+  "P": {
+   "00-vision/01-vision-and-goals.md": 1,
+   "00-vision/03-glossary.md": 13,
+   "03-contracts/03-parsed-document.md": 21,
+   "03-contracts/04-normalized-document.md": 4,
+   "03-contracts/05-chunk-set.md": 3,
+   "03-contracts/09-query-request-and-query-plan.md": 43,
+   "03-contracts/11-context-pack.md": 28,
+   "03-contracts/15-collection-profile-and-policy-contracts.md": 12,
+   "04-pipelines/03-parsing-router-and-format-detection.md": 8,
+   "04-pipelines/04-parser-hwpx-and-hwp.md": 3,
+   "04-pipelines/05-parser-pdf.md": 4,
+   "04-pipelines/06-parser-doc-and-docx.md": 9,
+   "04-pipelines/07-parser-html.md": 5,
+   "04-pipelines/08-parser-txt-md-and-others.md": 3,
+   "04-pipelines/12-embedding.md": 1,
+   "04-pipelines/14-query-understanding.md": 19,
+   "04-pipelines/16-reranking.md": 3,
+   "04-pipelines/17-post-processing-and-context-packing.md": 1,
+   "05-api/03-retrieval-api.md": 2,
+   "05-api/04-management-api.md": 1,
+   "05-api/05-mcp-server.md": 6,
+   "08-evaluation/03-golden-dataset-construction.md": 3,
+   "09-operations/02-configuration-reference.md": 11,
+   "11-roadmap/03-risks-and-mitigations.md": 32,
+   "12-appendix/03-bible-amendment-triage-input.md": 8,
+   "12-appendix/07-bible-amendment-triage-decisions.md": 2,
+   "12-appendix/08-propagation-directives.md": 2
+  },
+  "DP": {
+   "00-vision/02-design-principles.md": 321,
+   "00-vision/04-scope-and-non-goals.md": 3,
+   "06-adr/README.md": 5,
+   "12-appendix/08-propagation-directives.md": 3
+  },
+  "DRC": {
+   "00-vision/02-design-principles.md": 40
+  },
+  "T": {
+   "00-vision/02-design-principles.md": 33,
+   "02-architecture/01-system-overview.md": 7,
+   "11-roadmap/03-risks-and-mitigations.md": 64
+  },
+  "GL": {
+   "00-vision/03-glossary.md": 42,
+   "02-architecture/00-design-bible.md": 8,
+   "03-contracts/09-query-request-and-query-plan.md": 10,
+   "06-adr/0005-doc-version-content-hash-only-and-acl-payload-update.md": 5,
+   "06-adr/0010-bge-m3-rationale-and-late-interaction-slot.md": 4,
+   "06-adr/0014-sparse-representation-bge-m3-lexical-leg-kept.md": 3,
+   "06-adr/0027-security-context-injection-and-acl-enforcement-points.md": 3,
+   "12-appendix/03-bible-amendment-triage-input.md": 1,
+   "12-appendix/08-propagation-directives.md": 1
+  },
+  "PL": {
+   "00-vision/03-glossary.md": 253
+  },
+  "NFR": {
+   "00-vision/04-scope-and-non-goals.md": 1,
+   "01-requirements/02-non-functional-requirements.md": 43,
+   "02-architecture/03-data-flow-and-document-lifecycle.md": 2,
+   "02-architecture/07-multi-tenancy-and-security-architecture.md": 11,
+   "02-architecture/09-failure-modes-and-resilience.md": 3,
+   "08-evaluation/05-benchmark-plan-and-baselines.md": 2,
+   "10-development/04-testing-strategy.md": 1,
+   "11-roadmap/02-epics-and-backlog.md": 1,
+   "12-appendix/08-propagation-directives.md": 6
+  },
+  "UC": {
+   "01-requirements/03-personas-and-use-cases.md": 215,
+   "01-requirements/04-user-stories-and-acceptance-criteria.md": 4,
+   "02-architecture/03-data-flow-and-document-lifecycle.md": 6,
+   "08-evaluation/01-evaluation-strategy.md": 10,
+   "12-appendix/06-traceability-matrix.md": 20
+  }
+ },
+ "A5_length": [],
+ "A6_status": [
+  {
+   "file": "12-appendix/05-phase6-implementation-kit-plan.md",
+   "status": "draft",
+   "last_outcome": null,
+   "fixable": false
+  },
+  {
+   "file": "README.md",
+   "status": "draft",
+   "last_outcome": null,
+   "fixable": false
+  }
+ ],
+ "A7_citations": [
+  {
+   "file": "06-adr/README.md",
+   "line": 284,
+   "ref": "ADR-0040",
+   "problem": "ADR 파일 없음"
+  }
+ ],
+ "A8_confirm": [
+  {
+   "file": "00-vision/00-design-brief.md",
+   "count": 2
+  },
+  {
+   "file": "00-vision/01-vision-and-goals.md",
+   "count": 4
+  },
+  {
+   "file": "00-vision/02-design-principles.md",
+   "count": 2
+  },
+  {
+   "file": "00-vision/03-glossary.md",
+   "count": 10
+  },
+  {
+   "file": "00-vision/04-scope-and-non-goals.md",
+   "count": 16
+  },
+  {
+   "file": "01-requirements/02-non-functional-requirements.md",
+   "count": 26
+  },
+  {
+   "file": "02-architecture/00-design-bible.md",
+   "count": 11
+  },
+  {
+   "file": "02-architecture/01-system-overview.md",
+   "count": 2
+  },
+  {
+   "file": "02-architecture/02-component-architecture.md",
+   "count": 6
+  },
+  {
+   "file": "02-architecture/03-data-flow-and-document-lifecycle.md",
+   "count": 1
+  },
+  {
+   "file": "02-architecture/04-storage-architecture.md",
+   "count": 13
+  },
+  {
+   "file": "02-architecture/05-plugin-architecture.md",
+   "count": 10
+  },
+  {
+   "file": "02-architecture/06-orchestration-and-workflows.md",
+   "count": 5
+  },
+  {
+   "file": "02-architecture/07-multi-tenancy-and-security-architecture.md",
+   "count": 12
+  },
+  {
+   "file": "02-architecture/08-deployment-architecture.md",
+   "count": 12
+  },
+  {
+   "file": "02-architecture/09-failure-modes-and-resilience.md",
+   "count": 10
+  },
+  {
+   "file": "03-contracts/00-contract-overview.md",
+   "count": 3
+  },
+  {
+   "file": "03-contracts/01-ingest-request.md",
+   "count": 2
+  },
+  {
+   "file": "03-contracts/02-source-document.md",
+   "count": 11
+  },
+  {
+   "file": "03-contracts/03-parsed-document.md",
+   "count": 6
+  },
+  {
+   "file": "03-contracts/04-normalized-document.md",
+   "count": 3
+  },
+  {
+   "file": "03-contracts/07-embedded-chunk-set-and-index-record.md",
+   "count": 3
+  },
+  {
+   "file": "03-contracts/09-query-request-and-query-plan.md",
+   "count": 2
+  },
+  {
+   "file": "03-contracts/11-context-pack.md",
+   "count": 6
+  },
+  {
+   "file": "03-contracts/13-error-model.md",
+   "count": 4
+  },
+  {
+   "file": "03-contracts/14-schema-versioning-and-compatibility.md",
+   "count": 1
+  },
+  {
+   "file": "03-contracts/15-collection-profile-and-policy-contracts.md",
+   "count": 5
+  },
+  {
+   "file": "03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+   "count": 4
+  },
+  {
+   "file": "04-pipelines/01-pipeline-framework.md",
+   "count": 1
+  },
+  {
+   "file": "04-pipelines/02-fetching-and-source-resolution.md",
+   "count": 21
+  },
+  {
+   "file": "04-pipelines/03-parsing-router-and-format-detection.md",
+   "count": 11
+  },
+  {
+   "file": "04-pipelines/04-parser-hwpx-and-hwp.md",
+   "count": 34
+  },
+  {
+   "file": "04-pipelines/05-parser-pdf.md",
+   "count": 16
+  },
+  {
+   "file": "04-pipelines/06-parser-doc-and-docx.md",
+   "count": 10
+  },
+  {
+   "file": "04-pipelines/07-parser-html.md",
+   "count": 8
+  },
+  {
+   "file": "04-pipelines/08-parser-txt-md-and-others.md",
+   "count": 6
+  },
+  {
+   "file": "04-pipelines/09-normalization-and-cleaning.md",
+   "count": 2
+  },
+  {
+   "file": "04-pipelines/11-enrichment.md",
+   "count": 7
+  },
+  {
+   "file": "04-pipelines/12-embedding.md",
+   "count": 10
+  },
+  {
+   "file": "04-pipelines/13-indexing.md",
+   "count": 14
+  },
+  {
+   "file": "04-pipelines/14-query-understanding.md",
+   "count": 6
+  },
+  {
+   "file": "04-pipelines/15-hybrid-search-and-fusion.md",
+   "count": 6
+  },
+  {
+   "file": "04-pipelines/16-reranking.md",
+   "count": 11
+  },
+  {
+   "file": "04-pipelines/17-post-processing-and-context-packing.md",
+   "count": 8
+  },
+  {
+   "file": "04-pipelines/18-advanced-retrieval-graph-raptor-agentic.md",
+   "count": 5
+  },
+  {
+   "file": "04-pipelines/19-update-delete-and-reindexing.md",
+   "count": 2
+  },
+  {
+   "file": "05-api/01-api-design-guidelines.md",
+   "count": 4
+  },
+  {
+   "file": "05-api/03-retrieval-api.md",
+   "count": 4
+  },
+  {
+   "file": "05-api/05-mcp-server.md",
+   "count": 8
+  },
+  {
+   "file": "05-api/06-client-sdks.md",
+   "count": 13
+  },
+  {
+   "file": "06-adr/0001-license-grade-table-and-d02-interpretation.md",
+   "count": 3
+  },
+  {
+   "file": "06-adr/0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md",
+   "count": 2
+  },
+  {
+   "file": "06-adr/0004-deterministic-chunk-id-scoped-record-id-and-ulid-exception.md",
+   "count": 1
+  },
+  {
+   "file": "06-adr/0006-pdf-fast-path-pypdfium2-pdftext-replaces-pymupdf.md",
+   "count": 3
+  },
+  {
+   "file": "06-adr/0008-ocr-default-rapidocr-ppocrv5-korean.md",
+   "count": 5
+  },
+  {
+   "file": "06-adr/0009-embedding-serving-vllm-pooling-tei-inprocess.md",
+   "count": 6
+  },
+  {
+   "file": "06-adr/0010-bge-m3-rationale-and-late-interaction-slot.md",
+   "count": 4
+  },
+  {
+   "file": "06-adr/0011-kv-and-object-storage-valkey-rustfs-seaweedfs.md",
+   "count": 3
+  },
+  {
+   "file": "06-adr/0012-lite-profile-qdrant-only-client-bm25.md",
+   "count": 6
+  },
+  {
+   "file": "06-adr/0013-fusion-rrf-k60-then-convex-combination-and-postprocess-order.md",
+   "count": 2
+  },
+  {
+   "file": "06-adr/0014-sparse-representation-bge-m3-lexical-leg-kept.md",
+   "count": 3
+  },
+  {
+   "file": "06-adr/0015-graph-rag-external-plugin-raptor-core-option.md",
+   "count": 2
+  },
+  {
+   "file": "06-adr/0019-chunk-size-tokenizer-defaults-and-recount-stage.md",
+   "count": 1
+  },
+  {
+   "file": "06-adr/0021-korean-analyzer-kiwi-promotion-and-interim-mecab-kss.md",
+   "count": 6
+  },
+  {
+   "file": "06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md",
+   "count": 1
+  },
+  {
+   "file": "06-adr/0024-context-pack-ordering-and-anthropic-search-result-renderer.md",
+   "count": 4
+  },
+  {
+   "file": "06-adr/0025-mcp-cursor-pagination-and-tool-set.md",
+   "count": 2
+  },
+  {
+   "file": "06-adr/0027-security-context-injection-and-acl-enforcement-points.md",
+   "count": 2
+  },
+  {
+   "file": "06-adr/0028-tenant-isolation-tiering-policy.md",
+   "count": 3
+  },
+  {
+   "file": "06-adr/0031-profile-schema-extends-and-quality-gates.md",
+   "count": 1
+  },
+  {
+   "file": "06-adr/0034-retrieval-hot-path-postgres-independence-and-hydrate.md",
+   "count": 4
+  },
+  {
+   "file": "06-adr/0035-python-version-and-toolchain-pins.md",
+   "count": 4
+  },
+  {
+   "file": "06-adr/0037-artifact-cache-scope-and-stage-key-composition.md",
+   "count": 1
+  },
+  {
+   "file": "06-adr/0038-outbound-egress-policy-and-webhook-signing.md",
+   "count": 3
+  },
+  {
+   "file": "06-adr/README.md",
+   "count": 1
+  },
+  {
+   "file": "07-tech-landscape/00-summary-and-selection-matrix.md",
+   "count": 5
+  },
+  {
+   "file": "07-tech-landscape/01-document-parsing-hwpx-hwp.md",
+   "count": 21
+  },
+  {
+   "file": "07-tech-landscape/02-document-parsing-pdf-layout-ocr.md",
+   "count": 35
+  },
+  {
+   "file": "07-tech-landscape/03-document-parsing-office-html-text.md",
+   "count": 9
+  },
+  {
+   "file": "07-tech-landscape/04-chunking-strategies-and-libraries.md",
+   "count": 28
+  },
+  {
+   "file": "07-tech-landscape/05-embedding-models-and-serving.md",
+   "count": 35
+  },
+  {
+   "file": "07-tech-landscape/06-vector-and-lexical-index-backends.md",
+   "count": 32
+  },
+  {
+   "file": "07-tech-landscape/07-retrieval-techniques-fusion-reranking.md",
+   "count": 36
+  },
+  {
+   "file": "07-tech-landscape/08-orchestration-messaging-and-api-frameworks.md",
+   "count": 21
+  },
+  {
+   "file": "07-tech-landscape/09-evaluation-and-observability.md",
+   "count": 26
+  },
+  {
+   "file": "07-tech-landscape/10-llm-context-optimization-and-mcp.md",
+   "count": 52
+  },
+  {
+   "file": "07-tech-landscape/11-existing-rag-platforms-gap-analysis.md",
+   "count": 18
+  },
+  {
+   "file": "07-tech-landscape/12-security-multitenancy-pii-and-licensing.md",
+   "count": 61
+  },
+  {
+   "file": "07-tech-landscape/13-korean-nlp-tokenization-and-language-resources.md",
+   "count": 28
+  },
+  {
+   "file": "07-tech-landscape/14-advanced-rag-graph-raptor-agentic-multimodal.md",
+   "count": 34
+  },
+  {
+   "file": "08-evaluation/01-evaluation-strategy.md",
+   "count": 1
+  },
+  {
+   "file": "08-evaluation/02-retrieval-metrics-and-harness.md",
+   "count": 9
+  },
+  {
+   "file": "08-evaluation/03-golden-dataset-construction.md",
+   "count": 11
+  },
+  {
+   "file": "08-evaluation/04-llm-judge-and-generation-quality.md",
+   "count": 23
+  },
+  {
+   "file": "08-evaluation/05-benchmark-plan-and-baselines.md",
+   "count": 6
+  },
+  {
+   "file": "09-operations/01-deployment-guide.md",
+   "count": 25
+  },
+  {
+   "file": "09-operations/02-configuration-reference.md",
+   "count": 4
+  },
+  {
+   "file": "09-operations/03-observability.md",
+   "count": 9
+  },
+  {
+   "file": "09-operations/04-scaling-and-performance.md",
+   "count": 15
+  },
+  {
+   "file": "09-operations/05-security-and-compliance.md",
+   "count": 41
+  },
+  {
+   "file": "09-operations/06-runbooks.md",
+   "count": 9
+  },
+  {
+   "file": "09-operations/07-backup-and-disaster-recovery.md",
+   "count": 6
+  },
+  {
+   "file": "09-operations/08-upgrade-and-migration.md",
+   "count": 7
+  },
+  {
+   "file": "10-development/01-repository-structure.md",
+   "count": 8
+  },
+  {
+   "file": "10-development/02-development-environment.md",
+   "count": 23
+  },
+  {
+   "file": "10-development/03-coding-standards.md",
+   "count": 6
+  },
+  {
+   "file": "10-development/04-testing-strategy.md",
+   "count": 25
+  },
+  {
+   "file": "10-development/05-ci-cd.md",
+   "count": 30
+  },
+  {
+   "file": "10-development/06-plugin-development-guide.md",
+   "count": 6
+  },
+  {
+   "file": "10-development/07-contributing.md",
+   "count": 11
+  },
+  {
+   "file": "10-development/08-release-process.md",
+   "count": 16
+  },
+  {
+   "file": "11-roadmap/01-milestones.md",
+   "count": 3
+  },
+  {
+   "file": "11-roadmap/02-epics-and-backlog.md",
+   "count": 5
+  },
+  {
+   "file": "11-roadmap/03-risks-and-mitigations.md",
+   "count": 1
+  },
+  {
+   "file": "12-appendix/00-progress-report.md",
+   "count": 4
+  },
+  {
+   "file": "12-appendix/01-phase3-completeness-review.md",
+   "count": 2
+  },
+  {
+   "file": "12-appendix/02-phase4-5-plan.md",
+   "count": 2
+  },
+  {
+   "file": "12-appendix/03-bible-amendment-triage-input.md",
+   "count": 33
+  },
+  {
+   "file": "12-appendix/04-phase3-document-ledger.md",
+   "count": 15
+  },
+  {
+   "file": "12-appendix/05-phase6-implementation-kit-plan.md",
+   "count": 6
+  },
+  {
+   "file": "12-appendix/07-bible-amendment-triage-decisions.md",
+   "count": 5
+  },
+  {
+   "file": "12-appendix/08-propagation-directives.md",
+   "count": 4
+  },
+  {
+   "file": "12-appendix/design-proposals/proposal-A-operability-first.md",
+   "count": 1
+  },
+  {
+   "file": "12-appendix/design-proposals/proposal-C-simplicity-and-extensibility-first.md",
+   "count": 1
+  }
+ ],
+ "A9_schema_inventory": {
+  "in_bible_not_on_disk": [],
+  "on_disk_not_in_bible": [],
+  "bible_count": 35,
+  "disk_count": 35
+ },
+ "fixes": [],
+ "A10_api_surface": {
+  "bible_ops": 71,
+  "openapi_ops": 68,
+  "in_bible_not_in_openapi": [
+   "DELETE /v1/subscriptions",
+   "POST /v1/subscriptions/{}",
+   "POST /v1/eval/runs/{}",
+   "POST /v1/eval/runs/{}/report"
+  ],
+  "in_openapi_not_in_bible": [
+   "POST /mcp"
+  ]
+ },
+ "summary": {
+  "A1_broken_links": 0,
+  "A2_frontmatter_issues": 0,
+  "A3_spelling_hits": 214,
+  "A3_needs_context_review": 87,
+  "A5_over_900": 0,
+  "A6_review_or_draft": 2,
+  "A7_bad_citations": 1,
+  "A8_confirm_docs": 124,
+  "A8_confirm_total": 1286,
+  "A9": {
+   "in_bible_not_on_disk": [],
+   "on_disk_not_in_bible": [],
+   "bible_count": 35,
+   "disk_count": 35
+  },
+  "A10": {
+   "bible_ops": 71,
+   "openapi_ops": 68,
+   "in_bible_not_in_openapi": [
+    "DELETE /v1/subscriptions",
+    "POST /v1/subscriptions/{}",
+    "POST /v1/eval/runs/{}",
+    "POST /v1/eval/runs/{}/report"
+   ],
+   "in_openapi_not_in_bible": [
+    "POST /mcp"
+   ]
+  },
+  "fixes": 0
+ }
+}

@@ -1,14 +1,14 @@
 # RAG Platform API — OpenAPI 3.1.0
-# 정본: docs/02-architecture/00-design-bible.md §14(API 표면), docs/05-api/01~04·07(계약·규약).
+# 정본: docs/02-architecture/00-design-bible.md §14(API 표면, 1.3.0 기준), docs/05-api/01~04·07(계약·규약).
 # components.schemas 의 각 항목이 schemas/*.schema.json 을 상대 경로 $ref 하나로 잇고, 문서 안의 다른 모든 참조는 #/components/schemas/{Type} 이다(정본은 계약, 이 문서는 파생물 — D-05, 01 §17.2).
 # 생성 산출물: rag openapi export --out docs/05-api/openapi.yaml(제안). 손으로 편집한 내용은 재생성 시 덮어쓴다.
 openapi: 3.1.0
 info:
   title: RAG Platform API
-  version: 0.1.0
+  version: 0.1.1
   summary: 문서 수집·검색·컨텍스트 패킹·관리 평면·이벤트를 제공하는 멀티테넌트 RAG 플랫폼 API(/v1)
   description: |-
-    RAG 플랫폼 공개 API 표면(바이블 §14 정본; /v1, JSON, RFC 9457, Idempotency-Key, RateLimit). 한 ASGI 앱이 REST·SSE·MCP 를 제공하고 인증(Authorization: Bearer — OIDC JWT 또는 API 키 rag_ak_…; 서비스 간은 mTLS)·Cedar 인가·레이트 리밋·멱등성·RFC 9457 변환은 단일 미들웨어 체인이 수행한다.
+    RAG 플랫폼 공개 API 표면(바이블 §14 정본, 1.3.0 기준; /v1, JSON, RFC 9457, Idempotency-Key, RateLimit). 한 ASGI 앱이 REST·SSE·MCP 를 제공하고 인증(Authorization: Bearer — OIDC JWT 또는 API 키 rag_ak_…; 서비스 간은 mTLS)·Cedar 인가·레이트 리밋·멱등성·RFC 9457 변환은 단일 미들웨어 체인이 수행한다.
 
     핵심 규약(docs/05-api/01-api-design-guidelines.md):
     - 테넌트 스코프는 자격 증명에서만 도출한다. 요청 본문·경로·쿼리의 tenant_id·SecurityContext 하위 키는 거부된다(400 contract.violation; auth.tenant_mismatch 채택 후 422).
@@ -22,7 +22,7 @@ info:
 
     확장 필드: x-rag-rate-limit-class(query | ingest | admin | public), x-rag-idempotency(required | optional | ignored), x-rag-async(202 잡 접수형), x-rag-authz-action(Cedar 액션; 공개 표면 제외), x-rag-schema-id, x-rag-pending(string[]; 연산이 의존하는 채택 전 제안 — 바이블 §5.7 열거값·오류 코드, §14 minor 발의. 채택 전 서버 동작과 예시 대안은 해당 description 에 적고, 예시는 항상 현재 스키마로 검증 가능해야 한다).
 
-    표면 범위: 바이블 §14 의 모든 경로·메서드. 01 §17.3 이 생성 문서에서 제외하는 /metrics, /.well-known/oauth-protected-resource, /mcp 와 별도 문서로 두는 사이드카 POST /v1/convert 도 표면 완전성을 위해 등재했다(사이드카는 sidecar 태그 + servers 오버라이드). 04·07 문서의 "제안" 엔드포인트(GET …/policies, /v1/plugins*, /v1/api-keys*, /v1/subscriptions/{id}/test 등)는 바이블 §14 minor 발의 전이라 포함하지 않았다. GET /v1/subscriptions/{subscription_id}(get_subscription) 는 바이블 §14 행(GET/POST/DELETE /v1/subscriptions · /v1/subscriptions/{subscription_id})에 따라 등재했으며 01 §9.3 표에는 아직 없다(01 갱신 대상). 상태 코드는 01 §9.2 를 따른다 — 전용 코드가 미채택인 404·409(잡 상태)·410·412·413·415 는 응답으로 선언하지 않고 각 연산의 400 description 에 적는다(채택 시 응답 추가).
+    표면 범위: 바이블 §14 의 모든 경로·메서드. 01 §17.3 이 생성 문서에서 제외하는 /metrics, /.well-known/oauth-protected-resource 와 별도 문서로 두는 사이드카 POST /v1/convert 도 표면 완전성을 위해 등재했다(사이드카는 sidecar 태그 + servers 오버라이드). POST /mcp(mcp 태그, operationId mcp_rpc)는 바이블 §14 "/mcp" 행과 같은 연산이다 — MCP Streamable HTTP 전송 계층 하나이며 REST 잡 접수 패턴이 아니다(x-rag-async false). 1.3.0(AM-39)이 바이블 §14 에 추가한 경로 — GET/POST /v1/tenants, GET/PATCH /v1/tenants/{tenant_id}, GET /v1/tenants/{tenant_id}/policies, GET/POST /v1/api-keys, DELETE /v1/api-keys/{api_key_id}, POST /v1/api-keys/{api_key_id}/rotate, GET /v1/plugins·/v1/plugins/{plugin_id}, GET /v1/audit-events, GET /v1/schemas, GET /v1/version, POST /v1/profiles, POST /v1/collections/{collection_id}/consistency-check, POST /v1/documents/{document_id}/unmask — 를 이번 개정에서 등재했다. 04·07 문서의 "제안" 엔드포인트 중 바이블 §14 에 여전히 없는 것(GET /v1/plugins/{plugin_id}/capabilities·.../health, GET/PUT /v1/tenants/{tenant_id}/dictionary, /v1/capacity, /v1/subscriptions/{id}/test·/rotate-secret·/redeliver·/deliveries 등)은 바이블 §14 minor 발의 전이라 포함하지 않았다. GET /v1/subscriptions/{subscription_id}(get_subscription) 는 바이블 §14 행(GET/POST/DELETE /v1/subscriptions · /v1/subscriptions/{subscription_id})에 따라 등재했으며 01 §9.3 표에는 아직 없다(01 갱신 대상). A10 감사(바이블 §14 ↔ 이 문서)가 표기한 DELETE /v1/subscriptions, POST /v1/subscriptions/{subscription_id}, POST /v1/eval/runs/{run_id}, POST /v1/eval/runs/{run_id}/report "누락"은 실제 누락이 아니다 — 바이블 §14 행의 "GET/POST/DELETE" 결합 표기를 감사기가 경로마다 곱해 생긴 조합이며(각 경로는 의미 있는 조합만 구현: GET+POST /v1/subscriptions, GET+DELETE /v1/subscriptions/{subscription_id}, POST /v1/eval/runs, GET /v1/eval/runs/{run_id}·.../report), A10 파서 수정은 5단계로 넘긴다(12-appendix/08 §2 openapi.yaml 절). 상태 코드는 01 §9.2 를 따른다 — 전용 코드가 미채택인 404·409(잡 상태)·410·412·413·415 는 응답으로 선언하지 않고 각 연산의 400 description 에 적는다(채택 시 응답 추가).
   termsOfService: https://rag.example.go.kr/docs/terms
   contact:
     name: RAG Platform API 소유팀
@@ -47,17 +47,23 @@ tags:
   - name: jobs
     description: 잡 조회·제어·이벤트 스트림 — /v1/jobs*(JobStatus 읽기 모델, SSE)
   - name: documents
-    description: 문서 자원 — 메타·산출물 열람·커밋 이력·ACL·메타 갱신·재처리·삭제
+    description: 문서 자원 — 메타·산출물 열람·커밋 이력·ACL·메타 갱신·재처리·삭제·PII 원문 복원(unmask, 1.3.0 AM-39, pii_officer 전용)
   - name: retrieval
     description: 검색 경로 — POST /v1/query(QueryResponse), /v1/render(RenderedContext), /v1/answer(레퍼런스 구현)
   - name: feedback
     description: 온라인 피드백 — POST /v1/feedback(FeedbackEvent)
   - name: collections
-    description: 컬렉션 관리 — CollectionSpec, 재색인(blue/green), 통계, 사용자 사전
+    description: 컬렉션 관리 — CollectionSpec, 재색인(blue/green), 통계, 사용자 사전, 정합성 검사(consistency-check, 1.3.0 AM-39)
   - name: profiles
     description: 프로파일 레지스트리 — 조회(해소 결과)·YAML 검증
   - name: tenants
-    description: 테넌트 자원 — 계량(usage_ledger)·정책(경로 tenant_id = 토큰 tenant_id)
+    description: 테넌트 자원 — 목록·생성·조회·변경(status·quotas, 1.3.0 AM-39, 플랫폼 관리자), 계량(usage_ledger)·정책(경로 tenant_id = 토큰 tenant_id)
+  - name: api-keys
+    description: API 키 레지스트리 — 목록·발급·폐기·회전(1.3.0 AM-39, service 주체 호출 금지)
+  - name: plugins
+    description: 설치된 플러그인 레지스트리 — 목록·상세(PluginMeta, 1.3.0 AM-39)
+  - name: audit
+    description: 감사 이벤트 조회 — GET /v1/audit-events(1.3.0 AM-39, read_audit)
   - name: subscriptions
     description: 웹훅 구독 — HTTPS + RAG-Signature 전달, EgressPolicy 판정
   - name: events
@@ -65,9 +71,9 @@ tags:
   - name: eval
     description: 평가 하네스 — 데이터셋·런·리포트(/v1/eval/*)
   - name: schemas
-    description: JSON Schema 게시(무인증, application/schema+json)
+    description: JSON Schema 게시 — 목록(무인증, 1.3.0 AM-39)·개별 스키마(무인증, application/schema+json)
   - name: system
-    description: 상태·계량 — /healthz, /readyz(무인증), /metrics(내부망)
+    description: 상태·버전 — /healthz, /readyz(무인증), /metrics(내부망), GET /v1/version(1.3.0 AM-39, read_registry)
   - name: mcp
     description: MCP Streamable HTTP(/mcp, JSON-RPC 2.0) 와 RFC 9728 PRM(/.well-known/oauth-protected-resource)
   - name: sidecar
@@ -689,7 +695,7 @@ paths:
         - jobs
       summary: 잡 이벤트 SSE 스트림
       operationId: stream_job_events
-      description: "Accept: text/event-stream 필수. 첫 접속 시 그 잡의 발행된 과거 이벤트를 발행 순으로 먼저 재생한 뒤 실시간으로 이어간다(이미 종결된 잡은 종결 job.state.changed 까지 재생 후 즉시 닫음). 프레임 id = event_id, event = CloudEvents type, data = CloudEventEnvelope 1행. 진행률은 스테이지 경계만. 종결 이벤트 전달 후 서버가 닫는다. at-least-once — id 로 중복 제거. 테넌트당 동시 SSE 연결 100(초안) 초과 시 429(02 §6.3, 07 §9)."
+      description: "Accept: text/event-stream 필수. 첫 접속 시 그 잡의 발행된 과거 이벤트를 발행 순으로 먼저 재생한 뒤 실시간으로 이어간다(이미 종결된 잡은 종결 job.state.changed 까지 재생 후 즉시 닫음). 프레임 id = event_id, event = CloudEvents type, data = CloudEventEnvelope 1행. 진행률은 스테이지 경계 단위만 이 스트림으로 나간다 — 페이지·청크 단위 세부 진행률은 GET /v1/jobs/{job_id} 폴링(≥2s) 전용이다(바이블 §14 1.3.0 AM-20 결정 그대로). 종결 이벤트 전달 후 서버가 닫는다. at-least-once — id 로 중복 제거. 테넌트당 동시 SSE 연결 100(초안) 초과 시 429(02 §6.3, 07 §9)."
       parameters:
         - $ref: "#/components/parameters/LastEventId"
         - name: Accept
@@ -2006,6 +2012,72 @@ paths:
       x-rag-idempotency: optional
       x-rag-async: true
       x-rag-authz-action: reprocess_document
+  "/v1/documents/{document_id}/unmask":
+    parameters:
+      - $ref: "#/components/parameters/document_id"
+    post:
+      tags:
+        - documents
+      summary: PII 원문 복원(토큰 복호)
+      operationId: unmask_document
+      description: "바이블 §14 1.3.0(AM-39; 04 §12.2). pii_officer 역할 전용, pii_tokenize_mode ∈ {tokenize, encrypt} 문서만(그 외 400). tokenize는 원문 자체가 없어 unresolved로만 돌아오고 encrypt는 테넌트 DEK(OpenBao Transit)로 복호한다. 호출마다 audit.document.accessed + audit.admin.action{action: unmask_pii} 기록. 응답 Cache-Control: no-store, 값은 로그·트레이스에 미기록(E13)."
+      parameters:
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      requestBody:
+        required: true
+        description: UnmaskRequest
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnmaskRequest"
+            example:
+              tokens:
+                - "tok:9f3a5c7e1b2d4f60"
+      responses:
+        "200":
+          description: UnmaskResult
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+            Cache-Control:
+              $ref: "#/components/headers/Cache-Control"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnmaskResult"
+              example:
+                document_id: 01JAB3C4D5E6F7G8H9JKMNPQRS
+                items:
+                  - token: "tok:9f3a5c7e1b2d4f60"
+                    value: "010-1234-5678"
+                    category: phone
+                unresolved: []
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반(스키마·불변식·잘못된 파라미터·Content-Type, pii_tokenize_mode 대상 아님 포함). code: contract.violation 등"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "403":
+          $ref: "#/components/responses/Problem"
+          description: 인가 거부·존재 비노출(auth.forbidden — pii_officer 아님, service 주체 호출 금지)
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited, 테넌트당 분당 30회 초안 목표). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+        "503":
+          $ref: "#/components/responses/Problem"
+          description: 일시 불가(retrieve.unavailable, api.orchestrator_unavailable·api.dependency_unavailable 채택 전제). Retry-After(정수 초)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: ignored
+      x-rag-async: false
+      x-rag-authz-action: unmask_pii
   "/v1/query":
     post:
       tags:
@@ -3461,7 +3533,7 @@ paths:
         - collections
       summary: 컬렉션 삭제 잡 접수
       operationId: delete_collection
-      description: "202 + JobStatus. 잡 종류 delete_collection·워크플로우 collection.delete.v1 은 19 §6.1 제안(04 미해결 이슈 6)이라 바이블 §5.7 JobKind 에 아직 없다 — 채택 전에는 접수 트랜잭션이 만드는 첫 자식 delete_document 잡의 JobStatus(kind=delete_document, document_id 필수)를 돌려주며 아래 예시도 그 형태다(x-rag-pending). 채택 후 kind=delete_collection 부모 잡(progress.unit=document)으로 바뀐다. 접수 트랜잭션에서 논리 삭제·alias 제거·collspec: 무효화 → 이후 질의는 plan.collection_forbidden. 활성 잡이 있는 컬렉션은 400(detail=\"active jobs: n\"). If-Match 권장, Idempotency-Key 선택(04 §3.4)."
+      description: "202 + JobStatus(kind=delete_collection, 바이블 §5.7·§11.2 1.3.0 AM-37, 워크플로우 collection.delete.v1). 접수 트랜잭션이 collections.deleted_at 을 기록(논리 삭제) → 이후 신규 수집·질의는 plan.collection_forbidden → 부모 잡이 문서 ID 페이지를 순회해 자식 delete.document.v1 을 슬라이딩 윈도우로 팬아웃(progress.unit=document) → 물리 컬렉션·alias 정리. 전용 이벤트를 새로 만들지 않고 collection.profile.changed·ingest.document.deleted·audit.admin.action 을 재사용한다(05-api/07 §2). 활성 잡이 있는 컬렉션은 400(detail=\"active jobs: n\"). If-Match 권장, Idempotency-Key 선택(04 §3.4)."
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
         - $ref: "#/components/parameters/IfMatch"
@@ -3492,19 +3564,19 @@ paths:
                 job_id: 01JADR1B2C3D4E5F6G7H8J9K0M
                 tenant_id: 01J9ZQ4K7X2M8N3P5R6S7T8V9W
                 collection_id: 01JADQ3G5R7T9V2X4Z6B8D0F2H
-                kind: delete_document
+                kind: delete_collection
                 state: queued
                 stage: null
                 progress:
                   done: 0
-                  total: 2
-                  unit: stage
+                  total: 1284
+                  unit: document
                 attempts: 0
                 workflow_run_id: null
                 workflow_id: 01JADR1B2C3D4E5F6G7H8J9K0M
-                idempotency_key: internal:delete.document.v1:01JADR1B2C3D4E5F6G7H8J9K0N
+                idempotency_key: internal:collection.delete.v1:01JADR1B2C3D4E5F6G7H8J9K0N
                 request_id: 01JADR1B2C3D4E5F6G7H8J9K0P
-                document_id: 01JADQ3G5R7T9V2X4Z6B8D0F2J
+                document_id: null
                 index_commit_id: null
                 last_error: null
                 degraded: []
@@ -3522,7 +3594,7 @@ paths:
                 finished_at: null
                 deadline_at: null
         "202":
-          description: 삭제 잡 접수(JobKind.delete_collection 채택 전 — 첫 자식 delete_document 잡의 JobStatus)
+          description: 삭제 잡 접수(JobStatus, kind=delete_collection)
           headers:
             RateLimit:
               $ref: "#/components/headers/RateLimit"
@@ -3544,19 +3616,19 @@ paths:
                 job_id: 01JADR1B2C3D4E5F6G7H8J9K0M
                 tenant_id: 01J9ZQ4K7X2M8N3P5R6S7T8V9W
                 collection_id: 01JADQ3G5R7T9V2X4Z6B8D0F2H
-                kind: delete_document
+                kind: delete_collection
                 state: queued
                 stage: null
                 progress:
                   done: 0
-                  total: 2
-                  unit: stage
+                  total: 1284
+                  unit: document
                 attempts: 0
                 workflow_run_id: null
                 workflow_id: 01JADR1B2C3D4E5F6G7H8J9K0M
-                idempotency_key: internal:delete.document.v1:01JADR1B2C3D4E5F6G7H8J9K0N
+                idempotency_key: internal:collection.delete.v1:01JADR1B2C3D4E5F6G7H8J9K0N
                 request_id: 01JADR1B2C3D4E5F6G7H8J9K0P
-                document_id: 01JADQ3G5R7T9V2X4Z6B8D0F2J
+                document_id: null
                 index_commit_id: null
                 last_error: null
                 degraded: []
@@ -3601,8 +3673,6 @@ paths:
       x-rag-idempotency: optional
       x-rag-async: true
       x-rag-authz-action: manage_collection
-      x-rag-pending:
-        - "JobKind.delete_collection — 19 §6.1 제안, 04 미해결 이슈 6(채택 전 첫 자식 delete_document 잡의 JobStatus)"
   "/v1/collections/{collection_id}/reindex":
     parameters:
       - $ref: "#/components/parameters/collection_id"
@@ -3829,6 +3899,59 @@ paths:
       x-rag-rate-limit-class: admin
       x-rag-idempotency: ignored
       x-rag-async: false
+      x-rag-authz-action: manage_collection
+  "/v1/collections/{collection_id}/consistency-check":
+    parameters:
+      - $ref: "#/components/parameters/collection_id"
+    post:
+      tags:
+        - collections
+      summary: 정합성 검사 잡 접수(maintenance.consistency.v1)
+      operationId: check_collection_consistency
+      description: 바이블 §14 1.3.0(AM-39, JobKind.consistency_check; 04 §4). document_id별 레코드 수·content_hash 집합을 원장 ↔ Qdrant ↔ OpenSearch 대조하는 잡을 접수한다(202). 불일치는 index.consistency.mismatch + 산출물 재적재로 이어진다(§11.2). 본문 N. Idempotency-Key 선택.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      responses:
+        "202":
+          description: 정합성 검사 잡 접수
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+            Location:
+              $ref: "#/components/headers/Location"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobStatus"
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반(스키마·불변식·readOnly 필드·잘못된 파라미터·Content-Type). code: contract.violation 등"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "403":
+          $ref: "#/components/responses/Problem"
+          description: 인가 거부·존재 비노출(auth.forbidden, plan.collection_forbidden)
+        "409":
+          $ref: "#/components/responses/Problem"
+          description: 멱등 충돌(api.idempotency_conflict — 같은 키의 요청 처리 중)
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+        "503":
+          $ref: "#/components/responses/Problem"
+          description: 일시 불가(retrieve.unavailable, api.orchestrator_unavailable·api.dependency_unavailable 채택 전제). Retry-After(정수 초)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: optional
+      x-rag-async: true
       x-rag-authz-action: manage_collection
   "/v1/collections/{collection_id}/dictionary":
     parameters:
@@ -4134,6 +4257,63 @@ paths:
       x-rag-idempotency: ignored
       x-rag-async: false
       x-rag-authz-action: read_registry
+    post:
+      tags:
+        - profiles
+      summary: 프로파일 새 버전 게시
+      operationId: create_profile
+      description: "바이블 §14 1.3.0(AM-39; 04 §4). 본문은 {\"yaml\": \"<원문>\"} 또는 {\"profile\": <Profile JSON>} 중 하나이며 /v1/profiles/validate와 같은 검증기를 거친다. (profile_id, version)은 불변 — 같은 키 재게시는 400 contract.violation. profile_hash는 검증 결과로 서버가 계산한다(readOnly)."
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      requestBody:
+        required: true
+        description: ProfileValidateRequest와 같은 본문 형태({"yaml"} | {"profile"})
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileValidateRequest"
+      responses:
+        "201":
+          description: 게시된 Profile
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+            Location:
+              $ref: "#/components/headers/Location"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반(스키마·불변식·readOnly 필드·잘못된 파라미터·Content-Type). code: contract.violation 등. 같은 (profile_id, version) 재게시도 이 상태"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "403":
+          $ref: "#/components/responses/Problem"
+          description: 인가 거부(auth.forbidden)
+        "422":
+          $ref: "#/components/responses/Problem"
+          description: 의미 검증 실패(profile.invalid, plugin.license_denied, plugin.capability_unsupported)
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+        "503":
+          $ref: "#/components/responses/Problem"
+          description: 일시 불가(retrieve.unavailable, api.orchestrator_unavailable·api.dependency_unavailable 채택 전제). Retry-After(정수 초)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: optional
+      x-rag-async: false
+      x-rag-authz-action: manage_profiles
   "/v1/profiles/{profile_id}":
     parameters:
       - $ref: "#/components/parameters/profile_id"
@@ -4316,7 +4496,298 @@ paths:
       x-rag-async: false
       x-rag-authz-action: manage_profiles
       x-rag-pending:
-        - "ErrorCodeCatalog.profile.gate_pending 등 ProfileValidationResult.warnings[].code 어휘 — 04 미해결 이슈 9(바이블 §5.7 등재 대기)"
+        - "ProfileValidationResult.warnings[].code 어휘 중 profile.gate_pending 외 나머지 — 04 미해결 이슈 9(profile.gate_pending 자체는 바이블 §5.7 1.3.0 AM-36 등재 완료)"
+  "/v1/tenants":
+    get:
+      tags:
+        - tenants
+      summary: 테넌트 목록(플랫폼 관리자)
+      operationId: list_tenants
+      description: 바이블 §14 1.3.0(AM-39). 플랫폼 관리자(platform_admin)만 호출한다 — 테넌트 자신의 조회는 GET /v1/tenants/{tenant_id}. 04-management-api.md는 아직 이 연산의 필드·operationId를 발행하지 않아(04 갱신 대상) 이 문서가 Tenant API 전용 뷰(AM-02)를 잠정 확정한다.
+      parameters:
+        - $ref: "#/components/parameters/cursor"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/sort"
+        - name: status
+          in: query
+          required: false
+          description: 동등 필터
+          schema:
+            $ref: "#/components/schemas/TenantStatus"
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      responses:
+        "200":
+          description: 테넌트 목록
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+            Deprecation:
+              $ref: "#/components/headers/Deprecation"
+            Sunset:
+              $ref: "#/components/headers/Sunset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantList"
+              example:
+                items:
+                  - schema_type: Tenant
+                    tenant_id: 01J9ZQ4K7X2M8N3P5R6S7T8V9W
+                    name: 행정안전부
+                    status: active
+                    tier: reserved
+                    quotas:
+                      documents_max: 500000
+                      storage_bytes_max: 5497558138880
+                      qps_max: 50
+                    disabled_at: null
+                    created_at: "2026-01-15T00:00:00.000Z"
+                    updated_at: "2026-09-23T01:00:00.000Z"
+                next_cursor: null
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반(스키마·불변식·readOnly 필드·잘못된 커서·파라미터·Content-Type). code: contract.violation 등. 404·409(잡 상태)·410·412·413·415 는 전용 코드 채택 전 이 상태로 응답"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "403":
+          $ref: "#/components/responses/Problem"
+          description: 인가 거부(auth.forbidden — platform_admin 아님)
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+        "503":
+          $ref: "#/components/responses/Problem"
+          description: 일시 불가(retrieve.unavailable, api.orchestrator_unavailable·api.dependency_unavailable 채택 전제). Retry-After(정수 초)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: ignored
+      x-rag-async: false
+      x-rag-authz-action: manage_tenants
+      x-rag-pending:
+        - "operationId·Cedar 액션명(manage_tenants 잠정)은 04-management-api.md 게시 후 대조(04 갱신 대상)"
+    post:
+      tags:
+        - tenants
+      summary: 테넌트 생성(플랫폼 관리자)
+      operationId: create_tenant
+      description: 바이블 §14 1.3.0(AM-39, FR-MGT-01). 본문은 TenantCreateRequest. tenant_id·status(기본 active)·created_at·updated_at은 서버 발급.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      requestBody:
+        required: true
+        description: TenantCreateRequest
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantCreateRequest"
+            example:
+              name: 행정안전부
+              tier: reserved
+              quotas:
+                documents_max: 500000
+                storage_bytes_max: 5497558138880
+                qps_max: 50
+      responses:
+        "201":
+          description: 생성된 Tenant
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+            Location:
+              $ref: "#/components/headers/Location"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+              example:
+                schema_type: Tenant
+                tenant_id: 01J9ZQ4K7X2M8N3P5R6S7T8V9W
+                name: 행정안전부
+                status: active
+                tier: reserved
+                quotas:
+                  documents_max: 500000
+                  storage_bytes_max: 5497558138880
+                  qps_max: 50
+                disabled_at: null
+                created_at: "2026-09-23T01:00:00.000Z"
+                updated_at: "2026-09-23T01:00:00.000Z"
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반(스키마·불변식·readOnly 필드·잘못된 커서·파라미터·Content-Type). code: contract.violation 등. 404·409(잡 상태)·410·412·413·415 는 전용 코드 채택 전 이 상태로 응답"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "403":
+          $ref: "#/components/responses/Problem"
+          description: 인가 거부(auth.forbidden — platform_admin 아님)
+        "422":
+          $ref: "#/components/responses/Problem"
+          description: 의미 검증 실패(profile.invalid, auth.too_many_principals 등)
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+        "503":
+          $ref: "#/components/responses/Problem"
+          description: 일시 불가(retrieve.unavailable, api.orchestrator_unavailable·api.dependency_unavailable 채택 전제). Retry-After(정수 초)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: optional
+      x-rag-async: false
+      x-rag-authz-action: manage_tenants
+  "/v1/tenants/{tenant_id}":
+    parameters:
+      - $ref: "#/components/parameters/tenant_id"
+    get:
+      tags:
+        - tenants
+      summary: 테넌트 조회
+      operationId: get_tenant
+      description: 바이블 §14 1.3.0(AM-39). status·quotas·tier(readOnly) 포함.
+      parameters:
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      responses:
+        "200":
+          description: Tenant
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+              example:
+                schema_type: Tenant
+                tenant_id: 01J9ZQ4K7X2M8N3P5R6S7T8V9W
+                name: 행정안전부
+                status: active
+                tier: reserved
+                quotas:
+                  documents_max: 500000
+                  storage_bytes_max: 5497558138880
+                  qps_max: 50
+                disabled_at: null
+                created_at: "2026-01-15T00:00:00.000Z"
+                updated_at: "2026-09-23T01:00:00.000Z"
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반(스키마·불변식·readOnly 필드·잘못된 커서·파라미터·Content-Type). code: contract.violation 등. 404·409(잡 상태)·410·412·413·415 는 전용 코드 채택 전 이 상태로 응답"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "403":
+          $ref: "#/components/responses/Problem"
+          description: 인가 거부·존재 비노출(auth.forbidden). 테넌트는 토큰의 tenant_id와 같아야 함(불일치 403)
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+        "503":
+          $ref: "#/components/responses/Problem"
+          description: 일시 불가(retrieve.unavailable, api.orchestrator_unavailable·api.dependency_unavailable 채택 전제). Retry-After(정수 초)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: ignored
+      x-rag-async: false
+      x-rag-authz-action: read_registry
+    patch:
+      tags:
+        - tenants
+      summary: 테넌트 status·quotas 변경
+      operationId: update_tenant
+      description: "JSON Merge Patch로 status(TenantStatus)·quotas만 바꾼다(바이블 §14 1.3.0 AM-39). tier는 readOnly — 승격은 tier.promotion.v1 워크플로우 전용이며 이 연산으로 바꿀 수 없다(포함 시 400). status=disabled로 전환하면 이후 그 테넌트의 요청은 auth.forbidden(403, 바이블 §5.7 TenantStatus). If-Match 지원. audit.admin.action{action: manage_tenants}."
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      requestBody:
+        required: true
+        description: TenantPatch 부분 객체
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: "#/components/schemas/TenantPatch"
+            example:
+              status: disabled
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantPatch"
+            example:
+              status: disabled
+      responses:
+        "200":
+          description: 갱신된 Tenant
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+              example:
+                schema_type: Tenant
+                tenant_id: 01J9ZQ4K7X2M8N3P5R6S7T8V9W
+                name: 행정안전부
+                status: disabled
+                tier: reserved
+                quotas:
+                  documents_max: 500000
+                  storage_bytes_max: 5497558138880
+                  qps_max: 50
+                disabled_at: "2026-09-23T01:30:00.000Z"
+                created_at: "2026-01-15T00:00:00.000Z"
+                updated_at: "2026-09-23T01:30:00.000Z"
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반(스키마·불변식·readOnly 필드 tier 포함·잘못된 커서·파라미터·Content-Type). code: contract.violation 등"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "403":
+          $ref: "#/components/responses/Problem"
+          description: 인가 거부(auth.forbidden — platform_admin 아님)
+        "422":
+          $ref: "#/components/responses/Problem"
+          description: 의미 검증 실패(profile.invalid 등)
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+        "503":
+          $ref: "#/components/responses/Problem"
+          description: 일시 불가(retrieve.unavailable, api.orchestrator_unavailable·api.dependency_unavailable 채택 전제). Retry-After(정수 초)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: ignored
+      x-rag-async: false
+      x-rag-authz-action: manage_tenants
   "/v1/tenants/{tenant_id}/usage":
     parameters:
       - $ref: "#/components/parameters/tenant_id"
@@ -4420,6 +4891,84 @@ paths:
   "/v1/tenants/{tenant_id}/policies":
     parameters:
       - $ref: "#/components/parameters/tenant_id"
+    get:
+      tags:
+        - tenants
+      summary: 테넌트 정책 조회
+      operationId: get_tenant_policies
+      description: 현재 TenantPolicies를 돌려준다(바이블 §14 1.3.0 AM-39; 04 §2.1). PATCH와 같은 자원.
+      parameters:
+        - $ref: "#/components/parameters/IfNoneMatch"
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      responses:
+        "200":
+          description: TenantPolicies
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantPolicies"
+              example:
+                schema_type: TenantPolicies
+                tenant_id: 01J9ZQ4K7X2M8N3P5R6S7T8V9W
+                tier: reserved
+                llm_enrichment_allowed: false
+                allow_distribution_documents: true
+                classification_max: confidential
+                egress_policy:
+                  allowed_schemes:
+                    - https
+                    - s3
+                  allowed_hosts:
+                    - .go.kr
+                  deny_cidrs:
+                    - 10.0.0.0/8
+                    - 172.16.0.0/12
+                    - 192.168.0.0/16
+                    - 127.0.0.0/8
+                    - 169.254.0.0/16
+                    - 0.0.0.0/8
+                    - "::1/128"
+                    - fc00::/7
+                    - fe80::/10
+                    - 100.64.0.0/10
+                  max_redirects: 2
+                  resolve_pin: true
+                daily_ingest_bytes_max: null
+                query_text_retention: hash_only
+                updated_at: "2026-09-23T01:00:00.000Z"
+        "304":
+          description: If-None-Match 일치(ETag 불변)
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반(스키마·불변식·readOnly 필드·잘못된 커서·파라미터·Content-Type). code: contract.violation 등"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "403":
+          $ref: "#/components/responses/Problem"
+          description: 인가 거부(auth.forbidden). 테넌트는 토큰의 tenant_id와 같아야 함
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+        "503":
+          $ref: "#/components/responses/Problem"
+          description: 일시 불가(retrieve.unavailable, api.orchestrator_unavailable·api.dependency_unavailable 채택 전제). Retry-After(정수 초)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: ignored
+      x-rag-async: false
+      x-rag-authz-action: manage_tenant_policies
     patch:
       tags:
         - tenants
@@ -4558,6 +5107,563 @@ paths:
       x-rag-idempotency: ignored
       x-rag-async: false
       x-rag-authz-action: manage_tenant_policies
+  "/v1/api-keys":
+    get:
+      tags:
+        - api-keys
+      summary: API 키 목록
+      operationId: list_api_keys
+      description: 바이블 §14 1.3.0(AM-39; 04 §12). secret은 목록에 없다. service 주체는 호출 불가.
+      parameters:
+        - $ref: "#/components/parameters/cursor"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      responses:
+        "200":
+          description: API 키 목록
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKeyList"
+              example:
+                items:
+                  - schema_type: ApiKey
+                    api_key_id: 01JAE1M2N3P4Q5R6S7T8V9W0X1
+                    tenant_id: 01J9ZQ4K7X2M8N3P5R6S7T8V9W
+                    client_id: mcp-agent-1
+                    roles:
+                      - search
+                    allowed_collections: []
+                    status: active
+                    rotated_from: null
+                    expiring_soon: false
+                    description: MCP 에이전트 정적 Bearer
+                    expires_at: null
+                    created_at: "2026-08-01T00:00:00.000Z"
+                next_cursor: null
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반(스키마·불변식·readOnly 필드·잘못된 커서·파라미터·Content-Type). code: contract.violation 등"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "403":
+          $ref: "#/components/responses/Problem"
+          description: 인가 거부(auth.forbidden — service 주체 호출 금지 포함)
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+        "503":
+          $ref: "#/components/responses/Problem"
+          description: 일시 불가(retrieve.unavailable, api.orchestrator_unavailable·api.dependency_unavailable 채택 전제). Retry-After(정수 초)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: ignored
+      x-rag-async: false
+      x-rag-authz-action: manage_api_keys
+    post:
+      tags:
+        - api-keys
+      summary: API 키 발급
+      operationId: create_api_key
+      description: 바이블 §14 1.3.0(AM-39; 04 §12). secret은 이 응답에만 1회 노출된다. 테넌트당 활성 키 ≤ 64(초안, 초과 400 contract.violation, detail="api key quota exceeded"). 같은 client_id의 활성 키는 회전 유예 중 최대 2개.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      requestBody:
+        required: true
+        description: ApiKeyCreateRequest
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApiKeyCreateRequest"
+            example:
+              client_id: mcp-agent-1
+              roles:
+                - search
+              allowed_collections: []
+      responses:
+        "201":
+          description: 발급된 ApiKey(+secret 1회)
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+            Location:
+              $ref: "#/components/headers/Location"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKey"
+              example:
+                schema_type: ApiKey
+                api_key_id: 01JAE1M2N3P4Q5R6S7T8V9W0X1
+                tenant_id: 01J9ZQ4K7X2M8N3P5R6S7T8V9W
+                client_id: mcp-agent-1
+                roles:
+                  - search
+                allowed_collections: []
+                status: active
+                secret: rag_ak_7f3a1c9e5b2d4f60a8c9e1f3b5d7a9c0
+                rotated_from: null
+                expiring_soon: false
+                description: null
+                expires_at: null
+                created_at: "2026-09-23T01:00:00.000Z"
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반(스키마·불변식·readOnly 필드·잘못된 커서·파라미터·Content-Type). code: contract.violation 등. 키 수 상한 초과도 이 상태(전용 코드 채택 전)"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "403":
+          $ref: "#/components/responses/Problem"
+          description: 인가 거부(auth.forbidden — service 주체 호출 금지 포함)
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+        "503":
+          $ref: "#/components/responses/Problem"
+          description: 일시 불가(retrieve.unavailable, api.orchestrator_unavailable·api.dependency_unavailable 채택 전제). Retry-After(정수 초)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: optional
+      x-rag-async: false
+      x-rag-authz-action: manage_api_keys
+  "/v1/api-keys/{api_key_id}":
+    parameters:
+      - name: api_key_id
+        in: path
+        required: true
+        description: API 키 ID(ULID)
+        schema:
+          $ref: "#/components/schemas/Ulid"
+    delete:
+      tags:
+        - api-keys
+      summary: API 키 폐기
+      operationId: delete_api_key
+      description: 바이블 §14 1.3.0(AM-39; 04 §12). 즉시 revoked_at = now(), 204. 인증 캐시(apikey:{tenant}:{hash}, Valkey TTL 60s)를 같은 트랜잭션 뒤 삭제해 다음 요청부터 401. 행은 감사를 위해 보존된다.
+      parameters:
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      responses:
+        "204":
+          description: 폐기됨(본문 없음)
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반. code: contract.violation 등"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "403":
+          $ref: "#/components/responses/Problem"
+          description: 인가 거부·존재 비노출(auth.forbidden — service 주체 호출 금지 포함)
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+        "503":
+          $ref: "#/components/responses/Problem"
+          description: 일시 불가(retrieve.unavailable, api.orchestrator_unavailable·api.dependency_unavailable 채택 전제). Retry-After(정수 초)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: ignored
+      x-rag-async: false
+      x-rag-authz-action: manage_api_keys
+  "/v1/api-keys/{api_key_id}/rotate":
+    parameters:
+      - name: api_key_id
+        in: path
+        required: true
+        description: API 키 ID(ULID)
+        schema:
+          $ref: "#/components/schemas/Ulid"
+    post:
+      tags:
+        - api-keys
+      summary: API 키 회전
+      operationId: rotate_api_key
+      description: 바이블 §14 1.3.0(AM-39; 04 §12). 새 api_key_id·새 secret을 같은 client_id·roles·allowed_collections로 발급(201, rotated_from = 이전 키)하고 이전 키의 expires_at을 min(기존, now + 7d)로 당긴다(유예, 초안 목표). 본문 {grace_period?}로 유예를 줄일 수 있다(늘릴 수 없음). 이미 revoked·expired면 400.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      requestBody:
+        required: false
+        description: "{grace_period?: string(duration)}"
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                grace_period:
+                  type: string
+                  description: ISO 8601 duration(예 P3D). 생략 시 7일
+              additionalProperties: false
+            example:
+              grace_period: P3D
+      responses:
+        "201":
+          description: 새 ApiKey(+secret 1회)
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+            Location:
+              $ref: "#/components/headers/Location"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKey"
+              example:
+                schema_type: ApiKey
+                api_key_id: 01JAE1N3P4Q5R6S7T8V9W0X1Y2
+                tenant_id: 01J9ZQ4K7X2M8N3P5R6S7T8V9W
+                client_id: mcp-agent-1
+                roles:
+                  - search
+                allowed_collections: []
+                status: active
+                secret: rag_ak_2b4c6d8e0f1a3b5c7d9e1f3a5b7c9d1e
+                rotated_from: 01JAE1M2N3P4Q5R6S7T8V9W0X1
+                expiring_soon: false
+                description: null
+                expires_at: null
+                created_at: "2026-09-23T01:05:00.000Z"
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반(스키마·불변식·readOnly 필드·잘못된 커서·파라미터·Content-Type). code: contract.violation 등. 이미 revoked·expired인 키의 회전 시도도 이 상태"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "403":
+          $ref: "#/components/responses/Problem"
+          description: 인가 거부·존재 비노출(auth.forbidden — service 주체 호출 금지 포함)
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+        "503":
+          $ref: "#/components/responses/Problem"
+          description: 일시 불가(retrieve.unavailable, api.orchestrator_unavailable·api.dependency_unavailable 채택 전제). Retry-After(정수 초)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: optional
+      x-rag-async: false
+      x-rag-authz-action: manage_api_keys
+  "/v1/plugins":
+    get:
+      tags:
+        - plugins
+      summary: 설치된 플러그인 목록
+      operationId: list_plugins
+      description: 바이블 §14 1.3.0(AM-39; 04 §5.1). PluginMeta는 바이블 §5.6 그대로이며 installed(api 프로세스 설치 여부)·package는 이 문서의 응답 확장(계약 필드 아님, 04 §미해결 이슈 10). 인가는 read_registry(인증된 전원).
+      parameters:
+        - $ref: "#/components/parameters/cursor"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/sort"
+        - name: extension_point
+          in: query
+          required: false
+          description: enum(ExtensionPoint) 14종 동등 필터
+          schema:
+            type: string
+        - name: license_grade
+          in: query
+          required: false
+          description: 쉼표 구분 in 필터
+          schema:
+            type: string
+        - name: isolation
+          in: query
+          required: false
+          description: enum(IsolationMode) 동등 필터
+          schema:
+            type: string
+        - name: installed
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      responses:
+        "200":
+          description: 플러그인 목록
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PluginMetaList"
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반. code: contract.violation 등"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+        "503":
+          $ref: "#/components/responses/Problem"
+          description: 일시 불가(retrieve.unavailable, api.orchestrator_unavailable·api.dependency_unavailable 채택 전제). Retry-After(정수 초)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: ignored
+      x-rag-async: false
+      x-rag-authz-action: read_registry
+  "/v1/plugins/{plugin_id}":
+    parameters:
+      - name: plugin_id
+        in: path
+        required: true
+        description: "plugin_id({extension_point}.{implementation}, 점 포함, 예 parser.hwpx_python_hwpx). 경로 변수 값 그대로"
+        schema:
+          type: string
+    get:
+      tags:
+        - plugins
+      summary: 플러그인 상세
+      operationId: get_plugin
+      description: 바이블 §14 1.3.0(AM-39; 04 §5.1). PluginMeta 그대로.
+      parameters:
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      responses:
+        "200":
+          description: PluginMeta
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PluginMeta"
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반(스키마·불변식·readOnly 필드·잘못된 커서·파라미터·Content-Type). code: contract.violation 등. 미존재 plugin_id 는 전용 코드 채택 전 이 상태로 응답"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+        "503":
+          $ref: "#/components/responses/Problem"
+          description: 일시 불가(retrieve.unavailable, api.orchestrator_unavailable·api.dependency_unavailable 채택 전제). Retry-After(정수 초)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: ignored
+      x-rag-async: false
+      x-rag-authz-action: read_registry
+  "/v1/audit-events":
+    get:
+      tags:
+        - audit
+      summary: 감사 이벤트 조회
+      operationId: list_audit_events
+      description: 바이블 §14 1.3.0(AM-39; 04 §11). 테넌트 스코프, CloudEventEnvelope 그대로(발행 당시 그 형태) — SSE /v1/events 프레임·웹훅 본문과 같은 파서로 소비 가능. type=(쉼표 in, audit.* 만), subject=, principal_hash=, action=, trace_id=, created_at_gte·created_at_lt(기본 최근 7일, 최대 창 90일). 인가는 read_audit(tenant_admin·platform_admin; pii_officer는 action=unmask_pii만).
+      parameters:
+        - $ref: "#/components/parameters/cursor"
+        - $ref: "#/components/parameters/limit"
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+          example: audit.query.executed,audit.document.accessed
+        - name: subject
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: principal_hash
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Hex64"
+        - name: action
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: trace_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: created_at_gte
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/DateTime"
+        - name: created_at_lt
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/DateTime"
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      responses:
+        "200":
+          description: 감사 이벤트 목록
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditEventList"
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반(스키마·불변식·잘못된 커서·파라미터·시간창 90일 초과). code: contract.violation 등"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "403":
+          $ref: "#/components/responses/Problem"
+          description: 인가 거부(auth.forbidden — read_audit 없음, pii_officer는 action=unmask_pii 외 거부)
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+        "503":
+          $ref: "#/components/responses/Problem"
+          description: 일시 불가(retrieve.unavailable, api.orchestrator_unavailable·api.dependency_unavailable 채택 전제). Retry-After(정수 초)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: ignored
+      x-rag-async: false
+      x-rag-authz-action: read_audit
+  "/v1/schemas":
+    get:
+      tags:
+        - system
+      summary: 게시 스키마 목록
+      operationId: list_schemas
+      description: 바이블 §14 1.3.0(AM-39; 14 §5.2·04 §10.1). 공개 표면(무인증). 항목 {name, schema_id, schema_type, schema_version, media_type, deprecated, sunset}. 도구 스키마(schema-diff-report 등)는 계약 인벤토리 밖이라 목록에 없다. ?major= 필터.
+      parameters:
+        - name: major
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: 스키마 목록
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/Cache-Control"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchemaDescriptorList"
+              example:
+                items:
+                  - name: context-pack
+                    schema_id: urn:rag:schema:context-pack:1
+                    schema_type: ContextPack
+                    schema_version: 1.0.0
+                    media_type: application/vnd.rag.context-pack+json
+                    deprecated: false
+                    sunset: null
+                next_cursor: null
+        "400":
+          $ref: "#/components/responses/Problem"
+          description: "요청 계약 위반. code: contract.violation 등"
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+      x-rag-rate-limit-class: public
+      x-rag-idempotency: ignored
+      x-rag-async: false
+  "/v1/version":
+    get:
+      tags:
+        - system
+      summary: 플랫폼·계약·API 버전(단일 인스턴스 자원)
+      operationId: get_version
+      description: 바이블 §14 1.3.0(AM-39; §6.7 단수 예외 — 01 §3.1 경로 정규식은 부합하나 "복수 명사" 관례를 벗어난다). 인가는 read_registry(인증된 전원). 버전 정보는 공개 표면(/healthz 등)에는 넣지 않는다(01 §19).
+      parameters:
+        - $ref: "#/components/parameters/Traceparent"
+        - $ref: "#/components/parameters/Tracestate"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      responses:
+        "200":
+          description: VersionInfo
+          headers:
+            RateLimit:
+              $ref: "#/components/headers/RateLimit"
+            RateLimit-Policy:
+              $ref: "#/components/headers/RateLimit-Policy"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VersionInfo"
+              example:
+                platform_version: 1.0.0
+                api_version: v1
+                contracts_compat: ">=1.0,<2.0"
+                schemas_bundle_hash: d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5
+                build:
+                  commit: 4bf92f3577b34da6a3ce929d0e0e4736
+                  built_at: "2026-09-23T00:00:00.000Z"
+        "401":
+          $ref: "#/components/responses/Problem"
+          description: "미인증(auth.unauthenticated). WWW-Authenticate: Bearer realm=\"rag\""
+        "429":
+          $ref: "#/components/responses/Problem"
+          description: 한도 초과(api.rate_limited). RateLimit·RateLimit-Policy·Retry-After 헤더
+        "500":
+          $ref: "#/components/responses/Problem"
+          description: 결함·내부 계약 위반(contract.violation(산출물) 등)
+      x-rag-rate-limit-class: admin
+      x-rag-idempotency: ignored
+      x-rag-async: false
+      x-rag-authz-action: read_registry
   "/v1/subscriptions":
     get:
       tags:
@@ -5964,6 +7070,7 @@ paths:
       x-rag-rate-limit-class: public
       x-rag-idempotency: ignored
       x-rag-async: false
+  # POST /mcp 는 바이블 §14 "/mcp" 행(MCP Streamable HTTP: search·get_document·list_collections)과 같은 연산이다.
   "/mcp":
     post:
       tags:
@@ -7921,7 +9028,7 @@ components:
               code:
                 type: string
                 pattern: ^profile\.[a-z_]+$
-                description: 검증기 경고 코드(profile.gate_pending 등). 바이블 §5.7 카탈로그(ErrorCodeCatalog)에 아직 없는 제안 어휘로 오류 코드 네임스페이스({stage}.{code})를 공유한다 — 등재 후 ErrorCodeCatalog 참조(components.schemas)로 교체한다(04 §4.2, 04 미해결 이슈 9; x-rag-pending)
+                description: 검증기 경고 코드. profile.gate_pending(게이트 미통과 기본값, §7.4)은 바이블 §5.7 ErrorCodeCatalog에 1.3.0(AM-36)으로 등재됐다 — 나머지 어휘도 같은 오류 코드 네임스페이스({stage}.{code})를 공유하며 미등재분만 등재 후 ErrorCodeCatalog 참조(components.schemas)로 교체한다(04 §4.2, 04 미해결 이슈 9; x-rag-pending)
               message:
                 type: string
               pointer:
@@ -7982,6 +9089,114 @@ components:
         - reserved
         - dedicated
       description: 테넌트 서비스 등급(04 §2.3 제안; 바이블 §5.7 등재 대상)
+    TenantStatus:
+      $ref: ../../schemas/common-types.schema.json#/$defs/TenantStatus
+      description: "active | disabled(바이블 §5.7 1.3.0 AM-38). disabled 테넌트의 요청은 auth.forbidden(403)"
+      x-rag-schema-id: urn:rag:schema:common-types:1
+    TenantQuotas:
+      type: object
+      description: 테넌트 할당량(API 전용 뷰 — Tenant·TenantPatch에서만 쓰는 응답 확장, AM-02; 계약 인벤토리 밖)
+      properties:
+        documents_max:
+          type:
+            - integer
+            - "null"
+          minimum: 0
+        storage_bytes_max:
+          type:
+            - integer
+            - "null"
+          minimum: 0
+        qps_max:
+          type:
+            - integer
+            - "null"
+          minimum: 0
+      additionalProperties: false
+    Tenant:
+      type: object
+      description: 테넌트 자원(API 전용 뷰; GET/POST /v1/tenants, GET/PATCH /v1/tenants/{tenant_id}, 바이블 §14·§5.7 1.3.0 AM-39). tenants 표(바이블 §13.1) 투영 — 계약 인벤토리 밖(AM-02)
+      properties:
+        schema_type:
+          type: string
+          const: Tenant
+        tenant_id:
+          $ref: "#/components/schemas/Ulid"
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+        status:
+          $ref: "#/components/schemas/TenantStatus"
+        tier:
+          $ref: "#/components/schemas/TenantTier"
+          readOnly: true
+          description: 읽기 전용. 승격은 tier.promotion.v1 워크플로우 전용(바이블 §11.2)
+        quotas:
+          $ref: "#/components/schemas/TenantQuotas"
+        disabled_at:
+          type:
+            - string
+            - "null"
+          format: date-time
+          readOnly: true
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+          readOnly: true
+        updated_at:
+          $ref: "#/components/schemas/DateTime"
+          readOnly: true
+      required:
+        - schema_type
+        - tenant_id
+        - name
+        - status
+        - tier
+        - created_at
+        - updated_at
+      additionalProperties: false
+    TenantCreateRequest:
+      type: object
+      description: POST /v1/tenants 본문(플랫폼 관리자 전용, FR-MGT-01)
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+        tier:
+          $ref: "#/components/schemas/TenantTier"
+        quotas:
+          $ref: "#/components/schemas/TenantQuotas"
+      required:
+        - name
+      additionalProperties: false
+    TenantPatch:
+      type: object
+      description: PATCH /v1/tenants/{tenant_id} 본문(JSON Merge Patch). status·quotas만 변경 — tier는 readOnly(승격은 tier.promotion.v1)
+      properties:
+        status:
+          $ref: "#/components/schemas/TenantStatus"
+        quotas:
+          $ref: "#/components/schemas/TenantQuotas"
+      additionalProperties: false
+      minProperties: 1
+    TenantList:
+      type: object
+      description: GET /v1/tenants 응답
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tenant"
+        next_cursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - next_cursor
+      additionalProperties: false
     TenantUsage:
       type: object
       description: usage_ledger 일 단위 집계(04 §2.2). 유계 집계라 커서 없음
@@ -8107,6 +9322,288 @@ components:
             - encrypted_text
       additionalProperties: false
       minProperties: 1
+    ApiKey:
+      type: object
+      description: API 키(API 전용 뷰; 바이블 §13.1 api_keys 투영, §14 1.3.0 AM-39, 04 §12). secret 은 생성·회전 응답에만 1회 노출 — 계약 인벤토리 밖(AM-02)
+      properties:
+        schema_type:
+          type: string
+          const: ApiKey
+        api_key_id:
+          $ref: "#/components/schemas/Ulid"
+          readOnly: true
+        tenant_id:
+          $ref: "#/components/schemas/Ulid"
+          readOnly: true
+        client_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        roles:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        allowed_collections:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ulid"
+        status:
+          type: string
+          enum:
+            - active
+            - revoked
+            - expired
+          readOnly: true
+        secret:
+          type: string
+          description: rag_ak_… 접두(01 §5.1 제안). 생성·회전 응답에만 존재
+        rotated_from:
+          type:
+            - string
+            - "null"
+          readOnly: true
+        expiring_soon:
+          type: boolean
+          readOnly: true
+          description: 만료 30일 전부터 true
+        description:
+          type:
+            - string
+            - "null"
+        expires_at:
+          type:
+            - string
+            - "null"
+          format: date-time
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+          readOnly: true
+      required:
+        - schema_type
+        - api_key_id
+        - tenant_id
+        - client_id
+        - roles
+        - status
+        - created_at
+      additionalProperties: false
+    ApiKeyCreateRequest:
+      type: object
+      description: POST /v1/api-keys 본문(04 §12)
+      properties:
+        client_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        roles:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        allowed_collections:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ulid"
+        expires_at:
+          type:
+            - string
+            - "null"
+          format: date-time
+        description:
+          type: string
+      required:
+        - client_id
+        - roles
+      additionalProperties: false
+    ApiKeyList:
+      type: object
+      description: GET /v1/api-keys 응답
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ApiKey"
+        next_cursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - next_cursor
+      additionalProperties: false
+    PluginMeta:
+      $ref: ../../schemas/plugin-meta.schema.json
+      description: 플러그인 자기 선언 메타데이터(바이블 §5.6, §14 1.3.0 AM-39)
+      x-rag-schema-id: urn:rag:schema:plugin-meta:1
+    PluginMetaList:
+      type: object
+      description: "GET /v1/plugins 응답(04 §5.1). installed·package 는 응답 확장이며 PluginMeta 계약 필드가 아니다(additionalProperties:false 와 충돌을 피하려 별도 래퍼로 둔다, 04 §미해결 이슈 10)"
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              plugin:
+                $ref: "#/components/schemas/PluginMeta"
+              installed:
+                type: boolean
+                description: api 프로세스 설치 여부
+              package:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  version:
+                    type: string
+                additionalProperties: false
+            required:
+              - plugin
+              - installed
+            additionalProperties: false
+        next_cursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - next_cursor
+      additionalProperties: false
+    AuditEventList:
+      type: object
+      description: GET /v1/audit-events 응답(04 §11). 항목은 발행 당시 CloudEventEnvelope 그대로 — SSE/웹훅과 같은 파서로 소비
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CloudEventEnvelope"
+        next_cursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - next_cursor
+      additionalProperties: false
+    SchemaDescriptor:
+      type: object
+      description: GET /v1/schemas 목록 항목(API 전용 뷰; 03-contracts/14 §5.2, 04 §10.1)
+      properties:
+        name:
+          type: string
+          pattern: ^[a-z][a-z0-9-]*$
+        schema_id:
+          type: string
+          pattern: ^urn:rag:schema:[a-z0-9-]+:[0-9]+$
+        schema_type:
+          type: string
+        schema_version:
+          $ref: "#/components/schemas/Semver"
+        media_type:
+          type: string
+        deprecated:
+          type: boolean
+        sunset:
+          type:
+            - string
+            - "null"
+          format: date-time
+      required:
+        - name
+        - schema_id
+        - schema_type
+        - schema_version
+        - media_type
+        - deprecated
+      additionalProperties: false
+    SchemaDescriptorList:
+      type: object
+      description: GET /v1/schemas 응답
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SchemaDescriptor"
+        next_cursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - next_cursor
+      additionalProperties: false
+    VersionInfo:
+      type: object
+      description: GET /v1/version 응답(단일 인스턴스 자원; 바이블 §6.7·§14 1.3.0 AM-39, 04 §10.2)
+      properties:
+        platform_version:
+          $ref: "#/components/schemas/Semver"
+        api_version:
+          type: string
+          description: "/v1 경로 major(01 §16)"
+        contracts_compat:
+          type: string
+          description: 게시 계약의 schema_version 허용 범위 문법(03-contracts/14 §4.3)
+        schemas_bundle_hash:
+          $ref: "#/components/schemas/Hex64"
+        build:
+          type: object
+          properties:
+            commit:
+              type: string
+            built_at:
+              $ref: "#/components/schemas/DateTime"
+          additionalProperties: false
+      required:
+        - platform_version
+        - api_version
+        - contracts_compat
+      additionalProperties: false
+    UnmaskRequest:
+      type: object
+      description: POST /v1/documents/{document_id}/unmask 본문(04 §12.2, pii_officer 전용)
+      properties:
+        tokens:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 100
+      required:
+        - tokens
+      additionalProperties: false
+    UnmaskResult:
+      type: object
+      description: POST /v1/documents/{document_id}/unmask 응답
+      properties:
+        document_id:
+          $ref: "#/components/schemas/Ulid"
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              token:
+                type: string
+              value:
+                type: string
+              category:
+                type: string
+            required:
+              - token
+              - value
+              - category
+            additionalProperties: false
+        unresolved:
+          type: array
+          items:
+            type: string
+      required:
+        - document_id
+        - items
+        - unresolved
+      additionalProperties: false
     Subscription:
       type: object
       description: 웹훅 구독(07 §3.1). secret 은 생성 응답에만 1회 노출

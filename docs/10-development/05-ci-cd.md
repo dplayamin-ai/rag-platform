@@ -2,7 +2,7 @@
 title: CI/CD
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -161,7 +161,7 @@ flowchart LR
 
 | 순서 | 검사 | 명령(정본·제안) |
 |------|------|-----------------|
-| 1 | 스키마 문법(2020-12 메타스키마, `$ref` 해소, `additionalProperties` 명시) + 래퍼 게이트 + 열거 대조(바이블 §5.7·이벤트·오류 코드·메트릭) + 인벤토리 커버리지 | `node tools/validate-contracts.mjs --root .`(현존 Node 스크립트; 02 §1.1 결정으로 CI는 항상 실행) |
+| 1 | 스키마 문법(2020-12 메타스키마, `$ref` 해소, `additionalProperties` 명시) + 래퍼 게이트 + 열거 대조(바이블 §5.7 1.3.0 정본 — 이벤트 25종·오류·경고 코드 84종·메트릭 36종, AM-36·39·41) + 인벤토리 커버리지(35종, AM-01) | `node tools/validate-contracts.mjs --root .`(현존 Node 스크립트; 02 §1.1 결정으로 CI는 항상 실행) |
 | 2 | 골든 예시 회귀(문서 `## 예시` 추출 → 스키마 검증; G1·G4) | `uv run python tools/docs/extract_examples.py --out build/golden && uv run pytest tests/contracts -m contract -k golden` |
 | 3 | Pydantic 동치(export ↔ `schemas/` 의미 비교) | `uv run python -m rag_platform.contracts.export --out build/schemas-export`(01 §6; `rag schema export`는 제안) → 비교 테스트 |
 | 4 | 불변식·해시 벡터·프로파일 해소 스냅샷 | `uv run pytest tests/contracts -m contract` |
@@ -169,7 +169,7 @@ flowchart LR
 | 6 | 트레일러 정합: `schemas/*.schema.json` 변경 커밋에 `Contract-Change: {kebab} {from} -> {to} ({level})`가 있고 `{level}` = 보고서 `computed_level` 이상 | `tools/ci/check_release_trailers.py --require contract-change`(08 §4.3 린트) |
 | 7 | 03-contracts 문서 `## 버전 이력` 최신 항목 = `versioning.py` 표(14 §10.4) | `uv run pytest tests/contracts -k versioning` |
 
-`SchemaDiffReport`는 인벤토리 밖 도구 스키마(`schemas/schema-diff-report.schema.json`, 14 소유)이며 열거 대조 대상이 아니다(00 §10.3). `passed=false`면 잡 실패, 보고서의 `changes[]`를 PR 코멘트 요약으로 게시한다(포크는 아티팩트만). 과대 선언(minor를 major로)은 통과시킨다(14 §10.2).
+`SchemaDiffReport`는 1.3.0에서 바이블 §5.1 계약 인벤토리(35종)에 편입된 스키마다(`schemas/schema-diff-report.schema.json`, `$id urn:rag:schema:schema-diff-report:1`, 14 소유, AM-01). `CompatLevel`·`SchemaChangeKind` 값은 §5.7 열거 대조 대상이다(00 §10.3). `passed=false`면 잡 실패, 보고서의 `changes[]`를 PR 코멘트 요약으로 게시한다(포크는 아티팩트만). 과대 선언(minor를 major로)은 통과시킨다(14 §10.2).
 
 ### 4.3 라이선스 게이트
 
@@ -228,7 +228,7 @@ compose 기동은 `--wait`로 헬스 체크를 기다리고, 실패 시 픽스�
 
 ### 4.7 시간 예산과 병렬화
 
-**결정(04 미해결 이슈 13):** PR 전체 벽시계 ≤ 20분(초안 목표)은 **잡 분할**로 달성한다 — §3.2의 잡은 서로 `needs` 없이 병렬이며(`coverage`만 세 잡 뒤), 가장 긴 잡(`integration` 15분, `image` 15분)이 상한을 정한다. 잡 안에서의 테스트 병렬 실행 플러그인은 확인 필요(04 미해결 이슈 9)이며 채택 전에는 잡 분할만 쓴다. 예산 초과가 5영업일 연속이면 `devex`가 (1) `component`를 포맷별 매트릭스로 분할, (2) `integration`에서 `tests/replay`를 분리, (3) 캐시 적중률 점검 순으로 대응한다. ([ADR-0035](../06-adr/0035-python-version-and-toolchain-pins.md))
+**결정(04 미해결 이슈 13):** PR 전체 실제 경과 시간 ≤ 20분(초안 목표)은 **잡 분할**로 달성한다 — §3.2의 잡은 서로 `needs` 없이 병렬이며(`coverage`만 세 잡 뒤), 가장 긴 잡(`integration` 15분, `image` 15분)이 상한을 정한다. 잡 안에서의 테스트 병렬 실행 플러그인은 확인 필요(04 미해결 이슈 9)이며 채택 전에는 잡 분할만 쓴다. 예산 초과가 5영업일 연속이면 `devex`가 (1) `component`를 포맷별 매트릭스로 분할, (2) `integration`에서 `tests/replay`를 분리, (3) 캐시 적중률 점검 순으로 대응한다. ([ADR-0035](../06-adr/0035-python-version-and-toolchain-pins.md))
 
 "성공 단축" 패턴(§3.2 대체안): 경로 필터로 불필요한 잡은 `if:`로 건너뛰는 대신 첫 step에서 `changes` 출력을 읽고 `exit 0`한다. GitHub가 건너뛴 잡을 필수 검사 통과로 취급하는지 확인된 뒤 하나로 통일한다.
 
@@ -254,7 +254,7 @@ compose 기동은 `--wait`로 헬스 체크를 기다리고, 실패 시 픽스�
 | `baseline-refresh` | `main` 최신 `completed` 런 → `tests/eval/baseline_run_id` + `tests/eval/baselines/{run_id}/` | 평가 결과 저장소 | 봇 PR `test(eval): bump baseline …`(04 §13) |
 | `forward-port-check` | 활성 `release/X.Y`마다 `cherry-pick -x` 표기로 `release/X.Y ⊆ main` 검사(08 §10.2 7단계); 격리 만료 임박 7일 알림 병행 | — | 누락 커밋 목록 이슈 |
 
-봇 PR은 `github-actions[bot]`(또는 조직 앱) 이름으로 열고 라벨 `bot`을 붙이며, 보통의 PR 게이트를 그대로 통과해야 머지된다(자동 머지는 `test(fixtures)`·`test(replay)`·`test(eval)` 스코프에 한해 CODEOWNERS 승인 1인 뒤, 07 §5.4 승인 규칙 적용).
+봇 PR은 `github-actions[bot]`(또는 조직 앱) 이름으로 열고 라벨 `bot`을 붙이며, 보통의 PR 게이트를 그대로 통과해야 머지된다. `test(fixtures)`·`test(replay)`·`test(eval)` 스코프에 한해 게이트 통과만으로 자동 머지되는 예외를 07 §5.4가 인정한다(사람 승인 대체 아님; 07-contributing과 합의, #94).
 
 ### 5.2 벤치 결과 저장 위치
 
@@ -872,17 +872,17 @@ jobs:
 3. **GPU 러너 옵션(§8.2).** ARC 버전·GPU 디바이스 플러그인·time-slicing 조합, 임시 러너 보장 방식, 지연 측정용 전용 GPU 필요성은 첫 릴리스 리허설에서 실측 후 확정한다.
 4. **PyPI PEP 740 증명·npm provenance(08 미해결 이슈 13).** 두 생태계 증명이 cosign을 대체하는지 확인되지 않으면 wheel·tarball에 `cosign sign-blob`을 추가한다.
 5. **멀티아치 이미지와 지문(§6.2).** arm64 게시 시 `Producer.image_digest`·`parser_fingerprint_hash`가 플랫폼 digest를 기록하면 아키텍처 혼합 클러스터에서 같은 문서의 지문이 갈린다. 04-pipelines/01·03-contracts 소유자와 "매니페스트 리스트 digest 기록" 또는 "아키텍처 단일 노드풀 강제" 중 하나를 ADR로 확정하기 전에는 `BUILD_ARM64`를 켜지 않는다.
-6. **체인지로그 생성기·커밋 린터(08 미해결 이슈 2·3).** 자체 `tools/ci/changelog.py`·`check_commit_message.py`·`check_release_trailers.py`는 제안이다. `Breaking-Kind` 4값·`Cache-Invalidation` 4값의 린트 어휘는 이 문서가 채택하되 [기여 가이드](./07-contributing.md) PR 템플릿 반영은 07 소유자와 함께 한다. git-cliff·release-please·commitlint 비교는 후속 조사.
+6. **체인지로그 생성기·커밋 린터(08 미해결 이슈 2·3).** 자체 `tools/ci/changelog.py`·`check_commit_message.py`·`check_release_trailers.py`는 제안이다. `Breaking-Kind` 4값·`Cache-Invalidation` 4값의 린트 어휘는 이 문서가 채택하고 [기여 가이드](./07-contributing.md) PR 템플릿(§5.3)에 두 트레일러 줄로 반영했다(해소, #94). git-cliff·release-please·commitlint 비교는 후속 조사로 남는다.
 7. **DCO 검사 앱(07 미해결 이슈 2).** Marketplace DCO 앱의 선정·조직 설치 가능 여부는 확인 필요다. 불가하면 `pr / meta`의 `Signed-off-by` 검사가 필수 검사가 된다(이름은 `DCO` 대신 `pr / meta`).
 8. **CLI 하위 명령 의존.** 이 문서가 인용한 `rag schema diff|export`, `rag models verify|sync|mirror`, `rag release verify|bundle`, `rag corpus sync`(제안), `rag security baseline`은 바이블 §12 `cli/` 목록에 없다(01·08·09/05 미해결 이슈와 동일 트랙). 확정 전 대체 명령(`python -m rag_platform.contracts.export`, `tools/ci/verify_release.py`)을 쓴다. 바이블 §12 patch 요청은 01 소유자가 묶는다.
 9. **`compose.ci-full.yaml`·`compose.ci-gpu.yaml`·`values-lite-kind.yaml`.** 야간·릴리스 전체 스택(OpenSearch·Temporal·사이드카·S3)과 kind 검증용 values는 `deploy/`에 없다(01 §2.1). 배포 아키텍처·배포 가이드 소유자에게 추가를 요청하며, `lite` 형상을 Helm으로 배포하지 않는다는 08-deployment §8 규칙과의 관계(검증 전용 예외)를 명시한다.
 10. **테스트 병렬 플러그인·커버리지·벤치 도구(04 미해결 이슈 9).** 순서 무작위화·병렬 실행·벤치 플러그인·diff 커버리지 도구의 라이선스 등급·버전 확인 전에는 §4.5·§4.6의 대체 수단으로 운용한다.
-11. **자동 머지 범위.** 봇 PR(`test(fixtures)`·`test(replay)`·`test(eval)`)의 자동 머지와 `staging` 승격 PR의 자동 머지는 07 §5.4 승인 규칙(팀 1인)과 충돌한다. 봇 PR에 한해 "게이트 통과 + 스코프 제한"을 승인 대체로 인정하는 예외를 07 소유자와 확정한다.
+11. **자동 머지 범위(해소, #94).** 봇 PR(`test(fixtures)`·`test(replay)`·`test(eval)`)에 한해 "게이트 통과 + 스코프 제한(라벨 `bot`, 작성자 `github-actions[bot]`)"을 07 §5.4 승인 대체 예외로 확정했다. `staging` 승격 PR은 이 예외에 포함되지 않고 통상 승인 규칙(팀 1인)을 따른다.
 12. **정리 릴리스 조건 자동 판정(08 미해결 이슈 14).** `maintenance.yaml`의 `rag release check-cleanup`(제안)은 스테이징·운영 원장 읽기 권한이 필요하다. 읽기 전용 서비스 계정과 09/08 §9.3 조건의 SQL·API 매핑을 `platform-ops`와 확정한다.
 13. **Sev1 롤백 승인 축약(§10.4).** 운영 롤백 PR을 승인자 1인으로 축약하는 규칙은 제안이며 09/06 런북·07 거버넌스와 합의가 필요하다.
 14. **`ocr-gpu:{semver}-bundled` 빌드.** 빌드 시 모델 미러 접근(OIDC)과 이미지 크기, 에어갭 반입 절차(배포 가이드 §6.3)와의 연결은 첫 `korean-gov` 배포 전 확정한다.
 15. **문서 사이트 빌드(08 미해결 이슈 8).** `pr / docs`의 사이트 빌드 단계는 도구·호스팅 확정 후 추가한다.
-16. **벤치 시계열의 데이터셋 구분(§5.2).** `rag_eval_metric_value`의 라벨은 바이블 §6.5 허용 목록 안의 `metric`·`profile_id`만이라 `bench-ko-100k`·`ko-public-v1` 등 데이터셋별 추세를 메트릭 라벨로 나눌 수 없다. 이 문서는 데이터셋을 라벨로 추가하지 않고(08/01 미해결 이슈 6과 동일 판단) `EvalRun` 원장(PostgreSQL 데이터소스)으로 분해한다. `dataset` 라벨이 정말 필요하면 바이블 §6.5 허용 라벨 목록 minor 개정(ADR)을 08-evaluation·09-operations/03 소유자와 함께 발의한다.
+16. 종결: R-07 — `rag_eval_metric_value`에 `dataset` 라벨을 추가하지 않고(바이블 §6.5 저카디널리티 규약 유지) `EvalRun` 원장(PostgreSQL 데이터소스) 분해로 대체한다(트리아지 §6.1 #124).
 
 ## 참조
 

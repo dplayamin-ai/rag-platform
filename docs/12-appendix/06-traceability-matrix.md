@@ -2,7 +2,7 @@
 title: 요구사항 추적 매트릭스 (Traceability Matrix)
 status: active
 owner: architecture
-version: 1.0.0
+version: 1.0.3
 last_updated: 2026-09-23
 depends_on: ["../01-requirements/01-functional-requirements.md", "../01-requirements/02-non-functional-requirements.md", "../11-roadmap/02-epics-and-backlog.md"]
 generated_by: tools/traceability.mjs
@@ -22,7 +22,7 @@ generated_by: tools/traceability.mjs
 
 | 구분 | 정의 | 설계 문서 인용 | 인용률 |
 |------|-----:|-----:|-----:|
-| FR | 217 | 56 | 26% |
+| FR | 217 | 57 | 26% |
 | NFR | 150 | 113 | 75% |
 | UC | 20 | 6 | 30% |
 | US | 91 | 91 | 100% |
@@ -38,7 +38,7 @@ generated_by: tools/traceability.mjs
 | FR-API-01 | 수집 API | 01-functional-requirements.md | 11-roadmap/02-epics-and-backlog | (로드맵 02 언급) |
 | FR-API-02 | 리트리벌 API | 01-functional-requirements.md | **미인용** | - |
 | FR-API-03 | 문서·청크 조회 API | 01-functional-requirements.md | 11-roadmap/02-epics-and-backlog | (로드맵 02 언급) |
-| FR-API-04 | OpenAPI 명세 게시 | 01-functional-requirements.md | **미인용** | - |
+| FR-API-04 | OpenAPI 명세 게시 | 01-functional-requirements.md | 02-architecture/00-design-bible, 05-api/01-api-design-guidelines, 05-api/04-management-api | - |
 | FR-API-05 | 표준 오류 모델 | 01-functional-requirements.md | **미인용** | - |
 | FR-API-06 | API 버전 관리 | 01-functional-requirements.md | **미인용** | - |
 | FR-API-07 | 페이지네이션·필터 | 01-functional-requirements.md | **미인용** | - |
@@ -128,7 +128,7 @@ generated_by: tools/traceability.mjs
 | FR-MCP-04 | 테넌트 컨텍스트 전달 | 01-functional-requirements.md | **미인용** | - |
 | FR-MCP-05 | 인용 해소 도구 | 01-functional-requirements.md | 02-architecture/01-system-overview, 05-api/05-mcp-server | - |
 | FR-MCP-06 | 전송 방식 | 01-functional-requirements.md | 02-architecture/01-system-overview, 05-api/05-mcp-server | - |
-| FR-MGT-01 | 테넌트 관리 | 01-functional-requirements.md | 11-roadmap/02-epics-and-backlog | (로드맵 02 언급) |
+| FR-MGT-01 | 테넌트 관리 | 01-functional-requirements.md | 00-vision/04-scope-and-non-goals, 02-architecture/00-design-bible, 06-adr/0039-bible-1-3-additive-amendment-bundle, 06-adr/README, 09-operations/01-deployment-guide, 11-roadmap/02-epics-and-backlog | (로드맵 02 언급) |
 | FR-MGT-02 | 컬렉션 관리 | 01-functional-requirements.md | **미인용** | - |
 | FR-MGT-03 | 프로파일 정의 | 01-functional-requirements.md | **미인용** | - |
 | FR-MGT-04 | 프로파일 불변성 | 01-functional-requirements.md | **미인용** | - |
@@ -380,7 +380,7 @@ generated_by: tools/traceability.mjs
 | NFR-SEC-01 | 테넌트 격리. 모든 인덱스 질의는 서버 측에서 `tenant_id` 필터를 강제하며 클라이언트가 우회할 수 없다(D-09) | 02-non-functional-requirements.md | 02-architecture/01-system-overview, 11-roadmap/02-epics-and-backlog | (로드맵 02 언급) |
 | NFR-SEC-02 | ACL 강제. `acl` 필드와 호출자 주체(principal)의 매칭이 모든 리트리버·MCP 도구에 동일하게 적용된다 | 02-non-functional-requirements.md | 11-roadmap/02-epics-and-backlog | (로드맵 02 언급) |
 | NFR-SEC-03 | 인증. OIDC(JWT) 및 서비스 계정 API 키를 지원하고 미인증 요청은 거절한다 | 02-non-functional-requirements.md | **미인용** | - |
-| NFR-SEC-04 | 인가. [기능 요구사항](./01-functional-requirements.md) FR-SEC-02의 역할(`tenant_admin`, `co | 02-non-functional-requirements.md | 02-architecture/07-multi-tenancy-and-security-architecture | - |
+| NFR-SEC-04 | 인가. [기능 요구사항](../01-requirements/01-functional-requirements.md) FR-SEC-02의 역할(`t | 02-non-functional-requirements.md | 02-architecture/07-multi-tenancy-and-security-architecture | - |
 | NFR-SEC-05 | 전송 암호화. 외부 노출 엔드포인트는 TLS 1.2 이상(권장 1.3), 내부 서비스 간 mTLS를 옵션으로 제공한다 | 02-non-functional-requirements.md | 02-architecture/07-multi-tenancy-and-security-architecture, 05-api/05-mcp-server, 11-roadmap/02-epics-and-backlog | (로드맵 02 언급) |
 | NFR-SEC-06 | 저장 암호화. 오브젝트 스토리지 SSE, DB·인덱스 볼륨 암호화를 배포 매니페스트 기본값으로 제공한다 | 02-non-functional-requirements.md | 04-pipelines/02-fetching-and-source-resolution | - |
 | NFR-SEC-07 | 비밀 관리. 비밀은 환경·시크릿 매니저에서만 주입되며 로그·트레이스·오류 응답에 노출되지 않는다 | 02-non-functional-requirements.md | 02-architecture/07-multi-tenancy-and-security-architecture, 09-operations/05-security-and-compliance, 09-operations/07-backup-and-disaster-recovery, 11-roadmap/02-epics-and-backlog | (로드맵 02 언급), T-SEC-09 |

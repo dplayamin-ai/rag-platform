@@ -2,8 +2,8 @@
 title: 오케스트레이션과 워크플로우
 status: active
 owner: architecture
-version: 0.2.1
-last_updated: 2026-09-22
+version: 0.2.3
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - ./00-design-bible.md
@@ -101,9 +101,10 @@ flowchart LR
 | `reindex.collection.v1` | ReindexCollection | `reindex_collection` | `POST /v1/collections/{collection_id}/reindex`, 프로파일 변경 | `maintenance`(부모) | 자식 슬라이딩 윈도우 50, 1,000개마다 `continue_as_new` |
 | `build.graph.v1` | — | `build_graph` | 컬렉션 정책(`graph` 플러그인) | `ingest-llm` | 플러그인 소유(O-03) |
 | `eval.run.v1` | EvaluationRun | `evaluate` | `POST /v1/eval/runs`, 야간 스케줄 | `maintenance` | 질의 배치 액티비티 + 하트비트 |
-| `maintenance.consistency.v1` | ScheduledMaintenance | `consistency_check` | 스케줄(§7.2) | `maintenance` | 문서 페이지마다 `continue_as_new` |
+| `maintenance.consistency.v1` | ScheduledMaintenance | `consistency_check` | 스케줄(§7.2), `POST /v1/collections/{collection_id}/consistency-check`(1.3.0, AM-39) | `maintenance` | 문서 페이지마다 `continue_as_new` |
 | `maintenance.cleanup.v1` | ScheduledMaintenance | — (테넌트 무관 시스템 잡) | 스케줄(1h) | `maintenance` | 테넌트·페이지 단위 `continue_as_new`(§2.7) |
 | `tier.promotion.v1` | — | `tier_promotion` | `TieringPolicy` 임계 초과 | `maintenance` | blue/green |
+| `collection.delete.v1` | — | `delete_collection`(1.3.0) | `DELETE /v1/collections/{collection_id}` | `maintenance`(부모) | 부모가 `collections.deleted_at` 기록 후 자식 `delete.document.v1` 팬아웃(§2.5 방식), 새 이벤트 없이 기존 이벤트 재사용(바이블 §11.2, AM-37) |
 
 **배치 수집(`POST /v1/ingest/batch`)에 대한 결정:** 별도 `IngestBatch` 워크플로우 타입을 두지 않는다. API가 최대 100건을 건별 `jobs` 행과 건별 `job_id`로 접수하고(바이블 §14), 팬아웃·동시성 제한은 디스패처(§8)가 `tenant_concurrent_jobs_max`로 강제한다. 배치 단위 상태 조회 수단은 바이블 §14 `GET /v1/jobs` 필터(`collection_id`, `state`, `kind`, 커서)에 없으므로, 배치 전체에 `request_id` 1개를 발급해 각 건의 `jobs.request_id`에 기록하고 `GET /v1/jobs`에 `request_id` 필터를 추가하는 안을 제안한다(바이블 §5.4 `IngestRequest.request_id`는 "요청당 서버 발급"이므로 배치 요청 1건 = `request_id` 1개로 해석; 05-api/02·바이블 §14 표 갱신 필요, 미해결 이슈 2). 배치 단위 취소·집계가 요구되면 `ingest.batch.v1` 부모 워크플로우를 §11.2에 등재하는 ADR을 발의한다(미해결 이슈 2).
 
@@ -192,13 +193,7 @@ sequenceDiagram
 | 4 회전 | `continue_as_new(carried_state)` | 완료 자식 1,000개마다. 회전 전에 윈도우를 **드레인**(인플라이트 자식 완료 대기)하여 자식 핸들을 넘기지 않는다(단순성 우선; 1,000건당 약 1 윈도우 분량의 처리량 손실은 초안 허용) |
 | 5 델타(따라잡기) | 1~4 반복 | 대상: 문서의 최신 `index_commits.committed_at > started_at`이고 그 커밋의 `profile_hash ≠ profile_hash'`인 문서(신규 수집·갱신·삭제; `documents.updated_at` 컬럼은 바이블 §13.1에 없으므로 커밋 시각으로 판정). 최대 3회 또는 델타 0건까지(종료 조건·마지막 회차 컬렉션 잠금은 03-data-flow 미해결 이슈 12·이 문서 미해결 이슈 10) |
 
-모드 A 마무리(공통 단계 뒤):
-
-| 단계 | 액티비티/구성 | 내용 |
-|------|---------------|------|
-| A-6 게이트 | 자식 `eval.run.v1`(green 물리 이름 대상, `EvalRun.index_commit_ids` = green 커밋) | `EvalReport.gate_result.passed=true`면 A-7. **실패면** `ledger.discard_green`(내부): green 물리 대상을 폐기 예약(`collections.backends`의 green 항목에 폐기 시각 기록; A-8 규칙으로 정리, 진단용 보존)하고 green 커밋은 **`committed`를 그대로 둔다** — `rolled_back`은 실패한 사가가 `rolling_back`을 거쳐 도달하는 상태이므로(바이블 §11.4·§5.7 `CommitStatus` 9단; `committed`에서 나가는 전이는 없다, [ADR-0026](../06-adr/0026-index-commit-generation-saga-and-ledger.md)) 게이트 실패로 커밋 상태를 바꾸지 않고 `index.commit.rolled_back`도 발행하지 않는다. 채움 중 `documents.current_*`는 green 커밋에 대해 전진하지 않았으므로(아래 본문의 결정) 되돌릴 원장 포인터가 없다. 폐기된 green 커밋은 `backend_results[].physical_name`이 폐기된 대상을 가리키는 이력으로 남는다(관리 API 표시는 03-data-flow 미해결 이슈 20·이 문서 미해결 이슈 18) → `stage.publish`가 `collection.reindex.completed{gate_result.passed=false, failed_gates[]}` 발행 + 부모 `failed`(`last_error.code` 배정은 미해결 이슈 6) |
-| A-7 교체 | `backend.swap_alias`(내부; 렉시컬 → 벡터) → `ledger.advance_pointers`(내부) | `col_{collection_id}_lex` → green, 이후 `col_{collection_id}_vec` → green. 이어서 `ledger.advance_pointers`가 문서 페이지 단위로 `documents.current_commit_id`·`current_generation`을 문서별 최신 green `committed` 커밋(`profile_hash = profile_hash'`, `backend_results[].physical_name` = green)으로 **한 번** 전진시킨다(03-data-flow §9.2 (3)·(6) 제안 채택, 아래 본문). `collections.profile_hash`·`backends[].physical_name` 갱신 → `collection.profile.changed`(api `collspec:` 캐시 무효화) + `collection.reindex.completed{gate_result.passed=true}`(`stage.publish`). alias 교체와 포인터 전진 사이의 짧은 창에서 조회 API는 `CollectionSpec.profile_hash`와 일치하는 최신 `committed` 커밋을 "서빙 중"으로 표시한다(03-data-flow §9.2 (3)) |
-| A-8 정리 | — | blue 물리 대상(게이트 실패·취소 시에는 green)은 **재색인 롤백 창**(초안 24h; 프로파일 키 `ingest.index.reindex_rollback_window` 제안, 미해결 이슈 4) 뒤 `maintenance.cleanup.v1`이 정리한다(§2.7 (3)). 물리 삭제는 **그 물리 이름을 가리키는 `collections.backends[].physical_name`·alias가 0개일 때만** 하고, 같은 `embedding_profile_hash`·`lexical_profile_hash`를 쓰는 다른 컬렉션이 공유 중이면(바이블 §13.4 `rag_vec_{hash12}`·`rag_lex_{hash12}` 공유; 0단계가 공유 물리 대상 재사용을 인정한다) 이 컬렉션의 레코드만 `delete_by_filter(tenant_id, collection_id)`로 지운다. 문서 세대의 `cleanup_delay`(1h)와 다른 값을 쓰는 이유는 컬렉션 규모의 재적재 비용이다(근거는 이 문서; 03-data-flow §9.2 (6)은 값을 그 문서 미해결 이슈 17로 둔다) |
+모드 A 마무리(공통 단계 뒤, A-6 게이트 → A-7 교체 → A-8 정리): 운영 절차·검증층·롤백 규칙의 정본은 [갱신·삭제·재색인](../04-pipelines/19-update-delete-and-reindexing.md) §5.2~§5.3이다. 이 문서가 소유하는 액티비티 이름만 적으면 — A-6: 자식 `eval.run.v1` 실패 시 `ledger.discard_green`(green 커밋은 `committed` 유지, `rolled_back` 미발행); A-7: `backend.swap_alias`(렉시컬 → 벡터) → `ledger.advance_pointers`(문서별 최신 green `committed` 커밋으로 `documents.current_*` 한 번 전진, 아래 본문의 포인터 결정); A-8: `maintenance.cleanup.v1`이 롤백 창(24h) 뒤 blue(실패 시 green)를 정리(공유 물리 대상은 이 컬렉션 레코드만 삭제).
 
 모드 B 마무리(공통 단계를 두 번 수행):
 
@@ -259,28 +254,9 @@ sequenceDiagram
     end
 ```
 
-`continue_as_new`에 넘기는 상태(내부 `ReindexCarriedState`) 예:
+`continue_as_new`에 넘기는 상태(내부 `ReindexCarriedState`)는 `collection_id`·`parent_job_id`·`target_profile_hash`·`mode`·`phase`·`cursor`·`window_max`·`delta_pass`·`canary_ids`·`counters{admitted, succeeded, partial, failed, deferred}`·`deferred_documents`·`started_at` 필드를 담는다. `mode`는 `blue_green`(A) 또는 `rolling_canary`(B), `phase`는 `canary | children | delta | gate | swap | finish`(내부 값, 계약 아님)다. 자식은 `IngestWorkflowInput.reindex{parent_job_id, target_profile_hash, mode}`로 색인한다(모드 A는 green 물리 대상, 모드 B는 같은 물리 대상의 새 세대). 자식의 `fetch`는 검증자(`etag`\|`last_modified`)가 있으면 조건부 GET으로 원본 바이트를 재사용하고, 지문이 바뀌지 않은 스테이지는 `stage_key` 캐시에 적중하며 `index`만 항상 실행되므로(§3.2) 재색인 비용은 "실제로 바뀐 스테이지부터 + 적재"로 자연히 수렴한다(바이블 §4.1·§4.2).
 
-```json
-{
-  "collection_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9X",
-  "parent_job_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
-  "target_profile_hash": "9f3a6c1e2b7d4a8f0c5e9b3d7a1f6e2c4b8d0a9f3e7c1b5d2a6f8e0c4b9d3a7f",
-  "mode": "blue_green",
-  "phase": "children",
-  "cursor": "01J9ZQ4K7X2M8N3P5R6S7T8V9Y",
-  "window_max": 24,
-  "delta_pass": 0,
-  "canary_ids": [],
-  "counters": {"admitted": 1000, "succeeded": 991, "partial": 4, "failed": 5, "deferred": 12},
-  "deferred_documents": ["01J9ZQ4K7X2M8N3P5R6S7T8V9Z"],
-  "started_at": "2026-09-22T09:00:00.000Z"
-}
-```
-
-`mode`는 `blue_green`(A) 또는 `rolling_canary`(B), `phase`는 `canary | children | delta | gate | swap | finish`(내부 값, 계약 아님)다. 자식은 `IngestWorkflowInput.reindex{parent_job_id, target_profile_hash, mode}`로 색인한다(모드 A는 green 물리 대상, 모드 B는 같은 물리 대상의 새 세대). 자식의 `fetch`는 검증자(`etag`\|`last_modified`)가 있으면 조건부 GET으로 원본 바이트를 재사용하고, 지문이 바뀌지 않은 스테이지는 `stage_key` 캐시에 적중하며 `index`만 항상 실행되므로(§3.2) 재색인 비용은 "실제로 바뀐 스테이지부터 + 적재"로 자연히 수렴한다(바이블 §4.1·§4.2).
-
-**모드 A의 원장 포인터에 대한 결정(03-data-flow 미해결 이슈 20에 대한 이 문서의 답):** 03-data-flow §9.2 (3)의 제안을 채택한다. `reindex.mode = blue_green`인 자식의 `stage.index`는 세대 사가를 정상 완주해 커밋을 `committed`로 남기되(`index.commit.published` 발행, `IndexCommit.profile_hash = profile_hash'`, `backend_results[].physical_name` = green, green 안에서 `is_current=true`) **`documents.current_commit_id`·`current_generation`을 전진시키지 않는다**. 포인터는 A-7에서 `ledger.advance_pointers`가 alias 교체 직후 문서별 최신 green `committed` 커밋으로 한 번 전진시킨다. 따라서 채움 중 조회 API는 계속 blue 커밋을 활성으로 보고하고(03-data-flow §1.1 파생 규칙), 게이트 실패·취소 시 되돌릴 포인터가 없다. 이를 위해 `index_generation` 할당은 `documents` 행 잠금 아래 **그 문서의 `max(index_commits.index_generation) + 1`**(전진하지 않은 green 세대 포함)로 하며 `current_generation + 1`이 아니다 — blue에서 정상 수집(N+2)이 일어난 문서는 델타 패스가 green에 N+3으로 재적재한다(03-data-flow §9.2 (4)). 바이블 §11.4 (6)의 안전망(`documents.current_generation ≥ N+1`이면 `index.generation_conflict`)은 그대로 유효하다. 이 규칙은 바이블 §11.4 사가("`committed` 시 `documents.current_generation=N+1`")의 예외이므로 [ADR-0026](../06-adr/0026-index-commit-generation-saga-and-ledger.md) 개정 항목으로 미해결 이슈 18에 등재한다. 모드 B(`rolling_canary`)와 일반 수집은 바이블 §11.4 그대로 `committed` 트랜잭션에서 포인터를 전진시킨다.
+**모드 A의 원장 포인터에 대한 결정(03-data-flow 미해결 이슈 20에 대한 이 문서의 답):** 03-data-flow §9.2 (3)의 제안을 채택한다. `reindex.mode = blue_green`인 자식의 `stage.index`는 세대 사가를 정상 완주해 커밋을 `committed`로 남기되(`index.commit.published` 발행, `IndexCommit.profile_hash = profile_hash'`, `backend_results[].physical_name` = green, green 안에서 `is_current=true`) **`documents.current_commit_id`·`current_generation`을 전진시키지 않는다**. 포인터는 A-7에서 `ledger.advance_pointers`가 alias 교체 직후 문서별 최신 green `committed` 커밋으로 한 번 전진시킨다. 따라서 채움 중 조회 API는 계속 blue 커밋을 활성으로 보고하고(03-data-flow §1.1 파생 규칙), 게이트 실패·취소 시 되돌릴 포인터가 없다. 이를 위해 `index_generation` 할당은 `documents` 행 잠금 아래 **그 문서의 `max(index_commits.index_generation) + 1`**(전진하지 않은 green 세대 포함)로 하며 `current_generation + 1`이 아니다 — blue에서 정상 수집(N+2)이 일어난 문서는 델타 패스가 green에 N+3으로 재적재한다(03-data-flow §9.2 (4)). 폐기된 green 세대(A-6 게이트 실패)·롤백된 세대(사가 보상)도 번호를 재사용하지 않는다(별도 `last_generation` 컬럼 없음, 바이블 §11.4 (6), AM-18). 바이블 §11.4 (6)의 안전망(`documents.current_generation ≥ N+1`이면 `index.generation_conflict`)은 그대로 유효하다. 이 규칙은 바이블 §11.4 사가("`committed` 시 `documents.current_generation=N+1`")의 예외이므로 [ADR-0026](../06-adr/0026-index-commit-generation-saga-and-ledger.md) 개정 항목으로 미해결 이슈 18에 등재한다. 모드 B(`rolling_canary`)와 일반 수집은 바이블 §11.4 그대로 `committed` 트랜잭션에서 포인터를 전진시킨다.
 
 부모 취소(`cancel`)는 인플라이트 자식에 취소를 전파(`REQUEST_CANCEL`)하고 완료를 기다린 뒤, 모드 A는 A-6 실패 경로와 같이 `ledger.discard_green`으로 green 물리 대상을 폐기 예약하고(포인터 미전진이라 복원 없음) `cancelled`로 종료하며, 모드 B는 이미 플립된 문서를 그대로 둔 채(혼합 상태 허용) `cancelled`로 종료한다. 부모 재시도(`POST /v1/jobs/{job_id}/retry`)는 새 run이 `ledger.list_documents`를 다시 순회하되 최신 `committed` 커밋의 `profile_hash`가 이미 `profile_hash'`인 문서는 단계 1의 필터로 제외되어 자식을 만들지 않는다(`index`는 캐시가 없어 자식이 실행되면 새 세대가 생기므로 부모가 걸러야 한다). 부모가 종료(실패·취소)된 뒤 `queued`로 남은 자식 행(`parent_job_id` 설정, `workflow_run_id IS NULL`)은 조정 틱(§6.3)이 `cancelled`로 접는다.
 
@@ -318,7 +294,7 @@ sequenceDiagram
 **결정:** 모든 `stage.*` 액티비티는 `Stage[In, Out]` 구현을 감싸는 제네릭 래퍼 1개다(바이블 §2.3 `worker`). 래퍼는 Temporal 전용 호출(`activity.info()`, `activity.heartbeat()`)을 `ShellRuntime` 인터페이스 뒤에 두어 `LocalRunner`가 같은 래퍼를 인프로세스로 호출할 수 있게 한다.
 
 ```python
-# src/rag_platform/orchestration/stage_shell.py — 오케스트레이터 중립 래퍼 스케치(정본은 04-pipelines/01)
+# src/rag_platform/orchestration/context.py — 오케스트레이터 중립 래퍼 스케치(정본은 04-pipelines/01; 구 orchestration/stage_shell.py는 삭제, R-08)
 # temporalio를 임포트하지 않는다: LocalRunner(local 모드, [temporal] extra 미설치 가능, 바이블 §6.7)가 같은 함수를 호출한다.
 from rag_platform.contracts.common import ArtifactRef, StageError
 from rag_platform.sdk import StageContext, hash_of  # hash_of == H(label, *parts) (바이블 §6.2)
@@ -363,7 +339,7 @@ from temporalio import activity
 from temporalio.exceptions import ApplicationError
 
 from rag_platform.contracts.common import ArtifactRef, StageError
-from rag_platform.orchestration.stage_shell import run_stage, StageShell
+from rag_platform.orchestration.context import run_stage, StageShell
 
 
 class TemporalRuntime:                       # ShellRuntime 구현: Temporal 바인딩
@@ -390,32 +366,10 @@ def make_activity(stage_name: str):
 ```json
 {
   "stage": "normalize",
-  "job": {
-    "job_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
-    "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9X",
-    "collection_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9Y",
-    "document_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9Z",
-    "profile_hash": "9f3a6c1e2b7d4a8f0c5e9b3d7a1f6e2c4b8d0a9f3e7c1b5d2a6f8e0c4b9d3a7f",
-    "priority": 5
-  },
-  "input_ref": {
-    "uri": "s3://rag/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9X/artifacts/parsed-document/4b/4b8d0a9f3e7c1b5d2a6f8e0c4b9d3a7f9f3a6c1e2b7d4a8f0c5e9b3d7a1f6e2c.json",
-    "blake3": "2a6f8e0c4b9d3a7f9f3a6c1e2b7d4a8f0c5e9b3d7a1f6e2c4b8d0a9f3e7c1b5d",
-    "media_type": "application/vnd.rag.parsed-document+json",
-    "schema_type": "ParsedDocument",
-    "schema_version": "1.0.0",
-    "size_bytes": 204800,
-    "stage_key": "4b8d0a9f3e7c1b5d2a6f8e0c4b9d3a7f9f3a6c1e2b7d4a8f0c5e9b3d7a1f6e2c"
-  },
-  "event_ids": {
-    "state_changed": "01J9ZQ4K7X2M8N3P5R6S7T8W00",
-    "stage_event": "01J9ZQ4K7X2M8N3P5R6S7T8W01",
-    "commit_published": null,
-    "commit_rolled_back": null
-  },
-  "commit_id": null,
-  "force": false,
-  "reindex": null
+  "job": {"job_id": "01J9…9W", "tenant_id": "01J9…9X", "collection_id": "01J9…9Y", "document_id": "01J9…9Z", "profile_hash": "9f3a…3a7f", "priority": 5},
+  "input_ref": {"uri": "s3://rag/tenants/01J9…9X/artifacts/parsed-document/4b/4b8d….json", "blake3": "2a6f…1b5d", "media_type": "application/vnd.rag.parsed-document+json", "schema_type": "ParsedDocument", "schema_version": "1.0.0", "size_bytes": 204800, "stage_key": "4b8d…1b5d"},
+  "event_ids": {"state_changed": "01J9…W00", "stage_event": "01J9…W01", "commit_published": null, "commit_rolled_back": null},
+  "commit_id": null, "force": false, "reindex": null
 }
 ```
 
@@ -544,7 +498,7 @@ CI: `tests/replay/`에 스테이징에서 채집한 워크플로우 타입별 �
 | `get_status()` | 쿼리(동기) | 모든 잡 워크플로우 | `GET /v1/jobs/{job_id}`에서 원장 불일치 감지 시 | `{stage(마지막 `ctx.run` 호출 스테이지), priority, cancel_requested}` 인메모리 뷰. 액티비티 `attempt`·하트비트 `progress`는 워크플로우 코드에 노출되지 않으므로 **원장(`jobs.attempts`·`jobs.progress`)이 정본**이며 쿼리는 조정용 |
 | `child_finished` | 없음(사용 안 함) | — | — | 재색인 자식은 Temporal 자식 워크플로우 결과로 완료를 받으므로 별도 시그널 없음 |
 
-**결정:** 취소는 Temporal 네이티브 `handle.cancel()`이 아니라 시그널로 구현한다(바이블 §11.5). 이유: (1) 취소 사유·주체를 워크플로우 상태에 남겨 `JobStatus.last_error`·감사 이벤트(`audit.admin.action`)에 반영, (2) `stage.index`가 플립 시작(`flipping_lexical`) 이후면 취소를 **보류하고 커밋을 완료**한 뒤 `succeeded`로 끝내는 규칙(혼합 상태를 남기지 않음; 늦은 취소는 `warnings[]`에 기록)을 워크플로우가 판단해야 하기 때문이다. 플립 전(`pending~lexical_written`) 취소는 새 세대 삭제 보상 후 `cancelled`다. `running → cancelling` 전이의 기록 주체는 **API**다(워크플로우 시그널 핸들러는 I/O를 할 수 없고, 바이블 §11.5 표도 `POST …/cancel`의 원장 열을 `job_events`로 둔다): API가 `state=cancelling`을 먼저 커밋해야 `GET /v1/jobs/{job_id}`가 보상 중에도 `cancelling`을 돌려주고 `job.state.changed(cancelling)`가 누락되지 않으며(03-data-flow §10), 디스패처의 활성 잡 판정(`state IN ('queued','running','cancelling')`)도 이 상태를 본다. 늦은 취소 경로의 `cancelling → succeeded` 전이는 바이블 §11.5 상태 기계에 없으므로 patch 제안을 미해결 이슈 6에 둔다.
+**결정:** 취소는 Temporal 네이티브 `handle.cancel()`이 아니라 시그널로 구현한다(바이블 §11.5). 이유: (1) 취소 사유·주체를 워크플로우 상태에 남겨 `JobStatus.last_error`·감사 이벤트(`audit.admin.action`)에 반영, (2) `stage.index`가 플립 시작(`flipping_lexical`) 이후면 취소를 **보류하고 커밋을 완료**한 뒤 `succeeded`로 끝내는 규칙(혼합 상태를 남기지 않음; 늦은 취소는 `warnings[]`에 기록)을 워크플로우가 판단해야 하기 때문이다. 플립 전(`pending~lexical_written`) 취소는 새 세대 삭제 보상 후 `cancelled`다. `running → cancelling` 전이의 기록 주체는 **API**이며, `index_commits.status`가 아직 `flipping_*` 이전이면 이 문서 앞부분대로 `state=cancelling`을 먼저 커밋해 `GET /v1/jobs/{job_id}`가 보상 중에도 `cancelling`을 돌려준다(03-data-flow §10). **트리아지 §5.2 AM-46 잠정 규칙(바이블 §11.5 상태 기계·03-contracts/12 `ALLOWED_TRANSITIONS`는 변경하지 않는 조건, (가)major 유발이라 M3 전 운영 요구 확인 시 재발의):** 플립 시작(`flipping_lexical`) **후** 도착한 취소는 `jobs.state`를 `cancelling`으로 전이시키지 않는다 — API는 `index_commits.status`를 함께 확인해 `flipping_*` 이후면 원장 갱신·시그널 전송을 생략하고, 잡은 `running → succeeded`로 정상 종료하며 `warnings += late_cancel_ignored`만 남긴다. 이 경우 취소 API(`POST /v1/jobs/{job_id}/cancel`)는 202와 **현재(변경 없는) `JobStatus`**(`state=running`)를 돌려준다(CR-29). `cancelling → succeeded` 전이를 상태 기계에 추가하는 patch안은 채택하지 않는다.
 
 ```mermaid
 sequenceDiagram
@@ -554,21 +508,23 @@ sequenceDiagram
     participant T as Temporal
     participant W as 워커 ingest-io (stage.index)
     participant L as 원장 (index_commits, jobs, outbox)
-    API->>L: jobs state=cancelling + job_events + outbox(job.state.changed, audit.admin.action) [tx, API 생성 event_id]
-    API->>WF: signal cancel(reason)
-    WF->>T: 진행 중 액티비티 취소 요청 (WAIT_CANCELLATION_COMPLETED)
-    T-->>W: 하트비트 응답에 취소 플래그
-    alt index_commits.status ∈ {pending, vector_written, lexical_written}
+    Note over API,L: API가 index_commits.status를 먼저 확인한 뒤 분기(AM-46)
+    alt status ∈ {pending, vector_written, lexical_written}
+        API->>L: jobs state=cancelling + job_events + outbox(job.state.changed, audit.admin.action) [tx, API 생성 event_id] → 202 + JobStatus(cancelling)
+        API->>WF: signal cancel(reason)
+        WF->>T: 진행 중 액티비티 취소 요청 (WAIT_CANCELLATION_COMPLETED)
+        T-->>W: 하트비트 응답에 취소 플래그
         W->>L: status=rolling_back
         W->>W: delete_by_filter(commit_id) 양 백엔드 (새 세대 삭제)
         W->>L: status=rolled_back + outbox(index.commit.rolled_back, event_id=event_ids.commit_rolled_back)
         W-->>T: 취소 수락(CancelledError) → 워크플로우에는 ActivityError(cause=CancelledError)
         WF->>L: stage.publish — jobs state=cancelled(cancelling→cancelled) + outbox(job.state.changed)
     else status ∈ {flipping_lexical, flipping_vector}
-        W->>W: 플립 완료까지 계속 (취소 보류)
+        Note over API,L: AM-46 잠정 규칙 — cancelling 전이 없음(ALLOWED_TRANSITIONS 불변), 원장 갱신·시그널 생략 → 202 + JobStatus(running)
+        W->>W: 플립 완료까지 계속(취소와 무관하게 진행)
         W->>L: status=committed, documents.current_generation=N+1 + outbox(index.commit.published, event_id=event_ids.commit_published)
         W-->>T: 정상 완료
-        WF->>L: stage.publish — state=succeeded(cancelling→succeeded, §11.5 patch 제안), warnings += late_cancel_ignored(제안)
+        WF->>L: stage.publish — jobs state=succeeded(running→succeeded), warnings += late_cancel_ignored
     end
 ```
 
@@ -584,7 +540,7 @@ sequenceDiagram
 
 | 전이·이벤트 | 기록 주체 | 트랜잭션 내용 | `event_id` 출처 |
 |-------------|-----------|---------------|-----------------|
-| `queued` 생성 | API | `idempotency_keys` + `jobs INSERT` | — |
+| `queued` 생성(접수) | API | `idempotency_keys` + `jobs INSERT` + `outbox(job.state.changed)`(접수 시 발행, 트리아지 #116; 이전 "이벤트 없음"에서 정정) | API 생성 ULID(워크플로우 밖) |
 | `queued → queued`(대기·순서) | 디스패처 | `jobs.waiting_for` 갱신, `job_events` | — (이벤트 없음) |
 | `queued → cancelled`(미시작 취소·`deadline_at`) | 디스패처 | `jobs` + `job_events` + `outbox(job.state.changed)` | 디스패처 생성 ULID(워크플로우 없음) |
 | `running → cancelling` | **API**(`POST /v1/jobs/{job_id}/cancel` 수신 시, `handle.signal(cancel)` 전송 **직전**) | `jobs.state=cancelling` + `job_events` + `outbox(job.state.changed, audit.admin.action)` | API 생성 ULID(워크플로우 밖; 시그널 핸들러는 I/O 불가) |
@@ -596,7 +552,7 @@ sequenceDiagram
 | 종료(`succeeded`·`partial`·`failed`·`cancelled`) | `stage.publish`(로컬 액티비티)만 — `ingest.document.indexed \| failed \| deleted`의 단일 소유자 | `jobs.state/finished_at/last_error/index_commit_id` + `job_events` + `outbox(job.state.changed, ingest.document.indexed \| failed \| deleted)` | 워크플로우 발급(`publish` 호출의 `event_ids`) |
 | 진행률(`progress{done,total,unit}`) | 래퍼 | 스테이지 시작·종료 시 + 장시간 스테이지는 하트비트 시각 기준 30s 간격(초안)으로만 `jobs.progress` 갱신 | — |
 
-이벤트별 소유자는 하나다: `ingest.document.fetched~embedded`는 래퍼 `commit_stage`, `index.commit.published|rolled_back`은 `stage.index` 사가, `ingest.document.indexed|failed|deleted`와 종료 `job.state.changed`는 `stage.publish`, `running → cancelling`은 API. 03-data-flow §10은 `index.commit.published`·`ingest.document.deleted`를 `publish`가 커밋 트랜잭션에서 발행한다고 적는데, 이 문서는 바이블 §11.4 다이어그램을 따라 커밋 전이 트랜잭션(사가 내부)에서 `index.commit.published`를, 종료 트랜잭션(`stage.publish`)에서 `ingest.document.indexed|deleted`를 기록한다(정합은 03-contracts/12 게시 후 대조, 미해결 이슈 17).
+이벤트별 소유자는 하나다: 접수 `job.state.changed`(`queued` 생성)와 `running → cancelling`은 API, `ingest.document.fetched~embedded`는 래퍼 `commit_stage`, `index.commit.published|rolled_back`은 `stage.index` 사가, `ingest.document.indexed|failed|deleted`와 종료 `job.state.changed`는 `stage.publish`. 03-data-flow §10은 `index.commit.published`·`ingest.document.deleted`를 `publish`가 커밋 트랜잭션에서 발행한다고 적는데, 이 문서는 바이블 §11.4 다이어그램을 따라 커밋 전이 트랜잭션(사가 내부)에서 `index.commit.published`를, 종료 트랜잭션(`stage.publish`)에서 `ingest.document.indexed|deleted`를 기록한다(정합은 03-contracts/12 게시 후 대조, 미해결 이슈 17).
 
 `LocalRunner`도 같은 함수를 호출하므로 원장·아웃박스 기록 형태는 동일하며 `workflow_run_id`만 `null`이다.
 
@@ -630,22 +586,7 @@ sequenceDiagram
 `PipelineContext`는 바이블 §11.1의 4멤버다. `TemporalContext`는 `workflow.execute_activity`로, `LocalContext`는 `asyncio` + 재시도 루프로 `run`을 구현한다. 파이프라인 정의는 두 컨텍스트를 구분하지 못한다.
 
 ```python
-# src/rag_platform/sdk/pipeline_context.py — 스케치(정본은 04-pipelines/01)
-from datetime import datetime, timedelta
-from typing import Protocol
-
-from rag_platform.contracts.common import ArtifactRef, CloudEventEnvelope
-from rag_platform.contracts.policies import StagePolicy
-
-
-class PipelineContext(Protocol):
-    async def run(self, stage: str, inp_ref: ArtifactRef, out_type: type, policy: StagePolicy) -> ArtifactRef: ...
-    async def emit(self, event: CloudEventEnvelope) -> None: ...
-    def now(self) -> datetime: ...
-    async def sleep(self, d: timedelta) -> None: ...
-
-
-# src/rag_platform/pipelines/ingest.py — temporalio · fastapi · ledger 임포트 금지(import-linter)
+# src/rag_platform/pipelines/ingest.py — temporalio · fastapi · ledger 임포트 금지(import-linter). PipelineContext(4멤버: run/emit/now/sleep, 바이블 §11.1)는 02 §2.2와 동일 시그니처라 재정의하지 않는다
 STAGES = ("fetch", "parse", "normalize", "chunk", "recount", "enrich", "embed", "index")   # publish는 루프 밖
 
 async def run(ctx: PipelineContext, req_ref: ArtifactRef, profile: "PipelineProfile", *, from_stage: str = "fetch") -> ArtifactRef:
@@ -776,9 +717,9 @@ import asyncio
 from datetime import datetime, timezone
 
 from rag_platform.contracts.common import StageError
-from rag_platform.orchestration.stage_shell import run_stage       # temporalio 의존 없음
+from rag_platform.orchestration.context import run_stage           # temporalio 의존 없음
 
-class LocalRuntime:                                  # ShellRuntime 구현: 인프로세스
+class LocalRuntime:                                  # ShellRuntime 구현: 인프로세스(§3.1 TemporalRuntime과 같은 4메서드)
     def __init__(self, attempt: int, resume): self._attempt, self._resume, self.last = attempt, resume, None
     def attempt(self): return self._attempt
     def workflow_run_id(self): return None            # LocalRunner는 null(바이블 §6.1)
@@ -887,69 +828,7 @@ class LocalRunner:
 
 ## 9. 처리량 추정과 워커 사이징 가이드
 
-모든 수치는 **초안 가정**이며 `temporalio/omes` + `benchmark-workers` 부하 테스트(07-tech-landscape/08 미해결 이슈 1)와 08-evaluation/05 벤치마크로 갱신한다. 방법은 Little의 법칙 `동시 실행 수 N = 도착률 λ × 서비스 시간 S`다.
-
-### 9.1 가정
-
-| 항목 | 값 | 근거 |
-|------|----|------|
-| 일 문서 수(standard 설계점) | 100,000 | 07-tech-landscape/08 리소스 표 |
-| 평균 도착률 λ_avg | 1.16 docs/s | 100,000 / 86,400 |
-| 피크 계수 | 3 | 업무 시간 집중(가정) |
-| 설계 도착률 λ_peak | 3.5 docs/s | λ_avg × 3 |
-| 문서 구성 | 텍스트 70% / 스캔 PDF 20% / 소형 TXT·HTML 10% | 가정 |
-| 평균 페이지 | 20 | 가정 |
-| 평균 리프 청크 | 60 | 20p × 약 1,500 토큰 ÷ 512(가정) |
-| 텍스트 파싱 속도 | 0.3 s/page | 브리프 §7 "텍스트 PDF 100p < 30s" 목표에서 역산 |
-| CPU OCR 속도(standard) | 4 s/page | 가정(RapidOCR mobile CPU; 실측 필요). premium GPU는 3 s/page 이하 목표(브리프 §7) |
-| 임베딩 처리량 | 150 chunks/s/GPU | 가정(BGE-M3 fp16, 512 토큰; vLLM pooling 실측 필요) |
-
-### 9.2 스테이지 서비스 시간(초, 가정)
-
-| 스테이지 | 텍스트 | 스캔 | 소형 | 가중 평균 S | 큐 |
-|----------|-------:|-----:|-----:|------------:|----|
-| fetch | 2 | 2 | 1 | 1.9 | `ingest-io` |
-| parse(+detect) | 8 | 80 | 1 | 21.7 | `ingest-cpu` |
-| normalize | 1 | 1 | 0.5 | 0.95 | `ingest-cpu` |
-| chunk | 1 | 1 | 0.5 | 0.95 | `ingest-cpu` |
-| enrich(결정적) | 2 | 2 | 1 | 1.9 | `ingest-cpu` |
-| embed | 2 | 2 | 1 | 1.9 | `ingest-gpu-embed` |
-| index(사가) | 3 | 3 | 2 | 2.9 | `ingest-io` |
-| publish | 0.1 | 0.1 | 0.1 | 0.1 | 로컬 |
-| **문서당 합계** | 19.1 | 91.1 | 7.1 | **32.3** | |
-
-### 9.3 큐별 동시 실행 수와 워커 수(피크)
-
-`replicas = ceil(N × 1.3(여유) / (프로세스당 슬롯 × 파드당 프로세스))`.
-
-| 큐 | ΣS(초) | N = 3.5 × ΣS | 파드 구성(초안) | 피크 파드 | 평균 파드 | KEDA 범위 |
-|----|-------:|-------------:|------------------|----------:|----------:|-----------|
-| `ingest-io` | 4.8 | 16.8 | 1 프로세스 × 16 슬롯, 1 vCPU / 1GB | 2 | 1 | 1~4 |
-| `ingest-cpu` | 25.5 | 89.3 | 4 프로세스 × 1 슬롯, 4 vCPU / 12GB(Docling 모델 프로세스당 약 2GB 가정) | 30 | 10 | 1~32 |
-| `ingest-gpu-embed` | 1.9 | 6.7 | 1 프로세스 × 8 슬롯(HTTP), 1 vCPU / 1GB | 2 | 1 | 1~2 |
-| 임베딩 서버 | — | 210 chunks/s 필요 | vLLM pooling GPU 1장 = 150 chunks/s(가정) | 2 GPU | 1 GPU | Prometheus 스케일러 |
-| `ingest-llm` | 0(기본 끔) | 0 | 1 프로세스 × 4 슬롯 | 1 | 1 | 1~N(예산 정책) |
-| `maintenance` | 상수 | — | 1 프로세스 × 4 슬롯 | 1 | 1 | 1~2 |
-
-관찰: (1) 비용의 대부분은 `ingest-cpu`이며 스캔 문서 비율에 선형으로 민감하다(텍스트 70/스캔 20/소형 10 → 60/30/10이면 parse 가중 S가 21.7 → 28.9초, `ingest-cpu` ΣS가 25.5 → 32.7초로 파드 수 약 1.3배). premium은 OCR을 `ingest-gpu-ocr`로 분리해 CPU 파드를 줄인다. (2) **테넌트 상한이 처리량을 제한한다**: 잡 지속 시간이 약 32s이면 `tenant_concurrent_jobs_max=32`인 standard 테넌트의 최대 처리량은 32/32 ≈ 1 doc/s ≈ 86,000/일이다. 단일 테넌트가 100,000/일을 요구하면 cap을 올리거나(premium 64) 스캔 비율을 낮춰야 한다. 설계점 100,000/일은 다중 테넌트 합계로 해석한다. (3) 재색인 처리량은 `min(50, floor(32 × 0.75)) = 24` 동시 자식 × (1/32 s) ≈ 0.75 docs/s → 100만 문서 약 15일(전 스테이지 재실행) 또는 캐시 적중(임베더만 교체: fetch 조건부 GET 1s + 캐시 적중 4 × 0.5s + embed 2s + index 3s ≈ 8s) 시 3 docs/s → 약 4일. 대규모 재색인은 테넌트 cap 임시 상향 또는 `reindex_max_share` 조정으로 운영한다.
-
-### 9.4 Temporal·PostgreSQL 사이징(초안)
-
-| 구성 요소 | 추정 | 근거·비고 |
-|-----------|------|-----------|
-| 히스토리 이벤트 | 문서당 약 40(액티비티 8 × 3 + 워크플로우 2 + 로컬 액티비티 마커 + 재시도 여유) → 4M/일 ≈ 46/s 평균, 140/s 피크 | `numHistoryShards` 512 초안(07-tech-landscape/08), 생성 후 변경 불가이므로 여유 있게 |
-| Temporal 서버 | frontend 2, history 2, matching 1 파드(각 1~2 vCPU / 2~4GB) | 07-tech-landscape/08 리소스 표 |
-| Temporal PostgreSQL | 별도 DB(같은 인스턴스 가능), advanced visibility | ES·Cassandra 미도입(D-14) |
-| 원장 PostgreSQL | 문서당 약 16 tx(스테이지 8 × 2: 시작 기록 + 커밋; §3.1), 행 약 60(스테이지당 `jobs` UPDATE 2 + `job_events` 1~2 + `outbox` 2 + `artifacts` 1 + `lineage` 1) → 1.6M tx/일, 6M 행/일 | `outbox` 7d·`jobs`/`job_events` 90d 초안 후 `maintenance.cleanup.v1` 정리; 파티셔닝은 04-storage 문서 |
-| 오브젝트 스토리지 | 문서당 산출물 6종(JSON) + 원본 + 파생물 | 콘텐츠 주소화로 재처리 시 증가 없음 |
-
-### 9.5 사이징 절차
-
-1. 프로파일별 `StagePolicy`·큐 맵을 확정하고 대표 코퍼스(한국어 골든셋 코퍼스, HWPX·PDF·스캔 혼합)로 스테이지별 S를 실측해 §9.2를 갱신한다.
-2. 테넌트별 예상 λ_peak와 문서 구성을 받아 §9.3 공식으로 큐별 N을 구하고 KEDA `maxReplicaCount`를 정한다. `minReplicaCount: 1`은 0→1 지연 회피용이다(07-tech-landscape/08 리스크).
-3. `tenant_concurrent_jobs_max`를 `λ_peak,tenant × S_job`보다 크게 잡되 클러스터 합계가 워커 용량을 넘지 않게 한다. 넘으면 `queued` 체류로 나타나며 정상 동작이다.
-4. omes `throughput_stress`로 Temporal·PG 한계를 측정하고 히스토리 샤드·PG 커넥션 풀을 확정한다.
-5. 재색인 전에는 `reindex_max_share`·cap을 운영 창(야간)에 맞춰 조정하고 `cleanup_delay` 동안 세대 2배 공존에 따른 저장량(바이블 미해결 이슈 17)을 확인한다.
+이관 완료(P2, #159, 2026-09-23): 이 절(§9.1~§9.5 — 도착률·서비스 시간 가정, 큐별 워커 사이징, Temporal·PostgreSQL 사이징, 사이징 절차)의 전문을 [확장과 성능](../09-operations/04-scaling-and-performance.md) §9로 옮겼다. 방법은 Little의 법칙 `동시 실행 수 N = 도착률 λ × 서비스 시간 S`이며, 결론만 남기면: `ingest-cpu` 큐가 비용을 지배하고(스캔 문서 비율에 선형 민감), 테넌트 동시 잡 상한(`tenant_concurrent_jobs_max`)이 워커 증설보다 먼저 처리량을 제한하며, 모든 수치는 부하 테스트 전 초안 가정이다.
 
 ---
 
@@ -990,7 +869,7 @@ NATS JetStream 추가는 (a) 외부 소비자 ≥ 2 + 재생, (b) `korean-gov` �
 3. 바이블 §11.2·§13.1 patch 제안 묶음: (a) 릴레이 상주 워크플로우 타입 `outbox.relay.v1`과 **릴레이 전용 태스크 큐 `relay`**(§3.6·§6.4; `rag serve relay` 별도 프로세스가 폴링) 등재, (b) `maintenance.cleanup.v1` 범위를 세대 정리 + 참조 GC + 재색인 물리 대상 정리 + `outbox`/`jobs`/`job_events` 보존 정리로 확장(§2.7), (c) `jobs.parent_job_id`(nullable) 컬럼(재색인 자식을 조정 틱 대상에서 제외, §6.3) — §13.1 `jobs` 핵심 컬럼 표 갱신은 04-storage와 합의.
 4. `reindex_max_share`(0.75)·`document_queue_depth_max`(8)·드레인 간격(1,000)·조정 틱(10s)·진행률 갱신 간격(30s)·재색인 롤백 창(`ingest.index.reindex_rollback_window` 24h 제안)·GC 유예(1h)·카나리 표본 규칙(1%, 최소 50)은 초안 값이다. 프로파일 `runtime`/`ingest.index` 키로 노출할지(`profile.schema.json` 선택 필드) 03-contracts/15와 합의.
 5. Temporal 태스크 큐 우선순위·공정성 키 기능의 안정성·SDK 노출 여부는 확인 필요(as of 2026-09). 확인되면 디스패처 우선순위를 워커 계층까지 전파하는 ADR 검토. Temporal Worker Versioning도 동일.
-6. 오류·경고 코드 후보: 워크플로우 `execution_timeout` 초과, 문서 체인 상한 초과(현재 `api.rate_limited` 재사용), 평가 게이트 실패(재색인 `failed` 사유), 늦은 취소 무시 경고(`index.late_cancel_ignored` 제안, `warnings[].code`). §5.7 카탈로그 추가는 ADR 절차(minor). 함께 바이블 §11.5 상태 기계에 `cancelling → succeeded`(플립 이후 취소 보류 경로, §5) 전이 추가 patch를 제안한다.
+6. 오류·경고 코드 후보: 워크플로우 `execution_timeout` 초과, 문서 체인 상한 초과(현재 `api.rate_limited` 재사용), 평가 게이트 실패(재색인 `failed` 사유), 늦은 취소 무시 경고(`index.late_cancel_ignored` 제안, `warnings[].code`). §5.7 카탈로그 추가는 ADR 절차(minor). 바이블 §11.5 상태 기계에 `cancelling → succeeded` 전이를 추가하는 patch안은 트리아지 AM-46(§5)에 따라 **채택하지 않는다** — 플립 후 취소는 `cancelling` 전이 자체를 생략하는 잠정 규칙으로 대신한다.
 7. 메트릭 후보 `rag_job_queue_wait_seconds{queue}`, `rag_dispatch_waiting_jobs_count`, `rag_reindex_deferred_documents_count`는 §6.5 정본 목록에 없다. 09-operations/03과 합의 후 추가.
 8. 문서 단위 산출물·원본·원장 행 회수는 §2.7 참조 GC 결정으로 확정했다. 남은 것은 **테넌트 단위 완전 삭제(purge)**(컬렉션·문서 수에 비례하지 않는 테넌트 전체 소거, 백업 매체 처리)로, 규제 프로파일(`korean-gov`) 요구를 07-multi-tenancy-and-security 문서에서 정의 후 워크플로우 추가. 법적 보존 플래그 위치(`documents.legal_hold` 제안)와 `purge_mode` 컬렉션 정책은 03-data-flow 미해결 이슈 2·6을 따른다.
 9. `LocalRunner` 테스트 케이스(04-pipelines/01·10-development/04에서 고정): (a) `index` 재시도 시 `commit_id`·세대 유지(§7.2), (b) **로컬 재시도 시 아웃박스 행 수 불변**(`commit_stage` 커밋 직후 타임아웃 재시도가 같은 `event_id`로 `ON CONFLICT DO NOTHING`), (c) 로컬 프로세스 재기동 후 `running` 잡 정리 절차.
@@ -999,21 +878,19 @@ NATS JetStream 추가는 (a) 외부 소비자 ≥ 2 + 재생, (b) `korean-gov` �
 12. DBOS Transact를 `lite` 내구 러너(`PipelineContext` 세 번째 구현)로 추가할지는 3.0.x 안정화 후 ADR(바이블 §11.1). 이 문서의 디스패처·원장 규칙은 실행기와 무관하게 유지되도록 설계했다.
 13. 바이블 §11.1 시그니처 `pipelines.ingest.run(ctx, req_ref, profile) -> IndexCommit`을 `-> ArtifactRef(schema_type=IndexCommit)`로 고치는 patch 제안(§1.1 근거: `PipelineContext.run`이 `ArtifactRef`만 돌려주고 `pipelines`는 `storage`를 임포트할 수 없음). `profile` 인자의 타입을 `PipelineProfile` 투영으로 두는 것도 함께 확정.
 14. 메타데이터 갱신(`PATCH /v1/documents/{document_id}/metadata`)·백필 A의 워크플로우 타입 `metadata.update.v1`과 `JobKind.metadata_update` 등재 제안(바이블 §11.2·§5.7 patch, §2.4). 등재 전까지 `acl.update.v1`의 `payload_fields` 인자로 실행.
-15. 모드 B(카나리 + 롤링 세대 플립)는 혼합 프로파일 상태를 허용하는 잠정 결정이다. 물리 이름에 `profile_hash[:12]`를 합성해 모든 프로파일 변경을 모드 A로 통일하는 대안(바이블 §13.4·§11.4 (5) 개정, 저장량 2배 기간이 컬렉션 규모로 확대)은 03-data-flow 미해결 이슈 11에 따라 04-pipelines/19와 함께 택1한다.
+15. **미정(O-11):** 모드 B(카나리 + 롤링 세대 플립)는 혼합 프로파일 상태를 허용하는 잠정 결정이다. 물리 이름에 `profile_hash[:12]`를 합성해 모든 프로파일 변경을 모드 A로 통일하는 대안(바이블 §13.4·§11.4 (5) 개정, 저장량 2배 기간이 컬렉션 규모로 확대)은 03-data-flow 미해결 이슈 11에 따라 04-pipelines/19와 함께 택1한다. 바이블 §3.2 O-11(1.3.0 번호 배정, AM-21) 해결은 ADR-0039 이후 ADR-0026 개정으로 이관(AM-45 보류).
 16. `fetch` 산출물 `SourceDocument`는 `stage_key`가 없으므로(바이블 §4.2) 바이블 §13.3의 스테이지 산출물 키 규약(`{stage_key[:2]}/{stage_key}.json`)을 적용할 수 없다. `artifacts/source-document/{blake3[:2]}/{blake3}.json`(바이트 해시 키) 제안을 04-pipelines/02·바이블 §13.3 patch로 확정.
 17. 03-data-flow §10 이벤트 표와의 정합: (a) `ingest.document.retried` 행의 "원장 갱신 없음"을 이 문서의 `jobs.attempts += 1` 동일 트랜잭션으로 정정 제안, (b) `index.commit.published`·`ingest.document.deleted`의 발행 주체(`stage.index` 사가 vs `stage.publish`)와 트랜잭션 경계는 §6.2 규칙으로 통일 제안, (c) 03-data-flow 미해결 이슈 17의 "blue 물리 대상 보존(본 문서 24h vs 06-orchestration `cleanup_delay` 1h)"은 이 문서가 재색인 롤백 창을 24h로 정하면서(§2.5 A-8) 일치하게 되었으므로 그 문장의 정정을 요청한다(값의 근거는 이 문서, 그 문서 §9.2 (6)은 값을 미해결 17로 둔다). 03-contracts/12 게시 후 세 문서를 대조한다.
-18. 재색인 모드 A의 원장 포인터 규칙(§2.5; 03-data-flow 미해결 이슈 20에 대한 이 문서의 답): (a) `reindex.mode=blue_green` 자식의 `stage.index`는 `committed` 전이에서 `documents.current_commit_id`·`current_generation`을 전진시키지 않고, alias 교체 직후 `ledger.advance_pointers`가 문서별 최신 green `committed` 커밋으로 일괄 전진, (b) `index_generation` 할당을 `current_generation + 1`이 아니라 문서의 `max(index_commits.index_generation) + 1`로 정밀화, (c) 게이트 실패·취소 시 green 커밋은 `committed` 유지(`rolled_back`은 `rolling_back` 보상 경로 전용, `index.commit.rolled_back` 미발행), (d) `maintenance.consistency.v1`은 `backend_results[].physical_name` 기준 물리 대상별 대조 — 모두 바이블 §11.4 사가의 예외·정밀화이므로 [ADR-0026](../06-adr/0026-index-commit-generation-saga-and-ledger.md) 개정(minor)으로 발의한다. 폐기된 green 커밋의 관리 API 표시(`backend_results[].status`에 물리 대상 폐기를 표현할 값 부재)와 `collections.backends[]` green 항목의 폐기 시각 컬럼은 03-contracts/08·04-storage와 합의.
+18. **미정(O-12):** 재색인 모드 A의 원장 포인터 규칙(§2.5; 03-data-flow 미해결 이슈 20에 대한 이 문서의 답; 바이블 §3.2 O-12, 1.3.0 번호 배정 AM-21, 해결은 ADR-0039 이후 AM-45 보류): (a) `reindex.mode=blue_green` 자식의 `stage.index`는 `committed` 전이에서 `documents.current_commit_id`·`current_generation`을 전진시키지 않고, alias 교체 직후 `ledger.advance_pointers`가 문서별 최신 green `committed` 커밋으로 일괄 전진, (b) `index_generation` 할당을 `current_generation + 1`이 아니라 문서의 `max(index_commits.index_generation) + 1`로 정밀화, (c) 게이트 실패·취소 시 green 커밋은 `committed` 유지(`rolled_back`은 `rolling_back` 보상 경로 전용, `index.commit.rolled_back` 미발행), (d) `maintenance.consistency.v1`은 `backend_results[].physical_name` 기준 물리 대상별 대조 — 모두 바이블 §11.4 사가의 예외·정밀화이므로 [ADR-0026](../06-adr/0026-index-commit-generation-saga-and-ledger.md) 개정(minor)으로 발의한다. 폐기된 green 커밋의 관리 API 표시(`backend_results[].status`에 물리 대상 폐기를 표현할 값 부재)와 `collections.backends[]` green 항목의 폐기 시각 컬럼은 03-contracts/08·04-storage와 합의.
 
 ## 참조
 
-"동시 작성 중" 표시가 붙은 링크는 브리프 §8 문서 맵의 경로만 걸어 둔 미게시 문서다(바이블 해당 절을 정본으로 삼았고, 문서 세트 게시 시 링크 검사로 일괄 확인한다).
-
 - [설계 브리프](../00-vision/00-design-brief.md) — D-08, D-14, D-17, §7 품질 목표
-- [설계 바이블](./00-design-bible.md) — §2.3, §3.2 O-06, §3.3, §4.1~4.4, §5.1~5.3, §5.6~5.7, §6, §7.2~7.4, §10.3, §11, §13, §14
+- [설계 바이블](./00-design-bible.md) — §2.3, §3.2 O-06·O-11·O-12, §3.3, §4.1~4.4, §5.1~5.3, §5.6~5.7, §6, §7.2~7.4, §10.3, §11, §13, §14
 - [기술 지형 종합: 선정 매트릭스](../07-tech-landscape/00-summary-and-selection-matrix.md) — `orchestrator`·`task_queue_light`·`event_bus` 행, O-06 권고
 - [오케스트레이션·메시징·API 프레임워크](../07-tech-landscape/08-orchestration-messaging-and-api-frameworks.md) — Temporal 진입점·한계 수치, 두 모드 공유 패턴, 리소스 초안
 - [데이터 흐름과 문서 생애주기](./03-data-flow-and-document-lifecycle.md) — §5.3 참조 GC, §7.1~7.4 삭제 흐름·SLA·멱등, §9.1~9.2 재색인 모드 A/B, §10 이벤트 발행 시점, 미해결 이슈 8·11·12·14(이 문서에 위임된 결정)
-- [잡·이벤트·상태 계약](../03-contracts/12-jobs-events-and-status.md) — 동시 작성 중(바이블 §5.6·§5.7·§11.5를 정본으로 삼음)
+- [잡·이벤트·상태 계약](../03-contracts/12-jobs-events-and-status.md) — `JobStatus`·`CommitStatus`·이벤트 카탈로그(바이블 §5.6·§5.7·§11.5를 정본으로 삼음)
 - [인덱스 커밋 계약](../03-contracts/08-index-commit.md) — 동시 작성 중(바이블 §5.4 `IndexCommit`·§11.4를 정본으로 삼음), [에러 모델](../03-contracts/13-error-model.md)
 - [파이프라인 프레임워크](../04-pipelines/01-pipeline-framework.md), [업데이트·삭제·재색인](../04-pipelines/19-update-delete-and-reindexing.md) — 동시 작성 중
 - [저장소 아키텍처](./04-storage-architecture.md), [배포 아키텍처](./08-deployment-architecture.md), [실패 모드와 회복력](./09-failure-modes-and-resilience.md)

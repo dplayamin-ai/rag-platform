@@ -2,7 +2,7 @@
 title: 검색 메트릭과 평가 하네스
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -90,7 +90,7 @@ flowchart LR
 
 ### 2.2 청크 단위 판정(`answer_spans` 오프셋 교차)
 
-청크(항목)는 정답 문서의 **정답 스팬과 겹치면 관련**이다. 진실값 `AnswerSpanRecord{query_id, doc_id, doc_version, element_path, char_start, char_end}`(16 §2.2)와 항목의 좌표는 모두 원문 `Block.text` 기준 0-based 유니코드 코드포인트, 끝 미포함이다(바이블 §6.3, K1).
+청크(항목)는 정답 문서의 **정답 스팬과 겹치면 관련**이다. 진실값 `AnswerSpanRecord{query_id, doc_id, doc_version, element_path, char_start, char_end}`(16 §2.2)와 항목의 좌표는 모두 원문 `Block.text` 기준 0-based 유니코드 코드포인트, 끝 미포함이다(바이블 §6.3, K1). `span_hit_rate@k`(§3.3)가 교차하는 `block_refs[].original_char_*`(원문 기준, 아래 표)와 `answer_spans`가 이 좌표계로 일치함은 바이블 §6.3 1.3.0으로 확인됐다(CR-47).
 
 | 항목 종류 | 좌표 원천 | 비고 |
 |-----------|-----------|------|
@@ -205,7 +205,7 @@ run 파일은 단계마다 별개다.
 | `ndcg_exp@k` | 같은 식에 이득 `2^rel_i − 1` | 아니오 | 정본(혼용 금지) | ranx `ndcg_burges@k`; ir_measures `nDCG(dcg='exp-log2')@k` |
 | `judged@k` | `\|{i ≤ k : (q, d_i) ∈ qrels}\| / k` — `rel = 0` 판정도 "판정 있음" | `warn_below`만 | 정본 | ir_measures `Judged@k` |
 
-`binary` 데이터셋에서 `ndcg@k`는 `rel ∈ {0, 1}`로 계산되며 `graded`와 같은 키를 쓴다(데이터셋 `judgment_level`이 리포트 해석의 맥락이다). `relevance_max`를 넘는 값은 등록 시 `contract.violation`이다.
+`binary` 데이터셋에서 `ndcg@k`는 `rel ∈ {0, 1}`로 계산되며 `graded`와 같은 키를 쓴다(데이터셋 `judgment_level`이 리포트 해석의 맥락이다). `relevance_max`를 넘는 값은 등록 시 `contract.violation`이다. `relevance_max`(graded 판정의 nDCG 선형 이득 상한, 기본 3)는 바이블 §5.6 1.3.0 등재 필드다(AM-34).
 
 ### 3.3 스팬 파생 메트릭(참조 기반 컨텍스트 정밀도·재현율)
 
@@ -226,7 +226,7 @@ RAGAS의 `context_precision`(16 §4.2 L2 어휘)과 `context_recall`(09 문서 �
 |----|------|-----------|------|
 | `distinct_docs@k` | 상위 k 항목의 서로 다른 `document_id` 수 / k | 질의 평균 | 제안(MMR·`dedup` 효과 진단; 벡터 유사도 기반 다양성은 `with_vectors=false`라 계산하지 않는다) |
 | `parent_ratio@k` | 상위 k 항목 중 `item_kind=parent` 비율 | 질의 평균 | 제안(§8.5) |
-| `latency_p95_ms` | 질의별 `pipelines.query.run` 벽시계(ms)의 p95 | **런 단위** | 16 §4.2 초안 → 확정. 동시성 1인 런에서만 산출(§5.2) |
+| `latency_p95_ms` | 질의별 `pipelines.query.run` 실제 경과 시간(ms)의 p95 | **런 단위** | 16 §4.2 초안 → 확정. 동시성 1인 런에서만 산출(§5.2) |
 | `{pipeline_stage}_latency_p95_ms` | `ContextPack.diagnostics.latency_ms.{pipeline_stage}`의 p95(값 집합은 §3.1) | 런 단위 | 제안 |
 | `cost_per_doc_usd` | `usage_ledger` LLM 비용 / 코퍼스 문서 수(수집 측 LLM 보강 게이트 입력) | 런 단위 | 16 §4.2 초안; 정의 확정은 04 문서 |
 
@@ -248,7 +248,7 @@ RAGAS의 `context_precision`(16 §4.2 L2 어휘)과 `context_recall`(09 문서 �
 
 ### 4.1 `EvalDataset`
 
-바이블 §5.6 필드(Y)와 16이 추가한 선택 필드(N)를 그대로 쓴다. 이 문서는 필드를 추가하지 않는다.
+바이블 §5.6 필드(Y)와 16이 추가한 선택 필드(N)를 그대로 쓴다(`relevance_max`·`topics_ref`·`language`는 1.3.0에서 바이블 §5.6에도 등재됐다, AM-34 — 아래 표의 N 표기는 필수 여부만 가리키며 출처가 16 단독이라는 뜻은 아니다). 이 문서는 필드를 추가하지 않는다.
 
 | 필드 | 타입 | 필수 | 하네스에서의 역할 |
 |------|------|------|-------------------|
@@ -299,7 +299,7 @@ RAGAS의 `context_precision`(16 §4.2 L2 어휘)과 `context_recall`(09 문서 �
 
 ### 4.4 코퍼스 = 컬렉션 스냅숏
 
-골든셋 파일에는 문서 본문이 없다. **코퍼스는 `corpus_collection_id` 컬렉션의 현재 세대**이며, `EvalRun.index_commit_ids`가 시작 시점 문서별 current 커밋을 스냅숏해 "어느 파싱·청킹·임베딩·인덱스 결과를 평가했는지"를 고정한다(16 §3.1). 과거 세대를 지정하는 입력은 없다(`is_current=false` 레코드는 검색되지 않는다).
+골든셋 파일에는 문서 본문이 없다. **코퍼스는 `corpus_collection_id` 컬렉션의 현재 세대**이며, `EvalRun.index_commit_ids`가 시작 시점 문서별 **current 커밋**(= `documents.current_commit_id`가 가리키는 커밋, 03-contracts/08 §8·IC-5, CR-40)을 스냅숏해 "어느 파싱·청킹·임베딩·인덱스 결과를 평가했는지"를 고정한다(16 §3.1). 과거 세대를 지정하는 입력은 없다(`is_current=false` 레코드는 검색되지 않는다).
 
 | 상황 | 규칙 |
 |------|------|
@@ -352,7 +352,7 @@ RAGAS의 `context_precision`(16 §4.2 L2 어휘)과 `context_recall`(09 문서 �
 
 `explain=true`는 `RankedSet.score_breakdown`을 팩 `explain`에 남겨 §8 진단에 쓰기 위한 것이며, 프로덕션 기본(`explain=false`)과 순위 결과가 같아야 한다(적합성 키트 단정, 제안). 그 외의 요청 필드(`top_k`·`max_context_tokens`·`retrieval_variant`·`include_parents` 등)는 **보내지 않는다** — 평가 런은 프로파일 기본값을 우회하지 않으며(01 문서 P6) 변형 비교는 프로파일 두 버전으로 한다. 측정 깊이는 요청 필드가 아니라 각 단계 출력 크기(`hydrate.top_n`·`rerank.top_n_out`·`pack.k_max`)가 정한다(§3.5). `QueryRequest.top_k`(기본 10, "팩 `k_max`와 별개"; 바이블 §5.5)가 어느 단계의 출력 수를 제한하는지는 바이블에 명시가 없어 §3.5 깊이 표는 09 문서 확정 후 재검토한다(미해결 이슈 13).
 
-병렬 실행과 지연 메트릭: `concurrency > 1`이면 질의 벽시계가 자원 경합으로 부풀므로 `latency_p95_ms`·`{pipeline_stage}_latency_p95_ms`를 산출하지 않는다(매니페스트 `concurrency`로 판독; 요청되면 V8이 거부). 지연 목표 판정 런은 `--concurrency 1`로 별도 실행한다(05 문서 벤치마크 컬렉션).
+병렬 실행과 지연 메트릭: `concurrency > 1`이면 질의 실제 경과 시간가 자원 경합으로 부풀므로 `latency_p95_ms`·`{pipeline_stage}_latency_p95_ms`를 산출하지 않는다(매니페스트 `concurrency`로 판독; 요청되면 V8이 거부). 지연 목표 판정 런은 `--concurrency 1`로 별도 실행한다(05 문서 벤치마크 컬렉션).
 
 ### 5.3 캐시
 
@@ -399,7 +399,7 @@ RAGAS의 `context_precision`(16 §4.2 L2 어휘)과 `context_recall`(09 문서 �
 
 ### 6.1 `EvalRun`
 
-바이블 §5.6 필드 그대로다(16 §3.1). 하네스가 채우는 재현성 필드는 `profile_hash`(런 안의 모든 `QueryPlan.profile_hash`와 같음을 런타임 단정), `index_commit_ids`(ULID 오름차순, **≤ 1,000** — 바이블 §5.1 인라인 한계 64KB를 인스턴스 전체 바이트로 산정한 상한이며 12 `EvalRunCompletedData.index_commit_ids`의 `maxItems: 1000`과 같다; 16 §3.1·§8), `index_commits_hash`(16 N이지만 **항상** 채운다 — `H("commits", *sorted(전체 current commit_id))`, EF-9), 커밋이 1,000개를 넘으면 앞 1,000개 + `index_commits_ref`(`eval/runs/{run_id}/index_commits.jsonl`, 전체 목록), `metrics_requested`(1..64, 유일; V8 통과)다. 상태는 `running → completed | failed`만이다.
+바이블 §5.6 필드 그대로다(16 §3.1). 하네스가 채우는 재현성 필드는 `profile_hash`(런 안의 모든 `QueryPlan.profile_hash`와 같음을 런타임 단정), `index_commit_ids`(ULID 오름차순, **≤ 1,000** — 바이블 §5.1 인라인 한계 64KB를 인스턴스 전체 바이트로 재산정한 상한(CR-41)이며 12 `EvalRunCompletedData.index_commit_ids`의 `maxItems: 1000`과 같다; 16 §3.1·§8), `index_commits_hash`(16 N이지만 **항상** 채운다 — `H("commits", *sorted(전체 current commit_id))`, EF-9), 커밋이 1,000개를 넘으면 앞 1,000개 + `index_commits_ref`(`eval/runs/{run_id}/index_commits.jsonl`, 전체 목록), `metrics_requested`(1..64, 유일; V8 통과)다. 상태는 `running → completed | failed`만이다.
 
 ### 6.2 `PerQueryRecord`(`per_query.jsonl`)
 
@@ -708,7 +708,7 @@ flowchart LR
 | 층 | 트리거·실행기 | 명령(제안) | 판정 |
 |----|---------------|------------|------|
 | PR CI | 모든 PR, `LocalRunner`, `lite` 프로파일, `tests/eval/fixtures/ledger/` 원장 스냅숏 시드(고정 `tenant_id`·`collection_id`·`document_id`·`dataset_id`, §4.4) 후 `tests/eval/datasets/ko-public-v1-small/` 재수집(`file://`); 베이스라인 런의 `EvalRun`·`EvalReport`·`per_query.jsonl`은 `tests/eval/baselines/{run_id}/`(제안)에서 로드 | `rag eval run --dataset ko-public-v1-small --profile lite --baseline $(cat tests/eval/baseline_run_id) --concurrency 4 --gate` | 절대 게이트 `lite`(0.70/0.85) + 회귀 게이트(`standard` 값 상속, 01 문서 미해결 이슈 16); 지연 게이트는 판정하지 않음(`warned_gates`, §7.5); 종료 코드 2 = 머지 차단; `comparison.md`를 PR 코멘트로 |
-| 야간 | 스케줄, `eval.run.v1`, `eval.datasets[]` 전량 | `POST /v1/eval/runs`(스케줄러) + `--diagnostics` 상당 | 전체 게이트 + judge 표본(`warn`); `rag_eval_metric_value{metric, profile_id}`(바이블 §6.5 정본 목록에 명시된 게이지; `rag_<stage>_<name>_<unit>` 패턴의 유일한 예외) 갱신; `eval.run.completed` |
+| 야간 | 스케줄, `eval.run.v1`, `eval.datasets[]` 전량 | `POST /v1/eval/runs`(스케줄러) + `--diagnostics` 상당 | 전체 게이트 + judge 표본(`warn`); `rag_eval_metric_value{metric, profile_id}`(바이블 §6.5 정본 목록에 명시된 게이지; `rag_<stage>_<name>_<unit>` 패턴의 유일한 예외 — `dataset` 라벨은 저카디널리티 규약 유지를 위해 추가하지 않고 `EvalRun` 원장 조회로 대체한다, R-07) 갱신, `rag_eval_last_run_timestamp_seconds{profile_id}`·`rag_eval_judge_cost_usd_total`(바이블 §6.5 1.3.0 정본 등재, AM-41) 갱신; `eval.run.completed` |
 | 릴리스·프로파일 변경 | `version` 증가 PR, 모델 교체 ADR | 야간 + 외부 셋(MIRACL-ko·MLDR-ko) + `grid` 런 묶음 → `rag eval compare` | `gate_result.passed=true`인 `run_id`를 PR·ADR에 첨부; `rag profile validate`가 검사 |
 
 하네스 자체 검증(`tests/eval/`, `[eval]` extra; 10-development/01 §`tests/eval/`):
@@ -717,7 +717,7 @@ flowchart LR
 |--------|------|------|
 | `test_metrics_selfcheck` | 같은 run·qrels에서 ranx `ndcg@10`·`recall@20` vs ir_measures `nDCG@10`·`R@20` 차이 ≤ 0.01; `metrics_ranx`가 `ndcg_burges`를 호출하지 않음(호출 감시); `R_q = ∅` 질의를 포함한 qrels에서 평균 분모가 `ir_query_count`와 같음(§2.1, 미해결 이슈 19) | ADR-0023 준수 3 |
 | `test_public_baseline` | Pyserini BM25 재현 런(MIRACL-ko dev)을 하네스 `evaluator.ir_metrics_ranx`로 계산한 값이 공개 재현 수치 ±0.01 | 09 문서; 05 문서가 기준값 소유 |
-| `test_holm_reference`(dev 마커) | statsmodels Holm p값 == PyTerrier `pt.Experiment(correction="holm")` p값(합성 run 3종) | ADR-0023 준수 4 |
+| `test_holm_reference`(`slow` 마커) | statsmodels Holm p값 == PyTerrier `pt.Experiment(correction="holm")` p값(합성 run 3종) | ADR-0023 준수 4; 마커 이름은 10-development/04 §21 정본(`dev`는 미등록 이름) |
 | `test_span_hit` | §2.2 알고리즘: 경계(끝 미포함) 케이스, stale 제외, 부모 항목 적중, `block_refs`·`provenance` 두 원천 동치; 오프셋 왕복(`renderer_citation_roundtrip`과 같은 좌표) | ADR-0023 준수 6 |
 | `test_collapse` | 같은 문서 다청크 → 첫 등장 순위·엄격 감소 score; `fused`·`reranked`는 첫 등장 `final_score`, `postprocessed`·`pack`은 순위 유도 점수; **MMR로 `final_rank`와 `final_score` 순서가 역전된 `postprocessed` 입력을 trec_eval·ranx가 재정렬해도 접은 순위가 보존됨**(§2.4) | 10 §10, §2.4 |
 | `test_gate_rules` | §7.5 (a)~(d) 진리표, `comparison` 부재 시 `observed: null`·`fail`, `concurrency > 1` 런의 지연 게이트 `warn` 기록 | 16 §4.4 |

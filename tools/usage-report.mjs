@@ -106,7 +106,7 @@ L.push('# PAYMENT — 에이전트별 토큰 사용량과 수행 시간')
 L.push('')
 L.push(`생성: ${kst(new Date().toISOString())} KST · 원천: Claude Code 세션 트랜스크립트(\`${PROJ}\`) · 생성 도구: \`tools/usage-report.mjs\``)
 L.push('')
-L.push('토큰 열의 의미: **입력**(비캐시 입력), **캐시 쓰기**(프롬프트 캐시 생성 입력), **캐시 읽기**(캐시 적중 입력), **출력**(생성 토큰), **합계**(네 값의 합). 비용은 모델·계층별 단가가 다르므로(캐시 읽기·쓰기는 별도 단가) 이 표의 네 열에 현재 단가표를 곱해 산출한다. 시각은 KST, 소요는 에이전트 첫 메시지~마지막 메시지의 벽시계 시간이다(동시 실행이므로 합계 소요는 실제 경과 시간보다 길다).')
+L.push('토큰 열의 의미: **입력**(비캐시 입력), **캐시 쓰기**(프롬프트 캐시 생성 입력), **캐시 읽기**(캐시 적중 입력), **출력**(생성 토큰), **합계**(네 값의 합). 비용은 모델·계층별 단가가 다르므로(캐시 읽기·쓰기는 별도 단가) 이 표의 네 열에 현재 단가표를 곱해 산출한다. 시각은 KST, 소요는 에이전트 첫 메시지~마지막 메시지의 실제 경과 시간이다(동시 실행이므로 합계 소요는 실제 경과 시간보다 길다).')
 L.push('')
 
 // grand summary
@@ -130,7 +130,7 @@ L.push('')
 // per phase breakdown per run
 L.push('## 2. 워크플로우·단계별 요약')
 L.push('')
-L.push('| 세션 | 워크플로우(Run ID) | 단계(phase) | 에이전트 | 완료/실패/진행 | 소요(벽시계 첫~끝) | 에이전트 활동 시간 합산 | 출력 토큰 | 합계 토큰 |')
+L.push('| 세션 | 워크플로우(Run ID) | 단계(phase) | 에이전트 | 완료/실패/진행 | 소요(실제 경과(첫~끝)) | 에이전트 활동 시간 합산 | 출력 토큰 | 합계 토큰 |')
 L.push('|---|---|---|---:|---|---|---:|---:|---:|')
 for (const s of report) for (const r of s.runs) {
   for (const ph of r.phases) {
@@ -154,7 +154,7 @@ for (const s of report) {
   L.push(`오케스트레이터(메인 세션): ${kst(o.first)} → ${kst(o.last)} (${fmin(o.minutes)}), API 호출 ${fmt(o.calls)}, 도구 호출 ${fmt(o.tool_uses)}, 모델 ${modelStr(o.models)}, 입력 ${fmt(o.input)} / 캐시 쓰기 ${fmt(o.cache_write)} / 캐시 읽기 ${fmt(o.cache_read)} / 출력 ${fmt(o.output)} / 합계 ${fmt(o.total)}`)
   L.push('')
   for (const r of s.runs) {
-    L.push(`#### ${r.name} — \`${r.id}\` · ${r.agents.length} 에이전트 · 벽시계 ${kst(r.first)} → ${kst(r.last)} (${fmin(r.minutes)}${r.minutes > 24 * 60 ? ', 중단 후 재개 구간 포함' : ''}) · 에이전트 활동 시간 합산 ${fmin(r.agents.reduce((x, a) => x + a.minutes, 0))} · 합계 ${fmt(r.tot.total)} 토큰(출력 ${fmt(r.tot.output)})`)
+    L.push(`#### ${r.name} — \`${r.id}\` · ${r.agents.length} 에이전트 · 실제 경과 시간 ${kst(r.first)} → ${kst(r.last)} (${fmin(r.minutes)}${r.minutes > 24 * 60 ? ', 중단 후 재개 구간 포함' : ''}) · 에이전트 활동 시간 합산 ${fmin(r.agents.reduce((x, a) => x + a.minutes, 0))} · 합계 ${fmt(r.tot.total)} 토큰(출력 ${fmt(r.tot.output)})`)
     L.push('')
     L.push('| # | 에이전트(label) | 단계 | 상태 | 모델 | 시작(KST) | 소요 | API | 도구 | 입력 | 캐시 쓰기 | 캐시 읽기 | 출력 | 합계 |')
     L.push('|--:|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|')
@@ -170,7 +170,7 @@ L.push('')
 L.push('- 각 에이전트 트랜스크립트(`agent-<id>.jsonl`)의 assistant 메시지 `usage` 필드를 합산했다. 재시도로 중복 과금된 호출이 있으면 실제 청구와 차이가 날 수 있다.')
 L.push('- 오케스트레이터 행은 메인 세션 트랜스크립트(`<session>.jsonl`) 기준이며, 컨텍스트 요약(compaction)으로 잘린 구간이 있으면 그 이전 호출은 포함되지 않을 수 있다.')
 L.push('- `running` 상태 에이전트는 보고 생성 시점까지의 부분 집계다. 워크플로우가 끝난 뒤 `node tools/usage-report.mjs --out PAYMENT.MD` 를 다시 실행하면 갱신된다.')
-L.push('- 소요 시간은 벽시계(첫 메시지~마지막 메시지)이며 대기·큐잉 시간을 포함한다. 워크플로우는 동시 실행(워크플로우당 최대 6)이므로 에이전트 소요 합계 ≠ 경과 시간.')
+L.push('- 소요 시간은 실제 경과 시간(첫 메시지~마지막 메시지)이며 대기·큐잉 시간을 포함한다. 워크플로우는 동시 실행(워크플로우당 최대 6)이므로 에이전트 소요 합계 ≠ 경과 시간.')
 L.push('')
 fs.writeFileSync(OUT, L.join('\n'))
 console.log(`written ${OUT}: sessions=${report.length}, runs=${report.reduce((x, s) => x + s.runs.length, 0)}, agents=${grand.agents}, total tokens=${fmt(gtotal)}, output=${fmt(grand.output)}`)

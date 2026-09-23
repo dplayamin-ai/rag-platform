@@ -2,8 +2,8 @@
 title: 클라이언트 SDK (Python·TypeScript)
 status: active
 owner: architecture
-version: 0.1.0
-last_updated: 2026-09-22
+version: 0.1.1
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - ../02-architecture/00-design-bible.md
@@ -39,7 +39,7 @@ depends_on:
 - 포함: OpenAPI 기반 생성 + 수작업 래퍼의 2층 전략, Python SDK(패키지명·클라이언트 클래스·동기/비동기·재시도·타임아웃·페이지네이션 이터레이터·`wait_for_job`·이벤트 구독·계약 모델 재사용·렌더 헬퍼 `to_anthropic_messages`·인용 역매핑), TypeScript SDK(패키지·타입 생성·`fetch` 기반·SSE 스트리밍), 인증 설정, `ProblemDetails` → 예외 계층 매핑, 로깅·트레이싱 전파, 버전 정책(API 경로 major·계약 `schema_version`·`contracts_compat`), 예시 코드 6개, LangChain·LlamaIndex Retriever 어댑터 개요, 릴리스·문서화.
 - 제외: 엔드포인트별 요청·응답 필드 정의([수집 API](02-ingestion-api.md), [리트리벌 API](03-retrieval-api.md), [관리 API](04-management-api.md), 03-contracts 각 문서), MCP(Model Context Protocol) 클라이언트([MCP 서버](05-mcp-server.md); MCP 호스트는 `mcp` 공식 SDK를 쓴다), 웹훅 수신자 구현([웹훅과 이벤트](07-webhooks-and-events.md); 서명 검증 함수는 [잡·이벤트·상태 계약](../03-contracts/12-jobs-events-and-status.md) §8), 플러그인 SDK(`rag_platform.sdk`, [플러그인 개발 가이드](../10-development/06-plugin-development-guide.md)), 레퍼런스 `answer` 엔드포인트의 서버 구현([리트리벌 API](03-retrieval-api.md)).
 - 이 문서가 소유하는 파일: `docs/05-api/06-client-sdks.md`. SDK 소스는 저장소 `sdk/python/`·`sdk/typescript/`(바이블 §12)이며 `docs/05-api/openapi.yaml`은 [API 설계 가이드라인](01-api-design-guidelines.md) §17의 생성 산출물이다.
-- depends_on 대조 상태: [리트리벌 API](03-retrieval-api.md)(`QueryResponse`·`RenderRequest`·`RenderOptions`·`AnswerResponse`·`answer` SSE)와 [웹훅과 이벤트](07-webhooks-and-events.md)(§9 SSE 프레임·재접속 규칙·첫 접속 의미 — 잡 스트림은 그 잡의 발행 행 재생, 테넌트 스트림은 실시간 전용)는 게시본과 대조했다. [수집 API](02-ingestion-api.md)·[관리 API](04-management-api.md)·[MCP 서버](05-mcp-server.md)는 작성 시점에 미게시라 바이블 §14와 [API 설계 가이드라인](01-api-design-guidelines.md) §9.3 표를 정본으로 삼았다(미해결 이슈 1).
+- depends_on 대조 상태: [리트리벌 API](03-retrieval-api.md)(`QueryResponse`·`RenderRequest`·`RenderOptions`·`AnswerResponse`·`answer` SSE)와 [웹훅과 이벤트](07-webhooks-and-events.md)(§9 SSE 프레임·재접속 규칙·첫 접속 의미 — 잡 스트림은 그 잡의 발행 행 재생, 테넌트 스트림은 실시간 전용)는 게시본과 대조했다. [수집 API](02-ingestion-api.md)·[관리 API](04-management-api.md)·[MCP 서버](05-mcp-server.md)는 이제 게시되어 §5.1 표와 대조를 마쳤고(문서 메타 객체·`TenantPolicies`·`TenantUsage`·`CollectionStatsView`·`IngestBatchAccepted`는 일치), 남은 세부는 미해결 이슈 1이다.
 
 ## 1. 생성 전략: OpenAPI 기반 생성 + 수작업 래퍼
 
@@ -125,7 +125,7 @@ TypeScript SDK는 어느 경우에도 Python 패키지를 쓰지 않고 `schemas
 
 ### 3.2 재시도·타임아웃
 
-**결정:** 자동 재시도는 [API 설계 가이드라인](01-api-design-guidelines.md) §18과 [에러 모델](../03-contracts/13-error-model.md) §10의 규칙을 그대로 구현한다: (a) `ProblemDetails.retryable=true` 또는 429 `api.rate_limited` 또는 전송 오류(연결 실패·타임아웃·5xx 본문 없음)이고 **동시에** (b) 요청이 멱등일 때만 — `GET`, `POST /v1/query`, `POST /v1/render`, `POST /v1/answer`(비스트리밍), `POST /v1/profiles/validate`, `Idempotency-Key`를 무시하는 자연 멱등 연산(`cancel_job`, PATCH·PUT; 01 §6), 같은 `Idempotency-Key`를 가진 `POST`(수집·잡 접수·자원 생성). `x-rag-idempotency: optional` 연산은 SDK가 호출자 키가 없으면 UUID v4를 자동 생성해 붙이므로(§3.3; 01 §18) `POST /v1/feedback`·`POST /v1/collections`를 포함한 모든 접수·생성 POST가 재시도 대상이다 — 서버는 제시된 키를 필수 키와 같은 의미론으로 처리한다(01 §6). `Retry-After` 헤더가 있으면 그 값이 백오프에 우선한다. 429는 `retryable=false`이지만 한도 정책이 재시도 정책에 우선하므로 `Retry-After` 뒤 같은 요청을 재전송한다(13 §10).
+**결정:** 자동 재시도는 [API 설계 가이드라인](01-api-design-guidelines.md) §18과 [에러 모델](../03-contracts/13-error-model.md) §10의 규칙을 그대로 구현한다: (a) `ProblemDetails.retryable=true` 또는 429 `api.rate_limited` 또는 전송 오류(연결 실패·타임아웃·5xx 본문 없음)이고 **동시에** (b) 요청이 멱등일 때만 — `GET`, `POST /v1/query`, `POST /v1/render`, `POST /v1/answer`(비스트리밍), `POST /v1/profiles/validate`, `Idempotency-Key`를 무시하는 자연 멱등 연산(`cancel_job`, PATCH·PUT; 01 §6), 같은 `Idempotency-Key`를 가진 `POST`(수집·잡 접수·자원 생성). `x-rag-idempotency: optional` 연산은 SDK가 호출자 키가 없으면 UUID v4를 자동 생성해 붙이므로(§3.3; 01 §18) `POST /v1/feedback`·`POST /v1/collections`를 포함한 모든 접수·생성 POST가 재시도 대상이다 — 서버는 제시된 키를 필수 키와 같은 의미론으로 처리한다(01 §6). `Retry-After` 헤더가 있으면 그 값이 백오프에 우선하며, 헤더가 없는 응답 경로는 본문 사본 `ProblemDetails.retry_after`(바이블 §5.3 1.3.0 AM-28 선택 필드; 헤더와 같은 값, I8)를 대신 읽는다. 429는 `retryable=false`이지만 한도 정책이 재시도 정책에 우선하므로 `Retry-After`(또는 `retry_after` 본문 사본) 뒤 같은 요청을 재전송한다(13 §10).
 
 | 파라미터 | 기본값(초안 목표) | 근거·비고 |
 |----------|-------------------|-----------|
@@ -137,7 +137,7 @@ TypeScript SDK는 어느 경우에도 Python 패키지를 쓰지 않고 `schemas
 | SSE 유휴 타임아웃 | 60s(서버 keepalive 15s의 4배) → 재접속 | 12 §9 `: keepalive` 15s |
 | `retrieve.unavailable` 서킷 | 연속 2회 실패 시 30s 오픈(같은 `base_url`) | 13 §10 |
 | 401 갱신 재시도 | 1회(토큰 공급자가 있을 때만) | 13 §10 |
-| 총 벽시계 상한 | `timeout × (max_retries + 1)`을 문서화; 호출별 `deadline` 인자로 절단 | — |
+| 총 실제 경과 시간 상한 | `timeout × (max_retries + 1)`을 문서화; 호출별 `deadline` 인자로 절단 | — |
 
 재시도 시 `Idempotency-Key`가 있는 `POST`는 **최초 직렬화한 본문 바이트를 그대로** 재전송한다(01 §6: `requested_at` 포함 바이트 동일; 재직렬화 금지). 멱등 재생 응답(200, 원 202 본문 동일)은 성공으로 처리하고 `accepted.replayed=true`로 표시한다. 409 `api.idempotency_conflict`는 재시도하지 않고 `IdempotencyConflictError`를 올리며 `instance`의 잡 경로를 `existing_job_url`로 노출한다(13 §10 "새 키로 재전송하지 않는다").
 
@@ -150,6 +150,8 @@ TypeScript SDK는 어느 경우에도 Python 패키지를 쓰지 않고 `schemas
 | `required`(`ingest_document`, `ingest_documents_batch`) | `idempotency_key: str` **필수** | 형식 `^[\x21-\x7E]{1,255}$` 전송 전 검증(12 §2.1). 배치는 키 하나가 전체를 덮는다 |
 | `optional`(`reprocess_document`, `reindex_collection`, `delete_document`, `delete_collection`, `retry_job`, `create_eval_run`, `create_collection`, `create_subscription`, `create_eval_dataset`, `submit_feedback`; 01 §9.3) | `idempotency_key: str \| None = None` | `None`이면 잡 접수형·자원 생성형 구분 없이 SDK가 UUID v4를 자동 생성해 보낸다(01 §18 "`optional`은 기본 자동 생성(UUID v4)"). 서버가 제시된 키를 같은 의미론으로 처리하므로(01 §6) 자동 생성 요청도 재시도 가능하고, 재시도 시 같은 키·같은 본문 바이트를 재전송한다(§3.2). 호출자가 준 키는 형식 검증 후 그대로 전송한다 |
 | `ignored`(GET 전체, `query`, `render`, `answer`, `validate_profile`, `cancel_job`, `delete_subscription`, PATCH·PUT; 01 §6) | 인자 없음 | 헤더를 보내지 않는다 |
+
+`client.collections.delete(collection_id)`는 202 `JobStatus(kind=JobKind.delete_collection)`을 반환한다(바이블 §5.7·§14 1.3.0 AM-37; 워크플로우 `collection.delete.v1`) — `wait()`가 붙는 `x-rag-async` 연산이며 `client.documents.delete`(`delete_document`)와 같은 패턴이다.
 
 ### 3.4 페이지네이션 이터레이터
 
@@ -255,6 +257,7 @@ classDiagram
     RagApiError <|-- IdempotencyConflictError
     RagApiError <|-- IdempotencyPayloadMismatchError
     RagApiError <|-- RateLimitedError
+    RagApiError <|-- QuotaExceededError
     RagApiError <|-- NotFoundError
     RagApiError <|-- UnavailableError
     RagApiError <|-- ServerError
@@ -272,13 +275,14 @@ classDiagram
 |------|----------------------------------------|-----------|--------------|
 | `AuthenticationError` | `auth.unauthenticated` / 401 | `www_authenticate` | 토큰 공급자 있으면 1회 |
 | `ForbiddenError` | `auth.forbidden`, `plan.collection_forbidden` / 403 | — | 없음. 존재 비노출이므로 ID 오타도 의심(13 §10) |
-| `ContractViolationError` | `contract.violation`(400일 때; 500이면 `ServerError`) | `violations: list[StageError]`(`errors[]`), `pointers`(`location.pointer`), `intent`(§4.1) | 없음 |
+| `ContractViolationError` | `contract.violation`(400일 때; 500이면 `ServerError`) — `contract.schema_type_mismatch`·`contract.upcast_failed`(바이블 §5.7 1.3.0 AM-36 등재; [스키마 버전과 호환성](../03-contracts/14-schema-versioning-and-compatibility.md) §9의 계약 카탈로그 채택 전까지는 `contract.violation` + `detail`로 수신되므로 그때까지 이 클래스가 함께 받는다) | `violations: list[StageError]`(`errors[]`), `pointers`(`location.pointer`), `intent`(§4.1) | 없음 |
 | `RenderError` | `render.mixed_blocks`, `render.citations_with_structured_output`, `render.empty_pack` / 400 | — | 없음 |
 | `SemanticValidationError` | `auth.too_many_principals`, `plan.filter_field_forbidden`, `profile.invalid`, `plugin.license_denied`, `plugin.capability_unsupported`, `pack.tokenizer_mismatch` / 422(`profile.invalid`·`pack.tokenizer_mismatch`가 500이면 `ServerError`, 13 §7.1) | `violations` | 없음 |
 | `IdempotencyConflictError` | `api.idempotency_conflict`(409) | `existing_job_url`(`instance`) | 없음 — 기존 잡을 조회·대기 |
 | `IdempotencyPayloadMismatchError` | `api.idempotency_payload_mismatch`(422) | — | 없음 — 새 키로 재전송은 호출자 결정 |
 | `RateLimitedError` | `api.rate_limited`(429) | `retry_after`, `ratelimit{policy, remaining, reset}` | `Retry-After` 뒤 같은 요청 |
-| `NotFoundError` | `api.not_found`(404; 13 §3.3 채택 후) | — | 없음 |
+| `QuotaExceededError` | `api.quota_exceeded`(바이블 §5.7 1.3.0 AM-39; HTTP 상태 403(문서 수·저장 용량) 또는 429(QPS, `api.rate_limited`와 동일 취급) 미확정 — 05-api/01 §9·02-architecture/07 §10 확정 전까지 코드 우선 매핑으로 두 상태 모두 인식) | `retry_after`(429 경로만) | 429 경로면 `Retry-After` 뒤 재시도, 403 경로면 없음 |
+| `NotFoundError` | `api.not_found`(바이블 §5.7 1.3.0 AM-36 등재, 404; [에러 모델](../03-contracts/13-error-model.md) §3.3의 계약 카탈로그 채택 전까지는 `contract.violation` + `detail`로도 올 수 있어 §4.1 `intent=not_found` 파생과 함께 인식) | — | 없음 |
 | `UnavailableError` | `retrieve.unavailable`, `parse.sidecar_unavailable`, 채택 시 `api.orchestrator_unavailable`·`api.dependency_unavailable` / 503 | `retry_after` | `Retry-After` 뒤; 연속 2회 실패 시 서킷 30s |
 | `ServerError` | 그 외 5xx(`contract.violation` 500 산출물, `fuse.k_missing`, 채택 시 `api.internal_error`) | — | `retryable=true`이고 멱등 요청일 때만 |
 | `RagApiError` | 매핑 없는 `code`(미래 minor) | — | `retryable` 값에 따름 |
@@ -288,7 +292,7 @@ classDiagram
 
 ### 4.1 카탈로그 미채택 상태 코드의 잠정 처리
 
-404·409(잡 상태)·410·412·413·415·503(의존)의 전용 코드는 바이블 §5.7에 없어 채택 전까지 서버가 400 `contract.violation` + 목표 의미를 담은 `detail`로 응답한다. 그런데 `detail`의 형식이 정본 사이에서 **일치하지 않는다**: [API 설계 가이드라인](01-api-design-guidelines.md) §9.2·§9.4는 키워드 접두(`"not found: /v1/jobs/{job_id}"`, `"gone: document deleted"`), [에러 모델](../03-contracts/13-error-model.md) §7.1과 [리트리벌 API](03-retrieval-api.md) §4.1은 포인터 접두·키워드 접미(`"{경로 파라미터 포인터}: resource not found"`, `"/pack_id: resource not found"`), 412는 01 §3.4의 고정 문구(`"If-Match does not match current ETag"`)이고 413·415·503(의존)은 형식이 정의되지 않았다. SDK는 이 기간에만 `ContractViolationError.intent ∈ {not_found, gone, conflict, precondition_failed, None}`을 다음 규칙으로 **파생**해 노출한다.
+404(`api.not_found`는 바이블 §5.7 1.3.0 AM-36으로 등재됐으나 [에러 모델](../03-contracts/13-error-model.md) §3.3의 계약 카탈로그·스키마 채택은 아직이다)·409(잡 상태)·410·412·413·415·503(의존)의 전용 코드는 계약 카탈로그(`common-types.schema.json` `$defs/ErrorCodeCatalog`)에 없어 채택 전까지 서버가 400 `contract.violation` + 목표 의미를 담은 `detail`로 응답한다. 그런데 `detail`의 형식이 정본 사이에서 **일치하지 않는다**: [API 설계 가이드라인](01-api-design-guidelines.md) §9.2·§9.4는 키워드 접두(`"not found: /v1/jobs/{job_id}"`, `"gone: document deleted"`), [에러 모델](../03-contracts/13-error-model.md) §7.1과 [리트리벌 API](03-retrieval-api.md) §4.1은 포인터 접두·키워드 접미(`"{경로 파라미터 포인터}: resource not found"`, `"/pack_id: resource not found"`), 412는 01 §3.4의 고정 문구(`"If-Match does not match current ETag"`)이고 413·415·503(의존)은 형식이 정의되지 않았다. SDK는 이 기간에만 `ContractViolationError.intent ∈ {not_found, gone, conflict, precondition_failed, None}`을 다음 규칙으로 **파생**해 노출한다.
 
 | 판정 순서 | `detail` 패턴(정규식, 대소문자 무시) | `intent` | 근거 |
 |-----------|--------------------------------------|----------|------|
@@ -334,12 +338,15 @@ aclient = AsyncRagClient.from_env()  # RAG_PLATFORM_BASE_URL · RAG_PLATFORM_API
 | `client.feedback` | `submit(**fields)` | `submit_feedback` | `FeedbackEvent` | 201 |
 | `client.collections` | `list`/`iter`, `create`, `get`, `update`, `delete`, `reindex`, `stats`, `dictionary.list`/`iter`, `dictionary.replace(entries)` | `list_collections` … `replace_dictionary` | `CollectionSpec`, `JobStatus`, `Page[UserDictEntry]` | `update`가 재색인 잡을 유발하면 `Link rel="related"`를 `.related_job_url`로 노출 |
 | `client.profiles` | `list`, `get(profile_id)`, `validate(yaml_text)` | `list_profiles`, `get_profile`, `validate_profile` | `Profile`, 검증 결과 | 422 `profile.invalid` → `SemanticValidationError` |
-| `client.tenants` | `usage(tenant_id)`, `update_policies(tenant_id, patch)` | `get_tenant_usage`, `update_tenant_policies` | 집계·정책 객체 | `tenant_id`는 토큰과 같아야 함(불일치 403) |
+| `client.tenants` | `usage(tenant_id)`, `get_policies(tenant_id)`, `update_policies(tenant_id, patch)` | `get_tenant_usage`, `get_tenant_policies`, `update_tenant_policies` | 집계·정책 객체 | `tenant_id`는 토큰과 같아야 함(불일치 403). `/v1/tenants` 목록·생성(GET/POST, 바이블 §14 1.3.0 AM-39)은 관리 API가 `operationId`를 아직 정의하지 않아 이 표에 없다 — 게시 후 추가(미해결 이슈 1) |
+| `client.api_keys`(1.3.0 AM-39) | `list`/`iter`, `create(client_id, roles, allowed_collections, expires_at=None, description=None)`, `get(api_key_id)`, `delete(api_key_id)`, `rotate(api_key_id, grace_period=None)` | `list_api_keys`, `create_api_key`, `get_api_key`, `delete_api_key`, `rotate_api_key` | `ApiKey`(+`secret`은 발급·회전 응답 1회만) | `service:` 주체 호출 금지(관리 API §4 Cedar 규칙) |
+| `client.plugins`(1.3.0 AM-39) | `list`/`iter`, `get(plugin_id)`, `capabilities(plugin_id)`, `health(plugin_id)` | `list_plugins`, `get_plugin`, `get_plugin_capabilities`, `get_plugin_health` | `PluginMeta`, `PluginCapabilitiesView`, `PluginHealth` | `installed`(N)로 api 프로세스 설치 여부 표시(관리 API §5.1) |
 | `client.subscriptions` | `list`/`iter`, `create`, `delete` | `list_subscriptions`, `create_subscription`, `delete_subscription` | 구독 객체 | — |
 | `client.events` | `stream_job(job_id, last_event_id=None)`, `stream_tenant(types=None, collection_id=None, last_event_id=None)` | `stream_job_events`, `stream_tenant_events` | `Iterator[CloudEventEnvelope]` | §3.6 |
+| `client.audit`(1.3.0 AM-39) | `events.list`/`iter` | `list_audit_events` | `Page[CloudEventEnvelope]` | 인가 `read_audit`(관리 API §11) |
 | `client.eval` | `datasets.create`/`list`/`iter`, `runs.create(dataset_id, profile_id, metrics_requested, judge_model=None, experiment_id=None, baseline_run_id=None, idempotency_key=None)`, `runs.list`/`iter`, `runs.get(run_id)`, `runs.report(run_id)` | `create_eval_dataset`, `list_eval_datasets`, `create_eval_run`, `list_eval_runs`, `get_eval_run`, `get_eval_report` | `EvalDataset`, `EvalRunAccepted{job, run_id}`, `EvalRun`, `EvalReport` | `run_id`는 202 응답의 `Link rel="related"`(제안)에서 채우며 없으면 `None`. 결정적 획득 경로(16 §3.1 `EvalRun.job_id` 필터 포함)는 미해결 이슈 6 |
-| `client.schemas` | `get(name, if_none_match=None)` | `get_schema` | `dict`(JSON Schema) | 무인증·캐시(§3.7) |
-| `client.system` | `healthz()`, `readyz()` | `healthz`, `readyz` | 상태 객체 | 무인증 |
+| `client.schemas` | `list`/`iter`, `get(name, if_none_match=None, major=None)` | `list_schemas`, `get_schema` | `{items: SchemaDescriptor[]}`(1.3.0 AM-39), `dict`(JSON Schema) | 무인증·캐시(§3.7) |
+| `client.system` | `healthz()`, `readyz()`, `version()` | `healthz`, `readyz`, `get_version` | 상태 객체, `VersionInfo`(1.3.0 AM-39) | 무인증 |
 
 PATCH 계열(`update_*`)의 본문은 JSON Merge Patch(RFC 7396) 부분 객체이며 `None`은 "선택 필드 제거"다(01 §3.4). 따라서 Python 래퍼는 "지정하지 않음"과 "`null`로 제거"를 구분해야 하므로 PATCH 메서드는 `dict` 패치 본문을 받고 `exclude_unset` 직렬화를 쓴다. `If-Match`는 `if_match=` 인자로 받는다.
 
@@ -746,11 +753,11 @@ class RagPlatformRetriever(BaseRetriever):
 
 ## 미해결 이슈
 
-1. **depends_on 미게시**: [수집 API](02-ingestion-api.md)·[관리 API](04-management-api.md)·[MCP 서버](05-mcp-server.md)는 작성 시점 미게시다. 게시 후 §5.1 표의 반환 타입(문서 메타 객체, 통계·정책·구독 객체, `IngestBatchAccepted` 재생 재구성)과 목록 필터 파라미터 화이트리스트(`list_eval_runs`의 `dataset_id`·`profile_id`·`job_id` 등)를 대조한다. [리트리벌 API](03-retrieval-api.md)(`QueryResponse`·`RenderRequest`·`RenderOptions` 9키·`AnswerResponse`·`answer` SSE)와 [웹훅과 이벤트](07-webhooks-and-events.md) §9는 게시본과 대조를 마쳤다.
+1. **depends_on 대조(잔여)**: [수집 API](02-ingestion-api.md)·[관리 API](04-management-api.md)·[MCP 서버](05-mcp-server.md)는 게시되어 §5.1 표의 주요 반환 타입(문서 메타 객체, `TenantPolicies`·`TenantUsage`·`CollectionStatsView`, `IngestBatchAccepted`)을 대조했다. 남은 항목은 목록 필터 파라미터 화이트리스트(`list_eval_runs`의 `dataset_id`·`profile_id`·`job_id` 등)와 §5.1에서 아직 개별 메서드로 노출하지 않은 관리 API 신규 엔드포인트(1.3.0 AM-39; `client.tenants` 목록·생성 등, 관리 API가 `operationId`를 아직 정의하지 않은 항목)다. [리트리벌 API](03-retrieval-api.md)(`QueryResponse`·`RenderRequest`·`RenderOptions` 9키·`AnswerResponse`·`answer` SSE)와 [웹훅과 이벤트](07-webhooks-and-events.md) §9는 게시본과 대조를 마쳤다.
 2. **패키지명·계약 분리의 바이블 반영(바이블 §6.7·§12 개정)**: `rag-platform-client`·`@rag-platform/client`(§6.7 추가)와 `rag-platform-contracts` 경량 분리(§2.1 제안; 바이블 §12 "배포 패키지 `rag-platform`" 단일 패키지 정본과 충돌 — [저장소 구조](../10-development/01-repository-structure.md) 미해결 이슈 3은 "major 논의"로 분류)를 ADR로 발의한다. 개정 등급(minor/major)은 바이블 §1.2 변경 절차 표에 따라 그 ADR에서 판정하며 이 문서가 단정하지 않는다. `rag_platform.contracts` import 경로 유지 방식(PEP 420 네임스페이스 분할 vs 재노출 shim)과 저장소 내 위치도 같은 ADR에서 확정한다. npm 스코프 `@rag-platform` 소유 여부는 확인 필요(as of 2026-09).
 3. **TypeScript 타입 생성 도구·Node 버전 정책**: 후보 `json-schema-to-typescript`·`openapi-typescript`·`@hey-api/openapi-ts`의 JSON Schema 2020-12(`$defs`, URN `$ref`, `const`, `dependentRequired`, `readOnly`) 지원과 라이선스는 확인 필요(as of 2026-09). Node.js 하한(§2·§6.1 "22 LTS 이상")은 "활성 LTS 이상, 유지보수 종료 버전 제외" 정책의 적용 결과이며, [플러그인 개발 가이드](../10-development/06-plugin-development-guide.md)·[개발 환경](../10-development/02-development-environment.md)의 Node 툴체인 등재 결정과 함께 버전 정책(LTS 추적 주기, 하한 상향 시 SDK 버전 영향 — major인지 minor인지)을 확정한다.
 4. **환경 변수 이름**(`RAG_PLATFORM_BASE_URL`, `RAG_PLATFORM_API_KEY`, `RAG_PLATFORM_TOKEN`, `RAG_PLATFORM_ACCEPT_LANGUAGE`): 이 문서 제안. [구성 참조](../09-operations/02-configuration-reference.md)에서 서버 `RAG_*` 접두와의 관계(시각적 구분만 필요한지, `RAGCLIENT_` 같은 별도 접두로 갈지)를 확정한다.
-5. **미채택 오류 코드와 `detail` 형식 불일치**: `api.not_found`·`api.gone`·`api.precondition_failed`·`api.job_state_conflict`·`api.payload_too_large`·`api.unsupported_media_type`·`api.orchestrator_unavailable`·`api.dependency_unavailable`·`api.internal_error`([에러 모델](../03-contracts/13-error-model.md) §3.3, [API 설계 가이드라인](01-api-design-guidelines.md) 미해결 이슈 2) 채택 전까지 SDK의 `intent` 파싱(§4.1)이 유지된다. 조기 채택을 요청한다. 또한 잠정 400 응답의 `detail` 형식이 01 §9.2·§9.4(키워드 접두 `"not found: …"`, `"gone: …"`)와 13 §7.1·[리트리벌 API](03-retrieval-api.md) §4.1(포인터 접두 `"/pack_id: resource not found"`) 사이에서 다르고 413·415·503(의존)은 형식이 없다 — 한 형식(제안: 13 §7.1의 `"{pointer}: {keyword}"`)으로 통일해 두 문서에 반영하기를 요청한다. 409 잡 상태(`api.job_state_conflict` 채택 전 400)의 `detail` 예시 문구는 01 §9.2에 없어 §4.1의 `^conflict:` 패턴은 "첫 토큰 = 목표 의미" 일반 규칙에서 유추한 것이다 — 예시 문구(예 `"conflict: job already terminal"`)의 확정도 함께 요청한다. 통일 전까지 §4.1 표는 두 형식을 모두 인식한다.
+5. **미채택 오류 코드와 `detail` 형식 불일치**: `api.not_found`(바이블 §5.7 1.3.0 AM-36 등재, 계약 카탈로그 채택만 남음)·`api.gone`·`api.precondition_failed`·`api.job_state_conflict`·`api.payload_too_large`·`api.unsupported_media_type`·`api.orchestrator_unavailable`·`api.dependency_unavailable`·`api.internal_error`([에러 모델](../03-contracts/13-error-model.md) §3.3, [API 설계 가이드라인](01-api-design-guidelines.md) 미해결 이슈 2) 채택 전까지 SDK의 `intent` 파싱(§4.1)이 유지된다. 조기 채택을 요청한다. 또한 잠정 400 응답의 `detail` 형식이 01 §9.2·§9.4(키워드 접두 `"not found: …"`, `"gone: …"`)와 13 §7.1·[리트리벌 API](03-retrieval-api.md) §4.1(포인터 접두 `"/pack_id: resource not found"`) 사이에서 다르고 413·415·503(의존)은 형식이 없다 — 한 형식(제안: 13 §7.1의 `"{pointer}: {keyword}"`)으로 통일해 두 문서에 반영하기를 요청한다. 409 잡 상태(`api.job_state_conflict` 채택 전 400)의 `detail` 예시 문구는 01 §9.2에 없어 §4.1의 `^conflict:` 패턴은 "첫 토큰 = 목표 의미" 일반 규칙에서 유추한 것이다 — 예시 문구(예 `"conflict: job already terminal"`)의 확정도 함께 요청한다. 통일 전까지 §4.1 표는 두 형식을 모두 인식한다.
 6. **`POST /v1/eval/runs` 202 응답과 `run_id`의 연결**: 202 본문 `JobStatus`에는 `run_id`가 없고 잡 SSE 스트림은 `data.job_id` 기준이며 `eval.run.completed`의 `EvalRunCompletedData`에는 `job_id`가 없다(12 §6.5). 결정적 연결을 위해 (a) `Link: </v1/eval/runs/{run_id}>; rel="related"` 헤더, (b) `EvalRunCompletedData.job_id`(N) 추가, 또는 (c) [평가·피드백·사이드카 계약](../03-contracts/16-eval-feedback-and-sidecar-contracts.md) §3.1이 이미 제안한 `EvalRun.job_id`(N, 바이블 §5.6 미등재)를 채택하고 `GET /v1/eval/runs`의 목록 필터에 `job_id`를 넣는 안을 [관리 API](04-management-api.md)·[잡·이벤트·상태 계약](../03-contracts/12-jobs-events-and-status.md)에 제안한다. (c)가 채택되면 SDK 폴백은 `client.eval.runs.list(job_id=…)` 1회로 단순해지고 §8.6의 시각 근사가 사라진다. 채택 전 SDK는 §8.6의 목록 상관 폴백을 쓴다.
 7. **`x-rag-async` 연산의 `Link rel="related"` 일반화**: `PATCH /v1/collections/{collection_id}`의 재색인 잡 연결(01 §9.3 제안)과 이슈 6을 같은 규약으로 묶어 SDK가 `.related_job_url`·`.related_run_id`를 일관되게 노출할 수 있게 한다.
 8. **초안 목표 수치의 확정**: §3.2 타임아웃·서킷·동시성 힌트, §3.6 중복 제거 LRU 10,000, §7 지원 창(서버 N.(x−2))은 부하·호환성 테스트 후 확정한다.

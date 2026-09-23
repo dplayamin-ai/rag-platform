@@ -2,8 +2,8 @@
 title: 평가 전략
 status: active
 owner: architecture
-version: 0.1.0
-last_updated: 2026-09-22
+version: 0.1.1
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - ../02-architecture/00-design-bible.md
@@ -190,11 +190,11 @@ L3는 골든셋 없이 운영 트래픽에서 신호를 얻는다. 소비자가 
 
 | 파일 | 레코드 | 필드(16 §2.2) | 외부 교환 |
 |------|--------|---------------|-----------|
-| `qrels.jsonl` | `QrelsRecord` | `query_id`, `iteration`(`0`/`Q0`), `doc_id`(= `document_id`, ULID), `relevance`(binary 0/1, graded 0..`relevance_max` — `EvalDataset.relevance_max`는 16 선택 필드, 기본 3) | TREC qrels 텍스트(`rag eval export --format trec`, 16 §2.2) |
+| `qrels.jsonl` | `QrelsRecord` | `query_id`, `iteration`(`0`/`Q0`), `doc_id`(= `document_id`, ULID), `relevance`(binary 0/1, graded 0..`relevance_max` — `EvalDataset.relevance_max`는 바이블 §5.6 1.3.0 등재(AM-34), 기본 3) | TREC qrels 텍스트(`rag eval export --format trec`, 16 §2.2) |
 | `answer_spans.jsonl` | `AnswerSpanRecord` | `query_id`, `doc_id`, `doc_version`, `element_path`, `char_start`, `char_end`(원문 `Block.text` 기준 코드포인트, 끝 미포함) | 없음(플랫폼 확장) |
 | `topics.jsonl` | `TopicRecord` | `query_id`, `query`(≤ 4,000자), `language`, `metadata`(스칼라) | TREC topics 대체 |
 
-`EvalDataset.content_hash = H("evalset", qrels_ref.blake3, answer_spans_ref.blake3, topics_ref.blake3 or "")`(16 §2.3)이므로 바이트가 하나라도 바뀌면 다른 데이터셋이다. 라벨 정정판은 같은 `name`의 새 행으로 등록하고 프로파일 `eval.datasets[]`·`gate.dataset`의 `name` 참조는 최신 행으로 해소된다; 의미가 달라지는 개정은 `name`을 바꾼다(`ko-public-v2`). 결합식과 `name` 해소 규칙은 03-contracts/16이 정한 것이며 바이블 §6.2 해시 표·§5.6 `EvalDataset` 행에는 아직 없다(16 미해결 이슈 3·17에 기댐; 이 문서 미해결 이슈 14). `EvalRun`은 `dataset_id`를 고정하므로 과거 런의 재현성은 유지된다.
+`EvalDataset.content_hash = H("evalset", qrels_ref.blake3, answer_spans_ref.blake3, topics_ref.blake3 or "")`(16 §2.3)이므로 바이트가 하나라도 바뀌면 다른 데이터셋이다. 라벨 정정판은 같은 `name`의 새 행으로 등록하고 프로파일 `eval.datasets[]`·`gate.dataset`의 `name` 참조는 최신 행으로 해소된다; 의미가 달라지는 개정은 `name`을 바꾼다(`ko-public-v2`). `topics_ref` 필드 자체는 바이블 §5.6 1.3.0 등재(AM-34)이나, 이 결합식과 `name` 최신 행 해소 규칙은 03-contracts/16이 정한 것으로 바이블 §6.2 해시 표·§5.6 `EvalDataset` 행에는 아직 없다(16 미해결 이슈 3·17에 기댐; 이 문서 미해결 이슈 14). `EvalRun`은 `dataset_id`를 고정하므로 과거 런의 재현성은 유지된다.
 
 정답 구간의 세대 불일치(stale span): `AnswerSpanRecord.doc_version`이 문서의 현재 `documents.current_doc_version`과 다르면 그 구간은 stale이다(16 §2.2). P2의 "재청킹 불변"은 재수집으로 `doc_version`이 바뀐 경우까지 보장하지 않으므로 하네스는 다음 규칙을 적용한다: stale 구간은 해당 `(query_id, doc_id)`의 구간 판정(`span_hit_rate@k`)에서 **제외**하고(분모의 질의는 유지, 문서 단위 qrels는 영향 없음), `per_query.jsonl`에 표시하며(`PerQueryRecord.stale_span_doc_ids[]`, N 제안), 데이터셋의 stale 구간 비율을 §12 골든셋 건강도 패널에 올려 재라벨 트리거로 쓴다. 비율 상한을 경고 게이트로 두는 형식(15 `EvalGate`에는 `warn_below`만 있어 `warn_above`가 없음)과 규칙 확정은 08/03에 위임한다(미해결 이슈 15).
 
@@ -255,7 +255,9 @@ UC-14(01-requirements/03)에 따라 변경을 두 종류로 나눈다.
 
 `comparison`이 필요한 게이트(`max_regression`·`min_delta*`)에 베이스라인이 없으면 그 게이트는 `observed: null`·`fail`이다(16 §4.4). 첫 베이스라인은 검색 품질 엔지니어가 UC-13 6단계로 지정한다.
 
-이 문서가 쓰는 `warned_gates`(`GateResult`), `schema_version`(`EvalRun`·`EvalReport`), `relevance_max`(`EvalDataset`), `baseline_run_id`(`EvalRun`), `run_ref`(`EvalReport`)는 바이블 §5.6 표에 없고 03-contracts/16이 추가한 선택(N) 필드다(바이블 §5.1이 계약 문서의 N 필드 추가를 허용; §5.6 minor 반영은 16 미해결 이슈 1). `warned_gates`는 §7.2 경고 판정과 §12 대시보드의 핵심 장치이므로 반영 전까지는 "16 선택 필드"로 읽는다(미해결 이슈 14).
+게이트 값 객체의 선택 키(`metric?` 기본 `ndcg@10`, `dataset?` 기본 `eval.datasets[0]`, `grid?`·`min_delta?`·`min_delta_pt?`·`min_qrels?`·`candidate?`·`promote_to?`·`tool?`·`max_cost_per_doc_usd?`)는 바이블 §5.6 1.3.0에서 확인됐다(AM-34, CR-37; `profile.schema.json` `$defs/GateSpec`).
+
+이 문서가 쓰는 `warned_gates`(`GateResult`), `schema_version`(`EvalRun`·`EvalReport`), `baseline_run_id`(`EvalRun`), `run_ref`(`EvalReport`)는 바이블 §5.6 표에 없고 03-contracts/16이 추가한 선택(N) 필드다(바이블 §5.1이 계약 문서의 N 필드 추가를 허용; §5.6 minor 반영은 16 미해결 이슈 1). `relevance_max`(`EvalDataset`)는 해소됐다(바이블 §5.6 1.3.0 등재, AM-34). `warned_gates`는 §7.2 경고 판정과 §12 대시보드의 핵심 장치이므로 반영 전까지는 "16 선택 필드"로 읽는다(미해결 이슈 14).
 
 ### 7.3 게이트가 구속하는 것
 
@@ -302,7 +304,7 @@ flowchart LR
 
 | 구성 요소(바이블 §12 `eval/`) | 책임 | 의존 제약 |
 |------|------|-----------|
-| `harness` | `POST /v1/eval/runs` 요청 해소: `profile_id` → `profile_hash`, `corpus_collection_id` current 커밋 → `index_commit_ids` 스냅숏, 시작 검증(게이트 셋 `label_provenance=human`, `judge_model` 계열 분리, 평가 주체 가시 집합) | `ledger`·`profiles`·`orchestration.local` 임포트 가능 — 근거는 10-development/01 §4.1의 11계층 정밀화(`eval` L7 → `orchestration` L6 → `profiles` L5 → `ledger` L4; 바이블 §12 규칙은 `eval`을 이들과 같은 층의 `\|` 형제로 두어 상위 규칙만 제공 — 문구 정밀화는 미해결 이슈 18) |
+| `harness` | `POST /v1/eval/runs` 요청 해소: `profile_id` → `profile_hash`, `corpus_collection_id` current 커밋(= `documents.current_commit_id`가 가리키는 커밋, 03-contracts/08 §8·IC-5, CR-40) → `index_commit_ids` 스냅숏, 시작 검증(게이트 셋 `label_provenance=human`, `judge_model` 계열 분리, 평가 주체 가시 집합) | `ledger`·`profiles`·`orchestration.local` 임포트 가능 — 근거는 10-development/01 §4.1의 11계층 정밀화(`eval` L7 → `orchestration` L6 → `profiles` L5 → `ledger` L4; 바이블 §12 규칙은 `eval`을 이들과 같은 층의 `\|` 형제로 두어 상위 규칙만 제공 — 문구 정밀화는 미해결 이슈 18) |
 | `runner` | 질의별 `pipelines.query.run(ctx, req, security, profile)`을 `LocalRunner`(`LocalContext`)로 실행, 단계별 `RankedSet`(`fused`·`reranked`·`postprocessed`)·`ContextPack`·`CandidateSet.channel_runs[]` 수집 | `adapters/retrieve`·`adapters/index`·백엔드 클라이언트 임포트 금지(import-linter 제안, ADR-0023 준수 5) |
 | `trec` | 입력 `stage`별 TREC run 변환(`query_id Q0 doc_id rank score run_tag`, `run_tag = run_id`): 1차 `run.trec`은 `postprocessed` `RankedSet`을 §2.2 접기 규칙으로 문서 순위화한 것, `fused`(hydrated) run·채널별 run은 메모리 내 계산(파일 내보내기는 제안) | 순수 함수 |
 | `metrics_ranx` | ranx `evaluate`·`compare`, ir_measures 교차 검증(±0.01) | `ndcg_burges` 호출 금지 테스트 |
@@ -559,7 +561,7 @@ sequenceDiagram
 | 11 | 벤치마크 컬렉션(100만 청크; 브리프 §7 지연 조건)의 코퍼스·구축 절차가 없다 | 08/05가 합성·공개 코퍼스 조합으로 정의 |
 | 12 | 인터리빙 감도 수치의 1차 출처가 미확인(as of 2026-09)이라 온라인 비교의 표본 규모 지침을 쓸 수 없다 | 08/06이 출처 확인 또는 자체 파일럿으로 표본 규칙 확정 |
 | 13 | L1 측정 단계(§2.2: `ndcg@10`·`judged@10` = `postprocessed`, `recall@k`·`mrr` = `fused`, `span_hit_rate@k` = `ContextPack.items[]`)와 청크→문서 접기 규칙(첫 등장 순위·`final_score` 최대값)은 이 문서가 정했다. `run_tag`의 단계 표기, `fused`·채널 run 파일 키(`eval/runs/{run_id}/runs/{stage\|channel}.trec`), `PerQueryRecord`의 단계 표시는 16·바이블 §13.3에 없다 | 08/02가 계산식과 함께 확정; 16 §4.1 `run_ref`·§4.5 `PerQueryRecord`에 반영(minor), 바이블 §13.3 런 산출물 행 추가(patch; 16 미해결 이슈 2와 공동) |
-| 14 | 이 문서가 쓰는 `warned_gates`·`schema_version`·`relevance_max`·`baseline_run_id`·`run_ref`·`job_id`는 16이 추가한 선택(N) 필드로 바이블 §5.6에 없다(16 미해결 이슈 1). 골든셋 `content_hash = H("evalset", …)` 결합식과 `name` 최신 행 해소 규칙도 16 제안(16 미해결 이슈 3·17)에 의존한다 | 16 미해결 이슈 1·3·17의 바이블 §5.6·§6.2 minor 반영을 기다린다; 반영 전 이 문서의 해당 표기는 "16 선택 필드"·"16 제안"으로 읽는다 |
+| 14 | 이 문서가 쓰는 `warned_gates`·`schema_version`·`baseline_run_id`·`run_ref`·`job_id`는 16이 추가한 선택(N) 필드로 바이블 §5.6에 없다(16 미해결 이슈 1; `relevance_max`·`topics_ref`는 해소 — 바이블 1.3.0 §5.6 등재, AM-34). 골든셋 `content_hash = H("evalset", …)` 결합식과 `name` 최신 행 해소 규칙도 16 제안(16 미해결 이슈 3·17)에 의존한다 | 16 미해결 이슈 1·3·17의 바이블 §5.6·§6.2 minor 반영을 기다린다; 반영 전 이 문서의 해당 표기는 "16 선택 필드"·"16 제안"으로 읽는다 |
 | 15 | stale `answer_spans`(`doc_version` ≠ `documents.current_doc_version`) 처리 규칙(§5.2: 구간 판정 제외·`per_query.jsonl` 표시·건강도 패널)은 이 문서의 초안이다. `PerQueryRecord.stale_span_doc_ids[]`(N)와 stale 비율 경고 게이트 형식(15 `EvalGate`에 `warn_above` 없음)은 계약에 없다 | 08/03이 재라벨 절차와 함께 확정; `PerQueryRecord` 필드 추가는 16 minor, 경고 형식은 15 `EvalGate` minor 제안 |
 | 16 | PR CI(`lite`)의 회귀 게이트 `max_regression: 0.01, p: 0.05`는 바이블 §7.2(`lite`는 `min`만)·§7.3(`standard` YAML만)에 없다. PR CI 베이스라인 `run_id`의 고정 위치(`tests/eval` 파일)도 이 문서의 제안이다 | 바이블 §7.2 `lite` 열·§7.3에 `lite` `eval.gates` 추가(minor; 15 `EvalGate` 형식 그대로); 확정 전 PR CI는 `standard` 회귀 게이트 값 상속. 베이스라인 고정 파일은 10-development/04·05 확정 |
 | 17 | `POST /v1/eval/runs`의 202 `JobStatus`에 `run_id`가 없어 클라이언트가 `run_id`를 얻는 경로가 미정이다(05-api/01 §9.3). 배치 중간 결과 키 `eval/runs/{run_id}/batches/{n}.jsonl`과 `eval.execute` 재개 규칙은 이 문서·02-architecture/06 §2.6의 제안이다 | 05-api/04가 `JobStatus` 필드 또는 `GET /v1/eval/runs?job_id=` 중 택1; 배치 키는 바이블 §13.3 patch(16 미해결 이슈 2와 공동), 재개 규칙은 02-architecture/06 확정 |
@@ -579,5 +581,5 @@ sequenceDiagram
 - [평가·피드백·사용자 사전·사이드카 계약](../03-contracts/16-eval-feedback-and-sidecar-contracts.md) — §2 `EvalDataset`·레코드 3종·`content_hash`, §3 `EvalRun` 상태 기계·재현성, §4 `EvalReport`·`metrics` 키·`comparison`·`GateOutcome`·`PerQueryRecord`, §5 `FeedbackEvent`, 미해결 이슈 2·14·15·20
 - [페르소나와 유즈케이스](../01-requirements/03-personas-and-use-cases.md) — §PS-03 검색 품질 엔지니어, UC-12 검색 결과 설명, UC-13 골든셋 구축과 오프라인 평가, UC-14 프로파일 A/B, UC-15 임베딩 모델 교체
 - ADR: [0003 오케스트레이터 중립 파이프라인·LocalRunner](../06-adr/0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md), [0013 융합 2단계 전략](../06-adr/0013-fusion-rrf-k60-then-convex-combination-and-postprocess-order.md), [0016 LLM 보강 비용 정책](../06-adr/0016-llm-enrichment-default-off-and-budget-policy.md), [0017 이벤트 전달](../06-adr/0017-event-delivery-outbox-cloudevents-no-broker.md), [0019 청크 크기·토크나이저](../06-adr/0019-chunk-size-tokenizer-defaults-and-recount-stage.md), [0022 관측성 규약](../06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md), [0023 평가 하네스](../06-adr/0023-evaluation-qrels-answer-spans-and-linear-ndcg.md), [0024 Context Pack 순서·렌더러](../06-adr/0024-context-pack-ordering-and-anthropic-search-result-renderer.md), [0030 단일 좌표계·점수 원장](../06-adr/0030-single-coordinate-system-and-score-ledger.md), [0031 프로파일 게이트](../06-adr/0031-profile-schema-extends-and-quality-gates.md), [0036 명명 규약](../06-adr/0036-naming-and-identifier-conventions.md)
-- 08-evaluation 후속 문서(브리프 §8 문서 맵 경로, 작성 예정): [리트리벌 메트릭과 하네스](02-retrieval-metrics-and-harness.md), [골든 데이터셋 구축](03-golden-dataset-construction.md), [LLM-judge와 생성 품질](04-llm-judge-and-generation-quality.md), [벤치마크 계획과 베이스라인](05-benchmark-plan-and-baselines.md), [온라인 피드백 루프](06-online-feedback-loop.md)
-- 운영·개발 문서(브리프 §8 문서 맵 경로, 작성 예정): [관측성](../09-operations/03-observability.md), [CI/CD](../10-development/05-ci-cd.md), [테스트 전략](../10-development/04-testing-strategy.md), [마일스톤](../11-roadmap/01-milestones.md), [리스크와 완화](../11-roadmap/03-risks-and-mitigations.md)
+- 08-evaluation 후속 문서(브리프 §8 문서 맵 경로): [리트리벌 메트릭과 하네스](02-retrieval-metrics-and-harness.md), [골든 데이터셋 구축](03-golden-dataset-construction.md), [LLM-judge와 생성 품질](04-llm-judge-and-generation-quality.md), [벤치마크 계획과 베이스라인](05-benchmark-plan-and-baselines.md), [온라인 피드백 루프](06-online-feedback-loop.md)
+- 운영·개발 문서(브리프 §8 문서 맵 경로): [관측성](../09-operations/03-observability.md), [CI/CD](../10-development/05-ci-cd.md), [테스트 전략](../10-development/04-testing-strategy.md), [마일스톤](../11-roadmap/01-milestones.md), [리스크와 완화](../11-roadmap/03-risks-and-mitigations.md)

@@ -2,7 +2,7 @@
 title: "파서: HTML"
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -50,7 +50,7 @@ depends_on:
 | `stage_key` | `H("stage", "parse", scope_key, content_hash, fingerprint)`; 조건부 GET 304로 봉투가 새로 발급되어도 `content_hash`가 같으면 캐시 적중 | 바이블 §4.1·§6.2, [ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md) |
 | `fingerprint` | `H("producer", plugin_id, plugin_version, config_hash, "", "")`; `config_hash = H("config", canonical_json(§12 설정))`. 래핑 라이브러리 버전은 `uv lock`으로 고정되어 `plugin_version`에 종속되고 `parser_fingerprint.parser_version`에 감사용으로 기록한다 | 바이블 §4.1, [01-pipeline-framework](01-pipeline-framework.md) §2.4 |
 | 순수성 | 네트워크·파일 시스템 접근 없음(이미지·프레임·첨부파일을 가져오지 않는다), 시각은 `ctx.now()`, 파생물은 `ctx.artifacts.put_derived`만 | 바이블 §4.1 "스테이지는 I/O를 직접 쓰지 않는다", 01 §3.1·§6.2 |
-| 재개 | 없음(문서 단위 원자 처리; 페이지 개념 없음). `ctx.remaining_ms()`를 사다리 단계 사이에서 확인한다 | 바이블 §4.4 `resumable` |
+| 재개 | 없음(문서 단위 원자 처리; 페이지 개념 없음). `ctx.remaining_ms()`를 사다리 단계 사이에서 확인한다 | 바이블 §4.4 1.3.0 `resumable`(AM-07: 후보 어댑터 `Capabilities`로 결정하며 흐름 포맷 TXT·MD·HTML·HWPX는 `no`로 확정) |
 
 MHTML과 XHTML의 `format=html` 판정은 `detect`가 하며(`text/html`·`application/xhtml+xml`; MHTML은 `multipart/related` 컨테이너 안의 `text/html` 파트 존재로 판정 — 시그니처 규칙은 라우터 문서가 확정, 확인 필요 as of 2026-09), 파서는 `SourceDocument.media_type`으로 세 변형을 구분한다. 배포용·암호화 플래그는 HTML에 해당하지 않는다.
 
@@ -202,7 +202,7 @@ flowchart LR
 | `docling_direct` | `S`에서 랜드마크(`nav`, `aside`, `header`, `footer`, `[role=navigation\|banner\|contentinfo\|complementary]`)를 뺀 `body` → DOM 순회(§6.2) | `degraded` | 본문 영역 판정 실패 상태의 산출: 보일러플레이트가 `furniture=false`로 잔존하는 손실을 감수. 구조 충실도는 최고(`dl`, `figure`, `rowspan/colspan` 원본) |
 | 소진 | 블록 0개 | 실패 | `parse.conversion_failed`, `retryable=false`(사다리가 플러그인 안에 있으므로 "폴백 소진"이다, 바이블 §5.7; 13 §G4의 `cause`에 마지막 단계 사유) |
 
-`quality` 열은 각 단계 산출의 **실제 손실**만 반영한다. 사다리 단계를 거쳤다는 사실 자체는 `degraded` 사유가 아니다 — 03 §5.3은 폴백 산출의 `degraded` 표시를 (e) **미정**으로 두고 확정 전 파서는 표시하지 않는다고 정하며, [라우터 문서](03-parsing-router-and-format-detection.md) §6.4는 어댑터 내부 폴백은 "정보 손실을 직접 아는 경우"에만 어댑터가 표기한다고 정한다. 따라서 `trafilatura_recall`·`readability` 산출이 §5.3 판정을 통과하면 `full`이고, 어느 단계를 거쳤는지는 추출 보고(§7.3)의 `extraction_mode`·`ladder[]`로만 기록한다(미해결 이슈 14).
+`quality` 열은 각 단계 산출의 **실제 손실**만 반영한다. 사다리 단계를 거쳤다는 사실 자체는 `degraded` 사유가 아니다 — [라우터 문서](03-parsing-router-and-format-detection.md) §6.4가 03 §5.3 (e)를 **parser_chain(후보) 수준**의 "실패한 후보 뒤 성공"으로 확정했고, 어댑터 내부 폴백(이 사다리처럼 한 플러그인 안에서 일어나는 폴백)은 "어댑터가 정보 손실을 직접 아는 경우"에만 어댑터가 스스로 표기하도록 정했다. HTML의 `parser_chain`은 항상 원소 1개(§1)이므로 이 확정은 사다리 단계 자체를 저하로 바꾸지 않는다. 따라서 `trafilatura_recall`·`readability` 산출이 §5.3 판정을 통과하면 `full`이고, 어느 단계를 거쳤는지는 추출 보고(§7.3)의 `extraction_mode`·`ladder[]` + `warnings[parse.extractor_fallback]`(바이블 §5.7 1.3.0 등재 — AM-36; 사다리 진입 자체를 감사용으로 기록, `quality` 판정과는 별개)로 기록한다.
 
 `selector` 모드(§4.5)는 사다리를 타지 않는다: 선택 서브트리에 텍스트가 없으면 규칙 오류로 보고 곧바로 `docling_direct`로 내려간다(`degraded`).
 
@@ -466,7 +466,7 @@ ingest:
 | HTML 크기·노드·깊이 상한 초과 | §4.1 | 중단 | `parse.conversion_failed`(비재시도) |
 | MHTML 컨테이너 손상(경계 없음, HTML 파트 없음) | 멀티파트 파싱 실패 | 중단 | `parse.corrupt_container`(비재시도) |
 | XHTML 정형성 오류 | XML 파서 예외 | HTML 파서로 복구 | `full`(복구 자체는 손실 아님) |
-| Trafilatura 예외 또는 빈 결과 | `None`·§5.3 미달 | 사다리(§5.5) | §5.5 표의 단계별 `quality`(`trafilatura_recall`·`readability`는 `full`, `html2txt`·`docling_direct`는 `degraded`) |
+| Trafilatura 예외 또는 빈 결과 | `None`·§5.3 미달 | 사다리(§5.5) | §5.5 표의 단계별 `quality`(`trafilatura_recall`·`readability`는 `full`, `html2txt`·`docling_direct`는 `degraded`) + `warnings[parse.extractor_fallback]`(바이블 §5.7 1.3.0, AM-36) |
 | 표만 있는 페이지 | §5.3 표 보존 판정 | recall 재실행 → 표 컨테이너 DOM 모드 | recall 재실행이 §5.3을 통과하면 `full`, 표 컨테이너 DOM 모드는 `degraded`(§5.4) |
 | 본문 비어 있음(사다리 소진, 블록 0) | | 실패 | `parse.conversion_failed`(`detail`: `empty_main_content` / `js_rendering_required` / `frameset_only`) |
 | JavaScript 렌더링 필요 | §5.6 신호 | 위와 동일 + 훅 안내 | 동일 |
@@ -477,7 +477,7 @@ ingest:
 | 인라인 이미지 디코딩 실패 | base64 오류 | 해당 이미지 생략 | `degraded` |
 | 액티비티 `start_to_close`(15m) 임박 | `ctx.remaining_ms()` < 단계 예산 | 사다리 중단, 현재 결과로 산출(있으면) 또는 실패 | `degraded` / `parse.conversion_failed` |
 
-`quality=degraded` 조건은 03 §5.3의 (c)(d)에 이 문서가 손실을 직접 아는 항목 — `html2txt`의 구조 손실, `docling_direct`·표 컨테이너 DOM 모드의 본문 판정 실패, 재결합 실패, Docling 예외, 인코딩 재투표(ftfy), 상한 초과 — 를 더한 것이다. 사다리 단계를 거쳤다는 사실 자체는 사유가 아니다(03 §5.3 (e) 미정, §5.5). HTML은 페이지가 없으므로 `page_status`·`parse.page_timeout`을 쓰지 않는다. 경고를 `warnings[]`에 남기려면 카탈로그 코드가 필요한데 HTML 파서용 경고 코드가 없으므로, 채택 전까지 저하 사유는 `quality`와 추출 보고로만 표현한다(미해결 이슈 3).
+`quality=degraded` 조건은 03 §5.3의 (c)(d)에 이 문서가 손실을 직접 아는 항목 — `html2txt`의 구조 손실, `docling_direct`·표 컨테이너 DOM 모드의 본문 판정 실패, 재결합 실패, Docling 예외, 인코딩 재투표(ftfy), 상한 초과 — 를 더한 것이다. 사다리 단계를 거쳤다는 사실 자체는 사유가 아니다(03 §5.3 (e), 라우터 §6.4 확정 — §5.5 참조). HTML은 페이지가 없으므로 `page_status`·`parse.page_timeout`을 쓰지 않는다. 사다리 진입은 `warnings[parse.extractor_fallback]`(바이블 §5.7 1.3.0, AM-36)로 남기고, 그 외 저하 사유(모지바케·구조 손실 등)는 전용 코드가 아직 없어 `quality`와 추출 보고로만 표현한다(미해결 이슈 3 잔여).
 
 성능 초안 목표(골든셋·부하 테스트로 확정):
 
@@ -659,7 +659,7 @@ ingest:
 - **결정:** 파서는 네트워크를 쓰지 않는다. 이미지·프레임·첨부파일은 가져오지 않으며 첨부는 `links[]`와 추출 보고로만, 원격 이미지는 `alt` 문단 + 링크로, 바이트가 있는 이미지(`data:`·MHTML)만 `figure`로 표현한다(바이블 §4.1 순수성, E16 [ADR-0038](../06-adr/0038-outbound-egress-policy-and-webhook-signing.md)). JavaScript 렌더링은 클라이언트 사전 렌더 또는 선택 `fetcher` 플러그인의 훅으로만 지원한다.
 - **결정:** 표는 표 단위로 Docling에 넣고 원본 마크업을 재결합해 `rowspan/colspan`을 보존한다(`structure_source=native`); 재결합 실패 시 `merged_cells_preserved=false`. 선형화·헤더 추정·`role`은 03 §6 규약을 따른다.
 - **결정:** 메타데이터는 사이트 규칙 > JSON-LD > OpenGraph/`article:*` > Trafilatura > `<title>`의 우선순위로 `metadata.title`·`authors`·`created_at`·`modified_at`·`web.*`·`navigation_text`·`genre`·`language`에 매핑하고, 계약에 자리가 없는 값은 추출 보고에만 둔다(바이블 §5.4).
-- **결정:** 저하는 `quality=degraded` + 추출 보고(`vendor_json`)로 표현하고 실패는 카탈로그 코드(`parse.conversion_failed`·`parse.corrupt_container`·`contract.violation`)만 쓴다(바이블 §4.1·§5.7). `degraded`는 실제 손실(구조 손실·본문 판정 실패·재결합 실패·인코딩 재투표·상한 초과)이 있을 때만 붙이며 사다리 단계를 거친 사실 자체는 사유가 아니다(03 §5.3, §5.5·§13). 캐시·산출물 키는 [ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md).
+- **결정:** 저하는 `quality=degraded` + 추출 보고(`vendor_json`)로 표현하고 실패는 카탈로그 코드(`parse.conversion_failed`·`parse.corrupt_container`·`contract.violation`)만 쓴다(바이블 §4.1·§5.7). `degraded`는 실제 손실(구조 손실·본문 판정 실패·재결합 실패·인코딩 재투표·상한 초과)이 있을 때만 붙이며 사다리 단계를 거친 사실 자체는 사유가 아니다(03 §5.3, 라우터 §6.4로 parser_chain 수준 확정, §5.5·§13); 사다리 진입 자체는 `warnings[parse.extractor_fallback]`(바이블 §5.7 1.3.0, AM-36)로 감사 기록만 남긴다. 캐시·산출물 키는 [ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md).
 
 ## 미해결 이슈
 
@@ -667,7 +667,7 @@ ingest:
 |---|------|------|
 | 1 | §5.3·§12의 임계값(본문 200자, 비율 0.10, 표 비율 0.60, Jaccard 0.9, 상한값)과 §13 성능 목표는 모두 초안이다 | 한국어 HTML 골든셋 200+ 페이지(매트릭스 (3), 기술 지형 03 미해결 5)로 확정; 값 변경은 `config_hash` 변경 = 재파싱 |
 | 2 | 사이트 규칙의 텍스트 매칭 선택자(`th:-soup-contains(...)`)는 lxml `cssselect`에 없다 | 어댑터가 `{selector, text_equals}` 구조로 받는 `MetaSelector` 객체를 정의하고 §11.1 예시를 그 형식으로 개정 |
-| 3 | HTML 파서용 경고 코드가 §5.7 카탈로그에 없어 저하 사유를 `warnings[]`에 남길 수 없다 | 경고(재시도 `—`) 코드 `parse.extractor_fallback`, `parse.encoding_guessed`, `parse.frames_skipped`, `parse.table_structure_lost`와 실패 세분 `parse.js_rendering_required`(no) 추가 ADR(minor; 13 §3.3·03 미해결 2와 공동) |
+| 3 | 잔여: HTML 파서용 경고 코드 일부가 §5.7 카탈로그에 없어 저하 사유를 `warnings[]`에 남길 수 없다 | `parse.extractor_fallback`(사다리 진입)은 해소(v1.3, AM-36). `parse.encoding_guessed`, `parse.frames_skipped`, `parse.table_structure_lost`와 실패 세분 `parse.js_rendering_required`(no)는 여전히 미등재로 추가 ADR(minor; 13 §3.3·03 미해결 2와 공동) 대상 |
 | 4 | Docling HTML 백엔드가 요소 `id`(또는 다른 원본 포인터)를 `DoclingDocument`에 보존하는지 확인되지 않았다(as of 2026-09) | 보존되면 Docling을 전체 순회기로 승격(어댑터 내부 변경, 계약 불변); 아니면 현 설계 유지 |
 | 5 | 날짜만 아는 발행일을 `web.published_at`에 `T00:00:00.000Z`로 채우는 것은 정밀도를 잃는다 | `WebMetadata.published_at_precision`(N, enum[datetime, date]) 또는 `published_date`(N, string(date)) 추가(03 문서, minor) |
 | 6 | `blockquote`·`details`·정의 목록의 의미가 `BlockType`에 없어 `paragraph`·`list_item`으로 흡수된다 | 인용은 추출 보고에만 기록. 필요성이 골든셋에서 확인되면 `BlockType`에 `quote` 추가 ADR(minor) |
@@ -678,7 +678,7 @@ ingest:
 | 11 | Trafilatura 2.2.0의 정확한 키워드 인자 집합, `<cell>`의 span 속성 보존 여부, `dl`·`math`·`figcaption` 처리, readability-lxml 0.9의 bytes 입력 처리는 소스 확인이 필요하다(as of 2026-09) | 구현 스파이크에서 확인 후 §4.4·§5.2·§6.1 문구 확정 |
 | 12 | 렌더링된 HTML 주입용 `fetcher` 플러그인(§5.6 경로 2)의 계약(렌더링 서비스 `POST /v1/convert` 재사용 여부, [ADR-0033](../06-adr/0033-sidecar-convert-contract-and-isolation-ladder.md)) | [수집·원천 해소](02-fetching-and-source-resolution.md) 문서가 소유; 이 문서는 파서 측 요구(원 URL을 `<base href>`로 삽입)만 정의 |
 | 13 | 이 문서가 확정한 `element_path` 문법(`/doc/main/…`, 0-based, 합성 세그먼트)이 03 §3.1 권고와 일치하는지의 최종 확인과 바이블 §5.3 `Provenance` 행 "HTML XPath" 문구의 정밀화 | 03 §3.1 HTML 행을 이 문서 §10 표로 갱신(patch); 바이블 행은 "HTML: 정제 문서 요소 경로(0-based)"로 보강 |
-| 14 | 폴백 사다리 단계 자체를 `degraded`로 볼지는 03 §5.3 (e) **미정**이다. 현재 이 문서는 03 §5.3 규칙대로 단계 자체는 표시하지 않고(`trafilatura_recall`·`readability` 산출은 `full`) 실제 손실이 있는 `html2txt`·`docling_direct`만 `degraded`로 둔다. [라우터 문서](03-parsing-router-and-format-detection.md) §6.4는 체인 후보 수준의 "실패 뒤 성공"을 `degraded`로 정밀화하고 어댑터 내부 폴백은 어댑터가 손실을 아는 경우에만 표기하도록 했다 | 03 §5.3 (e) 확정(03 미해결 5, 라우터 미해결 12) 시 §5.5 표 `quality` 열·§13 문구를 동기화; (e)가 어댑터 내부 단계까지 포함하도록 확정되면 네 단계 모두 `degraded` |
+| 14 | 해소(#88): 03 §5.3 (e)는 [라우터 문서](03-parsing-router-and-format-detection.md) §6.4가 parser_chain(후보) 수준의 "실패한 후보 뒤 성공"으로 확정했다. HTML의 `parser_chain`은 항상 1개(§1)이므로 이 확정은 사다리 내부 단계의 `quality` 판정에 영향이 없다 — 기존대로 `trafilatura_recall`·`readability`는 `full`, 실제 손실이 있는 `html2txt`·`docling_direct`만 `degraded`(§5.5) | — |
 
 ## 참조
 

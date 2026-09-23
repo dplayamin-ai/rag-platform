@@ -2,7 +2,7 @@
 title: 관측성
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -30,7 +30,7 @@ depends_on:
 
 ## 범위
 
-- **포함**: OTel Python SDK 설정(리소스·전파자·익스포터·환경 변수), Weaver 레지스트리 운영, Collector 파이프라인(redaction → tail sampling → transform → batch → 팬아웃)과 두 계층 토폴로지, 샘플링 정책(수집 100% / 검색 tail 샘플링), 스팬 이름·속성 표(`rag.{stage}`, `gen_ai.*`, OpenInference `retrieval.*`·`reranker.*`), 메트릭 카탈로그(바이블 §6.5 정본 25종 전부 + 제안 38종, 라벨 값 어휘, 버킷), 로그 필드 표준·PII 마스킹·질의 텍스트 로깅 정책, Grafana 대시보드 4종 패널 목록, 알림 규칙 표, RAG 특화 트레이싱(단계별 페이로드 요약·Langfuse/Phoenix 옵션), 비용 계측(LLM 토큰·GPU 시간·`usage_ledger` 정합), 신호별 보존 정책, 프로파일별 스택(`lite`·`standard`·`premium`·`korean-gov`, AGPL 불가 대안), 검증·CI.
+- **포함**: OTel Python SDK 설정(리소스·전파자·익스포터·환경 변수), Weaver 레지스트리 운영, Collector 파이프라인(redaction → tail sampling → transform → batch → 팬아웃)과 두 계층 토폴로지, 샘플링 정책(수집 100% / 검색 tail 샘플링), 스팬 이름·속성 표(`rag.{stage}`, `gen_ai.*`, OpenInference `retrieval.*`·`reranker.*`), 메트릭 카탈로그(바이블 §6.5 정본 61종 전부 + 제안 4종, 라벨 값 어휘, 버킷), 로그 필드 표준·PII 마스킹·질의 텍스트 로깅 정책, Grafana 대시보드 4종 패널 목록, 알림 규칙 표, RAG 특화 트레이싱(단계별 페이로드 요약·Langfuse/Phoenix 옵션), 비용 계측(LLM 토큰·GPU 시간·`usage_ledger` 정합), 신호별 보존 정책, 프로파일별 스택(`lite`·`standard`·`premium`·`korean-gov`, AGPL 불가 대안), 검증·CI.
 - **제외**: 관측 백엔드(Prometheus·Tempo·Loki·Grafana·Langfuse·Jaeger·OpenSearch Observability·Perses) 자체의 설치·HA·튠 — 플랫폼은 OTLP 엔드포인트 값만 받는다([배포 아키텍처](../02-architecture/08-deployment-architecture.md) §3.1, [배포 가이드](01-deployment-guide.md) §2.4); 감사 이벤트(`audit.*`)의 저장소·보존 — [멀티테넌시·보안 아키텍처](../02-architecture/07-multi-tenancy-and-security-architecture.md) §8과 [보안과 컴플라이언스](05-security-and-compliance.md); 평가 지표의 정의·게이트 — [평가 전략](../08-evaluation/01-evaluation-strategy.md); 런북 본문 — [런북](06-runbooks.md); 환경 변수 전체 목록 — [설정 레퍼런스](02-configuration-reference.md).
 - **정본 규칙**: 메트릭·스팬·로그 이름의 정본은 바이블 §6.5다. 이 문서의 "정본" 표기는 §6.5에 있는 것, "제안"은 §6.5 minor 개정(바이블 §1.2)을 기다리는 것이다. 제안 항목은 구현되더라도 CI 이름 대조(ADR-0022 준수 표 3)에서 허용 목록에 별도 등재되기 전에는 노출하지 않는다.
 
@@ -73,6 +73,8 @@ flowchart LR
 | `korean-gov` | AGPL 허용 시 `standard`; 불가 시 OpenSearch Observability(Trace Analytics) 또는 VictoriaTraces + Jaeger | Prometheus 또는 VictoriaMetrics + **Perses** | OpenSearch(Data Prepper) 또는 VictoriaLogs | Langfuse EE(보존·감사) 또는 미사용 | 게이트웨이 2계층, `NO_CONTENT` 잠금 | 관측 클러스터는 검색 OpenSearch와 분리 |
 
 관측 신호와 도메인 이벤트는 분리된다(바이블 §10.3 E12, [ADR-0017](../06-adr/0017-event-delivery-outbox-cloudevents-no-broker.md)): 잡 상태·감사는 아웃박스 CloudEvents가 정본이고, 스팬·메트릭·로그는 어떤 계약 판정에도 쓰이지 않는다. 과금 정본은 PostgreSQL `usage_ledger`(§9)다.
+
+헬스체크 표면은 관측 신호가 아니지만 혼동을 피하려고 여기서 못박는다: `GET /healthz`는 프로세스 liveness만 본다(의존성 검사 없음). PostgreSQL·Qdrant·OpenSearch·Temporal·Valkey 의존성 상태는 `GET /readyz`가 `degraded`/`503`으로 반영한다(바이블 §14, 완전성 검토 #174). [배포 가이드](01-deployment-guide.md) §7 smoke test와 [관리 API](../05-api/04-management-api.md)가 이 구분을 전제로 값을 읽는다.
 
 ---
 
@@ -276,7 +278,7 @@ service:
 | `rag.plan_id` | string(ulid) | 질의 스팬 | 정본 | |
 | `rag.degraded_count` | int | 질의 스팬 | 정본 | 누적 `DegradedEntry` 수 |
 | `rag.pipeline` | enum | 루트에 가까운 첫 `rag.*` 스팬 | 제안 | 샘플링 분기(§2.4) |
-| `rag.plugin_id`, `rag.plugin_version` | string | 스테이지·call 스팬 | 제안(01 §9.1) | `{extension_point}.{implementation}` |
+| `rag.plugin_id`, `rag.plugin_version` | string | 스테이지·call 스팬 | 제안(01 §9.1) | `{extension_point}.{implementation}`; 여러 플러그인을 합성한 생산자는 예약 구현명 `{extension_point}.pipeline`(`enricher.pipeline`, `query_transformer.pipeline`, `retriever.pipeline`)을 값으로 쓴다(바이블 §6.1 1.3.0, AM-11) |
 | `rag.stage_key`, `rag.cache_hit` | string(hex64), boolean | `rag.ingest.*` | 제안(01 §9.1) | 캐시 적중이면 실행 생략 스팬(수 ms) |
 | `rag.isolation_mode`, `rag.quality`, `rag.warnings_count`, `rag.attempt`, `rag.force`, `rag.force_equivalent` | enum / enum / int / int / bool / bool | `rag.ingest.*` | 제안(01 §9.1) | `IsolationMode`·`Quality` 열거 |
 | `rag.job_id`, `rag.document_id`, `rag.commit_id` | string(ulid) | `rag.ingest.*` | 제안 | 트레이스는 고카디널리티 허용(메트릭 라벨 금지와 무관) |
@@ -310,6 +312,7 @@ service:
 | API → Temporal → 워커 | `TracingInterceptor`(헤더 전파), 액티비티 재시도는 새 스팬 `rag.attempt` | 바이블 §11.1 |
 | 워커 → 사이드카 | `ConvertRequest.trace_id` + HTTP `traceparent` | 바이블 §5.6 |
 | 잡 → 이벤트 | `CloudEventEnvelope.data`에 `trace_id`를 넣지 않는다(ID·해시·상태만). 상관은 `job_id`·`query_id`로 로그·스팬을 조인. CloudEvents Distributed Tracing 확장(`traceparent`) 채택은 미해결 이슈 8 | 바이블 §10.3 E12, §5.3 `CloudEventEnvelope` |
+| CloudEvents 생산자(`source`) | 도메인 이벤트 생산자는 `urn:rag:api`·`urn:rag:worker` 둘뿐이다(평가 하네스의 `eval.run.completed`도 `worker`); 로그·스팬 상관 시 이 값으로 생산 프로세스를 구분한다(1.3.0, AM-13) | 바이블 §6.5·§6.7 |
 | 로그 ↔ 스팬 | structlog `trace_id`·`span_id`(§6.1) | 바이블 §6.5 |
 | 감사 | `AuditQueryExecutedData.trace_id` | [잡·이벤트·상태 계약](../03-contracts/12-jobs-events-and-status.md) |
 
@@ -322,44 +325,47 @@ service:
 - 이름 `rag_<stage>_<name>_<unit>`, 단위 `seconds, bytes, total, count, ratio`(바이블 §6.5). `_count` 단위는 **분포(histogram)** 또는 **게이지**이며 타입 열이 구분한다. histogram의 파생 시계열(`_bucket`, `_sum`, `_count`)은 Prometheus 규약대로 붙는다(`rag_pack_tokens_count_count`는 허용된 결과).
 - 라벨은 저카디널리티만: 정본 허용 집합 `stage, channel, backend_id, profile_id, outcome, renderer, queue`. 정본 목록이 이미 쓰는 `vector, component, metric`은 해당 메트릭에 한정된 정본 라벨로 본다(허용 집합 명시는 미해결 이슈 1). 제안 라벨 `code, status, route, kind`는 §6.5 개정 전 노출 금지.
 - **`tenant_id` 라벨 금지**(해시도 금지). 테넌트 단위 관측은 로그 `tenant_id_hash`·스팬 `rag.tenant_id_hash`·원장 `usage_ledger`로 한다([ADR-0022](../06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md) 대안 D 기각).
-- `outcome` 값 집합은 메트릭 가족별로 고정한다(§4.3). `profile_id`는 kebab-case 프로파일 ID, `backend_id`는 `index_backend.qdrant` 같은 `plugin_id`(서빙 서버 메트릭에서는 `embedder.*`·`reranker.*` 플러그인 ID), `queue`는 **Temporal 태스크 큐 이름만**(바이블 §11.2: `ingest-io, ingest-cpu, ingest-gpu-ocr, ingest-gpu-embed, ingest-llm, maintenance`; `lite`는 `ingest`·`maintenance`). 태스크 큐가 아닌 공유 서빙 파드의 GPU 시간은 `queue` 값을 만들지 않고 별도 메트릭 `rag_serving_gpu_seconds_total{backend_id}`(제안)로 분리한다(§9.2).
+- `outcome` 값 집합은 메트릭 가족별로 고정한다(§4.3). `profile_id`는 kebab-case 프로파일 ID, `backend_id`는 `index_backend.qdrant` 같은 `plugin_id`(서빙 서버 메트릭에서는 `embedder.*`·`reranker.*` 플러그인 ID), `queue`는 **Temporal 태스크 큐 이름만**(바이블 §11.2: `ingest-io, ingest-cpu, ingest-gpu-ocr, ingest-gpu-embed, ingest-llm, maintenance`; `lite`는 `ingest`·`maintenance`). 태스크 큐가 아닌 공유 서빙 파드의 GPU 시간은 `queue` 값을 만들지 않고 별도 메트릭 `rag_serving_gpu_seconds_total{backend_id}`(정본, 1.3.0 AM-41)로 분리한다(§9.2).
 - 검색 QPS는 별도 카운터 없이 `rate(rag_query_latency_seconds_count[5m])`로 얻는다. 오류율은 `outcome="error"` 비율, 코드별 오류율은 `rag_stage_errors_total{stage, code}`(제안)로 얻는다.
+- `embed.token_overflow`(`rag_embed_truncated_total`, §4.2)와 `normalize.segmenter_fallback`은 `Warning.code` 기반 계량이며 `StageError`가 아니다 — 봉투 `quality=degraded` + 경고만 남기고 `rag_stage_errors_total`에 넣지 않는다(바이블 §4.2 1.3.0, CR-33). `normalize.segmenter_fallback`은 아직 전용 카운터가 없어 구조화 로그 `warnings_count`(§6.1)로만 관측된다.
 - 히스토그램 버킷(초안 목표): 질의 측 지연 `[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.8, 1, 1.5, 2.5, 5]`; 수집 스테이지 `[1, 5, 15, 30, 60, 120, 300, 600, 1200, 1800, 3600]`; 지연·SLO 계열(`outbox`·`acl`·`queue_wait`) `[0.1, 0.5, 1, 2, 5, 10, 30, 60, 300, 900]`; 토큰 `[1, 4, 16, 64, 256, 1024, 4096, 16384, 65536]`(GenAI 규약 `gen_ai.client.token.usage` 버킷의 부분집합); 개수 `[0, 1, 5, 10, 20, 50, 100, 300]`.
 
 ### 4.2 카탈로그
 
-"정본" 25종은 바이블 §6.5 목록 전부다. "제안" 38종은 다른 설계 문서가 이 문서로 위임한 항목을 판정·정리한 것이다(총 63종).
+"정본" 61종은 바이블 §6.5 목록 전부다(기존 25종 + 1.3.0이 이 문서의 제안 34종을 승격 + 04-pipelines/03 라우터 2종, AM-41). 남은 "제안" 4종(`rag_stage_errors_total`·`rag_api_problems_total`·`rag_feedback_events_total`·`rag_api_sse_connections_count`)은 새 라벨(`code`·`status`·`route`·`kind`) 도입을 기다리며(미해결 이슈 1, ADR-0022 minor) 그 전까지 노출하지 않는다(총 65종).
 
 **수집 처리량·지연·실패·큐**
 
 | 이름 | 타입 | 라벨 | 설명 | 정본/제안(출처) |
 |------|------|------|------|-----------------|
 | `rag_ingest_stage_duration_seconds` | histogram | `stage, queue, outcome` | 스테이지 액티비티 실행 시간(캐시 적중은 `outcome=cache_hit`) | 정본 |
-| `rag_ingest_jobs_total` | counter | `queue, outcome` | 종료 잡 수(`outcome ∈ JobState 종결값`) — 처리량·실패율 | 제안 |
-| `rag_ingest_stage_cache_hit_total` | counter | `stage` | `stage_key` 캐시 적중 | 제안(01 §9.2) |
-| `rag_stage_errors_total` | counter | `stage, code` | `StageError` 코드별 실패(라벨 `code` 신설) | 제안(03-contracts/13 §8) |
-| `rag_job_queue_wait_seconds` | histogram | `queue` | 잡 `created_at → started_at`(디스패처·Temporal 큐 대기) | 제안(02-architecture/06 이슈 7) |
-| `rag_dispatch_waiting_jobs_count` | gauge | `queue` | `queued` 체류 잡 수(`waiting_for` 포함) | 제안(02-architecture/06 이슈 7) |
-| `rag_fetch_bytes_total` | counter | `outcome` | 다운로드 바이트(`ok, not_modified, reused, error`) | 제안(04-pipelines/02 §11) |
-| `rag_parse_page_status_total` | counter | `outcome` | 페이지 결과(`PageStatus` 값) | 제안(04-pipelines/03) |
-| `rag_parse_fallback_total` | counter | `stage` | 파서 폴백 체인 진입 수(`stage=parse`) | 제안(04-pipelines/03·04) |
+| `rag_ingest_jobs_total` | counter | `queue, outcome` | 종료 잡 수(`outcome ∈ JobState 종결값`) — 처리량·실패율 | 정본(1.3.0, AM-41) |
+| `rag_ingest_stage_cache_hit_total` | counter | `stage` | `stage_key` 캐시 적중 | 정본(1.3.0, AM-41) |
+| `rag_stage_errors_total` | counter | `stage, code` | `StageError` 코드별 실패(라벨 `code` 신설) | 제안(신규 라벨 대기, 미해결 이슈 1 + ADR-0022 minor) |
+| `rag_job_queue_wait_seconds` | histogram | `queue` | 잡 `created_at → started_at`(디스패처·Temporal 큐 대기) | 정본(1.3.0, AM-41) |
+| `rag_dispatch_waiting_jobs_count` | gauge | `queue` | `queued` 체류 잡 수(`waiting_for` 포함) | 정본(1.3.0, AM-41) |
+| `rag_fetch_bytes_total` | counter | `outcome` | 다운로드 바이트(`ok, not_modified, reused, error`) | 정본(1.3.0, AM-41) |
+| `rag_parse_page_status_total` | counter | `outcome` | 페이지 결과(`PageStatus` 값) | 정본(1.3.0, AM-41; 04-pipelines/03) |
+| `rag_parse_fallback_total` | counter | `stage` | 파서 폴백 체인 진입 수(`stage=parse`) | 정본(1.3.0, AM-41; 04-pipelines/03·04) |
+| `rag_parse_format_mismatch_total` | counter | — | `hint_agrees=false`(확장자·매직바이트 불일치) 발생 수, 라벨 없음 | 정본(1.3.0, AM-41; 04-pipelines/03 라우터) |
+| `rag_parse_source_kind_total` | counter | `outcome` | `SourceKind` 값별 판정 수 | 정본(1.3.0, AM-41; 04-pipelines/03 라우터) |
 | `rag_parser_sidecar_unavailable_total` | counter | `backend_id` | `parse.sidecar_unavailable` 발생 | 정본 |
-| `rag_normalize_pii_spans_total` | counter | `outcome` | PII 정책 적용 구간 수(`mask, tokenize, exclude, reject`) | 제안(03-contracts/04) |
+| `rag_normalize_pii_spans_total` | counter | `outcome` | PII 정책 적용 구간 수(`mask, tokenize, exclude, reject`) | 정본(1.3.0, AM-41) |
 | `rag_pii_detector_errors_total` | counter | `stage` | `normalize.pii_detector_unavailable` | 정본 |
 | `rag_egress_denied_total` | counter | `component` | `fetch.egress_denied`·`outbox.egress_denied`(`component ∈ {fetch, relay}`) | 정본 |
-| `rag_gpu_seconds_total` | counter | `queue` | GPU 태스크 큐(`ingest-gpu-embed`, `ingest-gpu-ocr`, 판정 시 `ingest-llm`·`maintenance`) 액티비티 벽시계 초 × 슬롯(§9.2); `usage_ledger(meter=gpu_seconds)`와 정합 대상 | 제안 |
+| `rag_gpu_seconds_total` | counter | `queue` | GPU 태스크 큐(`ingest-gpu-embed`, `ingest-gpu-ocr`, 판정 시 `ingest-llm`·`maintenance`) 액티비티 실제 경과 시간 초 × 슬롯(§9.2); `usage_ledger(meter=gpu_seconds)`와 정합 대상 | 정본(1.3.0, AM-41) |
 
 **임베딩·인덱스**
 
 | 이름 | 타입 | 라벨 | 설명 | 정본/제안(출처) |
 |------|------|------|------|-----------------|
-| `rag_embed_batch_tokens_count` | histogram | `backend_id` | 배치당 입력 토큰(`batch_max_tokens` 대비 충전율) | 제안(04-pipelines/12 이슈 11) |
-| `rag_embed_truncated_total` | counter | `backend_id` | `embed.token_overflow` 절단 청크 수 | 제안(04-pipelines/12 이슈 11) |
-| `rag_embed_cache_total` | counter | `outcome` | 청크 임베딩 캐시 `H("embed", …)` 적중(`hit, miss, bypass, error`) | 제안(04-pipelines/12 `rag_embed_cache_hit_ratio` 대체) |
+| `rag_embed_batch_tokens_count` | histogram | `backend_id` | 배치당 입력 토큰(`batch_max_tokens` 대비 충전율) | 정본(1.3.0, AM-41) |
+| `rag_embed_truncated_total` | counter | `backend_id` | `embed.token_overflow` 절단 청크 수 | 정본(1.3.0, AM-41) |
+| `rag_embed_cache_total` | counter | `outcome` | 청크 임베딩 캐시 `H("embed", …)` 적중(`hit, miss, bypass, error`) | 정본(1.3.0, AM-41) |
 | `rag_index_bytes_total` | gauge | `vector` | 백엔드 적재 바이트. `vector ∈ VectorName ∪ {lexical}`(`lexical` 값은 04-pipelines/13 이슈 8 수용) | 정본 |
-| `rag_index_records_count` | gauge | `backend_id` | `is_current=true` 레코드 수(정합성 검사 잡이 갱신) | 제안 |
+| `rag_index_records_count` | gauge | `backend_id` | `is_current=true` 레코드 수(정합성 검사 잡이 갱신) | 정본(1.3.0, AM-41) |
 | `rag_consistency_mismatch_total` | counter | `backend_id` | `index.consistency.mismatch` | 정본 |
-| `rag_delete_propagation_seconds` | histogram | `backend_id` | 삭제 잡 접수 → 양 백엔드 반영 | 제안(04-pipelines/19) |
+| `rag_delete_propagation_seconds` | histogram | `backend_id` | 삭제 잡 접수 → 양 백엔드 반영 | 정본(1.3.0, AM-41) |
 
 **검색 지연·품질·캐시**
 
@@ -369,8 +375,8 @@ service:
 | `rag_plan_latency_seconds` | histogram | `profile_id, outcome` | `plan`(`outcome=llm_fallback`·`cache_hit` 포함) | 정본 |
 | `rag_embed_query_latency_seconds` | histogram | `profile_id, outcome` | 질의 임베딩(`cache_hit` 시 0 근사) | 정본 |
 | `rag_retrieve_latency_seconds` | histogram | `channel, backend_id, outcome` | 채널 런 지연 | 정본 |
-| `rag_retrieve_channel_runs_total` | counter | `channel, outcome` | 채널 런 결과(`ChannelRunStatus` 값) — 채널 타임아웃·오류율 | 제안 |
-| `rag_retrieve_candidates_count` | histogram | `channel` | 채널 런당 반환 후보 수 | 제안(07-tech-landscape/09 변형) |
+| `rag_retrieve_channel_runs_total` | counter | `channel, outcome` | 채널 런 결과(`ChannelRunStatus` 값) — 채널 타임아웃·오류율 | 정본(1.3.0, AM-41) |
+| `rag_retrieve_candidates_count` | histogram | `channel` | 채널 런당 반환 후보 수 | 정본(1.3.0, AM-41) |
 | `rag_hydrate_latency_seconds` | histogram | `backend_id` | payload 배치 조회 | 정본 |
 | `rag_hydrate_missing_total` | counter | `backend_id` | 세대 플립 경합 누락 | 정본 |
 | `rag_rerank_latency_seconds` | histogram | `profile_id, outcome` | 리랭커 호출(폴백은 `outcome=fallback`) | 정본 |
@@ -378,17 +384,17 @@ service:
 | `rag_postprocess_latency_seconds` | histogram | `profile_id` | 후처리 전체 | 정본 |
 | `rag_pack_latency_seconds` | histogram | `profile_id, outcome` | 패킹(`count_api_failed`는 `outcome=fallback`) | 정본 |
 | `rag_pack_tokens_count` | histogram | `profile_id` | `budget.used_tokens` | 정본 |
-| `rag_pack_items_count` | histogram | `profile_id` | 최종 K | 제안 |
-| `rag_pack_omitted_total` | counter | `outcome` | `omitted[].reason`(`OmitReason` 값) | 제안 |
+| `rag_pack_items_count` | histogram | `profile_id` | 최종 K | 정본(1.3.0, AM-41) |
+| `rag_pack_omitted_total` | counter | `outcome` | `omitted[].reason`(`OmitReason` 값) | 정본(1.3.0, AM-41) |
 | `rag_pack_citation_unresolved_total` | counter | `renderer` | `citation_align`·렌더에서 `cite_id`↔`segments` 불일치 | 정본 |
 | `rag_acl_recheck_denied_total` | counter | `profile_id` | `omitted(acl_denied)` | 정본 |
-| `rag_query_degraded_total` | counter | `component` | `DegradedEntry.component`별 저하 | 제안(02-architecture/09) |
-| `rag_render_latency_seconds` | histogram | `renderer` | 렌더러 지연(정본 라벨 `renderer`의 첫 사용) | 제안 |
-| `rag_embed_query_cache_total` | counter | `outcome` | Valkey `qemb:` | 제안 |
-| `rag_plan_cache_total` | counter | `outcome` | Valkey `plan:` | 제안(04-pipelines/14 `rag_plan_cache_hit_total` 대체) |
-| `rag_postprocess_parent_text_cache_total` | counter | `outcome` | Valkey `ptxt:`(부모 번들) | 제안 |
-| `rag_pack_token_cache_total` | counter | `outcome` | Valkey `tok:` | 제안 |
-| `rag_answer_latency_seconds` | histogram | `outcome` | `POST /v1/answer` 레퍼런스 | 제안(05-api/03 §11) |
+| `rag_query_degraded_total` | counter | `component` | `DegradedEntry.component`별 저하 | 정본(1.3.0, AM-41) |
+| `rag_render_latency_seconds` | histogram | `renderer` | 렌더러 지연(정본 라벨 `renderer`의 첫 사용) | 정본(1.3.0, AM-41) |
+| `rag_embed_query_cache_total` | counter | `outcome` | Valkey `qemb:` | 정본(1.3.0, AM-41) |
+| `rag_plan_cache_total` | counter | `outcome` | Valkey `plan:` | 정본(1.3.0, AM-41) |
+| `rag_postprocess_parent_text_cache_total` | counter | `outcome` | Valkey `ptxt:`(부모 번들) | 정본(1.3.0, AM-41) |
+| `rag_pack_token_cache_total` | counter | `outcome` | Valkey `tok:` | 정본(1.3.0, AM-41) |
+| `rag_answer_latency_seconds` | histogram | `outcome` | `POST /v1/answer` 레퍼런스 | 정본(1.3.0, AM-41) |
 
 **토큰·비용·평가·피드백**
 
@@ -396,13 +402,13 @@ service:
 |------|------|------|------|-----------------|
 | `rag_enrich_llm_tokens_total` | counter | `stage, outcome` | LLM 보강 토큰(입력+출력; `usage_ledger.llm_tokens`와 증분 일치) | 정본 |
 | `rag_enrich_llm_cost_usd_total` | counter | `stage` | 가격표 기반 추정 비용 | 정본 |
-| `rag_answer_llm_tokens_total` | counter | `outcome` | `answer` 토큰(입력+출력) | 제안(05-api/03) |
-| `rag_answer_llm_cost_usd_total` | counter | — | `answer` 추정 비용 | 제안 |
-| `rag_eval_judge_cost_usd_total` | counter | — | LLM-judge 추정 비용 | 제안(08-evaluation/04 이슈 5) |
+| `rag_answer_llm_tokens_total` | counter | `outcome` | `answer` 토큰(입력+출력) | 정본(1.3.0, AM-41) |
+| `rag_answer_llm_cost_usd_total` | counter | — | `answer` 추정 비용 | 정본(1.3.0, AM-41) |
+| `rag_eval_judge_cost_usd_total` | counter | — | LLM-judge 추정 비용 | 정본(1.3.0, AM-41) |
 | `rag_eval_metric_value` | gauge | `metric, profile_id` | 최근 야간 런 값(`metric ∈ {ndcg@10, recall@20, mrr, span_hit_rate@k, judged@10, …}` + 청킹 내재 지표) | 정본 |
-| `rag_eval_last_run_timestamp_seconds` | gauge | `profile_id` | 프로파일별 최근 `eval.run.v1` 완료 시각(unix 초); `RagEvalStale` 알림(§8) 원천 | 제안(이 문서) |
-| `rag_serving_gpu_seconds_total` | counter | `backend_id` | 공유 서빙 파드(`embedding-server`·`reranker-server`·`ocr-gpu`) 가동 초 × GPU 슬롯; 태스크 큐가 아니므로 `rag_gpu_seconds_total`과 분리(§9.2), 원장 정합 대상 아님 | 제안(이 문서) |
-| `rag_feedback_events_total` | counter | `kind` | `FeedbackKind` 값(라벨 `kind` 신설) | 제안(08-evaluation/01 이슈 6) |
+| `rag_eval_last_run_timestamp_seconds` | gauge | `profile_id` | 프로파일별 최근 `eval.run.v1` 완료 시각(unix 초); `RagEvalStale` 알림(§8) 원천 | 정본(1.3.0, AM-41) |
+| `rag_serving_gpu_seconds_total` | counter | `backend_id` | 공유 서빙 파드(`embedding-server`·`reranker-server`·`ocr-gpu`) 가동 초 × GPU 슬롯; 태스크 큐가 아니므로 `rag_gpu_seconds_total`과 분리(§9.2), 원장 정합 대상 아님 | 정본(1.3.0, AM-41) |
+| `rag_feedback_events_total` | counter | `kind` | `FeedbackKind` 값(라벨 `kind` 신설) | 제안(신규 라벨 대기, 미해결 이슈 1 + ADR-0022 minor) |
 
 **이벤트·웹훅·ACL·API**
 
@@ -411,12 +417,12 @@ service:
 | `rag_outbox_lag_seconds` | histogram | `queue` | `published_at − time`; SLO `runtime.outbox_lag_slo` | 정본 |
 | `rag_acl_propagation_seconds` | histogram | `backend_id` | ACL 갱신 접수 → 백엔드 반영; SLO `runtime.acl_propagation_slo` | 정본 |
 | `rag_authz_errors_total` | counter | `outcome` | 인가 엔진 오류·정책 미로딩(fail-closed Deny) | 정본 |
-| `rag_webhook_delivery_total` | counter | `outcome` | `delivered, retried, exhausted, egress_denied` | 제안(05-api/07) |
-| `rag_webhook_delivery_latency_seconds` | histogram | `outcome` | 전송 → 응답 | 제안(05-api/07) |
-| `rag_webhook_pending_count` | gauge | — | `pending`·`retry_scheduled` 전달 레코드 수 | 제안(05-api/07) |
-| `rag_api_problems_total` | counter | `code, status` | RFC 9457 응답 수(라벨 `code`·`status` 신설; 429는 `code=api.rate_limited`) | 제안(05-api/01 §21) |
-| `rag_api_idempotency_total` | counter | `outcome` | `new, replayed, conflict, mismatch` | 제안(05-api/01) |
-| `rag_api_sse_connections_count` | gauge | `route` | 현재 SSE 연결(라벨 `route` 신설) | 제안(05-api/01) |
+| `rag_webhook_delivery_total` | counter | `outcome` | `delivered, retried, exhausted, egress_denied` | 정본(1.3.0, AM-41) |
+| `rag_webhook_delivery_latency_seconds` | histogram | `outcome` | 전송 → 응답 | 정본(1.3.0, AM-41) |
+| `rag_webhook_pending_count` | gauge | — | `pending`·`retry_scheduled` 전달 레코드 수 | 정본(1.3.0, AM-41) |
+| `rag_api_problems_total` | counter | `code, status` | RFC 9457 응답 수(라벨 `code`·`status` 신설; 429는 `code=api.rate_limited`) | 제안(신규 라벨 대기, 미해결 이슈 1 + ADR-0022 minor) |
+| `rag_api_idempotency_total` | counter | `outcome` | `new, replayed, conflict, mismatch` | 정본(1.3.0, AM-41) |
+| `rag_api_sse_connections_count` | gauge | `route` | 현재 SSE 연결(라벨 `route` 신설) | 제안(신규 라벨 대기, 미해결 이슈 1 + ADR-0022 minor) |
 
 채택하지 않은 제안: `rag_stage_duration_seconds`(정본 `rag_ingest_stage_duration_seconds`로 대체), `rag_query_candidates_count{stage}`(채널·팩 개수 메트릭으로 분리), `rag_valkey_keys_total`·`rag_valkey_memory_bytes`(Valkey exporter 영역), `rag_embed_server_errors_total`(`rag_stage_errors_total{stage="embed"}`로 흡수), `rag_api_rate_limited_total{class}`(`rag_api_problems_total`로 흡수), `rag_webhook_sampled_out_total{type}`(라벨 `type` 24값은 허용 가능하나 전달 원장 SQL로 대체), `rag_eval_metric_value`의 `dataset_id` 라벨(PostgreSQL 데이터소스로 분해, 08-evaluation/01 결정).
 
@@ -692,14 +698,14 @@ structlog JSON 1행 = 1이벤트. 정본 7필드(바이블 §6.5)와 제안 필�
 
 ## 8. 알림 규칙
 
-**결정:** 알림은 Prometheus 규칙 파일(`deploy/observability/alerts/rag-platform.rules.yaml`, 제안 경로)로 배포하고 `promtool test rules`로 CI 검증한다. 심각도는 `critical`(즉시 호출), `warning`(근무 시간 티켓), `info`(대시보드 표시). 런북 ID는 [장애 모드와 복원력](../02-architecture/09-failure-modes-and-resilience.md) §9의 RB-01~RB-12를 재사용하고, 부재한 항목은 RB-13~RB-18(제안)로 [런북](06-runbooks.md)에 추가를 요청한다. 임계값은 모두 초안 목표이며 프로파일 값(`latency_budget_ms`, `*_slo`)을 우선 참조한다.
+**결정:** 알림은 Prometheus 규칙 파일(`deploy/observability/alerts/rag-platform.rules.yaml`, 제안 경로)로 배포하고 `promtool test rules`로 CI 검증한다. 심각도는 `critical`(즉시 호출), `warning`(근무 시간 티켓), `info`(대시보드 표시). 런북 ID는 [장애 모드와 복원력](../02-architecture/09-failure-modes-and-resilience.md) §9의 RB-01~RB-12를 재사용하고, 나머지는 [런북](06-runbooks.md)이 신설한 RB-19·RB-25~RB-29를 쓴다(완전성 #141 해소). 임계값은 모두 초안 목표이며 프로파일 값(`latency_budget_ms`, `*_slo`)을 우선 참조한다.
 
 | 알림 | 조건(PromQL 초안, `for`) | 심각도 | 런북 |
 |------|--------------------------|--------|------|
-| `RagRetrievalP95OverBudget` | `histogram_quantile(0.95, sum by (le, profile_id) (rate(rag_query_latency_seconds_bucket[5m]))) > latency_budget_ms.total/1000`, 10m | warning | RB-13 검색 지연 초과(제안) |
+| `RagRetrievalP95OverBudget` | `histogram_quantile(0.95, sum by (le, profile_id) (rate(rag_query_latency_seconds_bucket[5m]))) > latency_budget_ms.total/1000`, 10m | warning | RB-19 검색 지연 p95 초과 |
 | `RagRetrievalErrorRate` | `sum(rate(rag_query_latency_seconds_count{outcome="error"}[5m])) / sum(rate(rag_query_latency_seconds_count[5m])) > 0.01`, 5m | critical | RB-04 Qdrant 장애 / RB-11 Valkey 장애 |
 | `RagRetrievalUnavailable` | `increase(rag_api_problems_total{code="retrieve.unavailable"}[5m]) > 0` | critical | RB-04 |
-| `RagChannelTimeoutRatio` | `sum by (channel) (rate(rag_retrieve_channel_runs_total{outcome="timeout"}[5m])) / sum by (channel) (rate(rag_retrieve_channel_runs_total[5m])) > 0.05`, 10m | warning | RB-04(dense·sparse) / RB-13(lexical, OpenSearch) |
+| `RagChannelTimeoutRatio` | `sum by (channel) (rate(rag_retrieve_channel_runs_total{outcome="timeout"}[5m])) / sum by (channel) (rate(rag_retrieve_channel_runs_total[5m])) > 0.05`, 10m | warning | RB-04(dense·sparse) / RB-19(lexical, OpenSearch) |
 | `RagRerankFallbackRatio` | `rate(rag_rerank_fallback_total[10m]) / rate(rag_rerank_latency_seconds_count[10m]) > 0.10`, 10m | warning | RB-06 사이드카·모델 서버 재기동 |
 | `RagHydrateMissingBurst` | `increase(rag_hydrate_missing_total[15m]) > 100` | warning | RB-03 커밋 사가·정합성 |
 | `RagConsistencyMismatch` | `increase(rag_consistency_mismatch_total[24h]) > 0` | warning | RB-03 |
@@ -714,16 +720,16 @@ structlog JSON 1행 = 1이벤트. 정본 7필드(바이블 §6.5)와 제안 필�
 | `RagDispatcherBacklog` | `rag_dispatch_waiting_jobs_count > 1000`, 30m | info | RB-02 |
 | `RagSidecarUnavailable` | `increase(rag_parser_sidecar_unavailable_total[10m]) > 20` | warning | RB-06 |
 | `RagPiiDetectorErrors` | `increase(rag_pii_detector_errors_total[10m]) > 0` | critical(E4 `keep` 폴백 금지 → 잡 실패) | RB-06 |
-| `RagEgressDenied` | `sum by (component) (increase(rag_egress_denied_total[1h])) > 10` | warning(보안 검토) | [보안과 컴플라이언스](05-security-and-compliance.md) 절차 / RB-14 egress 거부 급증(제안) |
-| `RagAuthzEngineErrors` | `increase(rag_authz_errors_total[5m]) > 0` | critical(fail-closed → 403 폭주) | RB-15 인가 엔진·정책 로딩(제안) |
+| `RagEgressDenied` | `sum by (component) (increase(rag_egress_denied_total[1h])) > 10` | warning(보안 검토) | [보안과 컴플라이언스](05-security-and-compliance.md) 절차 / RB-25 egress 거부 급증 |
+| `RagAuthzEngineErrors` | `increase(rag_authz_errors_total[5m]) > 0` | critical(fail-closed → 403 폭주) | RB-26 인가 엔진·정책 로딩 실패 |
 | `RagIndexCapacity` | `predict_linear(rag_index_bytes_total[7d], 30*86400) > capacity_bytes`(변수) | info | RB-05 디스크 풀 |
-| `RagCitationUnresolved` | `rate(rag_pack_citation_unresolved_total[1h]) > 0`, 1h | warning | RB-16 인용 좌표 불일치(제안; 바이블 §15 리스크 7) |
+| `RagCitationUnresolved` | `rate(rag_pack_citation_unresolved_total[1h]) > 0`, 1h | warning | RB-27 인용 좌표 불일치(바이블 §15 리스크 7) |
 | `RagEvalGateRegression` | `rag_eval_metric_value{metric="ndcg@10"} < eval.gates["ndcg@10"].min` 야간 런 후 | warning | RB-12 임베딩·모델 버전 불일치 |
-| `RagEvalStale` | `time() - rag_eval_last_run_timestamp_seconds > 2*86400`(제안 게이지, §4.2; 등재 전 "등재 대기", 미해결 이슈 2) | info | 08-evaluation 야간 스케줄 확인 |
-| `RagLlmDailyCostBudget` | `increase(rag_enrich_llm_cost_usd_total[1d]) + increase(rag_answer_llm_cost_usd_total[1d]) > daily_budget_usd`(변수) | warning | RB-17 LLM 비용 상한(제안; O-05 정책) |
-| `RagTokenCountFallbackRatio` | `rate(rag_query_degraded_total{component="token_count"}[15m]) / rate(rag_query_latency_seconds_count[15m]) > 0.10`, 15m | info | RB-13 |
-| `RagCollectorDropping` | `increase(otelcol_exporter_send_failed_spans[5m]) > 0 or increase(otelcol_processor_refused_spans[5m]) > 0` | warning | RB-18 관측 스택(제안) |
-| `RagMetricsAbsent` | `up{job=~"rag-platform.*"} == 0`, 5m | critical | RB-18 |
+| `RagEvalStale` | `time() - rag_eval_last_run_timestamp_seconds > 2*86400`(정본 게이지, §4.2, 1.3.0 AM-41) | info | 08-evaluation 야간 스케줄 확인 |
+| `RagLlmDailyCostBudget` | `increase(rag_enrich_llm_cost_usd_total[1d]) + increase(rag_answer_llm_cost_usd_total[1d]) > daily_budget_usd`(변수) | warning | RB-28 LLM 비용 상한 초과(O-05 정책) |
+| `RagTokenCountFallbackRatio` | `rate(rag_query_degraded_total{component="token_count"}[15m]) / rate(rag_query_latency_seconds_count[15m]) > 0.10`, 15m | info | RB-19 |
+| `RagCollectorDropping` | `increase(otelcol_exporter_send_failed_spans[5m]) > 0 or increase(otelcol_processor_refused_spans[5m]) > 0` | warning | RB-29 관측 스택 장애 |
+| `RagMetricsAbsent` | `up{job=~"rag-platform.*"} == 0`, 5m | critical | RB-29 |
 | `RagGpuIdleWithBacklog` | `avg(DCGM_FI_DEV_GPU_UTIL) < 10 and rag_dispatch_waiting_jobs_count{queue=~"ingest-gpu.*"} > 100`, 30m | info | RB-06(서빙 큐 정체) |
 
 알림 라벨은 `severity`, `profile_id`, `runbook`(RB-ID)만 붙이고 `tenant_id`는 없다. 알림 본문에는 메트릭 값과 대시보드·트레이스 검색 링크만 넣는다.
@@ -747,9 +753,9 @@ structlog JSON 1행 = 1이벤트. 정본 7필드(바이블 §6.5)와 제안 필�
 
 | 경로 | 식 | 비고 |
 |------|----|------|
-| 수집 GPU 큐(`ingest-gpu-embed`, `ingest-gpu-ocr`) | 액티비티 벽시계 초 × 액티비티가 점유한 GPU 슬롯 수(MIG 분할은 분할 비율) | `stage.embed`·`stage.parse(OCR)` 종료 시 셸이 `JobStatus.cost.gpu_seconds`에 가산 |
+| 수집 GPU 큐(`ingest-gpu-embed`, `ingest-gpu-ocr`) | 액티비티 실제 경과 시간 초 × 액티비티가 점유한 GPU 슬롯 수(MIG 분할은 분할 비율) | `stage.embed`·`stage.parse(OCR)` 종료 시 셸이 `JobStatus.cost.gpu_seconds`에 가산 |
 | 공유 서빙(`embedding-server`·`reranker-server`·`ocr-gpu`)의 질의 측 사용 | 테넌트 귀속 불가 → `usage_ledger(meter=queries)`로 대체하고 GPU 비용은 `rag_serving_gpu_seconds_total{backend_id}`(서빙 파드 가동 초 × 슬롯, 제안; `backend_id`는 `embedder.*`·`reranker.*`·`parser.*` 플러그인 ID)로 집계만. `rag_gpu_seconds_total`의 `queue` 라벨은 Temporal 태스크 큐 이름만 허용하므로(§4.1) 서빙 값을 섞지 않는다 | 정확 귀속은 서빙 서버 요청별 토큰 비례 배분(2단계, 미해결 이슈 9) |
-| 판정 LLM(셀프호스팅) | `eval.run.v1` 액티비티 벽시계 × 슬롯 | `maintenance` 큐 |
+| 판정 LLM(셀프호스팅) | `eval.run.v1` 액티비티 실제 경과 시간 × 슬롯 | `maintenance` 큐 |
 
 ### 9.3 정합 검사
 
@@ -799,16 +805,16 @@ structlog JSON 1행 = 1이벤트. 정본 7필드(바이블 §6.5)와 제안 필�
 - **결정:** 샘플링은 수집·유지보수·릴레이 100%, 검색은 tail(오류·저하·예산 초과 보존 + 10% 표본), 평가 5%. `lite`(Collector 없음)는 `RagHeadSampler`. 메트릭·로그는 미표본. [ADR-0022](../06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md)
 - **결정:** 스팬 이름 `rag.{stage}`(정본), 자식 호출 `rag.{stage}.call`(제안). 모델 호출은 `gen_ai.operation.name ∈ {retrieval, embeddings, chat}`로 매핑하고 리랭크는 값을 설정하지 않으며 OpenInference `reranker.*`로 식별. 콘텐츠 속성(`gen_ai.*.messages`, `retrieval.documents.*.document.content`, `reranker.query`, `gen_ai.retrieval.query.text`)은 v1에서 생성·전송·저장 모두 없음. [ADR-0022](../06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md), [ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md)
 - **결정:** 단계별 페이로드 요약은 ID·해시·개수·열거값만 스팬 속성으로, 점수 분해·후보 전체는 `RankedSet`·`explain`이 정본. 문서 단위 속성은 상위 `k_trace`(기본 10, `korean-gov` 0 권고). [ADR-0030](../06-adr/0030-single-coordinate-system-and-score-ledger.md)
-- **결정:** 메트릭 카탈로그는 바이블 §6.5 정본 25종 + 제안 38종(총 63종), `tenant_id` 라벨 금지, `queue` 라벨은 Temporal 태스크 큐 이름만(공유 서빙 GPU 초는 `rag_serving_gpu_seconds_total{backend_id}`로 분리), `outcome` 값 어휘는 메트릭 가족별 고정(스테이지·질의 가족은 `ok, degraded, partial, error, fallback, cache_hit`), QPS는 `rag_query_latency_seconds_count` 파생. 제안 라벨 `code, status, route, kind`·`rag_index_bytes_total{vector="lexical"}`은 §6.5 minor 개정 전 노출 금지. [ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md)
+- **결정:** 메트릭 카탈로그는 바이블 §6.5 정본 61종(1.3.0이 이 문서의 34종 + 04-pipelines/03 라우터 2종을 승격, AM-41) + 제안 4종(총 65종), `tenant_id` 라벨 금지, `queue` 라벨은 Temporal 태스크 큐 이름만(공유 서빙 GPU 초는 `rag_serving_gpu_seconds_total{backend_id}`로 분리), `outcome` 값 어휘는 메트릭 가족별 고정(스테이지·질의 가족은 `ok, degraded, partial, error, fallback, cache_hit`), QPS는 `rag_query_latency_seconds_count` 파생. 제안 라벨 `code, status, route, kind`·`rag_index_bytes_total{vector="lexical"}`은 §6.5 minor 개정 전 노출 금지. [ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md)
 - **결정:** 로그는 structlog JSON 정본 7필드 + 제안 필드, 프로세서 체인 7단(테넌트 해시 → 거부 목록 → 허용 목록 → KR PII 정규식 → 절단) 고정. 질의 원문은 어떤 레벨·신호에도 없고 `query_hash = blake3_hex(utf8(normalized_query))`(라벨 없음; 감사 `AuditQueryExecutedData.query_hash`·07-multi-tenancy §8.2와 동일 식)로만 상관. 개발 콘솔 예외는 `local`·`dev`·명시 플래그 3중 조건, `korean-gov` 거부. [ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md)
-- **결정:** Grafana 대시보드 4종(`rag-ingest`, `rag-retrieval`, `rag-quality`, `rag-cost`) + Perses 동등 스펙, 테넌트 분해는 PostgreSQL 패널만. 알림 29종은 Prometheus 규칙으로 배포하고 RB-01~RB-12 재사용, RB-13~RB-18 신설 요청. [ADR-0017](../06-adr/0017-event-delivery-outbox-cloudevents-no-broker.md)
-- **결정:** 비용 정본은 `JobStatus.cost`·`usage_ledger`, 메트릭은 집계·추세용. 보강 토큰은 일 합계 오차 0 정합을 `maintenance.consistency.v1` 서브체크로 검증. GPU 시간은 큐 액티비티 벽시계 × 슬롯, 공유 서빙은 2단계. [ADR-0016](../06-adr/0016-llm-enrichment-default-off-and-budget-policy.md)
+- **결정:** Grafana 대시보드 4종(`rag-ingest`, `rag-retrieval`, `rag-quality`, `rag-cost`) + Perses 동등 스펙, 테넌트 분해는 PostgreSQL 패널만. 알림 29종은 Prometheus 규칙으로 배포하고 RB-01~RB-12를 재사용하며 나머지는 [런북](06-runbooks.md)의 RB-19·RB-25~RB-29를 쓴다. [ADR-0017](../06-adr/0017-event-delivery-outbox-cloudevents-no-broker.md)
+- **결정:** 비용 정본은 `JobStatus.cost`·`usage_ledger`, 메트릭은 집계·추세용. 보강 토큰은 일 합계 오차 0 정합을 `maintenance.consistency.v1` 서브체크로 검증. GPU 시간은 큐 액티비티 실제 경과 시간 × 슬롯, 공유 서빙은 2단계. [ADR-0016](../06-adr/0016-llm-enrichment-default-off-and-budget-policy.md)
 - **결정:** 보존은 트레이스 3/14/30일, 메트릭 15일 + 장기 13개월, 로그 7/14/30일(프로파일별), 감사 보존과 분리, 테넌트 삭제는 보존 만료로 처리. [ADR-0022](../06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md)
 
 ## 미해결 이슈
 
 1. **§6.5 라벨 허용 집합 명시(patch)**: 정본 목록이 이미 쓰는 `vector, component, metric`을 허용 집합에 명시하고, 제안 라벨 `code`(≤100값), `status`(HTTP), `route`(템플릿), `kind`(`FeedbackKind`)와 `rag_index_bytes_total{vector="lexical"}` 값을 minor 개정으로 등재 — ADR-0022 minor + 바이블 §6.5 갱신 요청(architecture).
-2. **제안 메트릭 38종 등재**: §4.2 "제안" 행 전부(`rag_eval_last_run_timestamp_seconds` 게이지·`rag_serving_gpu_seconds_total` 카운터 포함). 등재 전에는 노출 금지이므로 대시보드·알림 중 제안 메트릭 참조 패널은 "등재 대기" 표시.
+2. **제안 메트릭 등재.** 해소(v1.3, AM-41) — 34종 + 04-pipelines/03 라우터 2종(`rag_parse_format_mismatch_total`·`rag_parse_source_kind_total`)이 바이블 §6.5 1.3.0 정본으로 등재됐다(`rag_eval_last_run_timestamp_seconds` 게이지·`rag_serving_gpu_seconds_total` 카운터 포함). 남은 4종(`rag_stage_errors_total`·`rag_api_problems_total`·`rag_feedback_events_total`·`rag_api_sse_connections_count`)은 새 라벨(`code`·`status`·`route`·`kind`) 도입 전까지 노출 금지이며 미해결 이슈 1(ADR-0022 minor)과 함께 처리한다. 대시보드·알림의 남은 4종 참조 패널만 "등재 대기" 표시를 유지한다.
 3. **`tenant_id_hash` 함수 확정**: 기본 `H("tenant", tenant_id)`(무키)는 테넌트 ULID 목록 보유자가 역산 가능. `RAG_OTEL__TENANT_HASH_KEY_REF`(HMAC-SHA256) 전환 여부와 키 회전 시 상관 단절 처리(로그·스팬·감사 `principal_hash`와 동일 정책 필요) — [보안과 컴플라이언스](05-security-and-compliance.md)와 합의.
 4. **`content_capture` 확장 모드**: v1은 `none`만. `span_only`(PII 정책 적용 후 텍스트) 도입 조건(테넌트 옵트인, 관측 스택 접근 통제, Langfuse EE 마스킹 부재)과 `Settings.otel.content_capture` 타입 확장은 별도 ADR.
 5. **Collector 2계층 배포 값**: `observability.otelCollector{mode, replicas, config}`에 tier-2 StatefulSet(`tailSampling.replicas`, `decisionWait`, `sampling.query_percent`, `sampling.eval_percent`) 추가 — [배포 아키텍처](../02-architecture/08-deployment-architecture.md) §4.2·[배포 가이드](01-deployment-guide.md) 개정 요청.
@@ -816,7 +822,7 @@ structlog JSON 1행 = 1이벤트. 정본 7필드(바이블 §6.5)와 제안 필�
 7. **자체 서빙의 `gen_ai.provider.name` 값**: 잘 알려진 값에 vLLM·TEI가 없다. 커스텀 값 `vllm`·`tei`·`in_process` 채택 또는 OpenAI 호환 엔드포인트 경유 시 `openai` 사용 — 확인 필요(as of 2026-09), Weaver 레지스트리에 열거로 고정 후 결정. `rag.plan`에 `gen_ai.operation.name=plan`(에이전트 계획 연산) 부여 여부도 함께.
 8. **CloudEvents Distributed Tracing 확장(`traceparent`·`tracestate`)**: `CloudEventEnvelope`에 확장 속성 추가 시 소비자가 트레이스를 이어갈 수 있으나 바이블 §5.3 미등재 — [잡·이벤트·상태 계약](../03-contracts/12-jobs-events-and-status.md)·[웹훅과 이벤트](../05-api/07-webhooks-and-events.md)와 합의(minor).
 9. **공유 서빙 GPU 비용의 테넌트 귀속**: 요청별 토큰 비례 배분(vLLM·TEI 응답 `usage` 기반) 알고리즘과 `usage_ledger` meter 이름(`gpu_seconds_serving` 제안). 귀속이 확정되면 `rag_serving_gpu_seconds_total{backend_id}`(§9.2)도 §9.3 정합 검사 대상에 넣는다 — [확장과 성능](04-scaling-and-performance.md)·과금 정책과 합의.
-10. **런북 RB-13~RB-18 신설**: 검색 지연 초과, egress 거부 급증, 인가 엔진·정책 로딩, 인용 좌표 불일치, LLM 비용 상한, 관측 스택 장애 — [런북](06-runbooks.md) 작성자에게 요청(ID는 09-failure-modes §9 표 확장).
+10. **런북 신설** — 해소(완전성 #141). 검색 지연 초과·egress 거부 급증·인가 엔진·정책 로딩·인용 좌표 불일치·LLM 비용 상한·관측 스택 장애는 [런북](06-runbooks.md) RB-19·RB-25~RB-29로 등재됐다.
 11. **`rag.*` 제안 속성의 Weaver 등재**: §3.2·§5.2의 제안 속성 전부를 `registry/rag.yaml`에 등재하고 `schema_url` 초기값 확정 — 구현 M1.
 12. **Prometheus 이름 변환 검증**: OTel Python Prometheus 리더가 단위 접미를 중복 부착하지 않는 옵션의 정확한 이름과 `_count` 단위 히스토그램(`rag_pack_tokens_count_count`)의 수용 여부 — 구현 시 확인(as of 2026-09), 필요하면 §6.5 단위 규칙에 각주.
 13. **로그 `info` 표본화**: `http.request` 1/10 표본이 SLO 계산(로그 기반)과 충돌하지 않는지 — 메트릭이 SLO 정본이므로 문제없다고 보나 [API 설계 가이드라인](../05-api/01-api-design-guidelines.md) §21과 확인.

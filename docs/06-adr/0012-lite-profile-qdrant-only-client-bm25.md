@@ -6,8 +6,8 @@ deciders: architecture
 priority: P1
 related: ["D-15"]
 owner: architecture
-version: 0.1.0
-last_updated: 2026-09-22
+version: 0.1.1
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - ../02-architecture/00-design-bible.md
@@ -23,13 +23,13 @@ depends_on:
 
 브리프 D-15 원안은 경량 프로파일을 "Qdrant 단독(sparse BM25 포함)"으로 적었다. 이 문구는 두 가지 확정 사실과 어긋난다. 첫째, Qdrant 오픈소스 서버는 BM25(Best Matching 25)를 계산하지 않는다. sparse 벡터의 `indices`·`values`는 클라이언트가 만들고, 컬렉션 sparse 설정 `modifier: idf`를 켜면 서버는 역문서빈도(IDF, inverse document frequency)만 곱한다. 항 빈도(TF, term frequency) 포화와 문서 길이 정규화(k1, b, avgdl)는 전적으로 클라이언트 책임이며, 이를 생략하고 TF를 그대로 넣으면 결과는 BM25가 아니라 TF×IDF로 퇴화한다(07-tech-landscape/06 §Qdrant; MIRACL-ko 연구의 경고 인용). 둘째, Qdrant 공식 빌드의 payload `text` 인덱스(`multilingual` 토크나이저)는 charabia의 `korean` 피처를 켜지 않아 한국어를 유니코드 경계로만 분절한다. 형태소 분석 없는 한국어 BM25는 MIRACL-ko 10K 문서 실험에서 nDCG@10 0.36(Qdrant charabia)·0.41(Vespa ICU)에 그쳤고, 형태소 분석(MeCab·Nori)은 0.61~0.64였다(06 §한국어 렉시컬 분석기 비교와 recall 근거; 13 §BM25 토크나이징 전략 비교). 기본 FastEmbed `Qdrant/bm25`도 공백·구두점 분할 + Snowball 스테머라 한국어 형태소를 처리하지 못하고 `avg_len`을 상수 256.0으로 고정한다(06 §Qdrant, §브리프와의 충돌 1).
 
-`lite` 프로파일(단일 노드, GPU 0, 사이드카 0, 컨테이너 5: app, PostgreSQL, Qdrant, Valkey, 오브젝트 스토리지 — 바이블 §7.1)은 OpenSearch를 포함하지 않으므로 서버 측 Nori 분석기도 없다. 그런데 D-07은 lexical(BM25, 한국어 형태소) 레그를 3-way 하이브리드의 필수 채널로 두고, O-02는 learned sparse가 BM25의 대체가 아니라 제3 레그라고 판정했다(바이블 §3.2 O-02; 13 §개방 결정 O-02: 서브워드와 형태소는 단위가 다르다). 따라서 `lite`에서 렉시컬 레그를 어떻게 실현하고, 그 벡터를 계약(named vector·채널·점수 원장·프로파일 검증)에서 어떻게 표현하는지가 정해져야 03-contracts/07·09·10과 04-pipelines/12·13·15를 작성할 수 있다. 선정 매트릭스는 이를 "문구 정밀화(ADR 권고)" P1 항목으로 등록했다(07-tech-landscape/00 §브리프 수정 제안 D-15, §ADR 발의 목록 P1).
+`lite` 프로파일(단일 노드, GPU 0, 사이드카 0, 컨테이너 4(개발): app, PostgreSQL, Qdrant, Valkey, 오브젝트 스토리지 / 5~6(운영 `--durable`: + Temporal 단일 바이너리, RustFS·SeaweedFS 동거 시 6) — 바이블 1.3.0 §7.1)은 OpenSearch를 포함하지 않으므로 서버 측 Nori 분석기도 없다. 그런데 D-07은 lexical(BM25, 한국어 형태소) 레그를 3-way 하이브리드의 필수 채널로 두고, O-02는 learned sparse가 BM25의 대체가 아니라 제3 레그라고 판정했다(바이블 §3.2 O-02; 13 §개방 결정 O-02: 서브워드와 형태소는 단위가 다르다). 따라서 `lite`에서 렉시컬 레그를 어떻게 실현하고, 그 벡터를 계약(named vector·채널·점수 원장·프로파일 검증)에서 어떻게 표현하는지가 정해져야 03-contracts/07·09·10과 04-pipelines/12·13·15를 작성할 수 있다. 선정 매트릭스는 이를 "문구 정밀화(ADR 권고)" P1 항목으로 등록했다(07-tech-landscape/00 §브리프 수정 제안 D-15, §ADR 발의 목록 P1).
 
 ## 결정 동인(decision drivers)
 
 - **한국어 렉시컬 품질(원칙 6, D-07)**: 형태소 토큰화 유무가 BM25 nDCG@10에 절대값 0.2 이상 차이를 낸다(06 §한국어 렉시컬 분석기 비교). `lite`도 브리프 §7 품질 목표의 하향판(`eval.gates.ndcg@10.min 0.70 / recall@20.min 0.85`, 바이블 §7.2)을 통과해야 한다.
 - **진짜 BM25(리스크 #5)**: 포화식 생략은 TF×IDF 퇴화, `avgdl` 상수 고정은 긴 청크 과대·과소 점수를 낳는다(06 §Qdrant 함정 (6)). 바이블 §15 리스크 #5는 "`sparse_bm25` 포화식 강제 + bm25s 일치 테스트"를 완화 장치로 지정했다.
-- **경량 배포 제약(K7, §7.1)**: GPU 0·컨테이너 5를 유지해야 한다. OpenSearch(JVM, 힙·오프힙 산정 — 06 §리스크)나 임베딩 서버를 추가할 수 없고, `lite`의 기본 서빙 구성(sentence-transformers ONNX int8 dense 인프로세스)은 `sparse_learned`를 포함하지 않는다(바이블 §7.1 임베딩·서빙 행 "bge-m3 dense ONNX int8 in_process + `sparse_bm25`"; ADR-0009 인프로세스 행 — BGE-M3 sparse는 vLLM pooling 또는 FlagEmbedding 참조 구현·폴백에서만).
+- **경량 배포 제약(K7, §7.1)**: GPU 0·컨테이너 4(개발)/5~6(운영)을 유지해야 한다. OpenSearch(JVM, 힙·오프힙 산정 — 06 §리스크)나 임베딩 서버를 추가할 수 없고, `lite`의 기본 서빙 구성(sentence-transformers ONNX int8 dense 인프로세스)은 `sparse_learned`를 포함하지 않는다(바이블 §7.1 임베딩·서빙 행 "bge-m3 dense ONNX int8 in_process + `sparse_bm25`"; ADR-0009 인프로세스 행 — BGE-M3 sparse는 vLLM pooling 또는 FlagEmbedding 참조 구현·폴백에서만).
 - **점수 원장 보존(K3, 원칙 8)**: 채널 원점수·순위·기여분이 `ScoreBreakdown`에 남아야 한다. Qdrant 서버 융합은 prefetch별 점수를 반환하지 않는다(06 §Qdrant 출력 형식).
 - **색인·질의 토큰화 일관성**: BM25 점수가 자기 일관적이려면 색인과 질의가 같은 `analyzer_id`·`dictionary_hash`를 써야 한다(07-tech-landscape/00 §어댑터·플러그인 공통 요구 6).
 - **교체 가능성(D-15, D-10)**: `IndexBackend` + `capabilities()` 뒤에 두어 `lite`의 구현 방식이 다른 백엔드(Solr·pg_textsearch·Milvus 등)를 막지 않아야 한다.
@@ -41,7 +41,7 @@ depends_on:
 
 - 설명: `standard`처럼 Qdrant + OpenSearch 두 백엔드를 두고 렉시컬 레그를 서버 Nori로 처리한다.
 - 장점: 서버 측 형태소 분석·DLS 이중 방어·`standard`와 동일 코드 경로. 06 §권고안은 OpenSearch + Nori를 렉시컬 1차로 선정했다.
-- 단점: JVM 컨테이너 1개가 추가되어 "컨테이너 5·단일 노드" 전제가 깨지고 힙 ≤ 32GB·샤드 산정 등 운영 부담이 따른다(06 §리스크 OpenSearch JVM). 두 백엔드 정합성(부분 커밋·alias 비원자성) 리스크를 경량 배포에까지 확장한다(바이블 §15 #5). `lite`의 존재 이유(단일 컨테이너 온프레미스 소규모, 06 §프로파일별 조합)와 상충한다. 바이블 §7.1이 `lite` 인프라에서 OpenSearch를 제외해 기각.
+- 단점: JVM 컨테이너 1개가 추가되어 "컨테이너 4(개발)/5~6(운영)·단일 노드" 전제가 깨지고 힙 ≤ 32GB·샤드 산정 등 운영 부담이 따른다(06 §리스크 OpenSearch JVM). 두 백엔드 정합성(부분 커밋·alias 비원자성) 리스크를 경량 배포에까지 확장한다(바이블 §15 #5). `lite`의 존재 이유(단일 컨테이너 온프레미스 소규모, 06 §프로파일별 조합)와 상충한다. 바이블 §7.1이 `lite` 인프라에서 OpenSearch를 제외해 기각.
 
 ### 대안 2 — Qdrant 서버가 BM25를 계산한다고 전제(브리프 원문, 바이블 기각)
 
@@ -117,13 +117,14 @@ flowchart LR
 
 ### 긍정
 
-- `lite`가 GPU 0·컨테이너 5를 유지하면서 D-07 하이브리드의 `dense` + `lexical` 두 레그를 기본으로 실현하고, `sparse_learned` 생산 가능 노드에서는 `sparse`가 더해져 3-way가 된다(바이블 §7.1 인덱스 행 "GPU 없이 sparse_learned 생성 가능 노드는 추가", §5.7 `Channel`). 형태소 BM25 레그가 있으므로 한국어 렉시컬 recall이 유니코드 경계 수준(nDCG@10 0.36대)으로 떨어지지 않는다(13 §프로파일별 조합 lite).
+- `lite`가 GPU 0·컨테이너 4(개발)/5~6(운영)을 유지하면서 D-07 하이브리드의 `dense` + `lexical` 두 레그를 기본으로 실현하고, `sparse_learned` 생산 가능 노드에서는 `sparse`가 더해져 3-way가 된다(바이블 §7.1 인덱스 행 "GPU 없이 sparse_learned 생성 가능 노드는 추가", §5.7 `Channel`). 형태소 BM25 레그가 있으므로 한국어 렉시컬 recall이 유니코드 경계 수준(nDCG@10 0.36대)으로 떨어지지 않는다(13 §프로파일별 조합 lite).
 - `sparse_bm25`가 `channel=lexical`로 고정되어 `fusion.weights`·`ScoreBreakdown`·`ExplainCode`(`lexical_only_hit`)가 `standard`와 같은 키를 쓴다. 프로파일 상속(`lite → standard`)에서 채널 의미가 바뀌지 않는다.
 - 색인·질의 토큰화가 같은 `analyzer_id`·`dictionary_hash`에 묶이고 불일치는 `degraded{channel.lexical, analyzer_mismatch}`로 드러난다(바이블 §5.5 `QueryPlan`). 사전 변경은 `dictionary_hash` 변경 → 렉시컬 재색인으로 이어진다.
 - 백엔드 능력이 `supports_server_bm25`·`korean_analyzer`로 선언되므로 서버 BM25를 가진 백엔드(Milvus·Solr·pg_textsearch)는 같은 `IndexRecord.index_text`를 받아 서버 계산으로 대체할 수 있다(06 §표준 `IndexRecord` → 백엔드 매핑).
 
 ### 부정
 
+- `analyzer_id` 변경(예: 공백기 mecab-ko → Kiwi 승격, ADR-0021)은 `embedding_space_ids.sparse_bm25 = H("space", …, vocab_id)`를 재계산시켜 `sparse_bm25` 공간 ID가 바뀐다. 같은 공간 ID를 전제하는 Qdrant named vector는 재사용할 수 없으므로 사전·분석기 교체는 (위 긍정 절의 `dictionary_hash` 변경에 따른 렉시컬 재색인과 같은 경로로) 항상 Qdrant 컬렉션 blue/green 재색인을 유발한다.
 - 포화식·`avgdl`·IDF 범위를 플랫폼이 책임진다. 구현 오류는 조용한 TF×IDF 퇴화로 나타나므로 참조 구현(bm25s) 일치 테스트가 없으면 감지되지 않는다(리스크 #5).
 - 형태소 토큰 수만큼 `indices`가 늘어 `EmbeddedChunkSet` 산출물과 Qdrant sparse 인덱스 크기가 증가한다. `rag_index_bytes_total{vector="sparse_bm25"}`로 계량한다(바이블 §6.5).
 - Qdrant 서버 융합에 위임하면 prefetch별 점수가 반환되지 않아 점수 분해가 소실된다. 그래서 위임은 단일 컬렉션·`explain=false`에 한정되며, 이 조건 분기가 검색 경로에 남는다.
@@ -132,7 +133,7 @@ flowchart LR
 ### 중립
 
 - `avgdl` 정책(컬렉션 통계 주기 갱신 vs 청크 토큰 예산에서 유도한 프로파일 상수 — 06 §Qdrant 함정 (6))은 바이블이 확정하지 않았다. 두 안 모두 포화식은 같고 `avgdl` 원천만 다르다. 확정 문서는 `indices` 해시와 같이 `sparse_bm25`를 생산하는 `embed` 측 문서 04-pipelines/12로 통일하고(바이블 §12 `adapters/embed/sparse_bm25`), 04-pipelines/13이 골든셋 실측으로 검증한다 — 06 §미해결 이슈 7은 04-pipelines/15를 지정했으나 값 생성 위치(§12 embed)에 따라 12로 둔다. (b) 프로파일 상수안에서는 사용 값이 재색인 시에만 바뀌고, (a) 컬렉션 통계 갱신안의 갱신 주기·기존 벡터와의 정합성은 미정이다.
-- 질의 측 `sparse_bm25` 벡터의 `values` 규약과 `indices` 해시 함수는 이 ADR이 정하지 않는다. `indices` 해시는 04-pipelines/12가, 질의 측 `values` 규약은 `retriever.qdrant_sparse_bm25`를 소유하는 04-pipelines/15가 아래 준수 확인 (b) 통합 테스트를 만족하도록 확정한다. 제약은 하나다: 같은 `analyzer_id`로 색인·질의를 토큰화하고, bm25s 참조 점수·순위와 일치해야 한다.
+- 질의 측 `sparse_bm25` 벡터의 `values` 규약과 `indices` 해시 함수는 이 ADR이 정하지 않는다. `indices` 해시는 04-pipelines/12가, 질의 측 `values` 규약은 `retriever.qdrant_sparse_bm25`를 소유하는 04-pipelines/15가 아래 준수 확인 (b) 통합 테스트를 만족하도록 확정한다. 제약은 하나다: 같은 `analyzer_id`로 색인·질의를 토큰화하고, bm25s 참조 점수·순위와 일치해야 한다. 04-pipelines/15 §3.5는 이 규약을 `values[t] = tf_q(t)`(질의 토큰 빈도)로 확정해 자기 문서·04-pipelines/13 §6이 초안으로 게시했던 `values = 1.0`(질의 TF 무시)을 대체 대상으로 표시했다(04-pipelines/12·13 patch 권고, 확정은 bm25s 일치 테스트로).
 - `sparse_learned`는 GPU 없이 생산 가능한 노드에서 `lite`에 추가될 수 있으며 그때도 `channel=sparse`로 별도 채널이다(바이블 §7.1). `sparse_bm25`와 병존해도 채널 열거는 겹치지 않는다.
 - Kiwi 승격(kiwipiepy 0.24.0 Apache-2.0 PyPI 공개 확인 필요, as of 2026-09)은 ADR-0021의 재검토 조건이며 `analyzer_id` 변경 → 렉시컬 재색인만 유발한다. 본 결정의 구조는 바뀌지 않는다.
 

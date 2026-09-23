@@ -2,7 +2,7 @@
 title: 벤치마크 계획과 베이스라인
 status: active
 owner: architecture
-version: 0.1.2
+version: 0.1.3
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -44,12 +44,12 @@ depends_on:
 
 | 전제 | 정본 | 이 문서에서의 결과 |
 |------|------|--------------------|
-| 평가 대상은 삼중항 `(dataset_id, profile_hash, index_commit_ids)` | 16 §3.1, 02 §1, [평가 전략](01-evaluation-strategy.md) §6 | 모든 벤치마크 런은 `EvalRun` 하나다. 두 구성의 차이는 삼중항 중 **정확히 하나**만 바꾼 두 런의 `EvalReport.comparison`으로만 말한다(§2.1 단일 변경 원칙) |
+| 평가 대상은 삼중항 `(dataset_id, profile_hash, index_commit_ids)` | 16 §3.1, 02 §1, [평가 전략](01-evaluation-strategy.md) §6, `index_commit_ids` current 정의는 03-contracts/08 §8 IC-5(CR-40) | 모든 벤치마크 런은 `EvalRun` 하나다. 두 구성의 차이는 삼중항 중 **정확히 하나**만 바꾼 두 런의 `EvalReport.comparison`으로만 말한다(§2.1 단일 변경 원칙) |
 | 검색 전용 변경 vs 인덱스 영향 변경 | [평가 전략](01-evaluation-strategy.md) §6.1 | 융합·리랭커·후처리·팩 축은 같은 컬렉션에 프로파일 두 버전을 적용해 두 런(`profile_hash`만 변화). 청커·임베더·sparse 모델·보강 축은 섀도(blue/green) 컬렉션을 채운 뒤 두 컬렉션에 두 런(`profile_hash` + `index_commit_ids` 변화, 골든셋 `doc_id`는 `external_id`로 재매핑, 02 §4.4) |
 | 같은 코드 경로 | D-17, 바이블 §11.1 `local` 모드, 02 §1 | 베이스라인 수치는 `pipelines.query.run`이 `LocalRunner`로 낸 `RankedSet`·`ContextPack`에서만 나온다. 백엔드 직접 질의, 외부 라이브러리 자체 평가(`mteb` 실행 등)로 얻은 수치는 "모델 선별용 참고치"이며 베이스라인 표에 섞지 않는다 |
 | 게이트 메트릭 | 바이블 §7.2 `eval.gates`, §7.3 `eval:`, 02 §3.5 | 정본 키 `ndcg@10`(선형 이득, `postprocessed`), `recall@20`(`fused`), `mrr`, `judged@10`, `span_hit_rate@k`(`pack`). 진단 키 `channel_{c}_recall@100`·`fused_recall@100`·`reranked_ndcg@10`·`parent_ratio@k` 등은 02 §3.5 단계 접두 키 |
 | 통계 | D-12, 02 §7 | 쌍대 Fisher 무작위화 검정, Holm 보정(`correction: holm`), 부트스트랩 신뢰구간(B = 1,000, 릴리스 층 2,000), 그리드는 Tukey HSD. 유의성 없는 우위는 승격 근거가 아니다(P5) |
-| 게이트 값 | 바이블 §7.4, 15 §3.7 | `gate`가 붙은 값(`leaf_max_tokens`, `fallback.overlap_ratio`, `fusion`, `rerank`, `generated_prefix`)은 `EvalReport.gate_result.passed`와 ADR 없이 바뀌지 않는다. 이 문서의 모든 실험은 그 `gate_result`를 만들기 위한 것이다 |
+| 게이트 값 | 바이블 §7.4, 15 §3.7(`GateSpec` 선택 키 형식, CR-37) | `gate`가 붙은 값(`leaf_max_tokens`, `fallback.overlap_ratio`, `fusion`, `rerank`, `generated_prefix`)은 `EvalReport.gate_result.passed`와 ADR 없이 바뀌지 않는다. 이 문서의 모든 실험은 그 `gate_result`를 만들기 위한 것이다 |
 | 일정 | [마일스톤](../11-roadmap/01-milestones.md) §1.2·§10.2 | 하네스 초판 M1, 골든셋 v1과 베이스라인 사다리 M2, ENV-M 공식 지연·처리량 M3, 축 ablation·개방 결정 게이트·ADR 개정·벤치마크 공개 M4, late interaction GA M5 |
 
 용어: **베이스라인(baseline)** 은 비교의 기준이 되는 고정 구성의 런이다. **사다리(ladder)** 는 B0에서 B3까지 한 번에 한 구성 요소만 더해 가는 베이스라인 열이다. **축(axis)** 은 한 확장 지점 또는 한 파라미터의 수준 집합이고, **ablation** 은 기준 구성에서 한 축의 수준만 바꿔 기여를 재는 실험이다. **섀도 컬렉션(shadow collection)** 은 인덱스 영향 변경을 평가하기 위해 같은 코퍼스를 다른 프로파일로 채운 별도 `collection_id`다(바이블 §11.2 `reindex.collection.v1` blue/green).
@@ -96,7 +96,7 @@ flowchart LR
 - B0~B2는 **같은 섀도 컬렉션 `C_flat`** 을 공유하므로 B0→B1→B1s→B2는 검색 전용 비교다(`profile_hash`만 변화). 색인은 항상 dense·sparse·lexical 세 표현을 모두 적재하고 **채널만 끈다** — 이렇게 하면 `C_flat` 하나로 세 단을 비교할 수 있고 `channel_{c}_recall@100` 진단(02 §8.2)도 같은 인덱스에서 나온다.
 - B0의 "고정 512 토큰 청킹"은 `chunker.flat_text`(kiwi 문장 → semchunk, 07-tech-landscape/04 §프로파일 표)를 1차 청커로 두고 `max_tokens` 512·오버랩 0으로 고정한 것이다. 문장 윈도우·부모는 없다. 결정적 접두어를 끄는 이유는 "소박한 RAG" 출발점을 만들기 위한 것이며, 접두어 자체의 기여(D-19 "문맥 보강")는 청커를 고정한 B3 leave-one-out(A7 `bench-a7-no-prefix`, §3.1)에서 따로 잰다.
 - B0의 `fused_score`는 단일 채널 RRF 기여값이다(`fuser.rrf`가 채널 하나만 받아도 `Σ contribution = fused_score` 불변식이 성립하도록). `ScoreBreakdown.sparse`·`.lexical`은 `null`이다.
-- 리랭크가 없는 단(B0·B1·B1s, 보조 B3-dense·B3-norerank)에서 `relevance_gate`가 보는 `final_score`는 바이블 §5.5 `RankedSet`의 정의대로 **min-max 정규화한 `fused`** 이고(`ScoreBreakdown.normalization=minmax`), 리랭크 단(B2·B3)에서는 `rerank_normalized`(`sigmoid`)다. 따라서 리랭크 없는 단에서 `max(final_score)`는 항상 1.0이라 게이트 자체는 실패하지 않으며(`sufficiency.status`는 바이블 §9.1 "리랭크 생략 + 캘리브레이션 없음 → `unknown`"), 항목별 컷 `final_score < tau`는 `hydrate.top_n` 100 안의 융합 순위 하위(단일 채널 RRF k=60이면 대략 48위 이하)만 `omitted.reason=below_threshold`로 떨어뜨려 `k_max` 20 팩과 `ndcg@10`·`recall@20`·`span_hit_rate@10`에 영향이 없다. 다만 `tau` 0.3은 리랭커 `sigmoid` 점수를 기준으로 정한 값(바이블 §7.2 `relevance_gate.tau`, §5.7 `ScoreNormalization`, 바이블 미해결 이슈 2)이므로 두 종류의 단에서 **같은 뜻이 아니다**. 후처리 순서를 단마다 바꾸면 단일 변경 원칙(B1s → B2가 리랭크와 게이트 두 가지를 바꾸게 됨)이 깨지므로 순서는 `standard`와 같게 유지하고, 리랭크 없는 단의 런에는 진단 키 `omitted_below_threshold_count`·`postprocessed_recall@20`(02 §8 후처리 손실, 제안)을 함께 요청해 컷이 정답 항목을 떨어뜨리지 않았음을 확인한다. 리랭크 없는 구성의 게이트 점수 기준 자체는 미해결 이슈 1이다.
+- 리랭크가 없는 단(B0·B1·B1s, 보조 B3-dense·B3-norerank)에서 `relevance_gate`가 보는 `final_score`는 바이블 §5.5 `RankedSet`의 정의대로 **min-max 정규화한 `fused`** 이고(`ScoreBreakdown.normalization=minmax`), 리랭크 단(B2·B3)에서는 `rerank_normalized`(`sigmoid`)다. 따라서 리랭크 없는 단에서 `max(final_score)`는 항상 1.0이라 게이트 자체는 실패하지 않으며(`sufficiency.status`는 바이블 §9.1 "리랭크 생략 + 캘리브레이션 없음 → `unknown`"), 항목별 컷 `final_score < tau`는 `hydrate.top_n` 100 안의 융합 순위 하위(단일 채널 RRF k=60이면 대략 48위 이하)만 `omitted.reason=below_threshold`로 떨어뜨려 `k_max` 20 팩과 `ndcg@10`·`recall@20`·`span_hit_rate@10`에 영향이 없다. 다만 `tau` 0.3은 리랭커 `sigmoid` 점수를 기준으로 정한 값(바이블 §7.2 `relevance_gate.tau`, §5.7 `ScoreNormalization`, 바이블 미해결 이슈 2)이므로 두 종류의 단에서 **같은 뜻이 아니다**. 후처리 순서를 단마다 바꾸면 단일 변경 원칙(B1s → B2가 리랭크와 게이트 두 가지를 바꾸게 됨)이 깨지므로 순서는 `standard`와 같게 유지하고, 리랭크 없는 단의 런에는 진단 키 `omitted_below_threshold_count`·`postprocessed_recall@20`(02 §8 후처리 손실, 제안)을 함께 요청해 컷이 정답 항목을 떨어뜨리지 않았음을 확인한다. **결정:** 리랭크 없는 구성의 게이트 점수 기준은 바이블 §5.5 `RankedSet.final_score` 정의(min-max `fused`)를 그대로 적용하고 별도 `tau` 등가 환산을 두지 않는다(#99) — `bench-*` 프로파일의 게이트 검증 예외 규칙(15 문서·ADR-0031)만 미해결 이슈 1로 남긴다.
 - 보조 단 **B3-norerank**(`bench-b3-norerank`)는 `C_std`에서 B3의 `query.rerank`만 끈 구성(`hydrate` 순서 그대로, 후처리·팩은 B3과 동일)이다. [마일스톤](../11-roadmap/01-milestones.md) §5.4의 "베이스라인 `EvalReport` 3종(dense-only / hybrid / hybrid+rerank)"을 **같은 컬렉션**에서 B3-dense / B3-norerank / B3으로 사상하고(§10 M2), §3.1 A6 leave-one-out과 E-O01의 "리랭커 끔" 조건(§9.1)에도 같은 런을 재사용한다. B2(`C_flat` + 리랭크)와 혼동하지 않는다.
 - 평가 전용 프로파일은 컬렉션에 바인딩되지 않으며 `gate`가 붙은 값을 바꾸므로 `rag profile validate`의 "게이트 값 변경 금지" 규칙과의 관계는 미해결 이슈 1이다.
 
@@ -279,7 +279,7 @@ flowchart TD
 
 | 측정 항목 | 원천 | 키(02 §3.4) | 비고 |
 |-----------|------|-------------|------|
-| 종단 p50 / p95 / p99 | 질의별 `pipelines.query.run` 벽시계 | `latency_p95_ms`(런 단위); p50·p99는 `manifest.json`에 병기(제안) | 브리프 §7 판정은 p95 |
+| 종단 p50 / p95 / p99 | 질의별 `pipelines.query.run` 실제 경과 시간 | `latency_p95_ms`(런 단위); p50·p99는 `manifest.json`에 병기(제안) | 브리프 §7 판정은 p95 |
 | 스테이지별 p95 | `ContextPack.diagnostics.latency_ms.{plan, retrieve, fuse, hydrate, rerank, postprocess, pack}` | `{stage}_latency_p95_ms` | 바이블 §8.3 예산표(plan 20 / 임베딩 40 / retrieve 120 / fuse 5 / hydrate 15 / rerank 250 / postprocess 60 / pack 40 / render 15, 초안)와 행별 대조 → 초과 스테이지가 튠 대상 |
 | 채널별 p95 | `rag_retrieve_latency_seconds{channel}` 히스토그램(런 구간) | 보고 | dense·sparse·lexical 어느 레그가 임계인지 |
 | 저하 발생 비율 | `ContextPack.degraded[]`의 `{rerank, timeout}`·`{channel.*, timeout}` 개수 / 질의 수 | `degraded_ratio`(제안, 런 단위) | 지연 목표를 "리랭크 생략으로" 맞추면 무효 — `rerank_skipped_query_count`(02 §11)가 0이어야 유효한 지연 런 |
@@ -469,7 +469,7 @@ ENV-M의 GPU 장수(NFR §1.4: 임베딩 1장 + 리랭커 7장, L4/A10급 24GB)�
 | 데이터 | `ko-public-v1-holdout`(장르별 분해 필수: `law_article`·`outline_report`·`narrative`), `allganize-ko`(PDF·표), 장문 `mldr-ko` |
 | 지표 | 게이트 `ndcg@10`·`p_holm`; 비용 `cost_per_doc_usd`(`usage_ledger`), `rag_enrich_llm_tokens_total`, 수집 지연(`rag_ingest_stage_duration_seconds{stage="enrich"}`), `partial` 잡 비율; 진단 `channel_lexical_recall@100`(접두어가 BM25 입력 `index_text`에 들어가므로 lexical 레그 변화가 크게 나올 것으로 기대 — 07/07 Contextual Retrieval 행의 BM25 결합 효과와 대조) |
 | 절차 | S2: 섀도 컬렉션 3개((−), (1), (2); §3.2 S2 A7) + `C_std`(0). (3) 결합은 S3 상호작용 단계의 섀도 1개(§3.2 S3), (4) `hypothetical_questions`는 (1)·(2) 중 하나가 승격 후보일 때만 M5 잔여(§10). 온프레미스 LLM이면 `max_cost_per_doc_usd`가 GPU 초로만 나타나므로 `gpu_seconds` 기준 보조 지표를 병기(ADR-0016 재검토 2) |
-| 판정 | 승격 후보: 수준별로 `deltas["ndcg@10"] ≥ 0.03` ∧ `p_holm < 0.05` ∧ `cost_per_doc_usd ≤ 0.05`(초안 목표) **셋 모두** — 그리고 다수 장르·다수 컬렉션(초안 목표 ≥ 2 장르, ≥ 2 컬렉션)에서 성립할 때 `premium`(또는 `contextual_llm` 파생 프로파일) 기본값 승격을 ADR-0016 개정으로 검토. `lite`·`standard`·`korean-gov` 기본은 어떤 결과에도 끔 유지(ADR-0016 재검토 1). 결정적 접두어(0 vs −)의 기여는 별도 보고(D-19 근거 보강) |
+| 판정 | 승격 후보: 수준별로 `deltas["ndcg@10"] ≥ 0.03` ∧ `p_holm < 0.05` ∧ `cost_per_doc_usd ≤ 0.05`(초안 목표) **셋 모두** — 그리고 다수 장르·다수 컬렉션(초안 목표 ≥ 2 장르, ≥ 2 컬렉션)에서 성립할 때 `premium`(또는 `contextual_llm` 파생 프로파일) 기본값 승격을 ADR-0016 개정으로 검토. `lite`·`standard`·`korean-gov` 기본은 어떤 결과에도 끔 유지(ADR-0016 재검토 1). 결정적 접두어(0 vs −)의 기여는 별도 보고(D-19 근거 보강). `premium` `enrichment_budget_tokens` 재산정은 AM-52 보류(§7.1·§7.2·§4.2, 04-pipelines/11 소유)이므로 이 실험의 `cost_per_doc_usd` 실측치가 AM-52 재발의(측정 후 minor)의 근거가 된다 — `lite` `page_route`(같은 AM-52, 04-pipelines/05 소유)는 §6.2 수집 처리량의 `standard`/`premium` OCR 비교가 근거를 보탠다 |
 | 런 수 | S2: 4 구성((−)(0)(1)(2)) × 3 셋 = 12 런, 섀도 컬렉션 3; S3: (3) 1 구성 × 3 셋 = 3 런, 섀도 1; (4)는 M5 |
 | 일정 | M4(S2; `ingest-llm` 큐·`usage_ledger`는 M3 인프라 전제) |
 
@@ -482,7 +482,7 @@ ENV-M의 GPU 장수(NFR §1.4: 임베딩 1장 + 리랭커 7장, L4/A10급 24GB)�
 | 고정 | 예산 토크나이저 `hf:BAAI/bge-m3`(결정 사항, 변인 아님), 부모 2048, 표 256, 결정적 접두어 켬, B3 검색 경로 |
 | 변인 | (1) `structure_aware` × `leaf_max_tokens ∈ {256, 384, 512[기본], 768}`(오버랩 없음 — 구조 청커에 오버랩 파라미터가 없다, ADR-0019 A4); (2) `flat_text` × `max_tokens ∈ {256, 384[기본], 512, 768}` × `overlap_ratio ∈ {0, 0.10[기본], 0.15}`(`ko-public-v1-html`·TXT 코퍼스에서만 의미); (3) 부모 `parent_max_tokens ∈ {1024, 2048[기본]}`와 `parent_expand.ratio_threshold ∈ {0.4, 0.5[기본]}`(A8, 검색 전용); (4) 선택: `semantic_splitter`, `late_chunking` 경계 3변형(07/04 §12) |
 | 데이터 | `ko-public-v1-holdout`(HWPX 구조 문서: (1)(3)), `ko-public-v1-html`((2)), `ko-public-v1-pdf`(표 행 그룹), `mldr-ko`(장문·부모 확장), 영어 보조 `mldr-en`·BEIR(라이선스 확인 후; 언어 편향 점검) |
-| 지표 | 게이트 `ndcg@10`(Tukey, 규칙 (d)), `recall@20`, `span_hit_rate@10`(청크 단위 정답 포착 — O-09의 핵심 지표, 02 §3.3), `span_precision@10`(노이즈), `parent_ratio@10`; 부가: 청크 수·평균 `token_counts[hf:BAAI/bge-m3]`·`pack_tokens` 평균·`rag_pack_tokens_count`, `embed.token_overflow` 건수; 팽창률: 코퍼스 전체 문자당 토큰 비(bge-m3 / o200k_base), 장르(`Genre`)별 |
+| 지표 | 게이트 `ndcg@10`(Tukey, 규칙 (d)), `recall@20`, `span_hit_rate@10`(청크 단위 정답 포착 — O-09의 핵심 지표, 02 §3.3), `span_precision@10`(노이즈), `parent_ratio@10`; 부가: 청크 수·평균 `token_counts[hf:BAAI/bge-m3]`·`pack_tokens` 평균·`rag_pack_tokens_count`, `embed.token_overflow` 건수(절단 시 `quality=degraded` 봉투, 바이블 §4.2·§4.4 AM-07); 팽창률: 코퍼스 전체 문자당 토큰 비(bge-m3 / o200k_base), 장르(`Genre`)별 |
 | 절차 | 그리드 각 점은 별도 프로파일 버전·섀도 컬렉션. (1)은 섀도 3개(512는 `C_std`); (2)는 S2 상한(§3.2 S2 A1 5개) 안에서 **오버랩 축 2개**(384 × {0, 0.15}; 384 × 0.10은 `C_std`의 `fallback`)만 M4에 채우고, **크기 축 3셀**(256·512·768 × 0.10)은 M5 잔여 셀(§10)로 미룬다 — `flat_text`의 크기 축은 (1)의 리프 그리드와 방향이 겹치는 반면 오버랩은 `flat_text`에만 있으므로 오버랩 축을 먼저 둔다; 상위 후보 주변 셀은 S3 상호작용 단계에서만 채움. (3)은 `C_std`에서 프로파일 버전만. 전체 비교는 Tukey HSD(02 §7.4) |
 | 판정 | 규칙 (d): 최고 후보 셀이 현행(512 / 384·0.10)보다 Tukey 보정 p < 0.05로 유의하게 낫지 않으면 현행 유지·"초안 목표" 표기 제거(ADR-0019 재검토 1). 유의하면 §7.2 값 변경 ADR-0019 개정(minor) + `chunker_config_hash` 변경 = 전 컬렉션 blue/green 재청킹(비용 큼 — 승격 전 §6.3 비용 표 첨부). 팽창률 계수는 결과와 무관하게 프로파일에 고정(장르별 편차가 크면 `genre_rules` 오버라이드 검토, ADR-0019 재검토 2) |
 | 런 수 | M4: (1) 4 + (2) 3 + (3) 4 = 11 구성 × 2~3 셋 ≈ 25 런, 섀도 컬렉션 5(§3.2 S2 A1); M5 잔여: (2) 크기 축 3 구성, 섀도 3 |
@@ -552,7 +552,7 @@ M2의 사다리는 골든셋 v1의 사람 라벨이 완성되는 W16~W20 사이�
 
 | # | 이슈 | 제안 |
 |---|------|------|
-| 1 | 평가 전용 프로파일(`bench-*`)은 `gate`가 붙은 값(`leaf_max_tokens`, `fusion`, `rerank`, `generated_prefix`)을 바꾸므로 `rag profile validate`의 "게이트 값은 `gate_result.passed` 없이 변경 불가" 규칙과 충돌한다. `Profile.tier`에도 평가용 값이 없다. 또한 리랭크 없는 구성(B0·B1·B1s·B3-dense·B3-norerank)에서는 `relevance_gate.tau` 0.3이 min-max `fused` 점수에 적용되어(바이블 §5.5 `RankedSet.final_score`) 리랭크 `sigmoid` 점수 기준의 뜻과 다르다(§2.2 규칙) | 15 문서·ADR-0031에 "컬렉션에 바인딩되지 않은 프로파일(`profile_id` 접두 `bench-`, 제안)은 게이트 검증을 경고로 낮춘다" 규칙 추가(minor). `chunker.flat_text`를 1차 청커로 허용하는지도 함께 확인. 리랭크 없는 구성의 게이트 점수 기준(현행 min-max `fused` 유지 vs `tau` 0 등가 처리)은 바이블 미해결 이슈 2의 캘리브레이션 논의와 함께 바이블 §8.2·15 문서에서 확정 — 그때까지 이 문서는 순서를 유지하고 `omitted_below_threshold_count`를 진단으로 병기한다 |
+| 1 | 평가 전용 프로파일(`bench-*`)은 `gate`가 붙은 값(`leaf_max_tokens`, `fusion`, `rerank`, `generated_prefix`)을 바꾸므로 `rag profile validate`의 "게이트 값은 `gate_result.passed` 없이 변경 불가" 규칙과 충돌한다. `Profile.tier`에도 평가용 값이 없다(리랭크 없는 구성의 게이트 점수 기준은 §2.2에서 확정 — 해소(v1.3, #99)) | 15 문서·ADR-0031에 "컬렉션에 바인딩되지 않은 프로파일(`profile_id` 접두 `bench-`, 제안)은 게이트 검증을 경고로 낮춘다" 규칙 추가(minor). `chunker.flat_text`를 1차 청커로 허용하는지도 함께 확인 |
 | 2 | 절대 게이트(`standard` `ndcg@10 ≥ 0.80`)와 +15%p 게이트는 독립이며 B3 ≥ max(0.80, B3-dense + 0.15)일 때 동시에 성립한다(§2.3). 실측 B3-dense가 B3 − 0.15를 넘으면(하이브리드·리랭크·후처리의 순기여 < 15%p) 절대 게이트와 무관하게 +15%p 게이트만 실패한다 | M2 실측 후 두 게이트가 양립하지 않으면 브리프 §7 "+15%p" 문구 개정 ADR 발의(기준을 B0 총기여로 옮기거나 상대 개선률로). 실측 전에는 어느 쪽도 단정하지 않는다 |
 | 3 | [평가 전략](01-evaluation-strategy.md) §9.3은 게이트 판정을 M2로, [마일스톤](../11-roadmap/01-milestones.md) §10.2는 M4로 적는다 | 이 문서는 마일스톤을 따른다. 01 문서 §9.3 표를 "M2 골든셋 v1·사다리, M4 게이트 판정"으로 patch |
 | 4 | `manifest.json`의 `environment` 객체, `p50/p99`, `degraded_ratio`, 런 산출물 키 `eval/reports/{experiment_id}/report.md`는 제안이다 | 02 §6.4·§11 매니페스트 스키마에 편입(02 미해결 이슈 8·9와 공동); 16 `EvalRun.options`(N) 제안과 정합 |

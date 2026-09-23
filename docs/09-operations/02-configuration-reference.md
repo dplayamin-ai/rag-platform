@@ -2,7 +2,7 @@
 title: 설정 레퍼런스
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.2
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -46,8 +46,6 @@ depends_on:
 - **수치**: 프로파일 값은 바이블 §7.2의 "초안 목표"를 그대로 옮긴 것이다. 제안 환경 변수의 기본값은 출처 문서의 초안 값이며, 출처가 없는 것은 "초안 목표"로 표기했다.
 - **연계 문서**: 프로파일 SLO 키가 가리키는 메트릭 `rag_acl_propagation_seconds`·`rag_outbox_lag_seconds`의 정본은 [관측성](03-observability.md) §4.2 메트릭 카탈로그이고, `RAG_OTEL__*`·프로파일 `observability` 키의 관측 측 설명은 같은 문서 §2.5, `content_capture` 어휘 확장은 같은 문서 미해결 이슈 4다. 비밀 제공자 운영 규약은 [보안과 컴플라이언스](05-security-and-compliance.md) §2, `POST /v1/profiles/validate`·`PATCH /v1/tenants/{tenant_id}/policies`의 응답 형식은 [관리 API](../05-api/04-management-api.md) §2.1·§4.2, 프로파일 사본 바이트 동일 검사·골든 예시 회귀는 [CI/CD](../10-development/05-ci-cd.md)가 소유한다.
 
----
-
 ## 1. 설정 계층
 
 ### 1.1 두 층과 그 사이의 벽
@@ -60,7 +58,7 @@ depends_on:
 | `Profile` | 파서 체인, 정규화, 청커, 보강, 임베더, 인덱스 백엔드, 검색 전략, 예산, 스테이지 정책, 보안·관측·평가 게이트 | 내장 `base` < `extends` 체인(`lite → standard → premium`, `korean-gov extends standard`) < 운영자 YAML(`RAG_PROFILE__PATH`; 같은 `profile_id`면 내장을 대체, 새 ID면 추가) | `version` 증가 → `profile_hash` 변경 → 컬렉션 blue/green(§8) | `rag profile validate`, `POST /v1/profiles/validate`, 컬렉션 생성·변경, 워커 기동 시 캐시 적재(§6.2) |
 | 런타임 정책(관리 API) | 프로파일을 **좁히기만** 하는 값 | 프로파일 기본값 < 테넌트 정책(`PATCH /v1/tenants/{tenant_id}/policies`) < 컬렉션 정책(`CollectionSpec.policies`) < 요청 필드 | 즉시(캐시 무효화 이벤트, §7) | 관리 API 검증기(프로파일 검증기와 동일 함수) |
 
-"좁히기만"의 규칙은 다음과 같다. PII는 `Profile.ingest.normalize.pii.policy`·`CollectionSpec.policies.pii_policy`·`IngestRequest.pii_policy` 중 **가장 엄격한 값**이 적용되고(바이블 §5.6, 15 §3.4), 아웃바운드 egress는 프로파일 `runtime.egress` **AND** 테넌트 `egress_policy`의 합성이며 결과가 공집합이면 `profile.invalid`다(15 §8, [ADR-0038](../06-adr/0038-outbound-egress-policy-and-webhook-signing.md)). LLM 보강은 프로파일 `queues.enrich_llm` + 테넌트 `llm_enrichment_allowed` + 컬렉션 `llm_enrichment_allowed`가 모두 참이어야 켜진다(O-05, [ADR-0016](../06-adr/0016-llm-enrichment-default-off-and-budget-policy.md)). 요청 단위 편차는 `IngestRequest.profile_overrides`의 화이트리스트 키(`parse.pdf.route`, `enrich.generated_prefix`; 바이블 §5.4, ADR-0031)와 `QueryRequest`의 선택 필드(`renderer`, `ordering_strategy`, `strategy_hint`, `retrieval_variant`, `response_format`, `mode`, `filters`)로만 허용되며, 그 밖의 키는 422 `contract.violation`이다.
+"좁히기만"의 규칙은 다음과 같다. PII는 `Profile.ingest.normalize.pii.policy`·`CollectionSpec.policies.pii_policy`·`IngestRequest.pii_policy` 중 **가장 엄격한 값**이 적용되고(바이블 §5.6, 15 §3.4), 아웃바운드 egress는 프로파일 `runtime.egress` **AND** 테넌트 `egress_policy`의 합성이며 결과가 공집합이면 `profile.invalid`다(15 §8, [ADR-0038](../06-adr/0038-outbound-egress-policy-and-webhook-signing.md)). LLM 보강은 프로파일 `queues.enrich_llm` + 테넌트 `llm_enrichment_allowed` + 컬렉션 `llm_enrichment_allowed`가 모두 참이어야 켜진다(O-05, [ADR-0016](../06-adr/0016-llm-enrichment-default-off-and-budget-policy.md)). 요청 단위 편차는 `IngestRequest.profile_overrides`의 화이트리스트 키(`parse.pdf.route`, `enrich.generated_prefix`; 바이블 §5.4, ADR-0031)와 `QueryRequest`의 선택 필드(`renderer`, `ordering_strategy`, `strategy_hint`, `retrieval_variant`, `response_format`, `mode`, `filters`)로만 허용되며, 그 밖의 키는 422 `contract.violation`이다. 이 런타임 정책 층에는 `PATCH /v1/tenants/{tenant_id}`가 바꾸는 `tenants.status`(`TenantStatus`: `active`·`disabled`, `disabled`는 `auth.forbidden` 403)·`quotas{documents_max, storage_bytes_max, qps_max}`도 속하며(바이블 §13.1·§14 1.3.0, AM-39), 좁히기 규칙이 아니라 테넌트 자원 상한이라는 점에서 정책 값과 구분된다.
 
 ```mermaid
 flowchart LR
@@ -89,209 +87,132 @@ flowchart LR
 
 스테이징과 운영의 프로파일 YAML은 **바이트 동일**해야 하고 환경 차이는 전부 `Settings`에 있다([배포 아키텍처](../02-architecture/08-deployment-architecture.md) 결정 사항). 이 규칙을 CI가 `rag profile diff`로 검사한다.
 
----
-
 ## 2. 환경 변수(`Settings`)
 
 ### 2.1 규약(바이블 §6.6)
 
-- 접두 `RAG_`, 절(section)과 필드의 중첩 구분자 `__`(pydantic-settings `env_prefix="RAG_"`, `env_nested_delimiter="__"`). 예: `RAG_PG__DSN`, `RAG_FETCH__S3__ENDPOINT_URL`(2단 중첩).
+- 접두 `RAG_`, 절(section)과 필드의 중첩 구분자 `__`(pydantic-settings `env_prefix="RAG_"`, `env_nested_delimiter="__"`, 모듈 `settings/` — 바이블 §12 1.3.0, AM-22). 예: `RAG_PG__DSN`, `RAG_FETCH__S3__ENDPOINT_URL`(2단 중첩).
 - 비밀은 `RAG_SECRETS__PROVIDER=env|openbao|aws_kms` 제공자를 통한 **간접 참조**(§5)로만 다룬다. 값이 비밀 그 자체인 변수(`RAG_PG__DSN` 등)는 컨테이너 시크릿 마운트로 주입하고 `.env`·로그·트레이스에 두지 않는다(`SecretStr`, telemetry redaction).
 - 모델은 `extra="forbid"`이며 조립 지점(`api`·`orchestration`·`cli`·`eval`·`mcp`)은 `check_unknown_env()`를 호출해 `RAG_` 접두 변수 중 모델이 모르는 이름이 있으면 기동을 중단한다(컴포넌트 아키텍처 §5.2; 최상위 오타 `RAG_VALKY__URL`은 pydantic이 조용히 무시하므로 별도 검사가 필요하다). 클라이언트 SDK의 `RAG_PLATFORM_*`은 예외 접두다(미해결 이슈 12).
 - 타입 표기: `string(uri)`, `string(path)`, `string(duration)`(`30s`, `5m`, `24h`; 프로파일과 동일 문법), `string(secret_ref)`(§5 문법), `array<T>`(쉼표 구분 또는 JSON 배열), `enum[...]`.
 - "지위" 열: **정본** = 바이블 §6.6이 이름을 확정한 변수. **제안(출처)** = 다른 설계 문서가 이름을 제안했거나 이 문서가 처음 제안하는 변수(선택, 기본값 있음). 제안 변수는 바이블 §6.6 minor 개정으로 확정된다(미해결 이슈 1).
 - 이 문서의 표는 `rag_platform.settings` 모델에서 **생성**되어 CI가 문서 ↔ 코드 diff를 검사한다([ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md) 준수 확인 8). 표에 없는 변수는 존재하지 않는다.
 
-### 2.2 프로세스 역할 `RAG_SERVE__*`
+### 2.2 환경 변수 목록 (`RAG_SERVE__*` ~ `RAG_PLUGINS__*`, 구 §2.2~§2.16)
 
-`rag serve api|worker|relay` 인자와 1:1이다(컴포넌트 아키텍처 §5.2 `ServeSettings` 제안). 워커 역할은 큐 하나만 폴링한다.
+기존 §2.2~§2.16의 16개 하위 절 표(`RAG_SERVE__*`~`RAG_PLUGINS__*`)를 그룹 열이 있는 표 하나로 합쳤다. 절별 보충 설명(표에 없는 맥락만):
 
-| 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
-|------|------|------|------|------|------|
-| `RAG_SERVE__HOST` | string | `0.0.0.0` | `api` 바인드 주소 | N | 제안(02 §5.2) |
-| `RAG_SERVE__PORT` | integer | `8000` | `api` HTTP 포트(`/v1`, `/mcp`, `/healthz`, `/readyz`) | N | 제안(02 §5.2) |
-| `RAG_SERVE__METRICS_PORT` | integer | `9090` | `GET /metrics` 전용 포트(api·worker·relay 공통). `0`이면 api 메인 포트에 마운트 | N | 제안(01-deploy compose `9090`) |
-| `RAG_SERVE__WORKERS` | integer | `1` | uvicorn 워커 수(`api`). 초안 권고 vCPU 수 | N | 제안(02 §5.2) |
-| `RAG_SERVE__PROCESSES` | integer | `1` | `ingest-cpu` 워커 프로세스 다중화(GIL 대응). 초안 권고 vCPU 수 | N | 제안(02 §5.2) |
-| `RAG_SERVE__MAX_CONCURRENT_ACTIVITIES` | integer | `1` | 프로세스당 Temporal 액티비티 고정 슬롯(리소스 튜너와 상호 배타, 바이블 §4.4). `ingest-cpu`는 1 유지, `ingest-io` 32·GPU 큐 4·`ingest-llm` 8(초안, 02 미해결 7) | N | 제안(02 §5.2) |
-| `RAG_SERVE__QUEUE` | string(kebab) | `null` | 워커가 폴링할 태스크 큐(`ingest-io`, `ingest-cpu`, `ingest-gpu-ocr`, `ingest-gpu-embed`, `ingest-llm`, `maintenance`, `relay`, `lite`의 `ingest`). `rag serve worker --queue`와 동일 | N | 제안(이 문서) |
-| `RAG_SERVE__DISPATCHER` | boolean | `true` | 디스패처 조정 틱(문서 직렬화·테넌트 동시성, 바이블 §11.2) 실행 여부. 검색 전용 `api-query` 인스턴스는 `false` | N | 제안(08 미해결 3) |
-| `RAG_SERVE__SURFACES` | array<enum[ingest, query, admin, events, mcp]> | 전체 | 이 `api` 인스턴스가 라우트를 등록할 표면. `api-query`는 `[query, mcp]` | N | 제안(08 미해결 3) |
-| `RAG_SERVE__SHUTDOWN_GRACE_S` | integer | `120` | SIGTERM 후 드레인 유예(초). 큐별 60/120/300 초안 | N | 제안(08 미해결 8) |
+- **SERVE**: `rag serve api|worker|relay` 인자와 1:1이다(컴포넌트 아키텍처 §5.2 `ServeSettings` 제안). 워커 역할은 큐 하나만 폴링한다.
+- **VALKEY**: `lite`를 포함한 모든 프로파일의 필수 컨테이너다(레이트리밋 E3·MCP 커서·`aclrev` 힌트의 전제, 컴포넌트 아키텍처 §5.2). 구성 부재는 기동 실패, 런타임 불가만 `degraded`다.
+- **QDRANT/OPENSEARCH**: 어댑터 연결 설정이다(배포 아키텍처 §4.2 `externals.qdrant`·`externals.opensearch`). 어떤 백엔드를 쓰는지는 프로파일 `ingest.index.backends[]`가 정한다.
+- **TLS공통**: `korean-gov`처럼 메시 없이 서비스별 TLS·mTLS를 켤 때 쓰는 변수다. 아래 표의 `RAG_{SECTION}__TLS_CA_BUNDLE`·`RAG_{SECTION}__CLIENT_CERT_REF` 행에서 `{SECTION}`은 `QDRANT`·`OPENSEARCH`·`TEMPORAL`·`VALKEY`·`SIDECAR` 중 하나이며(PostgreSQL은 DSN 파라미터를 쓴다) 실제로는 그 5개 접두마다 한 쌍씩, 총 10개 변수로 존재한다.
+- **SIDECAR/MODELS**: 사이드카·서빙 주소는 Kubernetes Service DNS만 허용하며 프로파일의 `image` 값은 논리 이름이다(배포 아키텍처 §5.5). 프로파일이 사이드카·서빙을 요구하는데 해당 URL이 없으면 §6.1 S-6에 따라 기동 실패다. 내장 `lite`는 임베더 `in_process`·리랭커 `enabled: false`·사이드카 없는 라우터이므로(§4.1) 이 그룹의 변수를 하나도 요구하지 않는다 — 리랭커를 켠 `lite` 파생 프로파일(§4.1 오버라이드 예시)만 `RAG_SIDECAR__RERANKER_SERVER_URL`이 필수가 된다.
+- **CACHE**: 기본값은 바이블 §13.4의 Valkey 키 TTL이다. `aclrev:`는 프로파일(`2 × acl_propagation_slo`)에서, `idem:`은 `RAG_API__IDEMPOTENCY_TTL`에서, `groups:`는 `RAG_AUTH__GROUPS_CACHE_TTL_S`에서 정하고, `tok:`(7d)·`rr:`(60s)는 콘텐츠 해시 키라 튠 대상이 아니다.
+- **FETCH**: 프로파일 `ingest.fetch`는 `{plugin, max_bytes, policy}`와 플러그인 `config_schema` 키만 갖고, 네트워크 목적지·경로·자격 증명은 여기에 둔다([수집과 원천 해소](../04-pipelines/02-fetching-and-source-resolution.md) §2.3). OBJECT_STORE(플랫폼 산출물 버킷)와 구별된다.
 
-### 2.3 API 표면 `RAG_API__*`
-
-| 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
-|------|------|------|------|------|------|
-| `RAG_API__PUBLIC_BASE_URL` | string(uri) | `null`(운영 필수) | `status_url`·`events_url`·`Location`·MCP PRM `resource`의 절대 URL 기준(인그레스 외부 호스트). `https` 필수, `orchestrator=local`만 `http://localhost` 허용 | N | 제안(05-api/01 §8) |
-| `RAG_API__CORS_ALLOWED_ORIGINS` | array<string(uri)> | `[]` | 정확한 오리진 목록. 빈 값 = CORS 비활성. `*` 불가 | N | 제안(05-api/01 §15) |
-| `RAG_API__TRUSTED_PROXIES` | array<string(cidr)> | `[]` | `X-Forwarded-For`·`X-Forwarded-Proto`를 신뢰할 인그레스 소스 CIDR | N | 제안(05-api/01 §19) |
-| `RAG_API__MAX_BODY_BYTES` | integer | `8388608` | 앱 측 요청 본문 상한(인그레스 8MB와 일치). 계약 한계(`IngestRequest` 64KB × 배치 100건, `ContextPack` 512KB, 바이블 §5.1)보다 작게 설정하면 기동 실패(§6.1 S-7) | N | 제안(이 문서) |
-| `RAG_API__SSE_MAX_CONNECTIONS_PER_TENANT` | integer | `100` | 테넌트당 동시 SSE 연결 상한(초안). 초과는 429 `api.rate_limited` | N | 제안(05-api/01 미해결 7) |
-| `RAG_API__PUBLIC_RATE_LIMIT_RPS` | integer | `20` | 비인증 경로(`/healthz`·`/readyz`·PRM·401 시도)의 **IP 키** 한도(초안). 테넌트·클래스 한도는 프로파일 소유(§2.19) | N | 제안(05-api/01 §11 `public` 클래스) |
-| `RAG_API__CURSOR_HMAC_KEY_REF` | string(secret_ref) | `null`(운영 필수) | 키셋 커서 토큰 서명 키(05-api/01 §7; 테넌트 바인딩 HMAC-SHA256) | 참조 | 제안(05-api/01 §7) |
-| `RAG_API__IDEMPOTENCY_TTL` | string(duration) | `24h` | `idempotency_keys.expires_at`과 Valkey `idem:` 캐시 TTL(바이블 §13.4 값) | N | 제안(이 문서) |
-
-### 2.4 PostgreSQL 원장 `RAG_PG__*`
-
-| 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
-|------|------|------|------|------|------|
-| `RAG_PG__DSN` | string(secret) | 필수 | 원장 DSN, 애플리케이션 역할 `rag_app`(`NOBYPASSRLS`). TLS 옵션은 DSN 파라미터(`sslmode`, `sslrootcert`, `sslcert`/`sslkey`) | Y | **정본** |
-| `RAG_PG__DSN_OWNER` | string(secret) | `null` | 마이그레이션 훅(`rag ledger migrate`) 전용 소유자 DSN(`rag_owner`). 상주 프로세스에는 주입하지 않는다 | Y | 제안(01-deploy 미해결 3) |
-| `RAG_PG__DSN_MAINTENANCE` | string(secret) | `null`(→ `DSN`) | `relay`·정합성 검사·cleanup 프로세스의 역할 `rag_maintenance` DSN | Y | 제안(01-deploy 미해결 3) |
-| `RAG_PG__POOL_MIN` | integer | `2` | 프로세스 풀 최소 | N | 제안(02 §5.2) |
-| `RAG_PG__POOL_MAX` | integer | `16` | 프로세스 풀 최대 | N | 제안(02 §5.2) |
-| `RAG_PG__STATEMENT_TIMEOUT_MS` | integer | 역할별 `api` 5000 / `worker` 60000 / `maintenance` 600000 | 트랜잭션마다 `SET LOCAL statement_timeout`(초안) | N | 제안(04-storage §2.5) |
-| `RAG_PG__POOLER_MODE` | enum[session, transaction] | `session` | 외부 풀러(PgBouncer) 트랜잭션 모드면 준비 문장 비활성·`SET LOCAL app.tenant_id` 프롤로그 재발행 | N | 제안(04-storage §2.5) |
-
-### 2.5 오브젝트 스토리지 `RAG_OBJECT_STORE__*`
-
-| 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
-|------|------|------|------|------|------|
-| `RAG_OBJECT_STORE__URI` | string(uri) | 필수 | `s3://bucket[/prefix]` 또는 `file:///path`만([ADR-0011](../06-adr/0011-kv-and-object-storage-valkey-rustfs-seaweedfs.md)). 키 레이아웃은 바이블 §13.3. `file://`는 개발·`lite` 단일 노드 전용 | N | **정본** |
-| `RAG_OBJECT_STORE__ENDPOINT_URL` | string(uri) | `null` | S3 호환 엔드포인트(RustFS·SeaweedFS·관리형). 미설정 시 공급자 공개 엔드포인트 | N | 제안(02 §5.2) |
-| `RAG_OBJECT_STORE__REGION` | string | `null` | | N | 제안(이 문서) |
-| `RAG_OBJECT_STORE__ADDRESSING_STYLE` | enum[path, virtual] | `path` | 로컬 S3 호환 구현은 `path` | N | 제안(이 문서) |
-| `RAG_OBJECT_STORE__CREDENTIALS_REF` | string(secret_ref) | `null` | 버킷 전용 자격 증명. 미설정 시 워커 주변 자격 증명(IRSA 등); 운영은 설정 권장 | 참조 | 제안(04-storage §3.3) |
-| `RAG_OBJECT_STORE__SSE_MODE` | enum[none, sse_s3, sse_kms] | `sse_s3` | 저장 암호화 요청 헤더. `file://`는 무시 | N | 제안(07 §6.3) |
-| `RAG_OBJECT_STORE__SSE_KMS_KEY_REF` | string(secret_ref) | `null` | `sse_kms`의 기본 KEK 참조. 테넌트별 KEK는 접두 `tenants/{tenant_id}/` 버킷 정책으로(07 §6.3) | 참조 | 제안(07 §6.3) |
-
-### 2.6 Valkey `RAG_VALKEY__*`
-
-Valkey는 `lite`를 포함한 모든 프로파일의 필수 컨테이너다(레이트리밋 E3·MCP 커서·`aclrev` 힌트의 전제, 컴포넌트 아키텍처 §5.2). 구성 부재는 기동 실패, 런타임 불가만 `degraded`다.
-
-| 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
-|------|------|------|------|------|------|
-| `RAG_VALKEY__URL` | string(uri, secret) | 필수 | `redis://` 또는 `rediss://`(TLS) Redis 프로토콜 URL 하나(서버 구현체 미검사, ADR-0011) | Y | **정본** |
-| `RAG_VALKEY__POOL_MAX` | integer | `32` | | N | 제안(이 문서) |
-| `RAG_VALKEY__COMMAND_TIMEOUT_MS` | integer | `200` | 연결·명령 상한. 초과 시 캐시는 미스로, 레이트리밋은 프로파일 `fail_mode`로 처리 | N | 제안(이 문서) |
-
-### 2.7 인덱스 백엔드 `RAG_QDRANT__*`, `RAG_OPENSEARCH__*`
-
-어댑터 연결 설정이다(배포 아키텍처 §4.2 `externals.qdrant`·`externals.opensearch`). 어떤 백엔드를 쓰는지는 프로파일 `ingest.index.backends[]`가 정한다.
-
-| 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
-|------|------|------|------|------|------|
-| `RAG_QDRANT__URL` | string(uri) | `null`(qdrant 백엔드 사용 시 필수) | REST URL(`http://qdrant:6333`); gRPC 포트는 URL 포트 + 1(Qdrant 기본 6334) | N | 제안(08 §4.2) |
-| `RAG_QDRANT__API_KEY_REF` | string(secret_ref) | `null` | | 참조 | 제안(08 §4.2) |
-| `RAG_QDRANT__PREFER_GRPC` | boolean | `true` | 바이블 §3.2 O-10 | N | 제안(08 §4.2) |
-| `RAG_QDRANT__TIMEOUT_MS` | integer | `5000` | 클라이언트 요청 상한. 채널 `timeout_ms`는 프로파일 | N | 제안(이 문서) |
-| `RAG_OPENSEARCH__URL` | string(uri) | `null`(opensearch 백엔드 사용 시 필수) | | N | 제안(08 §4.2) |
-| `RAG_OPENSEARCH__ADMIN_CREDENTIALS_REF` | string(secret_ref) | `null`(standard 이상 필수) | 컬렉션 생성 시 인덱스 템플릿·alias 생성, 정합성 검사·cleanup에만 사용(`api` 관리 표면·`maintenance` 워커) | 참조 | 제안(이 문서) |
-| `RAG_OPENSEARCH__JWT_SIGNING_KEY_REF` | string(secret_ref) | `null`(standard 이상 필수) | 요청별 테넌트 JWT(E8, DLS 이중 방어) 서명 키. JWKS를 Security 플러그인에 등록, 회전은 `kid` 병행 | 참조 | 제안(08 §4.2) |
-| `RAG_OPENSEARCH__JWT_TTL_S` | integer | `60` | E8 토큰 TTL 상한(≤ 60s, 07 §6.1) | N | 제안(이 문서) |
-| `RAG_OPENSEARCH__TIMEOUT_MS` | integer | `5000` | | N | 제안(이 문서) |
-
-### 2.8 Temporal·프로파일 로딩 `RAG_TEMPORAL__*`, `RAG_PROFILE__*`
-
-| 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
-|------|------|------|------|------|------|
-| `RAG_TEMPORAL__ADDRESS` | string(host:port) | `null` | frontend 주소. 미설정 → `LocalRunner`(개발·CI·하네스만, 바이블 §11.1). 프로파일 `runtime.orchestrator=temporal`과의 정합은 §6.1 S-5 | N | **정본** |
-| `RAG_TEMPORAL__NAMESPACE` | string | `default` | Helm `standard` values는 `rag` | N | 제안(02 §5.2) |
-| `RAG_PROFILE__PATH` | string(path) | `null` | 운영자 프로파일 YAML **파일** 또는 **디렉터리**(`*.yaml` 전부 로드). 미설정 → 내장 5종(`base, lite, standard, premium, korean-gov`)만. 파일의 `profile_id`가 내장과 같으면 내장을 대체한다 | N | **정본** |
-| `RAG_PROFILE__ID` | string(kebab) | `lite` | CLI(`rag up`, `rag ingest`)와 `POST /v1/collections`에서 `profile_id` 생략 시 기본 프로파일 | N | 제안(02 §5.2) |
-
-### 2.9 서비스별 TLS(공통 패턴)
-
-`korean-gov`처럼 메시 없이 서비스별 TLS·mTLS를 켤 때 쓰는 변수다. `{SECTION}`은 `QDRANT`, `OPENSEARCH`, `TEMPORAL`, `VALKEY`, `SIDECAR` 중 하나이며 PostgreSQL은 DSN 파라미터를 쓴다.
-
-| 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
-|------|------|------|------|------|------|
-| `RAG_{SECTION}__TLS_CA_BUNDLE` | string(path) | `null` | 서버 인증서 검증 CA 번들. 인증서 검증을 끄는 옵션은 없다(07 §6.2) | N | 제안(이 문서) |
-| `RAG_{SECTION}__CLIENT_CERT_REF` | string(secret_ref) | `null` | mTLS 클라이언트 인증서·키 참조 | 참조 | 제안(이 문서) |
-
-### 2.10 사이드카·모델 서빙·모델 미러 `RAG_SIDECAR__*`, `RAG_MODELS__*`
-
-사이드카·서빙 주소는 Kubernetes Service DNS만 허용하며 프로파일의 `image` 값은 논리 이름이다(배포 아키텍처 §5.5). 프로파일이 사이드카·서빙을 요구하는데 해당 URL이 없으면 §6.1 S-6에 따라 기동 실패다. 내장 `lite`는 임베더 `in_process`·리랭커 `enabled: false`·사이드카 없는 라우터이므로(§4.1) 이 절의 변수를 하나도 요구하지 않는다 — 리랭커를 켠 `lite` 파생 프로파일(§4.1 오버라이드 예시)만 `RAG_SIDECAR__RERANKER_SERVER_URL`이 필수가 된다.
-
-| 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
-|------|------|------|------|------|------|
-| `RAG_SIDECAR__PARSER_WORKERS_URL` | string(uri) | `null` | Java 사이드카(HWP 5.0 → HWPX, 암호화 HWPX, 배포용 텍스트) `POST /v1/convert` | N | 제안(08 §5.5) |
-| `RAG_SIDECAR__LO_SIDECAR_URL` | string(uri) | `null` | GPL 사이드카(`optIn.loSidecar`). 미설정이면 라우터 `doc`는 `parse.unsupported_format` | N | 제안(08 §5.5) |
-| `RAG_SIDECAR__OCR_GPU_URL` | string(uri) | `null` | PaddleOCR PP-OCRv5 server 사이드카(`premium`) | N | 제안(08 §5.5) |
-| `RAG_SIDECAR__EMBEDDING_SERVER_URL` | string(uri) | `null` | vLLM pooling(BGE-M3 3-in-1) 또는 TEI. `in_process` 임베더(`lite`)는 불필요 | N | 제안(08 §5.5) |
-| `RAG_SIDECAR__SPARSE_ENCODER_SERVER_URL` | string(uri) | `null` | `ko-quality` learned sparse 서빙 | N | 제안(08 §4.2) |
-| `RAG_SIDECAR__RERANKER_SERVER_URL` | string(uri) | `null` | TEI(CPU·GPU) 또는 vLLM/SGLang 리랭커. `api` 프로세스가 사용 | N | 제안(08 §5.5) |
-| `RAG_SIDECAR__LLM_SERVER_URL` | string(uri) | `null` | LLM 보강·LLM 플래너·판정자용 OpenAI 호환 서빙(온프레미스 vLLM Qwen3 계열). 외부 API는 테넌트 옵트인 + `EgressPolicy.allowed_hosts` 등재 | N | 제안(이 문서) |
-| `RAG_SIDECAR__LLM_API_KEY_REF` | string(secret_ref) | `null` | | 참조 | 제안(이 문서) |
-| `RAG_SIDECAR__CONNECT_TIMEOUT_MS` | integer | `5000` | 연결 상한. 변환 데드라인은 `StagePolicy`·`ConvertRequest.deadline_ms` | N | 제안(이 문서) |
-| `RAG_MODELS__MIRROR_URI` | string(uri) | `null` | 가중치·사전·OCR 모델 미러 루트(`models/{repo}/{revision}/…`, 바이블 §13.3). 미설정 → 최초 실행 시 직접 다운로드(개발만) | N | 제안(08 §3.4) |
-| `RAG_MODELS__LOCK_PATH` | string(path) | `/config/models.lock` | `models.lock`(id, revision, sha256, license, grade, territory) 위치. 기동 시 sha256·등급 검증 | N | 제안(08 §3.4) |
-| `RAG_MODELS__CACHE_DIR` | string(path) | `/models` | 로컬 캐시. `HF_HOME`과 같은 볼륨이어야 한다(§2.18) | N | 제안(08 §3.4) |
-| `RAG_MODELS__OFFLINE` | boolean | `false` | `true`면 런타임 다운로드 차단(`HF_HUB_OFFLINE=1`과 동일 강제). 운영·에어갭은 `true` | N | 제안(08 §3.4) |
-
-### 2.11 인증·인가 `RAG_AUTH__*`
-
-| 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
-|------|------|------|------|------|------|
-| `RAG_AUTH__OIDC_ISSUER` | string(uri) | `null`(프로파일 `authn=oidc`면 필수) | OIDC 발급자. JWKS는 `{issuer}/.well-known/openid-configuration`으로 발견 | N | **정본** |
-| `RAG_AUTH__AUDIENCE` | string | `null`(→ `RAG_API__PUBLIC_BASE_URL`) | `aud` 검증 값. MCP PRM `resource`와 동일 | N | 제안(02 §5.2) |
-| `RAG_AUTH__JWKS_CACHE_TTL_S` | integer | `300` | JWKS 캐시. 조회 실패 시 캐시로 검증, 만료 시 401 | N | 제안(02 §5.2) |
-| `RAG_AUTH__GROUPS_CACHE_TTL_S` | integer | `600` | 그룹 확장 캐시 `groups:{tenant}:{subject}`(바이블 §13.4 5~15분 범위) | N | 제안(이 문서) |
-| `RAG_AUTH__MTLS_CA_BUNDLE` | string(path) | `null` | 프로파일 `authn=mtls` 클라이언트 인증서 CA | N | 제안(이 문서) |
-| `RAG_AUTH__CEDAR_POLICY_PATH` | string(path) | `/config/cedar` | Cedar 정책·스키마 파일 디렉터리. `policy_version`은 프로파일 `security.authz.policy_version` | N | 제안(이 문서) |
-
-### 2.12 비밀 제공자 `RAG_SECRETS__*`
-
-| 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
-|------|------|------|------|------|------|
-| `RAG_SECRETS__PROVIDER` | enum[env, openbao, aws_kms] | `env` | `credentials_ref`·`secret_ref`·`*_REF`를 해소하는 `KeyProvider` 구현 | N | **정본** |
-| `RAG_SECRETS__ENV__FILE` | string(path) | `null` | `env` 제공자의 개발 전용 키 파일(`.env` 문법). 운영 프로파일(`orchestrator=temporal`)에서 설정되면 기동 실패 | N | 제안(이 문서) |
-| `RAG_SECRETS__OPENBAO__ADDRESS` | string(uri) | `null`(provider=openbao면 필수) | | N | 제안(이 문서) |
-| `RAG_SECRETS__OPENBAO__AUTH_METHOD` | enum[kubernetes, approle, token] | `kubernetes` | | N | 제안(이 문서) |
-| `RAG_SECRETS__OPENBAO__AUTH_ROLE` | string | `null` | `kubernetes`·`approle` 역할 이름 | N | 제안(이 문서) |
-| `RAG_SECRETS__OPENBAO__TRANSIT_MOUNT` | string | `transit` | 테넌트 DEK `wrap/unwrap` 마운트(07 §6.3) | N | 제안(이 문서) |
-| `RAG_SECRETS__AWS_KMS__REGION` | string | `null` | | N | 제안(이 문서) |
-| `RAG_SECRETS__CACHE_TTL_S` | integer | `300` | 해소 값 프로세스 캐시. 회전 반영 지연 상한 | N | 제안(이 문서) |
-
-### 2.13 관측성·로그 `RAG_OTEL__*`, `RAG_LOG__*`
-
-| 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
-|------|------|------|------|------|------|
-| `RAG_OTEL__EXPORTER_OTLP_ENDPOINT` | string(uri) | `null` | OTel Collector OTLP 엔드포인트. 미설정 → 내보내기 끔(계측은 유지) | N | **정본** |
-| `RAG_OTEL__EXPORTER_OTLP_PROTOCOL` | enum[grpc, http/protobuf] | `grpc` | | N | 제안(이 문서) |
-| `RAG_OTEL__CONTENT_CAPTURE` | enum[none] | `none` | 트레이스 콘텐츠 캡처. **v1은 `none`만 허용**(02 §5.2; [관측성](03-observability.md) §2.5). 프로파일 `observability.content_capture_locked=true`면 재정의 불가(§6.1 S-8). 다른 값의 어휘는 미해결 이슈 6 | N | **정본** |
-| `RAG_OTEL__TRACES_SAMPLER_RATIO` | number(0..1) | `1.0` | 부모 기반 비율 샘플러 | N | 제안(이 문서) |
-| `RAG_LOG__LEVEL` | enum[debug, info, warning, error] | `info` | structlog 레벨 | N | 제안(이 문서) |
-| `RAG_LOG__FORMAT` | enum[json, console] | `json` | 필드는 바이블 §6.5(`event, level, tenant_id_hash, job_id, trace_id, stage, code`) | N | 제안(이 문서) |
-
-### 2.14 캐시 TTL `RAG_CACHE__*`
-
-기본값은 바이블 §13.4의 Valkey 키 TTL이다. `aclrev:`는 프로파일(`2 × acl_propagation_slo`), `idem:`은 §2.3, `groups:`는 §2.11에서 정하고, `tok:`(7d)·`rr:`(60s)는 콘텐츠 해시 키라 튠 대상이 아니다.
-
-| 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
-|------|------|------|------|------|------|
-| `RAG_CACHE__QEMB_TTL` | string(duration) | `24h` | 질의 임베딩 `qemb:{space}:{hash}` | N | 제안(이 문서) |
-| `RAG_CACHE__PLAN_TTL` | string(duration) | `5m` | 플랜 `plan:{tenant}:{profile_hash}:{hash}` | N | 제안(이 문서) |
-| `RAG_CACHE__PTXT_TTL` | string(duration) | `24h` | 부모 텍스트 번들 `ptxt:{tenant}:{chunk_set_blake3}` | N | 제안(이 문서) |
-| `RAG_CACHE__CURSOR_TTL` | string(duration) | `10m` | MCP 커서 핸들 `cursor:{tenant}:{ulid}`(D-13) | N | 제안(이 문서) |
-
-### 2.15 수집 원천 `RAG_FETCH__*`
-
-프로파일 `ingest.fetch`는 `{plugin, max_bytes, policy}`와 플러그인 `config_schema` 키만 갖고, 네트워크 목적지·경로·자격 증명은 여기에 둔다([수집과 원천 해소](../04-pipelines/02-fetching-and-source-resolution.md) §2.3). §2.5 `RAG_OBJECT_STORE__*`(플랫폼 산출물 버킷)와 구별된다.
-
-| 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
-|------|------|------|------|------|------|
-| `RAG_FETCH__S3__ENDPOINT_URL` | string(uri) | 공급자 공개 엔드포인트 | 테넌트 `s3://` 원천의 운영자 신뢰 엔드포인트(E16 판정은 스킴 + `allowed_hosts`만) | N | 제안(04-pipelines/02) |
-| `RAG_FETCH__S3__REGION` | string | `null` | | N | 제안(04-pipelines/02) |
-| `RAG_FETCH__S3__ADDRESSING_STYLE` | enum[path, virtual] | `virtual` | | N | 제안(04-pipelines/02) |
-| `RAG_FETCH__GS__ENDPOINT_URL` | string(uri) | 공급자 기본 | | N | 제안(04-pipelines/02) |
-| `RAG_FETCH__AZ__ACCOUNT_SUFFIX` | string | 공급자 기본 | `az://{container}/{path}`의 계정 접미 | N | 제안(04-pipelines/02) |
-| `RAG_FETCH__FILE__ALLOWED_ROOTS` | array<string(path)> | `[]` | `file://` 허용 루트. 빈 값 = 모두 거부(`fetch.egress_denied`). `orchestrator=local`에서만 의미 | N | 제안(04-pipelines/02) |
-| `RAG_FETCH__SMB__SERVERS` | array<string(host)> | `[]` | `smb://` 플러그인 서버 허용 목록 | N | 제안(04-pipelines/02) |
-| `RAG_FETCH__SPOOL_DIR` | string(path) | 워커 임시 볼륨 | 스트리밍 다운로드 스풀 | N | 제안(04-pipelines/02) |
-| `RAG_FETCH__CLAMD__ADDRESS` | string(host:port) | `null` | 악성 스캔 훅 `clamd`(프로파일 `malware_scan.enabled` 시 필수) | N | 제안(04-pipelines/02) |
-
-### 2.16 워커 자원 한계·플러그인 `RAG_WORKER__*`, `RAG_PLUGINS__*`
-
-| 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
-|------|------|------|------|------|------|
-| `RAG_WORKER__HELPER_RLIMIT_AS_BYTES` | integer | `4294967296` | `helper_process` 주소 공간 상한(4GiB, 초안 목표) | N | 제안(05 §11.2) |
-| `RAG_WORKER__DECOMPRESS_MAX_RATIO` | integer | `100` | 컨테이너 포맷 압축 해제 폭탄 상한 — 압축비(초안 목표) | N | 제안(05 §11.2) |
-| `RAG_WORKER__DECOMPRESS_MAX_BYTES` | integer | `1073741824` | 펼친 크기 상한 1GiB(초안 목표) | N | 제안(05 §11.2) |
-| `RAG_PLUGINS__ALLOW_UNVERIFIED` | boolean | `false` | 서명·적합성 리포트 없는 플러그인 로딩 허용(개발 전용). `true`면 기동 시 경고 로그, `orchestrator=temporal`이면 기동 실패 | N | 제안(05 §11.1) |
-| `RAG_PLUGINS__SIGNING_KEYS_PATH` | string(path) | `/config/plugin-keys` | 배포 아티팩트 서명 검증 공개키(Sigstore 또는 조직 키 — 확인 필요 as of 2026-09) | N | 제안(이 문서) |
-
+| 그룹 | 이름 | 타입 | 기본 | 설명 | 민감 | 지위 |
+|------|------|------|------|------|------|------|
+| 2.2 SERVE | `RAG_SERVE__HOST` | string | `0.0.0.0` | `api` 바인드 주소 | N | 제안(02 §5.2) |
+| 2.2 SERVE | `RAG_SERVE__PORT` | integer | `8000` | `api` HTTP 포트(`/v1`, `/mcp`, `/healthz`, `/readyz`) | N | 제안(02 §5.2) |
+| 2.2 SERVE | `RAG_SERVE__METRICS_PORT` | integer | `9090` | `GET /metrics` 전용 포트(api·worker·relay 공통). `0`이면 api 메인 포트에 마운트 | N | 제안(01-deploy compose `9090`) |
+| 2.2 SERVE | `RAG_SERVE__WORKERS` | integer | `1` | uvicorn 워커 수(`api`). 초안 권고 vCPU 수 | N | 제안(02 §5.2) |
+| 2.2 SERVE | `RAG_SERVE__PROCESSES` | integer | `1` | `ingest-cpu` 워커 프로세스 다중화(GIL 대응). 초안 권고 vCPU 수 | N | 제안(02 §5.2) |
+| 2.2 SERVE | `RAG_SERVE__MAX_CONCURRENT_ACTIVITIES` | integer | `1` | 프로세스당 Temporal 액티비티 고정 슬롯(리소스 튜너와 상호 배타, 바이블 §4.4). `ingest-cpu`는 1 유지, `ingest-io` 32·GPU 큐 4·`ingest-llm` 8(초안, 02 미해결 7) | N | 제안(02 §5.2) |
+| 2.2 SERVE | `RAG_SERVE__QUEUE` | string(kebab) | `null` | 워커가 폴링할 태스크 큐(`ingest-io`, `ingest-cpu`, `ingest-gpu-ocr`, `ingest-gpu-embed`, `ingest-llm`, `maintenance`, `relay`, `lite`의 `ingest`). `rag serve worker --queue`와 동일 | N | 제안(이 문서) |
+| 2.2 SERVE | `RAG_SERVE__DISPATCHER` | boolean | `true` | 디스패처 조정 틱(문서 직렬화·테넌트 동시성, 바이블 §11.2) 실행 여부. 검색 전용 `api-query` 인스턴스는 `false` | N | 제안(08 미해결 3) |
+| 2.2 SERVE | `RAG_SERVE__SURFACES` | array<enum[ingest, query, admin, events, mcp]> | 전체 | 이 `api` 인스턴스가 라우트를 등록할 표면. `api-query`는 `[query, mcp]` | N | 제안(08 미해결 3) |
+| 2.2 SERVE | `RAG_SERVE__SHUTDOWN_GRACE_S` | integer | `120` | SIGTERM 후 드레인 유예(초). 큐별 60/120/300 초안 | N | 제안(08 미해결 8) |
+| 2.3 API | `RAG_API__PUBLIC_BASE_URL` | string(uri) | `null`(운영 필수) | `status_url`·`events_url`·`Location`·MCP PRM `resource`의 절대 URL 기준(인그레스 외부 호스트). `https` 필수, `orchestrator=local`만 `http://localhost` 허용 | N | 제안(05-api/01 §8) |
+| 2.3 API | `RAG_API__CORS_ALLOWED_ORIGINS` | array<string(uri)> | `[]` | 정확한 오리진 목록. 빈 값 = CORS 비활성. `*` 불가 | N | 제안(05-api/01 §15) |
+| 2.3 API | `RAG_API__TRUSTED_PROXIES` | array<string(cidr)> | `[]` | `X-Forwarded-For`·`X-Forwarded-Proto`를 신뢰할 인그레스 소스 CIDR | N | 제안(05-api/01 §19) |
+| 2.3 API | `RAG_API__MAX_BODY_BYTES` | integer | `8388608` | 앱 측 요청 본문 상한(인그레스 8MB와 일치). 계약 한계(`IngestRequest` 64KB × 배치 100건, `ContextPack` 512KB, 바이블 §5.1)보다 작게 설정하면 기동 실패(§6.1 S-7) | N | 제안(이 문서) |
+| 2.3 API | `RAG_API__SSE_MAX_CONNECTIONS_PER_TENANT` | integer | `100` | 테넌트당 동시 SSE 연결 상한(초안). 초과는 429 `api.rate_limited` | N | 제안(05-api/01 미해결 7) |
+| 2.3 API | `RAG_API__PUBLIC_RATE_LIMIT_RPS` | integer | `20` | 비인증 경로(`/healthz`·`/readyz`·PRM·401 시도)의 **IP 키** 한도(초안). 테넌트·클래스 한도는 프로파일 소유(§2.19) | N | 제안(05-api/01 §11 `public` 클래스) |
+| 2.3 API | `RAG_API__CURSOR_HMAC_KEY_REF` | string(secret_ref) | `null`(운영 필수) | 키셋 커서 토큰 서명 키(05-api/01 §7; 테넌트 바인딩 HMAC-SHA256) | 참조 | 제안(05-api/01 §7) |
+| 2.3 API | `RAG_API__IDEMPOTENCY_TTL` | string(duration) | `24h` | `idempotency_keys.expires_at`과 Valkey `idem:` 캐시 TTL(바이블 §13.4 값) | N | 제안(이 문서) |
+| 2.4 PG | `RAG_PG__DSN` | string(secret) | 필수 | 원장 DSN, 애플리케이션 역할 `rag_app`(`NOBYPASSRLS`). TLS 옵션은 DSN 파라미터(`sslmode`, `sslrootcert`, `sslcert`/`sslkey`) | Y | **정본** |
+| 2.4 PG | `RAG_PG__DSN_OWNER` | string(secret) | `null` | 마이그레이션 훅(`rag ledger migrate`) 전용 소유자 DSN(`rag_owner`). 상주 프로세스에는 주입하지 않는다 | Y | 제안(01-deploy 미해결 3) |
+| 2.4 PG | `RAG_PG__DSN_MAINTENANCE` | string(secret) | `null`(→ `DSN`) | `relay`·정합성 검사·cleanup 프로세스의 역할 `rag_maintenance` DSN | Y | 제안(01-deploy 미해결 3) |
+| 2.4 PG | `RAG_PG__POOL_MIN` | integer | `2` | 프로세스 풀 최소 | N | 제안(02 §5.2) |
+| 2.4 PG | `RAG_PG__POOL_MAX` | integer | `16` | 프로세스 풀 최대 | N | 제안(02 §5.2) |
+| 2.4 PG | `RAG_PG__STATEMENT_TIMEOUT_MS` | integer | 역할별 `api` 5000 / `worker` 60000 / `maintenance` 600000 | 트랜잭션마다 `SET LOCAL statement_timeout`(초안) | N | 제안(04-storage §2.5) |
+| 2.4 PG | `RAG_PG__POOLER_MODE` | enum[session, transaction] | `session` | 외부 풀러(PgBouncer) 트랜잭션 모드면 준비 문장 비활성·`SET LOCAL app.tenant_id` 프롤로그 재발행 | N | 제안(04-storage §2.5) |
+| 2.5 OBJECT_STORE | `RAG_OBJECT_STORE__URI` | string(uri) | 필수 | `s3://bucket[/prefix]` 또는 `file:///path`만([ADR-0011](../06-adr/0011-kv-and-object-storage-valkey-rustfs-seaweedfs.md)). 키 레이아웃은 바이블 §13.3. `file://`는 개발·`lite` 단일 노드 전용 | N | **정본** |
+| 2.5 OBJECT_STORE | `RAG_OBJECT_STORE__ENDPOINT_URL` | string(uri) | `null` | S3 호환 엔드포인트(RustFS·SeaweedFS·관리형). 미설정 시 공급자 공개 엔드포인트 | N | 제안(02 §5.2) |
+| 2.5 OBJECT_STORE | `RAG_OBJECT_STORE__REGION` | string | `null` | | N | 제안(이 문서) |
+| 2.5 OBJECT_STORE | `RAG_OBJECT_STORE__ADDRESSING_STYLE` | enum[path, virtual] | `path` | 로컬 S3 호환 구현은 `path` | N | 제안(이 문서) |
+| 2.5 OBJECT_STORE | `RAG_OBJECT_STORE__CREDENTIALS_REF` | string(secret_ref) | `null` | 버킷 전용 자격 증명. 미설정 시 워커 주변 자격 증명(IRSA 등); 운영은 설정 권장 | 참조 | 제안(04-storage §3.3) |
+| 2.5 OBJECT_STORE | `RAG_OBJECT_STORE__SSE_MODE` | enum[none, sse_s3, sse_kms] | `sse_s3` | 저장 암호화 요청 헤더. `file://`는 무시 | N | 제안(07 §6.3) |
+| 2.5 OBJECT_STORE | `RAG_OBJECT_STORE__SSE_KMS_KEY_REF` | string(secret_ref) | `null` | `sse_kms`의 기본 KEK 참조. 테넌트별 KEK는 접두 `tenants/{tenant_id}/` 버킷 정책으로(07 §6.3) | 참조 | 제안(07 §6.3) |
+| 2.6 VALKEY | `RAG_VALKEY__URL` | string(uri, secret) | 필수 | `redis://` 또는 `rediss://`(TLS) Redis 호환 프로토콜 URL 하나 — 기본 배포는 Valkey이고 다른 호환 서버는 미검사(ADR-0011) | Y | **정본** |
+| 2.6 VALKEY | `RAG_VALKEY__POOL_MAX` | integer | `32` | | N | 제안(이 문서) |
+| 2.6 VALKEY | `RAG_VALKEY__COMMAND_TIMEOUT_MS` | integer | `200` | 연결·명령 상한. 초과 시 캐시는 미스로, 레이트리밋은 프로파일 `fail_mode`로 처리 | N | 제안(이 문서) |
+| 2.7 QDRANT/OPENSEARCH | `RAG_QDRANT__URL` | string(uri) | `null`(qdrant 백엔드 사용 시 필수) | REST URL(`http://qdrant:6333`); gRPC 포트는 URL 포트 + 1(Qdrant 기본 6334) | N | 제안(08 §4.2) |
+| 2.7 QDRANT/OPENSEARCH | `RAG_QDRANT__API_KEY_REF` | string(secret_ref) | `null` | | 참조 | 제안(08 §4.2) |
+| 2.7 QDRANT/OPENSEARCH | `RAG_QDRANT__PREFER_GRPC` | boolean | `true` | 바이블 §3.2 O-10 | N | 제안(08 §4.2) |
+| 2.7 QDRANT/OPENSEARCH | `RAG_QDRANT__TIMEOUT_MS` | integer | `5000` | 클라이언트 요청 상한. 채널 `timeout_ms`는 프로파일 | N | 제안(이 문서) |
+| 2.7 QDRANT/OPENSEARCH | `RAG_OPENSEARCH__URL` | string(uri) | `null`(opensearch 백엔드 사용 시 필수) | | N | 제안(08 §4.2) |
+| 2.7 QDRANT/OPENSEARCH | `RAG_OPENSEARCH__ADMIN_CREDENTIALS_REF` | string(secret_ref) | `null`(standard 이상 필수) | 컬렉션 생성 시 인덱스 템플릿·alias 생성, 정합성 검사·cleanup에만 사용(`api` 관리 표면·`maintenance` 워커) | 참조 | 제안(이 문서) |
+| 2.7 QDRANT/OPENSEARCH | `RAG_OPENSEARCH__JWT_SIGNING_KEY_REF` | string(secret_ref) | `null`(standard 이상 필수) | 요청별 테넌트 JWT(E8, DLS 이중 방어) 서명 키. JWKS를 Security 플러그인에 등록, 회전은 `kid` 병행 | 참조 | 제안(08 §4.2) |
+| 2.7 QDRANT/OPENSEARCH | `RAG_OPENSEARCH__JWT_TTL_S` | integer | `60` | E8 토큰 TTL 상한(≤ 60s, 07 §6.1) | N | 제안(이 문서) |
+| 2.7 QDRANT/OPENSEARCH | `RAG_OPENSEARCH__TIMEOUT_MS` | integer | `5000` | | N | 제안(이 문서) |
+| 2.8 TEMPORAL/PROFILE | `RAG_TEMPORAL__ADDRESS` | string(host:port) | `null` | frontend 주소. 미설정 → `LocalRunner`(개발·CI·하네스만, 바이블 §11.1). 프로파일 `runtime.orchestrator=temporal`과의 정합은 §6.1 S-5 | N | **정본** |
+| 2.8 TEMPORAL/PROFILE | `RAG_TEMPORAL__NAMESPACE` | string | `default` | Helm `standard` values는 `rag` | N | 제안(02 §5.2) |
+| 2.8 TEMPORAL/PROFILE | `RAG_PROFILE__PATH` | string(path) | `null` | 운영자 프로파일 YAML **파일** 또는 **디렉터리**(`*.yaml` 전부 로드). 미설정 → 내장 5종(`base, lite, standard, premium, korean-gov`)만. 파일의 `profile_id`가 내장과 같으면 내장을 대체한다 | N | **정본** |
+| 2.8 TEMPORAL/PROFILE | `RAG_PROFILE__ID` | string(kebab) | `lite` | CLI(`rag up`, `rag ingest`)와 `POST /v1/collections`에서 `profile_id` 생략 시 기본 프로파일 | N | 제안(02 §5.2) |
+| 2.9 TLS공통 | `RAG_{SECTION}__TLS_CA_BUNDLE` | string(path) | `null` | 서버 인증서 검증 CA 번들. 인증서 검증을 끄는 옵션은 없다(07 §6.2) | N | 제안(이 문서) |
+| 2.9 TLS공통 | `RAG_{SECTION}__CLIENT_CERT_REF` | string(secret_ref) | `null` | mTLS 클라이언트 인증서·키 참조 | 참조 | 제안(이 문서) |
+| 2.10 SIDECAR/MODELS | `RAG_SIDECAR__PARSER_WORKERS_URL` | string(uri) | `null` | Java 사이드카(HWP 5.0 → HWPX, 암호화 HWPX, 배포용 텍스트) `POST /v1/convert` | N | 제안(08 §5.5) |
+| 2.10 SIDECAR/MODELS | `RAG_SIDECAR__LO_SIDECAR_URL` | string(uri) | `null` | GPL 사이드카(`optIn.loSidecar`). 미설정이면 라우터 `doc`는 `parse.unsupported_format` | N | 제안(08 §5.5) |
+| 2.10 SIDECAR/MODELS | `RAG_SIDECAR__OCR_GPU_URL` | string(uri) | `null` | PaddleOCR PP-OCRv5 server 사이드카(`premium`) | N | 제안(08 §5.5) |
+| 2.10 SIDECAR/MODELS | `RAG_SIDECAR__EMBEDDING_SERVER_URL` | string(uri) | `null` | vLLM pooling(BGE-M3 3-in-1) 또는 TEI. `in_process` 임베더(`lite`)는 불필요 | N | 제안(08 §5.5) |
+| 2.10 SIDECAR/MODELS | `RAG_SIDECAR__SPARSE_ENCODER_SERVER_URL` | string(uri) | `null` | `ko-quality` learned sparse 서빙 | N | 제안(08 §4.2) |
+| 2.10 SIDECAR/MODELS | `RAG_SIDECAR__RERANKER_SERVER_URL` | string(uri) | `null` | TEI(CPU·GPU) 또는 vLLM/SGLang 리랭커. `api` 프로세스가 사용 | N | 제안(08 §5.5) |
+| 2.10 SIDECAR/MODELS | `RAG_SIDECAR__LLM_SERVER_URL` | string(uri) | `null` | LLM 보강·LLM 플래너·판정자용 OpenAI 호환 서빙(온프레미스 vLLM Qwen3 계열). 외부 API는 테넌트 옵트인 + `EgressPolicy.allowed_hosts` 등재 | N | 제안(이 문서) |
+| 2.10 SIDECAR/MODELS | `RAG_SIDECAR__LLM_API_KEY_REF` | string(secret_ref) | `null` | | 참조 | 제안(이 문서) |
+| 2.10 SIDECAR/MODELS | `RAG_SIDECAR__CONNECT_TIMEOUT_MS` | integer | `5000` | 연결 상한. 변환 데드라인은 `StagePolicy`·`ConvertRequest.deadline_ms` | N | 제안(이 문서) |
+| 2.10 SIDECAR/MODELS | `RAG_MODELS__MIRROR_URI` | string(uri) | `null` | 가중치·사전·OCR 모델 미러 루트(`models/{repo}/{revision}/…`, 바이블 §13.3). 미설정 → 최초 실행 시 직접 다운로드(개발만) | N | 제안(08 §3.4) |
+| 2.10 SIDECAR/MODELS | `RAG_MODELS__LOCK_PATH` | string(path) | `/config/models.lock` | `models.lock`(id, revision, sha256, license, grade, territory) 위치. 기동 시 sha256·등급 검증 | N | 제안(08 §3.4) |
+| 2.10 SIDECAR/MODELS | `RAG_MODELS__CACHE_DIR` | string(path) | `/models` | 로컬 캐시. `HF_HOME`과 같은 볼륨이어야 한다(§2.18) | N | 제안(08 §3.4) |
+| 2.10 SIDECAR/MODELS | `RAG_MODELS__OFFLINE` | boolean | `false` | `true`면 런타임 다운로드 차단(`HF_HUB_OFFLINE=1`과 동일 강제). 운영·에어갭은 `true` | N | 제안(08 §3.4) |
+| 2.11 AUTH | `RAG_AUTH__OIDC_ISSUER` | string(uri) | `null`(프로파일 `authn=oidc`면 필수) | OIDC 발급자. JWKS는 `{issuer}/.well-known/openid-configuration`으로 발견 | N | **정본** |
+| 2.11 AUTH | `RAG_AUTH__AUDIENCE` | string | `null`(→ `RAG_API__PUBLIC_BASE_URL`) | `aud` 검증 값. MCP PRM `resource`와 동일 | N | 제안(02 §5.2) |
+| 2.11 AUTH | `RAG_AUTH__JWKS_CACHE_TTL_S` | integer | `300` | JWKS 캐시. 조회 실패 시 캐시로 검증, 만료 시 401 | N | 제안(02 §5.2) |
+| 2.11 AUTH | `RAG_AUTH__GROUPS_CACHE_TTL_S` | integer | `600` | 그룹 확장 캐시 `groups:{tenant}:{subject}`(바이블 §13.4 5~15분 범위) | N | 제안(이 문서) |
+| 2.11 AUTH | `RAG_AUTH__MTLS_CA_BUNDLE` | string(path) | `null` | 프로파일 `authn=mtls` 클라이언트 인증서 CA | N | 제안(이 문서) |
+| 2.11 AUTH | `RAG_AUTH__CEDAR_POLICY_PATH` | string(path) | `/config/cedar` | Cedar 정책·스키마 파일 디렉터리. `policy_version`은 프로파일 `security.authz.policy_version` | N | 제안(이 문서) |
+| 2.12 SECRETS | `RAG_SECRETS__PROVIDER` | enum[env, openbao, aws_kms] | `env` | `credentials_ref`·`secret_ref`·`*_REF`를 해소하는 `KeyProvider` 구현 | N | **정본** |
+| 2.12 SECRETS | `RAG_SECRETS__ENV__FILE` | string(path) | `null` | `env` 제공자의 개발 전용 키 파일(`.env` 문법). 운영 프로파일(`orchestrator=temporal`)에서 설정되면 기동 실패 | N | 제안(이 문서) |
+| 2.12 SECRETS | `RAG_SECRETS__OPENBAO__ADDRESS` | string(uri) | `null`(provider=openbao면 필수) | | N | 제안(이 문서) |
+| 2.12 SECRETS | `RAG_SECRETS__OPENBAO__AUTH_METHOD` | enum[kubernetes, approle, token] | `kubernetes` | | N | 제안(이 문서) |
+| 2.12 SECRETS | `RAG_SECRETS__OPENBAO__AUTH_ROLE` | string | `null` | `kubernetes`·`approle` 역할 이름 | N | 제안(이 문서) |
+| 2.12 SECRETS | `RAG_SECRETS__OPENBAO__TRANSIT_MOUNT` | string | `transit` | 테넌트 DEK `wrap/unwrap` 마운트(07 §6.3) | N | 제안(이 문서) |
+| 2.12 SECRETS | `RAG_SECRETS__AWS_KMS__REGION` | string | `null` | | N | 제안(이 문서) |
+| 2.12 SECRETS | `RAG_SECRETS__CACHE_TTL_S` | integer | `300` | 해소 값 프로세스 캐시. 회전 반영 지연 상한 | N | 제안(이 문서) |
+| 2.13 OTEL/LOG | `RAG_OTEL__EXPORTER_OTLP_ENDPOINT` | string(uri) | `null` | OTel Collector OTLP 엔드포인트. 미설정 → 내보내기 끔(계측은 유지) | N | **정본** |
+| 2.13 OTEL/LOG | `RAG_OTEL__EXPORTER_OTLP_PROTOCOL` | enum[grpc, http/protobuf] | `grpc` | | N | 제안(이 문서) |
+| 2.13 OTEL/LOG | `RAG_OTEL__CONTENT_CAPTURE` | enum[none] | `none` | 트레이스 콘텐츠 캡처. **v1은 `none`만 허용**(02 §5.2; [관측성](03-observability.md) §2.5). 프로파일 `observability.content_capture_locked=true`면 재정의 불가(§6.1 S-8). 다른 값의 어휘는 미해결 이슈 6 | N | **정본** |
+| 2.13 OTEL/LOG | `RAG_OTEL__TRACES_SAMPLER_RATIO` | number(0..1) | `1.0` | 부모 기반 비율 샘플러 | N | 제안(이 문서) |
+| 2.13 OTEL/LOG | `RAG_LOG__LEVEL` | enum[debug, info, warning, error] | `info` | structlog 레벨 | N | 제안(이 문서) |
+| 2.13 OTEL/LOG | `RAG_LOG__FORMAT` | enum[json, console] | `json` | 필드는 바이블 §6.5(`event, level, tenant_id_hash, job_id, trace_id, stage, code`) | N | 제안(이 문서) |
+| 2.14 CACHE | `RAG_CACHE__QEMB_TTL` | string(duration) | `24h` | 질의 임베딩 `qemb:{space}:{hash}` | N | 제안(이 문서) |
+| 2.14 CACHE | `RAG_CACHE__PLAN_TTL` | string(duration) | `5m` | 플랜 `plan:{tenant}:{profile_hash}:{hash}` | N | 제안(이 문서) |
+| 2.14 CACHE | `RAG_CACHE__PTXT_TTL` | string(duration) | `24h` | 부모 텍스트 번들 `ptxt:{tenant}:{chunk_set_blake3}` | N | 제안(이 문서) |
+| 2.14 CACHE | `RAG_CACHE__CURSOR_TTL` | string(duration) | `10m` | MCP 커서 핸들 `cursor:{tenant}:{ulid}`(D-13) | N | 제안(이 문서) |
+| 2.15 FETCH | `RAG_FETCH__S3__ENDPOINT_URL` | string(uri) | 공급자 공개 엔드포인트 | 테넌트 `s3://` 원천의 운영자 신뢰 엔드포인트(E16 판정은 스킴 + `allowed_hosts`만) | N | 제안(04-pipelines/02) |
+| 2.15 FETCH | `RAG_FETCH__S3__REGION` | string | `null` | | N | 제안(04-pipelines/02) |
+| 2.15 FETCH | `RAG_FETCH__S3__ADDRESSING_STYLE` | enum[path, virtual] | `virtual` | | N | 제안(04-pipelines/02) |
+| 2.15 FETCH | `RAG_FETCH__GS__ENDPOINT_URL` | string(uri) | 공급자 기본 | | N | 제안(04-pipelines/02) |
+| 2.15 FETCH | `RAG_FETCH__AZ__ACCOUNT_SUFFIX` | string | 공급자 기본 | `az://{container}/{path}`의 계정 접미 | N | 제안(04-pipelines/02) |
+| 2.15 FETCH | `RAG_FETCH__FILE__ALLOWED_ROOTS` | array<string(path)> | `[]` | `file://` 허용 루트. 빈 값 = 모두 거부(`fetch.egress_denied`). `orchestrator=local`에서만 의미 | N | 제안(04-pipelines/02) |
+| 2.15 FETCH | `RAG_FETCH__SMB__SERVERS` | array<string(host)> | `[]` | `smb://` 플러그인 서버 허용 목록 | N | 제안(04-pipelines/02) |
+| 2.15 FETCH | `RAG_FETCH__SPOOL_DIR` | string(path) | 워커 임시 볼륨 | 스트리밍 다운로드 스풀 | N | 제안(04-pipelines/02) |
+| 2.15 FETCH | `RAG_FETCH__CLAMD__ADDRESS` | string(host:port) | `null` | 악성 스캔 훅 `clamd`(프로파일 `malware_scan.enabled` 시 필수) | N | 제안(04-pipelines/02) |
+| 2.16 WORKER/PLUGINS | `RAG_WORKER__HELPER_RLIMIT_AS_BYTES` | integer | `4294967296` | `helper_process` 주소 공간 상한(4GiB, 초안 목표) | N | 제안(05 §11.2) |
+| 2.16 WORKER/PLUGINS | `RAG_WORKER__DECOMPRESS_MAX_RATIO` | integer | `100` | 컨테이너 포맷 압축 해제 폭탄 상한 — 압축비(초안 목표) | N | 제안(05 §11.2) |
+| 2.16 WORKER/PLUGINS | `RAG_WORKER__DECOMPRESS_MAX_BYTES` | integer | `1073741824` | 펼친 크기 상한 1GiB(초안 목표) | N | 제안(05 §11.2) |
+| 2.16 WORKER/PLUGINS | `RAG_PLUGINS__ALLOW_UNVERIFIED` | boolean | `false` | 서명·적합성 리포트 없는 플러그인 로딩 허용(개발 전용). `true`면 기동 시 경고 로그, `orchestrator=temporal`이면 기동 실패 | N | 제안(05 §11.1) |
+| 2.16 WORKER/PLUGINS | `RAG_PLUGINS__SIGNING_KEYS_PATH` | string(path) | `/config/plugin-keys` | 배포 아티팩트 서명 검증 공개키(Sigstore 또는 조직 키 — 확인 필요 as of 2026-09) | N | 제안(이 문서) |
 ### 2.17 `answer` 레퍼런스·릴레이·MCP `RAG_ANSWER__*`, `RAG_RELAY__*`, `RAG_MCP__*`
 
 `POST /v1/answer`는 레퍼런스 구현이며 기본 비활성이다([리트리벌 API](../05-api/03-retrieval-api.md) §5.1). 공급자 호출은 `EgressPolicy.allowed_hosts`에 공급자 호스트가 등재된 배포에서만 가능하다.
@@ -321,8 +242,6 @@ Valkey는 `lite`를 포함한 모든 프로파일의 필수 컨테이너다(레�
 
 다음은 자주 환경 변수로 오해되지만 **프로파일 키**이며 `Settings`에 대응 변수가 없다: 레이트리밋 저장소·실패 모드(`security.rate_limit{store, fail_mode}`), 테넌트 동시 잡 상한(`runtime.tenant_concurrent_jobs_max`), 스테이지 타임아웃·재시도·큐(`ingest.*.policy`, `runtime.queues`), 채널 `top_k`·`timeout_ms`, 지연 예산, 토큰 예산, 원본 크기 상한(`ingest.fetch.max_bytes`), egress 허용 스킴·CIDR, ACL 전파·아웃박스 SLO, 정합성 검사·스냅샷 주기. 테넌트·클래스별 요청 속도 한도(`query` 50 / `ingest` 20 / `admin` 10 req/s, API 키 하위 50%; 07 §10 초안)는 프로파일 `security.rate_limit`이 소유하되 현재 스키마는 닫힌 객체라 `limits` 키가 없다 — 미해결 이슈 4.
 
----
-
 ## 3. 프로파일 YAML 주석 스키마
 
 정본 스키마는 [`schemas/profile.schema.json`](../../schemas/profile.schema.json)(`$id = urn:rag:schema:profile:1`)이고 필드 의미는 [컬렉션·프로파일·정책 계약](../03-contracts/15-collection-profile-and-policy-contracts.md) §3이다. 아래는 그 스키마를 운영자가 읽는 순서로 펼친 **주석 예시**다. 표기: `# 타입 | 필수 | 설명`. `Y`는 필수, `N`은 선택, `(N, 제안)`은 스키마에 없는 키(플러그인 `config_schema` 또는 스키마 확장 제안). 스테이지 값 객체는 열린 객체라 `plugin`·`policy`·`isolation`·`image`·`then`·`fallback`(셸 예약 키) 외의 키는 해당 플러그인 `config_schema`가 검증한다.
@@ -349,7 +268,7 @@ runtime:                         # object | Y
     deny_cidrs: [...]            # array<cidr> | Y | 기본 9개 CIDR 을 포함해야 함(규칙 12, 축소 불가)
     max_redirects: 3             # integer(>=0) | Y | 홉마다 전 규칙 재검사
     resolve_pin: true            # boolean | Y | 해석 IP 검사 후 고정 연결
-    max_bytes: 209715200         # integer | N | 기본 ingest.fetch.max_bytes; connect_timeout_ms(N, 5000)·allowed_ports(N, [443]) 도 같은 위치
+    max_bytes: 209715200         # integer | N | 기본 ingest.fetch.max_bytes; connect_timeout_ms(N, 5000)·allowed_ports(N, [443])·strip_query_keys(N, array<string>; 바이블 §5.3 1.3.0 AM-30, 기본 목록 정본은 04-pipelines/02 §3.6) 도 같은 위치
   consistency_check: {sample_every: 1h, full_every: 24h}   # object | N | maintenance.consistency.v1 주기; snapshot: {every, replicate_region?}(N) 도 같은 위치
 ingest:                          # object | Y | 각 스테이지 값 = {plugin, policy: StagePolicyPartial, ...config_schema 키}
   fetch:
@@ -448,8 +367,6 @@ eval:                            # object | Y
 ```
 
 게이트 보유 값 `{value, gate}`는 `EvalReport.gate_result.passed=true`와 ADR 없이 바꿀 수 없다(바이블 §7.4). `GateSpec`은 `{metric?, dataset?, grid | min_delta | min_delta_pt | min_qrels | candidate | promote_to, tool?, max_cost_per_doc_usd?}`이고 `metric` 생략은 `ndcg@10`, `dataset` 생략은 `eval.datasets[0]`이다(15 §3.7).
-
----
 
 ## 4. 내장 프로파일 4종 — 파일 전문
 
@@ -559,7 +476,7 @@ eval:
   gates: {ndcg@10: {min: 0.70, max_regression: 0.01, p: 0.05, correction: holm}, recall@20: {min: 0.85}}
 ```
 
-내장 `lite`는 리랭커를 끈 채 배포된다 — 절 제목의 "사이드카 0", 바이블 §7.1의 컨테이너 5(app, PostgreSQL, Qdrant, Valkey, 오브젝트 스토리지), [배포 가이드](01-deployment-guide.md) §3.2의 `reranker` "선택" 서비스와 일치하며, 기본 `compose.lite.yaml`만으로 `rag up --profile lite`가 §6.1 S-6에 걸리지 않는다. 바이블 §7.1·§7.2가 `lite` 열에 적은 리랭커 값(gte-multilingual-reranker-base @ TEI CPU, 30→10 / 512 / 700ms)은 **운영자 오버라이드 프로파일**로 제공한다. 환경 변수로 프로파일 값을 덮어쓸 수 없으므로(§1.1) 아래 파일을 `RAG_PROFILE__PATH`에 두고 `RAG_SIDECAR__RERANKER_SERVER_URL`을 함께 설정한다(TEI 컨테이너 기동은 배포 가이드 §3.4 `reranker` 서비스). `profile_id`를 `lite`로 두면 내장을 대체하고, 아래처럼 새 ID면 추가된다(§2.8 `RAG_PROFILE__PATH`).
+내장 `lite`는 리랭커를 끈 채 배포된다 — 절 제목의 "사이드카 0", 바이블 §7.1의 컨테이너 5(app, PostgreSQL, Qdrant, Valkey, 오브젝트 스토리지), [배포 가이드](01-deployment-guide.md) §3.2의 `reranker` "선택" 서비스와 일치하며, 기본 `compose.lite.yaml`만으로 `rag up --profile lite`가 §6.1 S-6에 걸리지 않는다. 바이블 §7.1·§7.2가 `lite` 열에 적은 리랭커 값(gte-multilingual-reranker-base @ TEI CPU, 30→10 / 512 / 700ms)은 **운영자 오버라이드 프로파일**로 제공한다. 환경 변수로 프로파일 값을 덮어쓸 수 없으므로(§1.1) 아래 파일을 `RAG_PROFILE__PATH`에 두고 `RAG_SIDECAR__RERANKER_SERVER_URL`을 함께 설정한다(TEI 컨테이너 기동은 배포 가이드 §3.4 `reranker` 서비스). `profile_id`를 `lite`로 두면 내장을 대체하고, 아래처럼 새 ID면 추가된다(§2.2 TEMPORAL/PROFILE 그룹의 `RAG_PROFILE__PATH`).
 
 ```yaml
 # 운영자 오버라이드: lite + TEI CPU 리랭커(바이블 §7.1 lite 열 "gte-multilingual-reranker-base @ TEI CPU(30→10)")
@@ -598,6 +515,7 @@ runtime:
     max_bytes: 209715200
     connect_timeout_ms: 5000
     allowed_ports: [443]
+    strip_query_keys: [X-Amz-Signature, X-Amz-Credential, X-Amz-Security-Token, X-Goog-Signature, sig]
   consistency_check: {sample_every: 1h, full_every: 24h}
   snapshot: {every: 6h, replicate_region: false}
 ingest:
@@ -782,7 +700,7 @@ ingest:
       ocr: {plugin: rapidocr, lang: [korean], version: PPOCRV5, model: MOBILE, vertical_fallback: {plugin: tesseract, lang: [kor_vert]}, airgapped: {plugin: tesseract, lang: [kor, eng]}}   # vertical_fallback·airgapped 는 (N, 제안)
   normalize:
     analyzer: {plugin: normalizer.mecab_ko, user_dictionary: collection, user_dictionary_required: true}   # 컬렉션 사용자 사전 필수(ADR-0021)
-    pii: {plugin: normalizer.presidio_ko, policy: tokenize, tokenize_mode: encrypt, recognizers: [KR_RRN, KR_PHONE, KR_BANK_ACCOUNT, KR_CARD, KR_PASSPORT], reject_entities: [KR_RRN]}   # reject_entities 는 (N, 제안)
+    pii: {plugin: normalizer.presidio_ko, policy: tokenize, tokenize_mode: encrypt, recognizers: [KR_RRN, KR_PHONE, KR_BANK_ACCOUNT, KR_CARD, KR_PASSPORT], reject_entities: [KR_RRN]}   # reject_entities 는 바이블 §7.3 1.3.0 등재(AM-43)
 query:
   pack:
     ordering: document_order
@@ -794,8 +712,6 @@ query:
 observability: {content_capture: none, tenant_id_hash: true, content_capture_locked: true}
 # eval 은 standard 와 같다. KoPub 골든셋은 EvalDataset 등록 후 datasets 에 추가
 ```
-
----
 
 ## 5. 비밀 참조 문법
 
@@ -814,13 +730,11 @@ observability: {content_capture: none, tenant_id_hash: true, content_capture_loc
 - 참조 문자열은 로그·트레이스·`Warning`·`StageError.detail`·`ProblemDetails.detail`·이벤트 `data`에 **기록하지 않는다**(E13, IR-10). CI가 로그 스캔으로 비밀 패턴을 검사한다.
 - `credentials_ref`는 사이드카에 그대로 전달되고 사이드카가 자기 제공자로 해소한다(값 전달 금지, 05 §11.2). `helper_process`에는 전달하지 않는다. 스테이지 코드는 환경 변수·비밀에 직접 접근할 수 없다(린트) — 비밀은 `ctx`가 아니라 `credentials_ref`를 받은 셸·`SidecarStage`가 다룬다.
 
----
-
 ## 6. 검증 규칙과 오류 메시지
 
 ### 6.1 `Settings` 검증(기동 시, fail-closed)
 
-`Settings()` 생성과 조립 지점의 후속 검사가 모두 통과해야 프로세스가 기동된다. 실패는 표준 오류에 한 줄 메시지(형식 `settings: {규칙} — {상세}`)를 남기고 종료 코드 **2**로 끝난다(`rag run-stage`의 `profile.invalid` 종료 코드 2와 통일; [파이프라인 프레임워크](../04-pipelines/01-pipeline-framework.md) §13, 제안). 값은 메시지에 넣지 않고 변수 이름만 넣는다.
+`Settings()` 생성과 조립 지점의 후속 검사가 모두 통과해야 프로세스가 기동된다. 실패는 표준 오류에 한 줄 메시지(형식 `settings: {규칙} — {상세}`)를 남기고 종료 코드 **2**로 끝난다(`rag run-stage`의 `profile.invalid` 종료 코드 2와 통일). CLI 명령·종료 코드의 정본은 10-development/02 §CLI이며(완전성 검토 #10) 이 문서는 그 값을 인용만 한다. 값은 메시지에 넣지 않고 변수 이름만 넣는다.
 
 | # | 규칙 | 메시지(예) |
 |---|------|-----------|
@@ -860,7 +774,7 @@ S-5~S-9는 프로파일 해소 후에 실행되므로 `RAG_PROFILE__PATH`의 파
 | P-4 | `file` 스킴·`rate_limit.store=memory`는 `orchestrator=local`에서만; `http`는 테넌트 정책도 `http`를 포함할 때만 유효(AND) | `profile.invalid` | `/runtime/egress/allowed_schemes` | `rule P-4: scheme file requires runtime.orchestrator=local` |
 | P-5 | `tier=korean-gov`는 `content_capture=none` + `content_capture_locked=true`; `enrich.generated_prefix.enabled=true`면 `gate` 필수 | `profile.invalid` | `/observability`, `/ingest/enrich/generated_prefix` | `rule P-5: korean-gov requires content_capture_locked=true` |
 | P-6 | `query.hydrate.backend ∈ backends[role=vector].plugin`; `backends[].tenant_isolation`이 있으면 `security.tenant_isolation_tier`와 같고 그 등급이 모든 vector·lexical 백엔드의 `capabilities.tenant_isolation[]`에 있다(`tiering.index_per_tenant=disabled`면 `index_per_tenant` 컬렉션 생성 거부는 컬렉션 불변식 C-4) | `profile.invalid` / `plugin.capability_unsupported` | `/query/hydrate/backend`, `/security/tenant_isolation_tier` | `rule P-6: tenant_isolation_tier shard_key unsupported by index_backend.qdrant capabilities` |
-| P-7 | 게이트 보유 값은 `{value, gate}`; `gate`는 `grid \| min_delta \| min_delta_pt \| min_qrels \| candidate \| promote_to` 중 하나 이상; `grid`가 있으면 `value ∈ grid` | `profile.invalid` | `/ingest/chunk/leaf_max_tokens` | `rule P-7: leaf_max_tokens.value 640 is not in gate.grid [256, 384, 512, 768]` |
+| P-7 | 게이트 보유 값은 `{value, gate}`; `gate`는 `metric?`·`dataset?`·`grid \| min_delta \| min_delta_pt \| min_qrels \| candidate \| promote_to`·`tool?` 중 하나 이상; `grid`가 있으면 `value ∈ grid`; 게이트 미통과 기본값은 차단하지 않고 경고 `profile.gate_pending`만 기록(§7.4, AM-36) | `profile.invalid`(위반 시) / 경고 `profile.gate_pending`(미통과 기본값) | `/ingest/chunk/leaf_max_tokens` | `rule P-7: leaf_max_tokens.value 640 is not in gate.grid [256, 384, 512, 768]` |
 | P-8 | `ingest.embed`는 `dense` + (`sparse` 또는 `sparse_bm25`); `channels`에 `lexical`이 있으면 렉시컬 백엔드(OpenSearch) 또는 `sparse_bm25`가 존재 | `profile.invalid` | `/ingest/embed`, `/query/channels/{i}` | `rule P-8: channel lexical requires a lexical backend or embed.sparse_bm25` |
 | P-9 | `ingest.index.tiering` 금지(정본 `security.tiering`); 완성된 `StagePolicy`가 스키마 통과, `non_retryable_error_codes`는 카탈로그 `no` 코드만, `isolation ∈ PluginMeta.isolation_supported`; 선택 큐 폴백은 `detect·ocr → parse`, `recount → chunk`만(15 §3.4)이고 LLM 보강 켬(`generated_prefix`·`contextual_doc_summary`)은 `queues.enrich_llm` 필수 | `profile.invalid` | `/runtime/queues/enrich_llm`, `/ingest/{stage}/policy` | `rule P-9: enrich.generated_prefix.enabled=true requires queues.enrich_llm` |
 | P-10 | `postprocess.order`는 고정 순서 `[relevance_gate, dedup, mmr, parent_expand, dedup, sentence_window, compress]`의 부분 수열; 나열된 단계(`dedup`·`relevance_gate` 제외)는 설정 객체를 가진다 | `profile.invalid` | `/query/postprocess/order` | `rule P-10: postprocess.order lists mmr without postprocess.mmr` |
@@ -871,7 +785,7 @@ S-5~S-9는 프로파일 해소 후에 실행되므로 `RAG_PROFILE__PATH`의 파
 | (제안) | `ingest.index.commit.flip_order[] ⊆ backends[].role`(중복 없음) — 15 불변식에 번호가 없는 이 문서의 제안(미해결 이슈 5); 확정 전 `detail` 접두는 `rule flip_order:` | `profile.invalid` | `/ingest/index/commit/flip_order` | `rule flip_order: role lexical has no backend in ingest.index.backends` |
 | G | 게이트 보유 값 변경에 `EvalReport.gate_result.passed=true`·ADR 링크 부재(CI 전용, 런타임 아님) | CI 실패 | — | `gate: leaf_max_tokens changed without passing EvalRun` |
 
-`POST /v1/profiles/validate` 실패 응답 예시(규칙 10·11·1 동시 위반):
+`POST /v1/profiles/validate` 실패 응답 예시(규칙 10·11·1 동시 위반이면 `errors[]`에 항목 3개가 쌓인다 — 규칙 10·11의 `detail`은 §6.2 표의 "`detail`(예)" 문구와 같은 문자열이므로 반복하지 않고, 아래는 그중 규칙 1 항목 하나를 전체 모양대로 보인다):
 
 ```json
 {
@@ -885,22 +799,6 @@ S-5~S-9는 프로파일 해소 후에 실행되므로 `RAG_PROFILE__PATH`의 파
   "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
   "errors": [
     {
-      "code": "profile.invalid",
-      "type": "urn:rag:error:profile.invalid",
-      "retryable": false,
-      "stage": "loader",
-      "detail": "rule 10: parse.router missing key(s): rtf, odt",
-      "location": {"pointer": "/ingest/parse/router"}
-    },
-    {
-      "code": "profile.invalid",
-      "type": "urn:rag:error:profile.invalid",
-      "retryable": false,
-      "stage": "loader",
-      "detail": "rule 11: hydrate.top_n 50 < max(rerank.top_n_in 100, pack.k_max 20)",
-      "location": {"pointer": "/query/hydrate/top_n"}
-    },
-    {
       "code": "plugin.license_denied",
       "type": "urn:rag:error:plugin.license_denied",
       "retryable": false,
@@ -913,9 +811,7 @@ S-5~S-9는 프로파일 해소 후에 실행되므로 `RAG_PROFILE__PATH`의 파
 }
 ```
 
-성공 응답은 `{profile_hash, resolved: Profile, diff_from_current?: [...]}`이며 형식은 [관리 API](../05-api/04-management-api.md)가 확정한다. CLI 종료 코드(제안): 0 통과, 2 `profile.invalid`·`Settings` 실패, 3 `plugin.license_denied`/`plugin.capability_unsupported`, 4 `contract.violation`(스키마 위반).
-
----
+성공 응답은 `{profile_hash, resolved: Profile, diff_from_current?: [...]}`이며 형식은 [관리 API](../05-api/04-management-api.md)가 확정한다. CLI 종료 코드(정본 10-development/02 §CLI, 이 문서는 인용만): 0 통과, 2 `profile.invalid`·`Settings` 실패, 3 `plugin.license_denied`/`plugin.capability_unsupported`, 4 `contract.violation`(스키마 위반).
 
 ## 7. 무재기동 반영(핫 리로드) 가능 항목
 
@@ -935,8 +831,6 @@ S-5~S-9는 프로파일 해소 후에 실행되므로 `RAG_PROFILE__PATH`의 파
 | Cedar 정책 파일, 플러그인 설치·업그레이드, 모델 가중치(`models.lock`) | `RAG_AUTH__CEDAR_POLICY_PATH` 내용, 이미지·init 컨테이너 | **재기동**(파일 감시 없음). `policy_version`은 프로파일 `version` 증가로 추적; 출력에 영향 주는 플러그인 변경은 지문 변경 → `stage_key` 미스로 자연 재계산 | 재기동 |
 
 프로파일 교체 시 워커의 플러그인 인스턴스 처리(`close → init` 대 프로세스 재기동)는 [플러그인 아키텍처](../02-architecture/05-plugin-architecture.md) 미해결 이슈 9가 오케스트레이션 문서에 위임한 항목이며, 확정 전까지는 `profile_hash`당 인스턴스를 새로 만들고 이전 해시 인스턴스는 참조가 끊기면 `close()`한다.
-
----
 
 ## 8. 설정 변경 영향 표(재색인 필요 여부)
 
@@ -961,8 +855,6 @@ S-5~S-9는 프로파일 해소 후에 실행되므로 `RAG_PROFILE__PATH`의 파
 
 재색인 실행·롤백 절차와 비용 추정은 [갱신·삭제·재색인](../04-pipelines/19-update-delete-and-reindexing.md) §5, 판정 근거는 [ADR-0031](../06-adr/0031-profile-schema-extends-and-quality-gates.md)·[ADR-0026](../06-adr/0026-index-commit-generation-saga-and-ledger.md)·[ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md)이다.
 
----
-
 ## 결정 사항 요약
 
 - **결정:** 설정은 `Settings`(환경 변수 `RAG_*`, 배포)와 `Profile`(YAML, 품질)의 두 층이며 환경 변수가 프로파일 값을 덮어쓰는 경로는 없다. 작성 지시의 "프로파일 < 환경 변수 < 런타임 API" 단일 사다리는 채택하지 않고, 층별 우선순위(코드 기본값 < `.env` < OS 환경 변수 < CLI 인자 / `base` < `extends` 체인 < 운영자 YAML / 프로파일 < 테넌트 정책 < 컬렉션 정책 < 요청 필드, 마지막 층은 좁히기만)를 둔다([ADR-0031](../06-adr/0031-profile-schema-extends-and-quality-gates.md)).
@@ -972,6 +864,7 @@ S-5~S-9는 프로파일 해소 후에 실행되므로 `RAG_PROFILE__PATH`의 파
 - **결정:** `Settings` 검증은 기동 시 fail-closed(S-1~S-9, 종료 코드 2)이고 프로파일 검증은 바이블 §7.4 12규칙 + 15 불변식 `P-1`~`P-13`·`E-1`을 단일 검증기로 실행하며(`detail`의 규칙 번호는 15 표 번호 그대로) 위반은 `profile.invalid`·`plugin.license_denied`·`plugin.capability_unsupported`의 `ProblemDetails.errors[].location.pointer`로 보고한다. 새 오류 코드는 만들지 않는다([ADR-0018](../06-adr/0018-api-rest-sse-mcp-no-grpc-rfc9457.md)).
 - **결정:** `Settings`는 핫 리로드하지 않는다. 컬렉션 바인딩·정책·ACL·사전·구독·비밀 회전·JWKS는 이벤트·TTL 경로로 무재기동 반영되고, 재색인 범위는 바뀐 YAML 경로가 정한다(`query.*`·`runtime.*`·`security.rate_limit` 등은 바인딩 교체만, `ingest.*`는 §8 표의 시작 스테이지부터)([ADR-0026](../06-adr/0026-index-commit-generation-saga-and-ledger.md), [ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md)).
 - **결정:** `lite`의 `ingest.index.commit.flip_order`는 렉시컬 백엔드가 없으므로 `[vector]`다(바이블 §7.2 "동일" 표기의 patch 제안, 미해결 이슈 5).
+- **결정:** 브리프 §9.11 분량 규약(비계약 문서 250~900행) 준수를 위해 옛 §2.2~§2.16(16개 하위 절, 각자 `이름·타입·기본·설명·민감·지위` 표)을 그룹 열이 있는 표 하나(§2.2)로 합쳤다. 각 행의 정보는 그대로이고 그룹 열이 옛 절 번호·이름(예 "2.6 VALKEY")을 보존한다. §2.17~§2.19는 다른 문서가 그 번호를 인용하므로 번호를 바꾸지 않았다(§2.3~§2.16 사이 번호 공백은 의도된 것). §6.2 검증 실패 JSON 예시도 §6.2 표와 중복되는 나머지 두 오류 항목을 생략했다.
 - **결정:** 내장 `lite`는 `query.rerank: {enabled: false}`로 배포한다(바이블 §7.1 `lite` 열 "TEI CPU 또는 생략", 15 §3.10 "또는 `enabled: false`"). 바이블 §7.2의 `lite` 리랭커 값(30→10 / 512 / 700ms)은 §4.1의 운영자 오버라이드 프로파일 `lite-rerank`(또는 같은 ID 대체본)로 제공하고, S-6의 fail-closed 규칙에는 예외를 두지 않는다. `standard`는 깊은 병합으로 상속되는 `enabled: false`를 덮기 위해 `enabled: true`를 명시한다(미해결 이슈 15; [ADR-0031](../06-adr/0031-profile-schema-extends-and-quality-gates.md)).
 
 ## 미해결 이슈
@@ -988,7 +881,7 @@ S-5~S-9는 프로파일 해소 후에 실행되므로 `RAG_PROFILE__PATH`의 파
 10. **재색인 파라미터의 프로파일 위치.** `ingest.index.reindex_rollback_window`(24h)·`reindex_max_share`(0.75)를 이 문서는 `ingest.index`의 선택 키(열린 객체)로 두었다(04-pipelines/19 미해결 10, 06 미해결 4). `profile.schema.json`에 명시 등재(minor)와 `runtime` 소속 여부는 03-contracts/15가 확정한다. 보존 기간(`outbox` 7일, `jobs`·`job_events` 90일, GC 유예 1h; 03 데이터 흐름 미해결 17)도 같은 ADR에서 `runtime.retention{…}`(N)으로 제안한다.
 11. **역할별 DSN 주입 규칙.** `RAG_PG__DSN_OWNER`는 마이그레이션 훅 Job에만, `RAG_PG__DSN_MAINTENANCE`는 `relay`·`maintenance` 워커에만 주입한다는 규칙을 Helm 템플릿과 컴포넌트 아키텍처 §5.2 `PgSettings`에 반영(01-deploy 미해결 3).
 12. **클라이언트 SDK 환경 변수.** `RAG_PLATFORM_BASE_URL`·`RAG_PLATFORM_API_KEY`·`RAG_PLATFORM_TOKEN`·`RAG_PLATFORM_ACCEPT_LANGUAGE`([클라이언트 SDK](../05-api/06-client-sdks.md) 제안)는 서버 접두 `RAG_`와 겹치지 않도록 `RAG_PLATFORM_` 접두를 유지한다. 서버 `check_unknown_env`는 `RAG_PLATFORM_` 접두를 예외로 둔다(같은 컨테이너에서 CLI가 서버에 접속하는 경우).
-13. **프로파일 예시의 제안 키.** `korean-gov`의 `vertical_fallback`·`airgapped`·`user_dictionary_required`·`reject_entities`, `premium`의 `multivector.quantization`·`reranker.vllm_sequence_classifier`·`response_schema: cohere`(vLLM)는 플러그인 `config_schema` 또는 스키마 확장 제안이다(05 미해결 6). 확정 전 `rag profile validate`는 이 키를 해당 플러그인 `config_schema`로 검증하며, 플러그인이 없는 환경에서는 `profile.invalid`가 된다.
+13. **프로파일 예시의 제안 키.** `korean-gov`의 `vertical_fallback`·`airgapped`·`user_dictionary_required`, `premium`의 `multivector.quantization`·`reranker.vllm_sequence_classifier`·`response_schema: cohere`(vLLM)는 플러그인 `config_schema` 또는 스키마 확장 제안이다(05 미해결 6). `reject_entities`는 해소(v1.3, AM-43) — 바이블 §7.3 1.3.0에 등재되어 더 이상 제안이 아니다. 확정 전 `rag profile validate`는 남은 제안 키를 해당 플러그인 `config_schema`로 검증하며, 플러그인이 없는 환경에서는 `profile.invalid`가 된다.
 14. **PostgreSQL 최소 버전.** [배포 가이드](01-deployment-guide.md) §2가 "원장 최소 버전은 설정 레퍼런스 확정"으로 위임했다. Temporal 요구(12+)와 RLS·`pg_partman`·`SET LOCAL` 요건만으로는 상한이 없으므로 16 이상을 초안 권고로 두고 04-storage·10-development/02에서 확정한다(이 문서는 버전을 단정하지 않는다).
 15. **`lite` 리랭커 기본 끔과 `standard`의 `enabled: true`.** 내장 `lite`가 `rerank: {enabled: false}`이므로 `extends` 깊은 병합상 `standard`(따라서 `premium`·`korean-gov`)는 `rerank.enabled: true`를 명시해야 한다. 바이블 §7.3 `standard` YAML에는 `enabled` 키가 없어 이 문서 §4.2가 선택 키를 하나 더 갖는다 — 바이블 §7.3에 `enabled: true`를 추가하는 patch, 또는 `RerankConfig.enabled` 생략을 "부모 값과 무관하게 켬"으로 해석하는 병합 규칙(15 §3.8, ADR-0031 minor) 중 하나로 확정한다. `lite-rerank` 오버라이드 프로파일을 내장 목록에 넣을지(바이블 §7 내장 5종 → 6종, minor)도 미해결 이슈 2의 `lite-local`과 함께 결정한다.
 

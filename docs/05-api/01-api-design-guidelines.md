@@ -2,7 +2,7 @@
 title: API 설계 가이드라인
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.2.0
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -88,7 +88,7 @@ flowchart LR
 
 ### 3.1 경로 규약
 
-**결정:** 경로는 `/v1/{plural-kebab}` 컬렉션 자원, `/v1/{plural-kebab}/{snake_id}` 단일 자원, 액션은 단일 자원 아래 **POST 하위 경로**(`/v1/jobs/{job_id}/cancel`), 하위 자원은 한 단계만(`/v1/collections/{collection_id}/dictionary`)이다. 경로 변수는 `{snake_id}`(`{job_id}`, `{document_id}`, `{collection_id}`, `{profile_id}`, `{tenant_id}`, `{subscription_id}`, `{run_id}`), 쿼리 파라미터는 snake_case다(바이블 §6.7, [ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md)). 린트 정규식은 ADR-0036 준수 표 7의 `^/v1/[a-z-]+(/\{[a-z_]+_id\}(/[a-z-]+)?)*$`이며, 이 문서 게시로 CI 경고를 **실패로 승격**한다([ADR-0018](../06-adr/0018-api-rest-sse-mcp-no-grpc-rfc9457.md) 준수 표 7). 예외 경로는 바이블 §14가 등재한 `/healthz`, `/readyz`, `/metrics`, `/.well-known/oauth-protected-resource`, `/mcp`, 그리고 `/v1/profiles/validate`(액션이지만 컬렉션 자원 아래 — 프로파일 인스턴스 없이 YAML을 검증하므로 컬렉션 수준 액션으로 허용)와 `/v1/ingest`·`/v1/ingest/batch`(단수형 동사 명사 — 바이블 §14 정본 그대로)다. 이 둘 외의 새 예외는 만들지 않는다.
+**결정:** 경로는 `/v1/{plural-kebab}` 컬렉션 자원, `/v1/{plural-kebab}/{snake_id}` 단일 자원, 액션은 단일 자원 아래 **POST 하위 경로**(`/v1/jobs/{job_id}/cancel`), 하위 자원은 한 단계만(`/v1/collections/{collection_id}/dictionary`)이다. 경로 변수는 `{snake_id}`(`{job_id}`, `{document_id}`, `{collection_id}`, `{profile_id}`, `{tenant_id}`, `{subscription_id}`, `{run_id}`), 쿼리 파라미터는 snake_case다(바이블 §6.7, [ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md)). 린트 정규식은 ADR-0036 준수 표 7의 `^/v1/[a-z-]+(/\{[a-z_]+_id\}(/[a-z-]+)?)*$`이며, 이 문서 게시로 CI 경고를 **실패로 승격**한다([ADR-0018](../06-adr/0018-api-rest-sse-mcp-no-grpc-rfc9457.md) 준수 표 7). 예외 경로는 바이블 §14가 등재한 `/healthz`, `/readyz`, `/metrics`, `/.well-known/oauth-protected-resource`, `/mcp`, 그리고 `/v1/profiles/validate`(액션이지만 컬렉션 자원 아래 — 프로파일 인스턴스 없이 YAML을 검증하므로 컬렉션 수준 액션으로 허용)와 `/v1/ingest`·`/v1/ingest/batch`(단수형 동사 명사 — 바이블 §14 정본 그대로)다. 단일 인스턴스 자원 예외로 `GET /v1/version`(단수형, 바이블 §6.7·§14 1.3.0)을 등재한다 — 플랫폼에 버전 인스턴스는 하나뿐이라 복수형이 의미가 없다. `/v1/capacity`(관리 API 제안, AM-53 보류)는 채택 전이므로 이 예외 목록에 넣지 않는다. 이 외의 새 예외는 만들지 않는다.
 
 | 규칙 | 예 | 금지 예 |
 |------|----|---------|
@@ -109,7 +109,7 @@ flowchart LR
 | 요청 본문 | `tenant_id`·`SecurityContext` 하위 키(`principals`, `as_of` 등)가 오면 거부(E1·E6; [계약 개요](../03-contracts/00-contract-overview.md) §8.2 `readOnly`) | 채택 전 **400** `contract.violation`(`errors[].location.pointer` = `/tenant_id` 등 해당 키) → [에러 모델](../03-contracts/13-error-model.md) §3.3 `auth.tenant_mismatch` 채택 후 **422** `auth.tenant_mismatch`(바이블 §10.3 E1의 목표 상태) |
 | 경로 `/v1/tenants/{tenant_id}/…` | 테넌트 **자체**를 자원으로 다루는 유일한 경로(바이블 §14 `usage`·`policies`). `{tenant_id}`는 토큰의 `tenant_id`와 같아야 한다 | 403 `auth.forbidden`(fail-closed, 존재 비노출; E2) |
 | 쿼리 파라미터 | `tenant_id` 파라미터는 어떤 엔드포인트에도 없다 | 400 `contract.violation`(미지 파라미터, §7.4) |
-| 교차 테넌트 관리(테넌트 생성·플랫폼 운영자) | v1 API 표면에 없다(바이블 §14에 `POST /v1/tenants` 없음). `rag` CLI·원장 마이그레이션 경로로만 수행한다 | — |
+| 교차 테넌트 관리(테넌트 생성·플랫폼 운영자) | `GET/POST /v1/tenants`·`GET/PATCH /v1/tenants/{tenant_id}`가 v1 API 표면에 있다(바이블 §14 1.3.0, AM-39; [관리 API](04-management-api.md) §2). `rag` CLI는 같은 API를 호출하는 래퍼이며 별도 경로가 아니다(트리아지 §4 #3). `tier` 변경(승격)만은 이 표면에 없고 `tier.promotion.v1` 잡 전용이다 | — |
 
 본문 테넌트 지정의 목표 상태는 바이블 §10.3 E1·[계약 개요](../03-contracts/00-contract-overview.md) §4.5가 정한 **422**다. 그러나 바이블 §5.7 카탈로그에 422로 매핑되는 기존 코드가 없고(`contract.violation`은 400/500만), [에러 모델](../03-contracts/13-error-model.md) 불변식 I7(코드별 상태 일치)에 따라 `contract.violation`을 422로 낼 수 없으므로, `auth.tenant_mismatch`(422) 채택 전까지는 에러 모델 §3.3의 "채택 전 대안"인 400 `contract.violation`으로 응답하고 `detail`의 첫 토큰에 목표 의미를 적는다(`"tenant mismatch: /tenant_id"`; §9.2 규칙). 채택과 동시에 422로 전환하며, 이 간극이 §미해결 이슈 2의 조기 채택 요청 사유다.
 
@@ -203,7 +203,7 @@ flowchart LR
 | 재생 응답 | 상태 200, 본문은 원 202/201 응답과 내용 동일, `Location` 헤더 동일. 자원의 현재 상태는 재생 본문이 아니라 `status_url`에서 읽는다 |
 | 보존 | `idempotency_keys.expires_at = 접수 + 24h`(초안 목표; Valkey `idem:` TTL 24h와 일치, 바이블 §13.4). 만료 후 같은 키는 새 요청이다 |
 | 실패한 원 요청 | 4xx로 거부된 요청은 키를 소비하지 않는다(트랜잭션 롤백). 5xx는 커밋 여부에 따라 — 커밋 전 실패면 키 미소비, 커밋 후 응답 전송 실패면 재전송이 200 재생이다 |
-| 배치 | 키 하나가 `POST /v1/ingest/batch` 전체를 덮는다([수집 요청 계약](../03-contracts/01-ingest-request.md) §3·§4) |
+| 배치 | 키 하나가 `POST /v1/ingest/batch` 전체를 덮는다([수집 요청 계약](../03-contracts/01-ingest-request.md) §3·§4). 재생 응답은 `idempotency_keys.job_ids`(배치 자식 잡 ID 배열, 바이블 §13.1 1.3.0)로 원 `IngestBatchAccepted.jobs[]`를 재현하고, 배치 자식 잡의 `jobs.idempotency_key`는 NULL을 허용한다(배치 키는 `idempotency_keys`에만 있다; AM-44) |
 
 기각 대안: 모든 쓰기에 필수 — SDK 없는 curl 사용성을 해치고, 자원 생성 중복은 정합성 문제가 아니다. 응답 전체를 Valkey에만 저장 — Valkey 장애가 정확성에 관여한다(바이블 §2.3 Valkey 행 위반).
 
@@ -290,6 +290,7 @@ flowchart LR
 - 202·201 응답은 `Location` 헤더에 상태 자원(`status_url`) 또는 생성 자원의 절대 URL을 싣는다. `status_url`·`events_url`은 **절대 URL**이며 인그레스 외부 호스트 기준이다(`RAG_API__PUBLIC_BASE_URL`, 이름은 [구성 참조](../09-operations/02-configuration-reference.md)).
 - 요청 본문도 계약 인스턴스다: `IngestRequest`·`QueryRequest`는 `schema_version`(Y)을 포함해 보내고, 서버 발급 필드(`request_id`, `query_id`)를 포함하면 400이다(`readOnly`; [수집 요청 계약](../03-contracts/01-ingest-request.md) V6).
 - 성공 응답에 `warnings[]`·`degraded[]`가 비어 있지 않아도 상태는 200이다(품질 삼중항은 오류가 아니다, 바이블 §4.1).
+- **결정:** 관리 API 응답 객체(`TenantPolicies`·`TenantUsage`·`CollectionCreateRequest`·`ReindexEstimate`·`CollectionStatsView`·`DictionaryReplaceResult`·`ProfileSummary`·`ProfileValidationResult`·`PluginCapabilitiesView`·`PluginHealth`·`SchemaDescriptor`·`ApiKey`·`VersionInfo`·`CapacityView`·`Document` 등)는 위 셋 어디에도 속하지 않는 **API 전용 뷰**다 — 계약 인벤토리·`schemas/`·`GET /v1/schemas` 게시 대상이 아니며 `05-api/openapi.yaml` `components`에만 정의한다. 단일 출처는 `src/rag_platform/api/`의 Pydantic 모델이고, 계약 타입을 담을 때는 `schemas/`를 `$ref`로 재사용한다(바이블 §5.1 1.3.0, AM-02, FR-API-04).
 
 ```json
 {
@@ -316,6 +317,7 @@ flowchart LR
 | 헤더 | 401 `WWW-Authenticate`, 429 `RateLimit`·`RateLimit-Policy`·`Retry-After`, 503 `Retry-After`(정수 초), 지역화 응답 `Content-Language` + `Vary: Accept-Language` |
 | 콘텐츠 금지 | `detail`에 문서 본문·질의 텍스트·`source_uri`·주체 문자열·비밀을 넣지 않는다([에러 모델](../03-contracts/13-error-model.md) §9·§11) |
 | 인그레스 오류 | 인그레스가 내는 413·502·504도 `application/problem+json` 본문으로 맞춘다(커스텀 오류 페이지; [배포 가이드](../09-operations/01-deployment-guide.md), 확인 필요) |
+| 선택 확장 멤버 | `retry_after`(integer, 초 — `Retry-After` 헤더의 본문 사본), `request_id`(string(ulid))는 바이블 §5.3 1.3.0 가산 선택 필드다(AM-28). `instance`는 `string(uri-reference)`(RFC 9457 §3.1.5, 상대 경로 허용) |
 
 ### 9.2 상태 코드 사용 원칙
 
@@ -323,23 +325,24 @@ flowchart LR
 |------|------|----------------|------|
 | 200 | 조회·계산·PATCH·PUT 성공, 멱등 재생 | — | 저하(`degraded[]`)·잡 실패(`JobStatus.state=failed`)도 200 |
 | 201 | 동기 자원 생성 | — | `Location` |
-| 202 | 잡 접수 | — | `Location: status_url`, 본문 `IngestAccepted` 또는 `JobStatus` |
+| 202 | 잡 접수(잠금 ACL 접수 포함 — 거부가 아니라 경고 `Warning{code: contract.acl_deny_all}`을 본문에 싣는다; 바이블 §5.7 1.3.0, AM-17·AM-36, [수집 API](02-ingestion-api.md) §4) | — | `Location: status_url`, 본문 `IngestAccepted` 또는 `JobStatus` |
 | 204 | 동기 삭제 | — | 본문 없음 |
 | 304 | `If-None-Match` 일치 | — | `GET /v1/jobs/{job_id}`, `GET /v1/schemas/{name}` |
 | 400 | 요청 계약 위반(본문 `tenant_id`·`readOnly` 보안 필드 포함 — `auth.tenant_mismatch` 채택 전, §3.2), 렌더 사전 검증, 잘못된 커서·파라미터, 키 누락 | `contract.violation`, `plan.security_context_missing`, `render.mixed_blocks`, `render.citations_with_structured_output`, `render.empty_pack` | [에러 모델](../03-contracts/13-error-model.md) §7.1 |
 | 401 | 미인증 | `auth.unauthenticated` | `WWW-Authenticate` |
 | 403 | 인가 거부·존재 비노출 | `auth.forbidden`, `plan.collection_forbidden` | 재시도 금지 |
-| 404 | 권한 있는 스코프 안의 하위 자원 부재 | **채택 코드 없음** → `api.not_found` 채택 전 400 `contract.violation` + `detail`([에러 모델](../03-contracts/13-error-model.md) §7.1) | §미해결 이슈 2 |
+| 403 | 테넌트 할당량(`quotas.documents_max`·`storage_bytes_max`) 초과 | `api.quota_exceeded`(바이블 §5.7 1.3.0, AM-39·트리아지 미해결 4 — [멀티테넌시·보안 아키텍처](../02-architecture/07-multi-tenancy-and-security-architecture.md) §10과 같은 값. QPS 초과는 이 코드를 쓰지 않고 429 `api.rate_limited`를 그대로 쓴다) | — |
+| 404 | 권한 있는 스코프 안의 하위 자원 부재 | `api.not_found`(바이블 §5.7 1.3.0 가산, AM-36 — 더는 채택 대기가 아니다) | — |
 | 409 | 멱등 키 처리 중, 잡 상태 충돌 | `api.idempotency_conflict`; `api.job_state_conflict` 채택 전 400 | |
 | 410 | `Sunset` 지난 경로 major, 삭제·정리된 문서 본문 | **채택 코드 없음**(`api.gone` 제안) → 채택 전 400 `contract.violation` | §9.4, §16 |
 | 412 | `If-Match` 불일치 | **채택 코드 없음**(`api.precondition_failed` 제안) → 채택 전 400 | §3.4 |
 | 413 / 415 | 인라인 한계 초과 / `Content-Type` 불일치 | `api.payload_too_large` / `api.unsupported_media_type` 채택 전 400 `contract.violation` | §20 |
 | 422 | 의미 검증 실패 | `auth.too_many_principals`, `api.idempotency_payload_mismatch`, `plan.filter_field_forbidden`, `profile.invalid`, `plugin.license_denied`, `plugin.capability_unsupported`, `pack.tokenizer_mismatch`(요청 유도) | 본문 `tenant_id`는 `auth.tenant_mismatch`(422) 채택 후 이 행으로 이동한다(§3.2); 채택 전에는 400 행 |
 | 429 | 한도 초과 | `api.rate_limited` | §11 |
-| 500 | 결함·내부 계약 위반 | `contract.violation`(산출물), `fuse.k_missing` 등 | |
+| 500 | 결함·내부 계약 위반, 리트리버 어댑터의 보안 컨텍스트 누락(서버 측 계약 위반) | `contract.violation`(산출물), `fuse.k_missing` 등; `retrieve.security_context_missing`(바이블 §5.7·§10.3 E7 1.3.0, AM-25 — 미분류 500이 아니라 이 카탈로그 코드로 실패. 클라이언트 원인은 `plan.security_context_missing` 400이 먼저 차단하므로 이 코드가 응답에 나타나면 미들웨어 결함이다) | |
 | 503 | 일시 불가 | `retrieve.unavailable`; 오케스트레이터·의존 불가는 `api.orchestrator_unavailable`·`api.dependency_unavailable` 채택 전 코드 없음 | `Retry-After` |
 
-404·409(잡 상태)·410·412·413·415·503(오케스트레이터)·본문 `tenant_id`(422 목표, 바이블 §10.3 E1)의 전용 코드가 바이블 §5.7에 없어 채택 전까지 400 `contract.violation`으로 응답하는 것은 [에러 모델](../03-contracts/13-error-model.md) §3.3·§7.1의 규칙을 그대로 따른 것이다. 이 문서는 그 목록에 `api.gone`(410)·`api.precondition_failed`(412)를 더해 **공동 제안**하고 조기 채택을 요청한다(§미해결 이슈 2). 상태 코드가 임시로 400인 동안에도 `detail`의 첫 토큰은 목표 의미를 적는다(`"not found: /v1/jobs/{job_id}"`, `"gone: document deleted"`).
+409(잡 상태)·410·412·413·415·503(오케스트레이터)·본문 `tenant_id`(422 목표, 바이블 §10.3 E1)의 전용 코드가 바이블 §5.7에 없어 채택 전까지 400 `contract.violation`으로 응답하는 것은 [에러 모델](../03-contracts/13-error-model.md) §3.3·§7.1의 규칙을 그대로 따른 것이다(404는 `api.not_found`가 바이블 1.3.0에서 채택되어 이 임시 규칙 밖이다, AM-36). 이 문서는 그 목록에 `api.gone`(410)·`api.precondition_failed`(412)를 더해 **공동 제안**하고 조기 채택을 요청한다(§미해결 이슈 2). 상태 코드가 임시로 400인 동안에도 `detail`의 첫 토큰은 목표 의미를 적는다(`"not found: /v1/jobs/{job_id}"`, `"gone: document deleted"`).
 
 ### 9.3 엔드포인트별 성공 상태·본문·규약(바이블 §14 표면 전체)
 
@@ -365,9 +368,10 @@ flowchart LR
 | POST | `/v1/answer` | 200 | 레퍼런스 응답([리트리벌 API](03-retrieval-api.md)) | 무시 | `query` | `answer` |
 | POST | `/v1/feedback` | 201 | `FeedbackEvent` | 선택 | `query` | `submit_feedback` |
 | GET / POST | `/v1/collections` | 200 / 201 | `{items: CollectionSpec[], next_cursor}` / `CollectionSpec` | — / 선택 | `admin` | `list_collections` / `create_collection` |
-| GET / PATCH / DELETE | `/v1/collections/{collection_id}` | 200 / 200 / 202(초안) | `CollectionSpec` / `CollectionSpec`(재색인 잡 유발 시 `Link: </v1/jobs/{job_id}>; rel="related"`) / `JobStatus` | — / 무시 / 선택 | `admin` | `get_collection` / `update_collection` / `delete_collection` |
+| GET / PATCH / DELETE | `/v1/collections/{collection_id}` | 200 / 200 / 202 | `CollectionSpec` / `CollectionSpec`(재색인 잡 유발 시 `Link: </v1/jobs/{job_id}>; rel="related"`) / `JobStatus(kind=delete_collection)`(바이블 §5.7·§11.2 1.3.0, AM-37) | — / 무시 / 선택 | `admin` | `get_collection` / `update_collection` / `delete_collection` |
 | POST | `/v1/collections/{collection_id}/reindex` | 202 | `JobStatus`(`kind=reindex_collection`) | 선택(권장) | `admin` | `reindex_collection` |
 | GET | `/v1/collections/{collection_id}/stats` | 200 | 통계 객체(`CollectionSpec.stats` + 세대) | — | `admin` | `get_collection_stats` |
+| POST | `/v1/collections/{collection_id}/consistency-check` | 202 | `JobStatus(kind=consistency_check)` | 선택 | `admin` | `check_collection_consistency` |
 | GET / PUT | `/v1/collections/{collection_id}/dictionary` | 200 / 200 | `{items: UserDictEntry[], next_cursor}` / 교체 결과(`dictionary_hash`, 재색인 제안) | — / 무시 | `admin` | `list_dictionary_entries` / `replace_dictionary` |
 | GET | `/v1/profiles`, `/v1/profiles/{profile_id}` | 200 | `{items, next_cursor}` / `Profile`(해소 결과) | — | `admin` | `list_profiles` / `get_profile` |
 | POST | `/v1/profiles/validate` | 200 / 422 | 검증 결과(`profile_hash`, 해소 결과) / `ProblemDetails(profile.invalid)` | 무시 | `admin` | `validate_profile` |
@@ -396,7 +400,7 @@ flowchart LR
 |------|-----------------------------------|------------------------------|-----------|
 | 삭제 중 | 200, 메타에 삭제 진행 상태(필드는 [관리 API](04-management-api.md); [저장소 아키텍처](../02-architecture/04-storage-architecture.md) `status`·`deleted_at` 제안과 정합) | 200(아직 검색 가능한 이전 세대 그대로) | 제외 |
 | 툼스톤 | 200, 삭제 상태·`deleted_at` 노출(감사·재수집 판단용) | 410(`api.gone` 채택 전 400 `contract.violation`, `detail="gone: document deleted"`) | 제외 |
-| 정리 후(`documents` 행 삭제) | 404(`api.not_found` 채택 전 400) | 동일 | 제외 |
+| 정리 후(`documents` 행 삭제) | 404 `api.not_found`(바이블 §5.7 1.3.0, AM-36) | 동일 | 제외 |
 
 근거: 툼스톤을 404로 감추면 클라이언트가 "삭제됨"과 "존재하지 않음"을 구분할 수 없어 재수집·감사 판단이 어렵고, 비기능 요구사항의 "조회 API가 삭제 상태를 반환"([비기능 요구사항](../01-requirements/02-non-functional-requirements.md) 삭제 SLA 행)과 어긋난다. 반대로 본문(`content`)은 정리 전이라도 반환하지 않는다(삭제 의도 존중).
 
@@ -816,7 +820,7 @@ structlog JSON(바이블 §6.5) 요청 로그 1행/요청: `event="http.request"
 ## 미해결 이슈
 
 1. **ADR-0018 개정(바이블 §3.3 슬롯 재사용)**: §4.2 `/v2` 개방 규칙, §6 `Idempotency-Key` 선택 확대 범위, §16 최소 유예 180일·`Link` 규약, §5.1 API 키 `Bearer` 재사용을 ADR-0018 "결정" 절에 반영한다([스키마 버전과 호환성](../03-contracts/14-schema-versioning-and-compatibility.md) 미해결 이슈 9와 공동). 바이블 §6.7 헤더 목록에는 새 헤더가 없어 개정이 필요 없다.
-2. **오류 코드 조기 채택 요청(바이블 §5.7·`$defs/ErrorCodeCatalog` minor; [에러 모델](../03-contracts/13-error-model.md) 미해결 이슈 3·[계약 개요](../03-contracts/00-contract-overview.md) U-3과 공동)**: 이 문서의 상태 코드 표와 규칙(§3.2·§4.1·§9.2·§9.3·§9.4)은 `api.not_found`(404), `api.job_state_conflict`(409), `api.payload_too_large`(413), `api.unsupported_media_type`(415), `api.idempotency_key_required`(400), `api.cursor_invalid`(400), `api.orchestrator_unavailable`·`api.dependency_unavailable`(503), `api.internal_error`(500), `auth.tenant_mismatch`(422; 바이블 §10.3 E1이 정한 422를 실현하는 유일한 경로 — 채택 전 400 임시 응답은 E1의 상태와 어긋난다), `contract.version_unsupported`(400; §4.1 다른 경로 major의 `schema_version`)에 의존하며, 여기에 `api.gone`(410; 툼스톤 본문·`Sunset` 지난 경로)과 `api.precondition_failed`(412; `If-Match`)를 **추가 제안**한다. 채택 전 임시 400 응답은 클라이언트가 의미를 `detail` 첫 토큰으로 읽어야 하는 결함이다. 또한 `ErrorLocation.parameter`(N; 쿼리·경로 파라미터 이름)를 [계약 개요](../03-contracts/00-contract-overview.md) `$defs`에 제안한다(§7.4).
+2. **오류 코드 조기 채택 요청(바이블 §5.7·`$defs/ErrorCodeCatalog` minor; [에러 모델](../03-contracts/13-error-model.md) 미해결 이슈 3·[계약 개요](../03-contracts/00-contract-overview.md) U-3과 공동)**: `api.not_found`(404)는 바이블 1.3.0에서 채택되어 이 요청에서 **종결**한다(AM-36). 남은 이 문서의 상태 코드 표와 규칙(§3.2·§4.1·§9.2·§9.3·§9.4)은 `api.job_state_conflict`(409), `api.payload_too_large`(413), `api.unsupported_media_type`(415), `api.idempotency_key_required`(400), `api.cursor_invalid`(400), `api.orchestrator_unavailable`·`api.dependency_unavailable`(503), `api.internal_error`(500), `auth.tenant_mismatch`(422; 바이블 §10.3 E1이 정한 422를 실현하는 유일한 경로 — 채택 전 400 임시 응답은 E1의 상태와 어긋난다), `contract.version_unsupported`(400; §4.1 다른 경로 major의 `schema_version`)에 의존하며, 여기에 `api.gone`(410; 툼스톤 본문·`Sunset` 지난 경로)과 `api.precondition_failed`(412; `If-Match`)를 **추가 제안**한다. 채택 전 임시 400 응답은 클라이언트가 의미를 `detail` 첫 토큰으로 읽어야 하는 결함이다. 또한 `ErrorLocation.parameter`(N; 쿼리·경로 파라미터 이름)를 [계약 개요](../03-contracts/00-contract-overview.md) `$defs`에 제안한다(§7.4).
 3. **성공 응답의 상관 헤더**: `RAG-Request-Id`(응답, ULID) 도입 여부. 바이블 §6.7 헤더 목록 minor 개정이 필요하다. 채택 전에는 오류 본문 `request_id`와 클라이언트 `traceparent`로 상관한다(§14). W3C `traceresponse` 초안이 안정되면 그것을 우선 검토한다.
 4. **바이블 §12·§14 미등재 항목(제안)**: CLI `rag openapi export`, 런타임 `GET /v1/openapi.json`(§17.5), `/readyz` 본문 형식(§21.4), 설정 키 `RAG_API__CORS_ALLOWED_ORIGINS`·`RAG_API__PUBLIC_BASE_URL`·`RAG_API__TRUSTED_PROXIES`(§15·§8·§19). [구성 참조](../09-operations/02-configuration-reference.md)·[관리 API](04-management-api.md) 확정 후 바이블 patch/minor.
 5. **이진 표현(msgpack) 협상**: 바이블에 없다. [ADR-0018](../06-adr/0018-api-rest-sse-mcp-no-grpc-rfc9457.md) 재검토 조건(리트리벌 p95 직렬화 비율)과 같은 측정으로 정당화될 때 `application/vnd.rag.{kebab}+msgpack` 미디어 타입과 함께 ADR로 제안한다(§12.2). 그 전까지 자체 미디어 타입은 `ArtifactRef.media_type` 전용이다.
@@ -826,7 +830,7 @@ structlog JSON(바이블 §6.5) 요청 로그 1행/요청: `event="http.request"
 9. **API 키 형식**: 접두 `rag_ak_`(§5.1)는 제안이며 길이·엔트로피·해시 알고리즘·`prefix` 조회 컬럼은 [관리 API](04-management-api.md)와 07 문서 미해결 이슈 17에서 확정한다. 형식 판별(JWS vs 접두)이 깨지지 않는 한 이 문서의 결정은 유지된다.
 10. **인그레스 오류 본문 통일**: 인그레스가 내는 413·414·431·502·504를 `application/problem+json`으로 맞추는 방법([배포 가이드](../09-operations/01-deployment-guide.md); 13 문서 미해결 이슈 11)과, 그때 `code`에 채울 카탈로그 값(이슈 2의 채택에 종속).
 11. **`If-Match` 낙관적 동시성의 범위**: §3.4는 헤더 수용과 412 코드 제안만 한다. 어떤 PATCH·PUT에 `If-Match`를 **필수**로 할지(예 `PATCH …/acl`의 갱신 유실 방지)는 [관리 API](04-management-api.md)가 자원별로 정한다.
-12. **depends_on 대조 상태**: [수집 API](02-ingestion-api.md)·[리트리벌 API](03-retrieval-api.md)·[관리 API](04-management-api.md)·[MCP 서버](05-mcp-server.md)·[클라이언트 SDK](06-client-sdks.md)·[웹훅과 이벤트](07-webhooks-and-events.md)·[구성 참조](../09-operations/02-configuration-reference.md)·[배포 가이드](../09-operations/01-deployment-guide.md)는 작성 시점 미게시다(문서 맵 경로로만 링크; 바이블 미해결 이슈 11에 따라 링크 검사 CI는 경고). 게시 후 §9.3 표의 `operationId`·상태 코드와 각 문서의 정의를 대조한다.
+12. **depends_on 대조 상태**: [수집 API](02-ingestion-api.md)·[리트리벌 API](03-retrieval-api.md)·[관리 API](04-management-api.md)·[MCP 서버](05-mcp-server.md)·[클라이언트 SDK](06-client-sdks.md)·[웹훅과 이벤트](07-webhooks-and-events.md)·[구성 참조](../09-operations/02-configuration-reference.md)·[배포 가이드](../09-operations/01-deployment-guide.md)는 모두 게시되었다(문서 맵 경로, 브리프 §8). §9.3 표의 `operationId`·상태 코드와 각 문서의 정의를 대조하는 작업은 남아 있다(바이블 미해결 이슈 11에 따라 링크 검사 CI는 경고 유지).
 
 ## 참조
 

@@ -2,8 +2,8 @@
 title: 온라인 피드백 루프
 status: active
 owner: architecture
-version: 0.1.0
-last_updated: 2026-09-22
+version: 0.1.1
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - ../02-architecture/00-design-bible.md
@@ -153,7 +153,7 @@ flowchart TB
 | `tenant_id` | ulid | RLS `FORCE`(바이블 §13.1 규칙) |
 | `query_id`, `plan_id`, `profile_hash` | ulid / ulid / hex64 | 상관·변형 식별 |
 | `experiment_id`, `team_assignment` | text \| null | `QueryPlan` 값 복사(09 §7.2) |
-| `principal_hash` | hex64 | 질의 주체 `H("principal", tenant_id, subject)`(07 제안, 12 §6.4와 동일 값) — k-익명성 계수·세션 상관용. 주체 문자열은 저장하지 않는다 |
+| `principal_hash` | hex64 | 질의 주체 `H("principal", tenant_id, subject)`(바이블 §6.2 1.3.0 AM-40, 12 §6.4와 동일 값) — k-익명성 계수·세션 상관용. 주체 문자열은 저장하지 않는다 |
 | `items` | jsonb | `[{cite_id, chunk_id, record_id, document_id, collection_id, doc_version, level, item_kind, team?}]` — `team`은 인터리빙 모드에서만(§8.3). 본문·헤더·주체 없음 |
 | `sufficiency_status`, `confidence_tier` | enum | 암묵 신호 집계 입력(§2.2) |
 | `language`, `relaxed_applied_keys` | bcp47 / array<FilterableField> \| null | 팩 `render_hints.language`(11 §2.7)·`diagnostics.relaxed_applied_keys`(11 §2.8, N) 복사 — 질의 분포 드리프트 입력(§10.2). `QueryPlan`·감사 `data`에 없는 값이라 여기서만 집계할 수 있다(미해결 이슈 2) |
@@ -236,7 +236,7 @@ flowchart TB
 
 ### 3.6 이벤트 투영
 
-`cited → feedback.query.cited`, `rated`·`corrected → feedback.query.rated`(`data.kind`로 구분)이며 원장 INSERT와 같은 트랜잭션의 아웃박스 행이다(바이블 §5.7 카탈로그, 16 EF-20, [ADR-0017](../06-adr/0017-event-delivery-outbox-cloudevents-no-broker.md)). `data`는 12 소유 `FeedbackQueryEventData{feedback_id, query_id, pack_id, kind, cite_ids, rating(nullable)}`이고 `comment`·`experiment_id`·주체는 없다(E12). 웹훅 구독자(예: 앱 개발자의 품질 알림)는 이 이벤트로 "내 팩에 정정이 들어왔다"를 알 수 있고, 내용은 관리 API 조회(05-api/04 제안)로 얻는다.
+`cited → feedback.query.cited`, `rated`·`corrected → feedback.query.rated`(`data.kind`로 구분)이며 원장 INSERT와 같은 트랜잭션의 아웃박스 행이다(바이블 §5.7 카탈로그, 16 EF-20, [ADR-0017](../06-adr/0017-event-delivery-outbox-cloudevents-no-broker.md)). `data`는 12 소유 `FeedbackQueryEventData{feedback_id, query_id, pack_id, kind, cite_ids, rating(nullable)}`이고 `comment`·`experiment_id`·주체는 없다(E12). 웹훅 구독자(예: 앱 개발자의 품질 알림)는 이 이벤트로 "내 팩에 정정이 들어왔다"를 알 수 있고, 내용은 관리 API 조회(05-api/04 제안)로 얻는다. 아래 예시의 `source: "urn:rag:api"`는 바이블 §6.5 1.3.0 "CloudEvents `source` 컴포넌트 = §2.3 컨테이너 이름(`api`·`worker`)"(AM-13)과 일치한다 — 피드백은 `POST /v1/feedback`(api 프로세스)이 발행하므로 항상 `urn:rag:api`이고 `urn:rag:worker`는 쓰지 않는다.
 
 ```json
 {
@@ -318,7 +318,7 @@ sequenceDiagram
 
 | 규칙 | 값(초안 목표) | 근거 |
 |------|---------------|------|
-| 주체 표기 | 원 주체 대신 `principal_hash = H("principal", tenant_id, subject)`(07 제안, 12 §6.4). 질의 주체는 감사 `data.principal_hash`·`pack_citations.principal_hash`(§3.3)에서, 피드백 제출 주체는 `feedback_events.submitter_principal_hash`(§4, 내부 컬럼)에서 얻는다 | E13, 12 §6.4 |
+| 주체 표기 | 원 주체 대신 `principal_hash = H("principal", tenant_id, subject)`(바이블 §6.2 1.3.0 AM-40, 12 §6.4). 질의 주체는 감사 `data.principal_hash`·`pack_citations.principal_hash`(§3.3)에서, 피드백 제출 주체는 `feedback_events.submitter_principal_hash`(§4, 내부 컬럼)에서 얻는다. `query_hash`도 같은 바이블 §6.2 1.3.0 표(AM-40, `H("query", normalized_query)`)를 따르며 피드백 원장(`feedback_events`·`pack_citations`)과 감사 이벤트를 잇는 상관 키다 | E13, 12 §6.4 |
 | k-익명성(k-anonymity) | 대시보드·클러스터는 서로 다른 질의 주체 `principal_hash` **5개 이상**이 기여했을 때만 노출; 미만은 "소표본"으로 숨김 | 소수 사용자의 질의 패턴 식별 방지 |
 | 최소 집계 단위 | 시간 창 1h(운영 패널) / 1d(품질 패널) × 컬렉션 × `profile_hash`; 개별 질의는 드릴다운에서도 `query_id`·`query_hash`만 | 바이블 §6.5 저카디널리티 |
 | Prometheus 라벨 | `profile_id`·`outcome`·`kind`(제안) 등 저카디널리티만; `tenant_id`·`collection_id`·`experiment_id` 라벨 금지 → PostgreSQL 데이터소스로 분해 | 바이블 §6.5, 01 §12 |
@@ -369,7 +369,7 @@ flowchart LR
 | 후보 선정 | 7일 창에서 §2.2 실패 신호 또는 `rated ≤ 2`·`corrected`가 붙은 질의. 에이전트 루프(`cursor` 연속, `stop_signal.sufficient=false`)와 `route = no_retrieval`은 제외 |
 | 1차 키 | `query_hash` 정확 일치 — 같은 질의가 반복 실패(FAQ형 결손). 텍스트 없이 가능 |
 | 2차 키(옵트인) | `query_masked`를 컬렉션 임베딩 모델로 임베딩(`EmbeddingMode = query`, `qemb:` 캐시 재사용) → 응집 클러스터링(평균 연결, cosine ≥ 0.85 초안; 기존 `topics.jsonl`과의 중복 제거 임계 0.92(08/03 §5.2)보다 느슨) → 대표 질의 = 메도이드. 임베딩 벡터는 클러스터링 후 폐기(저장 금지) |
-| 3차 키 | `(collection_ids, filters.effective_hash, route)` — "특정 필터 조합에서 항상 0건"류의 구조 문제. 텍스트 없이 가능 |
+| 3차 키 | `(collection_ids, filters.effective_hash, route)` — "특정 필터 조합에서 항상 0건"류의 구조 문제. 텍스트 없이 가능. `filters.effective_hash`는 바이블 §6.2 1.3.0 정의(CR-17)를 따른다: 입력은 `QueryPlan.filters`에 저장된 계획 필터 트리(security + strategy + user + self_query)이고 `as_of`는 리터럴 대신 바인드 이름 `":as_of"`로 직렬화해 시각마다 해시가 바뀌지 않는다 |
 | 키 적용 방식 | 1·2·3차 키는 같은 후보 집합에 **독립** 적용한다(순차 아님). 한 질의는 `key_level`이 다른 여러 클러스터에 속할 수 있고, 라벨링 큐 등재는 2차(대표 질의 있음) > 1차 > 3차 순으로 하나만 쓴다. 2차 키의 메도이드 `query_hash`는 `failure_clusters.representative_query_hash`에 저장한다 |
 | 신호 혼합 | 클러스터마다 `signal_mix = {empty, low_confidence, requery, low_rating, corrected}` 계수 |
 | 노출·등재 임계 | `size ≥ 5`(서로 다른 `principal_hash` ≥ 5)면 대시보드; `size ≥ 20` 또는 `corrected ≥ 1`이면 라벨링 큐 자동 등재(§7). 값은 초안 목표이며 파일럿 후 프로파일 `eval` 절 운영 설정으로 이관(미해결 이슈 5) |
@@ -618,7 +618,7 @@ stateDiagram-v2
 
 | 변경 | 06 §2.5 모드 | 오프라인 게이트(정본) | 온라인 가드(이 문서 제안) |
 |------|---------------|------------------------|-----------------------------|
-| 청커·보강기·파서 지문(두 해시 불변) | 모드 B `rolling_canary`: 카나리 표본(B-1: 프로파일 `eval.datasets[]` 코퍼스 문서 + 무작위 1%, 최소 50) → 새 세대 적재·플립(B-2) → 게이트(B-3) → 나머지 롤링(B-4) → `profile_hash` 1회 갱신(B-5) | B-3 `eval.run.v1`(카나리 커밋) | 카나리 플립 뒤 24h(초안) 동안 **카나리 문서를 반환한 질의**(`pack_citations.items[].document_id ∈ carried_state.canary_ids`)의 결과 없음·저신뢰·부정 평점 비율이 §9.1 가드를 넘으면 B-4 롤링을 **보류**한다. 자동 롤백은 없다 — 세대 복원은 사가 보상이 아니라 재적재이므로 운영자 결정(06 B-3) |
+| 청커·보강기·파서 지문(두 해시 불변) | 모드 B `rolling_canary`(**미정(O-11):** 두 물리 해시 불변 변경의 재색인 모드 B 자체가 보류다 — AM-45로 ADR-0039+ 개정 전까지 자동 실행 불가이며 부모 잡은 `failed`, 이 표의 카나리 절차는 O-11 해결 뒤에만 성립한다. 그때까지는 04-pipelines/19 잠정 규칙의 운영자 대안(변경 묶기 또는 새 컬렉션 이관)으로만 처리한다): 카나리 표본(B-1: 프로파일 `eval.datasets[]` 코퍼스 문서 + 무작위 1%, 최소 50) → 새 세대 적재·플립(B-2) → 게이트(B-3) → 나머지 롤링(B-4) → `profile_hash` 1회 갱신(B-5) | B-3 `eval.run.v1`(카나리 커밋) | 카나리 플립 뒤 24h(초안) 동안 **카나리 문서를 반환한 질의**(`pack_citations.items[].document_id ∈ carried_state.canary_ids`)의 결과 없음·저신뢰·부정 평점 비율이 §9.1 가드를 넘으면 B-4 롤링을 **보류**한다. 자동 롤백은 없다 — 세대 복원은 사가 보상이 아니라 재적재이므로 운영자 결정(06 B-3) |
 | 임베더·분석기·사전(`embedding_profile_hash`·`lexical_profile_hash` 중 하나 이상 변경) | 모드 A `blue_green`: green 물리 대상 채움 → 게이트(A-6) → alias 교체(A-7, 렉시컬 → 벡터) → blue 정리(A-8, 롤백 창 24h 초안) | A-6 `eval.run.v1`(green 커밋) | 교체 전에는 실트래픽이 green을 보지 않아 카나리 문서 표본이 **존재하지 않는다**. 가능한 것은 (1) A-6 뒤·A-7 전 green 대상 **shadow 질의**(§8.2 `mode = shadow` 실험의 candidate 채널을 green 물리 대상으로 향하게 — 채널 `collection_alias`를 green으로 바꾼 변형; 메커니즘은 미해결 이슈 18) 비교 기록, (2) A-7 교체 뒤 A-8 롤백 창 동안 컬렉션 전체에 §9.1 가드를 적용하고 위반 시 운영자가 alias를 blue로 되돌릴지 결정. 어느 쪽도 자동 롤백은 없다 |
 
 두 모드 모두 온라인 가드는 오프라인 게이트(`EvalReport.gate_result.passed`)를 대체하지 않고 **추가 보류 조건**일 뿐이다(§1 결정). 가드 위반은 `rollouts` 행(제안)에 기록하고 `audit.admin.action`으로 남긴다.
@@ -810,7 +810,7 @@ flowchart LR
 | 6 | 실험 레지스트리(`experiments`·`rollouts` 표, `/v1/experiments` API)와 롤아웃 상태 기계는 바이블 §13.1·§14에 없다 | 05-api/04·02-architecture/04에 제안(minor). 확정 전 운영자 설정 파일 |
 | 7 | 배정·시드 해시 라벨 `H("assign", experiment_id, tenant_id, unit)`(`unit` = `session_id` / `principal_hash` / `query_id`, §8.3), `H("interleave", experiment_id, query_id)`, `H("session", tenant_id, session_id)`는 바이블 §6.2 표에 없다 | §6.2 표 행 추가(patch) |
 | 8 | 병합 `RankedSet`의 항목이 어느 변형에서 왔는지 `explain`(`ExplainCode`)으로 표현할 수 없다 | `ExplainCode`에 `interleave_team_a`·`interleave_team_b` 추가는 §5.7 minor 후보; 채택 전 팀은 `pack_citations`에만 |
-| 9 | 제안 메트릭 `rag_feedback_events_total{kind}`(01 미해결 이슈 6), `rag_pack_empty_result_total`, `rag_pack_low_confidence_total`, `rag_pack_citation_map_failed_total`, `rag_plan_query_drift_psi_ratio`와 라벨 `kind`·`route`는 바이블 §6.5 정본 목록·라벨 화이트리스트에 없다 | §6.5 minor ADR; 확정 전 PostgreSQL 집계 표에서 읽음 |
+| 9 | 제안 메트릭 `rag_feedback_events_total{kind}`(01 미해결 이슈 6), `rag_pack_empty_result_total`, `rag_pack_low_confidence_total`, `rag_pack_citation_map_failed_total`, `rag_plan_query_drift_psi_ratio`와 라벨 `kind`·`route`는 바이블 §6.5 정본 목록·라벨 화이트리스트에 없다 — 1.3.0(AM-41)이 정본 메트릭 목록에 `rag_eval_last_run_timestamp_seconds`·`rag_serving_gpu_seconds_total`과 라우터 메트릭·스팬을 더했지만 라벨 규약은 불변이라 `rag_feedback_events_total{kind}`는 여전히 미등재다(새 라벨 `kind` 대기) | §6.5 minor ADR; 확정 전 PostgreSQL 집계 표에서 읽음 |
 | 10 | 피드백 유래 라벨을 `EvalDataset`으로 등록할 수 있는 `LabelProvenance` 값(예 `feedback`)이 없다 | 채택하지 않음을 권고(사람 라벨만 게이트, 01 P4). 내보내기(§11)는 별도 산출물로 유지 |
 | 11 | 순차 검정(알파 소비) 도입 여부와 방법 | 파일럿에서 실험 기간 > 4주 사례가 나오면 08/02와 공동 확정 |
 | 12 | 드리프트 이벤트(`eval.drift.detected`) 필요성 | 외부 소비자 구독 요구가 생기면 §5.7 카탈로그 minor ADR |

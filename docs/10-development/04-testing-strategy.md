@@ -2,7 +2,7 @@
 title: 테스트 전략
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -76,7 +76,7 @@ flowchart TB
 
 | 층 | 마커 | 검증 대상 | 위치 | 외부 의존 | FR 코드 | PR에서 실행하는 범위 |
 |----|------|-----------|------|-----------|---------|----------------------|
-| L1 단위 | `unit` | 순수 함수(`H()`, `canonical_json`, RRF, `litm_alternating`, 필터 빌더, `budget_cut`), 계약 모델 validator, 셸 `run_stage` 분기 | `tests/unit/`(`src/rag_platform/` 트리 미러) | 없음 | T-UNIT | 전량, Python 3.12·3.13 |
+| L1 단위 | `unit` | 순수 함수(`H()`, `canonical_json`(JCS 수치·선택 필드 제거 포함, AM-12), RRF, `litm_alternating`, 필터 빌더, `budget_cut`), 계약 모델 validator, 셸 `run_stage` 분기 | `tests/unit/`(`src/rag_platform/` 트리 미러) | 없음 | T-UNIT | 전량, Python 3.12·3.13 |
 | L2 계약 | `contract` | 스키마 문법·래퍼·열거 대조·골든 예시 왕복·Pydantic 동치·불변식·해시 벡터·프로파일 해소 스냅샷·스키마 diff | `tests/contracts/` | 없음 | T-CONTRACT | 전량 |
 | L3 컴포넌트 | `component` | 어댑터 단위 계약 코퍼스 회귀(입력 → `ParsedDocument` 등), 적합성 키트, 골든 회귀(`tests/golden/{stage}/cases.json`) | `tests/adapters/{extension_point}/{format 또는 implementation}/`, `tests/golden/` | 카세트·모델 캐시(기본), 실서버(야간) | T-FIXTURE | 저장소 내(≤ 1MB) 코퍼스만 |
 | L4 통합 | `integration` | 원장·아웃박스·RLS, 인덱스 백엔드 어댑터, API 라우터, Temporal 셸(`Replayer`·`start_time_skipping`) | `tests/integration/`, `tests/replay/` | `deploy/compose/compose.lite.yaml`(PG·Qdrant·Valkey); OpenSearch·Temporal·사이드카는 야간 | T-INT | lite 3종 컨테이너 |
@@ -96,7 +96,7 @@ flowchart TB
 
 | 모듈 | 단위 테스트 대상 | 정본 |
 |------|------------------|------|
-| `sdk` | `hash_of`(`H()` 결합식·라벨·`0x1F` 구분자), `canonical_json`(키 정렬·공백 없음·`ensure_ascii=false`·부동소수 최단 표현), `TokenCounter` 인터페이스 | 바이블 §6.2 |
+| `sdk` | `hash_of`(`H()` 결합식·라벨·`0x1F` 구분자), `canonical_json`(키 정렬·공백 없음·`ensure_ascii=false`·수치는 RFC 8785(JCS) 직렬화(정수값 실수 `1.0` → `1`)·값 없는 선택 필드 제거 후 해시), `TokenCounter` 인터페이스 | 바이블 §6.2 1.3.0(AM-12) |
 | `contracts` | 모델 validator(불변식 위반 → `contract.violation`), `versioning.judge_compat`(14 §4.2 8행 진리표), `SchemaVersion.parse`(사전 릴리스 거부) | 00 §불변식, 14 §4.2 |
 | `retrieval/fusion` | RRF `contribution = w/(k+rank)`, `Σ contribution = fused_score`, 타이브레이크 `record_id` 오름차순, 다중 컬렉션 런 투입 규칙 | 바이블 §3.2 O-01 |
 | `retrieval/filters` | 보안·전략·사용자·self-query 필터 AND 결합, `FilterableField` 화이트리스트, 금지 필드 → `plan.filter_field_forbidden`, 깊이 ≤ 3·절 ≤ 32, `page` 가상 필드 변환 | 바이블 §5.7 `FilterableField`, §10.2 |
@@ -114,7 +114,7 @@ flowchart TB
 | 속성 | 진술 |
 |------|------|
 | `H()` 규격 준수 | 임의의 라벨·parts에 대해 `H(label, *parts) == blake3_hex(utf8(label) + 0x1F + 0x1F.join(parts))`; 64자 소문자 hex; `block_id`는 `[:32]` |
-| `canonical_json` 멱등·정렬 | `canonical_json(loads(canonical_json(x))) == canonical_json(x)`; 키가 정렬됨; 공백 없음 |
+| `canonical_json` 멱등·정렬 | `canonical_json(loads(canonical_json(x))) == canonical_json(x)`; 키가 정렬됨; 공백 없음; 정수값 실수는 JCS 직렬화로 `1.0` → `1`(바이블 §6.2 1.3.0, AM-12); 값 없는 선택 필드(키 부재·`null`)는 직렬화 전에 제거되어 결과에 나타나지 않는다 |
 | `litm_alternating` 전단사 | 임의 K ≥ 1에서 `position`이 `0..K-1`의 순열이고 `r1`은 마지막, `r2`는 처음(K ≥ 2) |
 | RRF 점수 원장 | 임의 채널 런에 대해 `Σ contribution == fused_score`(부동소수 허용 오차 1e-9), 순위는 `fused_score` 내림차순 후 `record_id` 오름차순 |
 | `BlockRef` 좌표 | `block_refs` 합집합이 `Chunk.text`를 재구성하고 `0 ≤ char_start ≤ char_end ≤ len(text)`(코드포인트) |
@@ -146,7 +146,7 @@ flowchart LR
     DOC["03-contracts 문서 ## 예시<br/>(정본 JSON)"] -->|"문서 빌드 추출"| EX["tests/contracts/golden/{kebab}/{schema_version}/*.json"]
     EX -->|"(1) JSON Schema 2020-12 검증"| S["schemas/{kebab}.schema.json<br/>(손 작성 정본)"]
     EX -->|"(2) Pydantic 로드 extra=forbid"| P["rag_platform.contracts 모델"]
-    P -->|"(3) 레퍼런스 직렬화 → canonical_json"| RT["원본 canonical_json과 바이트 동일"]
+    P -->|"(3) 레퍼런스 직렬화 → canonical_json(JCS 수치·선택 필드 제거)"| RT["원본 canonical_json과 바이트 동일"]
     P -->|"(4) model_json_schema() 의미 비교"| S
     S -->|"(5) $defs 열거 집합 대조"| B["바이블 §5.7 표(마크다운 파싱)"]
 ```
@@ -157,11 +157,11 @@ flowchart LR
 |--------------------------|------------------------------|-----------|
 | 스키마 문법·`$ref` 해소·`additionalProperties` 명시 | `tests/contracts/test_schema_syntax.py`; 검증기는 JSON Schema 2020-12 구현(파이썬 라이브러리 선정은 [개발 환경](./02-development-environment.md), 확인 필요 as of 2026-09) | PR |
 | 래퍼 게이트(`stage-error`·`problem-details`·`capabilities`·`stage-policy`·`tiering-policy`·`egress-policy`; `cloud-event-envelope` 정제 래퍼 예외) | `tests/contracts/test_wrapper_schemas.py` | PR |
-| 열거 대조(바이블 §1.2) — `$defs/{EnumTypeName}` = 바이블 §5.7, 인라인 열거 `{Type}.{path}`, `EventType`·`ErrorCodeCatalog`·메트릭 이름 = §5.7·§6.5 | `tools/docs/`(01 §2.1) 파서가 바이블 표를 읽고 `tests/contracts/test_enum_parity.py`가 집합 비교. 불일치 = 빌드 실패 | PR |
+| 열거 대조(바이블 §1.2) — `$defs/{EnumTypeName}` = 바이블 §5.7, 인라인 열거 `{Type}.{path}`, `EventType`·`ErrorCodeCatalog`·메트릭 이름 = §5.7·§6.5. 대상에 바이블 §5.7 1.3.0 신규 열거 `TenantStatus`·`CompatLevel`·`SchemaChangeKind`와 `JobKind.delete_collection` 멤버를 포함한다 | `tools/docs/`(01 §2.1) 파서가 바이블 표를 읽고 `tests/contracts/test_enum_parity.py`가 집합 비교. 불일치 = 빌드 실패 | PR |
 | 골든 예시 회귀(현재 minor) + G1(이전 minor 전부 유효) + G2(이전 major 업캐스팅, 14 §6.2 채택 시) + G4(한국어 공문서 시나리오 예시 존재) | `tests/contracts/test_golden_examples.py`; 입력은 §4.3 디렉터리 | PR |
 | Pydantic 동치(필수 집합·열거·nullable) | `python -m rag_platform.contracts.export --out build/schemas-export` 후 의미 비교(01 §6 표; `rag schema export`는 제안) | PR |
 | 불변식 테스트 | `tests/contracts/test_invariants_{kebab}.py` — 각 계약 문서 `## 불변식` 항목마다 위반 인스턴스 1개 이상이 `contract.violation`을 내고 `StageError.detail`에 위반 경로가 있다 | PR |
-| 해시 벡터 | `tests/contracts/vectors/hash_vectors.json`(제안): `H()`·`canonical_json`·`block_id`·`chunk_id`·`record_id`·`point_id`·`NAMESPACE_RAG_CHUNK`·`stage_key`의 고정 입력 → 고정 출력. 파일은 한 번 생성·리뷰 후 커밋하며 조용한 재생성을 금지한다([ADR-0004](../06-adr/0004-deterministic-chunk-id-scoped-record-id-and-ulid-exception.md)) | PR |
+| 해시 벡터 | `tests/contracts/vectors/hash_vectors.json`(제안): `H()`·`canonical_json`·`block_id`·`chunk_id`·`record_id`·`point_id`·`NAMESPACE_RAG_CHUNK`·`stage_key`의 고정 입력 → 고정 출력. `canonical_json` 벡터는 정수값 실수 케이스(`1.0` → JCS 직렬화 `1`)와 값 없는 선택 필드(키 부재·`null`) 제거 후 해시 케이스를 각 1개 이상 포함한다(바이블 §6.2 1.3.0, AM-12). 파일은 한 번 생성·리뷰 후 커밋하며 조용한 재생성을 금지한다([ADR-0004](../06-adr/0004-deterministic-chunk-id-scoped-record-id-and-ulid-exception.md)) | PR |
 | 내장 프로파일 해소 스냅샷 | `profiles/builtin/{base,lite,standard,premium,korean-gov}.yaml`의 `extends` 해소 결과와 `profile_hash`를 스냅샷(§7)으로 고정([ADR-0031](../06-adr/0031-profile-schema-extends-and-quality-gates.md)); `rag profile validate` 12개 규칙(바이블 §7.4)의 위반 YAML 각 1개가 `profile.invalid` | PR |
 | 스키마 diff(`SchemaDiffReport`, 14 §10.2 제안) | `schemas/**` 변경 PR에서 `declared_level ≥ computed_level` 검사 | PR(경로 필터) |
 | 그 밖의 게이트(14 §10.4) | 내장 플러그인 `contracts_compat` ⊇ 현재 계약 버전, 스키마 파일 크기, `## 버전 이력` = `versioning.py` | PR |
@@ -376,19 +376,19 @@ flowchart LR
 
 ### 8.1 모듈과 적용 매트릭스
 
-**결정:** 적합성 키트(conformance kit) `rag_platform.testing`의 6모듈(`contract_roundtrip`, `idempotency`, `security_invariants`, `renderer_citation_roundtrip`, `litm_order`, `fuser_equivalence`)은 바이블 §12 정본이며, 검사 내용은 05 §10 표와 [ADR-0032](../06-adr/0032-plugin-sdk-stage-protocol-and-conformance-kit.md) 준수 확인 9를 따른다. 코어 어댑터와 외부 플러그인은 같은 키트를 실행하고, 키트 미통과 플러그인은 카탈로그(05 §13)에 등재되지 않는다.
+**결정:** 적합성 키트(conformance kit) `rag_platform.testing`의 6모듈(`contract_roundtrip`, `idempotency`, `security_invariants`, `renderer_citation_roundtrip`, `litm_order`, `fuser_equivalence`)은 바이블 §12 정본이며, 검사 내용은 05 §10 표와 [ADR-0032](../06-adr/0032-plugin-sdk-stage-protocol-and-conformance-kit.md) 준수 확인 9를 따른다. 코어 어댑터와 외부 플러그인은 같은 키트를 실행하고, 키트 미통과 플러그인은 카탈로그(05 §13)에 등재되지 않는다. `idempotency`는 `requires_lineage` 결정성을 추가로 검사한다(바이블 §4.1 1.3.0, AM-26): (1) `chunk`가 `requires_lineage=(ParsedDocument,)`로 상류 `ParsedDocument`를 함께 로드해도 `stage_key`(입력 해시는 여전히 `input_ref.blake3` 하나)가 로드 전과 동일해야 한다, (2) 스테이지가 입력 봉투의 `lineage_refs`에 없는 `schema_type`을 `requires_lineage`로 선언하면 셸이 로드 시점에 `contract.violation`으로 거부한다.
 
 | 확장 지점(`ExtensionPoint`) | 필수 모듈 | 추가 항목 |
 |-----------------------------|-----------|-----------|
 | `fetcher` | `contract_roundtrip`, `security_invariants`(E16 egress) | `EgressPolicy` 거부 목록 6경로(바이블 §10.3 E16) |
 | `parser` | `contract_roundtrip`, `idempotency` | 코퍼스 회귀(§5); `isolation=sidecar`면 사이드카 계약 6경로([ADR-0033](../06-adr/0033-sidecar-convert-contract-and-isolation-ladder.md) 준수 표) + `derived` 캐시 히트(같은 `content_hash`·`image_digest` → 호출 0회) |
 | `normalizer`(roles `korean_analyzer`·`sentence_splitter`·`pii_detector`) | `contract_roundtrip`, `idempotency` | 지문에 `analyzer_id`·`dictionary_hash`·`pii_policy` 포함; NFC/NFKC 이중 뷰 불변식 |
-| `chunker`(role `token_counter`) | `contract_roundtrip`, `idempotency` | `chunker_config_hash`·`primary_tokenizer_id` 지문; K1 좌표 불변식; `recount`는 `token_counts` 키만 추가 |
-| `enricher` | `contract_roundtrip`, `idempotency`, `security_invariants`(E13 로그) | `enrich → strip` 대칭(`strip_offsets`, K2); LLM 보강은 카세트 |
+| `chunker`(role `token_counter`) | `contract_roundtrip`, `idempotency` | `chunker_config_hash`·`primary_tokenizer_id` 지문; K1 좌표 불변식; `recount`는 `token_counts` 키만 추가; `requires_lineage=(ParsedDocument,)` 로드가 `stage_key` 불변(AM-26) |
+| `enricher` | `contract_roundtrip`, `idempotency`, `security_invariants`(E13 로그) | `enrich → strip` 대칭(`strip_offsets`, K2); LLM 보강은 카세트; LLM 서브스텝의 `requires_lineage=(ChunkSet,)` 로드가 `stage_key` 불변, 입력 `lineage_refs` 밖 선언은 거부(AM-26) |
 | `embedder` | `contract_roundtrip`, `idempotency` | `embedding_space_id` 재계산 일치; `vocab_id` 불일치 → `embed.space_mismatch`; 서빙 교체 동등성 코사인 ≥ 0.9999([ADR-0009](../06-adr/0009-embedding-serving-vllm-pooling-tei-inprocess.md)) |
 | `index_backend` | `contract_roundtrip`, `idempotency`(E17), `security_invariants`(E5·E7) | `capabilities()`의 `IndexBackendCapabilities` 필수 필드; 세대 사가 보상 두 경로(바이블 §11.4) |
 | `query_transformer` | `contract_roundtrip`, `security_invariants`(E6) | `filters.security`·`filters.strategy` 불변; 금지 필드 거부 |
-| `retriever` | `contract_roundtrip`, `security_invariants`(E7) | 백엔드 요청에 `tenant_id` 필터 존재; `ctx.security=None` → `retrieve.security_context_missing` |
+| `retriever` | `contract_roundtrip`, `security_invariants`(E7) | 백엔드 요청에 `tenant_id` 필터 존재; `ctx.security=None` → `retrieve.security_context_missing`이며 계약 테스트 기대값은 **500**(바이블 §5.7 1.3.0 오류 카탈로그, AM-25; 이전 초안 값 대체) |
 | `fuser` | `contract_roundtrip`, `fuser_equivalence` | ranx 일치, `Σ contribution = fused_score`, 타이브레이크 |
 | `reranker` | `contract_roundtrip`, `idempotency` | `response_schema`(`tei`·`cohere`) 양 파서; 타임아웃 폴백 `rerank.applied=false` |
 | `postprocessor` | `contract_roundtrip`, `renderer_citation_roundtrip`(`mutates_text=true`인 step) | 고정 순서 위치 선언 |
@@ -559,7 +559,7 @@ SAST·SCA·의존성 취약점 스캔(NFR M5)의 도구는 [보안과 컴플라�
 | 상한 | 격리 테스트 ≤ 전체의 2%(초안 목표) 초과 시 새 격리 금지(먼저 고친다) |
 | 원인 분류 | (a) 시각·난수 미고정(P2 위반) (b) 테스트 간 상태 공유(테넌트 격리 위반) (c) 네트워크·모델 실물 의존(P5 위반) (d) ANN 근사 탐색·부동소수(허용 오차 §9.2로 흡수) (e) 러너 자원 편차(성능 단정을 L6로 이동). 이슈에 분류를 기록한다 |
 | 소유 | CODEOWNERS 경로 팀(01 §8)이 14일 안에 수정 또는 삭제한다 |
-| 성능 단정 금지 | L1~L5에서 벽시계 시간을 단정하지 않는다(타임아웃은 예외) |
+| 성능 단정 금지 | L1~L5에서 실제 경과 시간을 단정하지 않는다(타임아웃은 예외) |
 
 ## 17. 커버리지 목표
 
@@ -676,7 +676,7 @@ SAST·SCA·의존성 취약점 스캔(NFR M5)의 도구는 [보안과 컴플라�
 
 ## 21. 테스트 작성 규약
 
-- **마커 등록**: 마커 정본은 이 문서다([코딩 표준](./03-coding-standards.md) §13이 "실행 전략·마커 정의는 테스트 전략이 확정한다"고 위임, 03 미해결 이슈 10). `pyproject.toml` `[tool.pytest.ini_options]`에 층 마커 9종 `unit, contract, component, integration, e2e, perf, quality, chaos, security`(§2 표)과 속성 마커 5종 `model, gpu, sidecar, slow, quarantine`을 등록하고 `addopts = "--strict-markers"`, `testpaths = ["tests"]`로 미등록 마커·경로를 거부한다. 층 마커는 디렉터리 `conftest.py`가 자동 부착하고 속성 마커는 테스트가 직접 붙인다 — `model`·`gpu`는 §9.1 MD-2·MD-3, `sidecar`는 실서버 사이드카 필요(§10.1 야간 열), `slow`는 PR 필수 층에서 `-m "not slow"`로 제외하고 야간부터 실행(§13 `test_holm_reference`·`test_public_baseline`), `quarantine`은 §16. 03 §13 "마커(제안)" 이름과의 대응: `adapter`·`golden` → `component`, `replay` → `integration`, `eval` → `quality`; 08/02 §12의 `dev` → `slow`. 대응표에 없는 이름(`dev`·`adapter` 등)은 등록하지 않으며 `--strict-markers`가 거부한다.
+- **마커 등록**: 마커 정본은 이 문서다([코딩 표준](./03-coding-standards.md) §13이 "마커 이름·정의·등재는 테스트 전략 §21이 정본"이라고 인용; 03 미해결 이슈 10 해소, 완전성 #187). `pyproject.toml` `[tool.pytest.ini_options]`에 층 마커 9종 `unit, contract, component, integration, e2e, perf, quality, chaos, security`(§2 표)과 속성 마커 5종 `model, gpu, sidecar, slow, quarantine`을 등록하고 `addopts = "--strict-markers"`, `testpaths = ["tests"]`로 미등록 마커·경로를 거부한다. 층 마커는 디렉터리 `conftest.py`가 자동 부착하고 속성 마커는 테스트가 직접 붙인다 — `model`·`gpu`는 §9.1 MD-2·MD-3, `sidecar`는 실서버 사이드카 필요(§10.1 야간 열), `slow`는 PR 필수 층에서 `-m "not slow"`로 제외하고 야간부터 실행(§13 `test_holm_reference`·`test_public_baseline`), `quarantine`은 §16. 03 §13 "마커(제안)" 이름과의 대응: `adapter`·`golden` → `component`, `replay` → `integration`, `eval` → `quality`; 08/02 §12의 `dev` → `slow`. 대응표에 없는 이름(`dev`·`adapter` 등)은 등록하지 않으며 `--strict-markers`가 거부한다.
 - **이름**: `tests/{group}/test_{subject}.py`(01 §5); 테스트 함수는 `test_{행위}_{조건}_{기대}`; 불변식은 `test_inv_{doc}_{n}`; 시나리오는 `test_s{NN}_{slug}`.
 - **단정**: 오류는 카탈로그 코드로(P8), 산출물은 `golden_hash`·`canonical_json`으로, 순위는 `record_id` 목록으로 단정한다. `str(exc)` 문자열 매칭 금지.
 - **데이터**: 한국어 공문서 시나리오(HWPX 공문·스캔 고시·법령 조문)를 기본 예시로 쓴다(14 §10.1 G4). 문서 본문 문자열을 로그·스팬·오류 메시지에서 발견하면 실패(E13).
@@ -712,7 +712,7 @@ SAST·SCA·의존성 취약점 스캔(NFR M5)의 도구는 [보안과 컴플라�
 12. **성능 마이크로벤치 경고 임계.** 7일 중앙값 +30%는 근거 없는 초안이며 러너 편차 실측 후 조정한다. 벤치 결과 저장 위치(아티팩트 vs 시계열 DB)는 [CI/CD](./05-ci-cd.md)·[관측성](../09-operations/03-observability.md)이 정한다.
 13. **PR 시간 예산과 병렬화.** PR ≤ 20분은 초안이며, 컴포넌트·통합 층의 병렬 실행 없이는 달성이 불확실하다. 병렬 플러그인 확인(이슈 9)과 잡 분할은 [CI/CD](./05-ci-cd.md)에서 확정한다.
 14. **`tests/adapters/docx/` 경로 정정.** 04-pipelines/06 §4의 경로는 01 §7 규약(`tests/adapters/parse/docx/`)으로 정정을 요청한 상태(01 미해결 이슈 10)다. 이 문서는 01 규약을 따른다.
-15. **마커 이름 통일 patch.** 이 문서 §21이 마커 정본이므로 [코딩 표준](./03-coding-standards.md) §13 "마커(제안)" 행(`adapter`·`replay`·`eval`·`golden`을 포함한 12종)을 §21 목록 인용으로 교체하는 patch(03 미해결 이슈 10)와, 08/02 §12 `test_holm_reference`의 "dev 마커" 표기를 `slow`로 바꾸는 patch를 각 소유자에게 요청한다. 반영 전까지는 §13·§21의 대응표가 우선한다.
+15. **마커 이름 통일 patch — 부분 해소(v1.3, 완전성 #187).** [코딩 표준](./03-coding-standards.md) §13 "마커(제안)" 행은 이 문서 §21 인용으로 교체되었다(03 미해결 이슈 10 해소). 남은 것은 08/02 §12 `test_holm_reference`의 "dev 마커" 표기를 `slow`로 바꾸는 patch뿐이며, 반영 전까지는 §21의 대응표가 우선한다.
 
 ## 참조
 

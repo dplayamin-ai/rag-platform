@@ -65,7 +65,7 @@ for (const p of files) {
 const PREFIXES = ['PB', 'G', 'GL', 'DP', 'KPI', 'SC', 'DF', 'UC', 'US', 'FR', 'NFR', 'DRC', 'T', 'PL', 'P']
 for (const p of files) { const t = texts[p]; for (const pre of PREFIXES) { const re = new RegExp(`(?<![A-Za-z])${pre}-\\d{2}`, 'g'); const n = (t.match(re) || []).length; if (n) (report.A4_id_prefix[pre] = report.A4_id_prefix[pre] || {})[rel(p)] = n } }
 // ---- A5 length (non-contract, non-bible, non-appendix)
-for (const p of files) { const r = rel(p); if (isContract(r) || r === '02-architecture/00-design-bible.md' || r.startsWith('12-appendix/')) continue; const n = texts[p].split('\n').length; if (n > 900) report.A5_length.push({ file: r, lines: n }) }
+for (const p of files) { const r = rel(p); if (isContract(r) || r === '02-architecture/00-design-bible.md' || r.startsWith('12-appendix/')) continue; const n = texts[p].replace(/\n$/, '').split('\n').length; if (n > 900) report.A5_length.push({ file: r, lines: n }) }
 // ---- A6 status
 const outcomes = {}
 if (fs.existsSync(RES)) for (const f of fs.readdirSync(RES).filter((f) => f.endsWith('.json') && !f.startsWith('validator'))) { let j; try { j = JSON.parse(fs.readFileSync(path.join(RES, f), 'utf8')) } catch { continue } ;(function w(o) { if (!o || typeof o !== 'object') return; if (typeof o.file === 'string' && typeof o.review === 'string') { const s = o.file.replace(/\\/g, '/'); const i = s.indexOf('/docs/'); outcomes[i >= 0 ? s.slice(i + 6) : s] = o.review } for (const k of Object.keys(o)) if (typeof o[k] === 'object') w(o[k]) })(j) }

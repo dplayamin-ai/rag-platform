@@ -2,8 +2,8 @@
 title: 사용자 스토리와 인수 기준
 status: active
 owner: architecture
-version: 0.1.0
-last_updated: 2026-09-18
+version: 0.1.1
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - ../00-vision/01-vision-and-goals.md
@@ -81,7 +81,7 @@ depends_on:
 | EP-04 | EMB | 임베딩·인덱싱 | EMB, IDX | D-15, D-16 | 7 |
 | EP-05 | RET | 리트리벌 | QRY, RET, RNK | R3, D-07 | 9 |
 | EP-06 | PCK | 컨텍스트 패킹 | PCK | R6, D-20 | 8 |
-| EP-07 | MGT | 관리 API | MGT, API | 브리프 §6, D-17 | 8 |
+| EP-07 | MGT | 관리 API | MGT, API | 브리프 §6 "관리 API" 포함 범위, D-17 | 8 |
 | EP-08 | MCP | MCP 서버 | MCP | D-13 | 5 |
 | EP-09 | EVL | 평가 하네스 | EVL | D-12, 원칙 7 | 7 |
 | EP-10 | OBS | 관측성 | OBS | D-11, 원칙 8 | 6 |
@@ -510,7 +510,7 @@ flowchart LR
 ### US-MGT-01 테넌트와 컬렉션 관리
 - 스토리: 플랫폼 운영자(PS-01)로서 테넌트와 컬렉션을 API로 만들고 컬렉션에 프로파일을 고정하기를 원한다, 팀별 격리와 일관된 인덱싱 설정을 코드 없이 운영해야 하기 때문에.
 - 관련: FR-MGT-01, FR-MGT-02, FR-SEC-02 / NFR-SCAL-02, NFR-SEC-04, NFR-AVL-03, NFR-PRV-11 | 크기: M | 우선순위: Must | MVP: 포함 | 단계: Phase 1
-- AC-1: Given 테넌트 생성이 허용된 주체(FR-SEC-02의 네 역할 위에 필요한 플랫폼 수준 역할은 US-I-10 제안), When 테넌트를 생성하면, Then `tenant_id`(ULID)가 발급되고 할당량·정책 기본값이 적용된다.
+- AC-1: Given 테넌트 생성이 허용된 주체(FR-SEC-02의 네 역할 위에 필요한 플랫폼 수준 역할은 US-I-10 제안), When 테넌트를 생성하면, Then `tenant_id`(ULID)가 발급되고 할당량·정책 기본값이 적용된다. `TenantStatus.disabled`(바이블 §14 1.3.0)로 비활성화된 테넌트의 요청은 `auth.forbidden` 403(AM-38), 할당량(`tenants.quotas`) 초과는 `api.quota_exceeded`(AM-36·AM-39)를 반환한다.
 - AC-2: Given `tenant_admin` 역할(FR-SEC-02), When 컬렉션을 프로파일 버전과 함께 생성하면, Then 컬렉션은 그 프로파일에 고정되고 인덱스 백엔드에 컬렉션 리소스가 생성된다.
 - AC-3: Given 컬렉션 삭제 요청, When 실행하면, Then 100만 청크 컬렉션도 60초 이내(p95)에 논리 삭제되고(NFR-PRV-11) 물리 소거는 NFR §9 SLA에 따라 예약된다.
 

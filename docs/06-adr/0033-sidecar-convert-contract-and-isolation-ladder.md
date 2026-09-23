@@ -6,7 +6,7 @@ deciders: architecture
 priority: P1
 related: ["K5", "O-10"]
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -77,7 +77,7 @@ depends_on:
 
 ## 결정
 
-**결정:** 어댑터 격리 모드는 바이블 §4.1 그대로 3단 — `in_process`(A 등급 순수 Python) / `helper_process`(`multiprocessing spawn`, ctypes·네이티브 크래시 위험) / `sidecar`(JVM·LibreOffice·CUDA·GPL/AGPL; REST `POST /v1/convert`) — 이며, K7대로 어댑터 격리 3단(`in_process/helper_process/sidecar`)과 테넌트 격리 3단(`payload_filter/shard_key/index_per_tenant`)을 `TieringPolicy` 하나로 선언·검증한다. 프로파일 `parse.router` 항목이 `isolation`·`image`를 선언하고(§7.3 예: `{plugin: parser.hwp5_java_sidecar, isolation: sidecar, image: parser-workers}`, `{plugin: parser.hwp5_unhwp, isolation: helper_process}`) `StagePolicy.isolation`(enum(IsolationMode) | null)이 격리 모드를 강제한다. 모든 변환 사이드카는 공통 계약 `POST /v1/convert`(`ConvertRequest{input: ArtifactRef, options, tenant_id, document_id, deadline_ms, trace_id, credentials_ref}` → `ConvertResponse{output: ArtifactRef | null, derived[], warnings, error: StageError | null, took_ms, producer}`, `output=null`이면 `error` 필수; 본문은 참조만, 비밀은 `credentials_ref`)와 `GET /healthz`(모델·JVM·LO 준비 상태)를 제공한다(§5.6, §6.7, §14). O-10 해결대로 "내부 사이드카도 REST `POST /v1/convert` + `ArtifactRef` + RFC 9457. Qdrant `prefer_grpc=True`·Temporal 클라이언트 gRPC는 라이브러리 설정. 스트리밍 필요 사이드카는 부분 산출물 페이지 단위 저장 + 폴링"이다. 사이드카 이미지 `parser-workers`, `ocr-gpu`는 본 저장소 `sidecars/`(별도 이미지, 코어 의존 없음, 모두 `POST /v1/convert`), GPL/AGPL 이미지·플러그인(`lo-sidecar`, `rag-plugin-pyhwp-sidecar`, `rag-plugin-pymupdf-sidecar`)은 별도 저장소 `rag-platform-gpl-sidecars`(별도 LICENSE/NOTICE, 코어 이미지 미포함, 독립 빌드·태깅·릴리스)에서 관리하고 본 저장소는 Helm `optIn.*` 값과 이미지 참조 링크만 둔다(§6.7, §12). `lo-sidecar`는 tini·프로세스 그룹 KILL·프로파일 락·네트워크 차단(§2.3). 지문은 `fingerprint = H("producer", plugin_id, plugin_version, config_hash, image_digest, model_ids)`(SDK가 사이드카 image digest 포함을 검증)과 `Producer.image_digest`·`parser_fingerprint.sidecar_image_digest`로 남기고, 파생물은 봉투가 없어 스코프 없이 `H("derived", content_hash, sidecar_image_digest)`(테넌트 내 공유, `tenants/{tenant_id}/derived/{kind}/…`)로 캐시한다(§4.1, §6.2, §13.3). 사이드카 호출은 서비스 디스커버리 주소만(E16). `parse.sidecar_unavailable` 재시도 후 폴백 체인, `parse.conversion_failed` 폴백 체인(§4.2 `parse` 행).
+**결정:** 어댑터 격리 모드는 바이블 §4.1 그대로 3단 — `in_process`(A 등급 순수 Python) / `helper_process`(`multiprocessing spawn`, ctypes·네이티브 크래시 위험) / `sidecar`(JVM·LibreOffice·CUDA·GPL/AGPL; REST `POST /v1/convert`) — 이며, K7대로 어댑터 격리 3단(`in_process/helper_process/sidecar`)과 테넌트 격리 3단(`payload_filter/shard_key/index_per_tenant`)을 `TieringPolicy` 하나로 선언·검증한다. 프로파일 `parse.router` 항목이 `isolation`·`image`를 선언하고(§7.3 예: `{plugin: parser.hwp5_java_sidecar, isolation: sidecar, image: parser-workers}`, `{plugin: parser.hwp5_unhwp, isolation: helper_process}`) `StagePolicy.isolation`(enum(IsolationMode) | null)이 격리 모드를 강제한다. 모든 변환 사이드카는 공통 계약 `POST /v1/convert`(`ConvertRequest{input: ArtifactRef, options, tenant_id, document_id, deadline_ms, trace_id, credentials_ref}` → `ConvertResponse{output: ArtifactRef | null, derived[], warnings, error: StageError | null, took_ms, producer}`, `output=null`이면 `error` 필수; 본문은 참조만, 비밀은 `credentials_ref`)와 `GET /healthz`(모델·JVM·LO 준비 상태)를 제공한다(§5.6, §6.7, §14). O-10 해결대로 "내부 사이드카도 REST `POST /v1/convert` + `ArtifactRef` + RFC 9457. Qdrant `prefer_grpc=True`·Temporal 클라이언트 gRPC는 라이브러리 설정. 스트리밍 필요 사이드카는 부분 산출물 페이지 단위 저장 + 폴링"이다. 사이드카 이미지 `parser-workers`, `ocr-gpu`는 본 저장소 `sidecars/`(별도 이미지, 코어 의존 없음, 모두 `POST /v1/convert`), GPL/AGPL 이미지·플러그인(`lo-sidecar`, `rag-plugin-pyhwp-sidecar`, `rag-plugin-pymupdf-sidecar`)은 별도 저장소 `rag-platform-gpl-sidecars`(별도 LICENSE/NOTICE, 코어 이미지 미포함, 독립 빌드·태깅·릴리스)에서 관리하고 본 저장소는 Helm `optIn.*` 값과 이미지 참조 링크만 둔다(§6.7, §12). `lo-sidecar`는 tini·프로세스 그룹 KILL·프로파일 락·네트워크 차단(§2.3). 지문은 `fingerprint = H("producer", plugin_id, plugin_version, config_hash, image_digest, model_ids)`(SDK가 사이드카 image digest 포함을 검증)과 `Producer.image_digest`·`parser_fingerprint.sidecar_image_digest`로 남기고, 파생물은 봉투가 없어 스코프 없이 `H("derived", content_hash, sidecar_image_digest or "", options_hash or "")`(`options_hash = H("config", canonical_json(DPI·OCR 언어 등 파생물 옵션))`, 테넌트 내 공유, `tenants/{tenant_id}/derived/{kind}/…`)로 캐시한다(바이블 §6.2 1.3.0 AM-40; §4.1, §13.3). 사이드카 호출은 서비스 디스커버리 주소만(E16). `parse.sidecar_unavailable` 재시도 후 폴백 체인, `parse.conversion_failed` 폴백 체인(§4.2 `parse` 행).
 
 기각 대안: gRPC 사이드카(O-10), 인프로세스 JNI/ctypes 링크, 사이드카별 상이한 계약, 스트리밍 변환(페이지 단위 부분 산출물 + 폴링으로 대체).
 
@@ -85,7 +85,7 @@ depends_on:
 
 | 단 | 배정 조건 | 예(바이블 §4.2·§7.3) | 선언·강제 | 경계 밖 실패 → 오류 |
 |----|-----------|----------------------|-----------|---------------------|
-| `in_process` | `PluginMeta.linkage = pure_python`이고 `license_grade ∈ {A}`(B는 `dynamic` + 선택 extra만, §7.4 (1)) | `parser.hwpx_python_hwpx`, `parser.pdf_docling_standard`, `parser.pdf_fast_pdftext`, `parser.docx_docling_docx2python`, `parser.html_trafilatura_docling`, `parser.text_charset_markdown_it`, RapidOCR(ONNX) | 라우터 항목에 `isolation` 생략 시 `in_process`로 해석(해석; [04-pipelines/03](../04-pipelines/03-parsing-router-and-format-detection.md) 확정); `isolation_supported`에 `in_process` 포함 필수 | 예외는 스테이지 오류 카탈로그 그대로 |
+| `in_process` | `PluginMeta.linkage = pure_python`이고 `license_grade ∈ {A}`(B는 `dynamic` + 선택 extra만, §7.4 (1)) | `parser.hwpx_python_hwpx`, `parser.pdf_docling_standard`, `parser.pdf_fast_pdftext`, `parser.docx_docling_docx2python`, `parser.html_trafilatura_docling`, `parser.text_charset_markdown_it`, RapidOCR(ONNX) | 라우터 항목에 `isolation` 생략 시 `in_process`로 해석(해석; [04-pipelines/03](../04-pipelines/03-parsing-router-and-format-detection.md) 확정); `isolation_supported`에 `in_process` 포함 필수 | 예외는 스테이지 오류 카탈로그 그대로; 비재시도 코드(`parse.document_encrypted`·`parse.distribution_document`·`parse.unsupported_variant`·`parse.corrupt_container`)는 폴백 없이 체인을 끊고 전파, `parse.conversion_failed`만 폴백 체인 진행(바이블 §4.2 1.3.0, CR-45) |
 | `helper_process` | 네이티브 코드를 `ctypes`·확장 모듈로 로드해 크래시가 인터프리터를 죽일 수 있는 A 등급(`linkage ∈ {dynamic, static_bundled}`) | `parser.hwp5_unhwp`(문서 1건당 단기 `multiprocessing spawn`, x64만; arm64는 로딩 시 비활성 + 경고) | 라우터 `isolation: helper_process`; 어댑터는 헬퍼 래퍼만 호출(직접 `ctypes` 로딩 금지) | 비정상 종료·시그널·`OSError` → `parse.conversion_failed`(폴백 후 no) |
 | `sidecar` | JVM·LibreOffice·CUDA 결합 프레임워크, 또는 C 등급(GPL/AGPL) — 코어 이미지에 들어갈 수 없는 모든 것 | `parser.hwp5_java_sidecar`(`parser-workers`, A), `parser.office_lo_sidecar`(`lo-sidecar`, C, opt-in), `ocr-gpu`(PaddleOCR PP-OCRv5 server, `premium`), Tika `HwpV5Parser`(`parser-workers` 동거) | 라우터 `isolation: sidecar` + `image`; `PluginMeta.sidecar_image` 비-null, `Producer.image_digest` 비-null; C 등급은 `license_policy.max_grade` 초과 시 `optIn` 명시 없이 `profile.invalid` | 연결 실패·503·`/healthz` 실패 → `parse.sidecar_unavailable`(재시도 yes, `parse` 정책 `max_attempts` 3, §4.4) → 소진 시 폴백; 200 + `error` → `parse.conversion_failed` 즉시 폴백 |
 
@@ -112,7 +112,7 @@ sequenceDiagram
     participant W as worker · SidecarStage(stage.parse)
     participant O as Object Storage(tenants/{tenant_id}/…)
     participant S as 사이드카(parser-workers | lo-sidecar | ocr-gpu)
-    W->>W: derived 키 = H("derived", content_hash, sidecar_image_digest) 조회 → 히트면 호출 생략
+    W->>W: derived 키 = H("derived", content_hash, sidecar_image_digest, options_hash) 조회 → 히트면 호출 생략
     W->>S: POST /v1/convert {input: ArtifactRef, options, tenant_id, document_id, deadline_ms, trace_id, credentials_ref}
     S->>O: GET input.uri (자기 자격 증명)
     S->>S: 변환(JVM | soffice 프로세스 그룹 | CUDA); deadline_ms 감시
@@ -143,7 +143,7 @@ sequenceDiagram
 - 네이티브 패닉·JVM OOM·LibreOffice 행 걸림이 워커 프로세스와 다른 문서의 액티비티를 죽이지 않고 `parse.conversion_failed`/`parse.sidecar_unavailable`로 변환되어 폴백 체인(ADR-0007)과 `parser_chain[]` 감사로 이어진다.
 - 계약이 하나라 `SidecarStage` 한 클래스가 지문(`image_digest`)·`deadline_ms` 전파·`trace_id` 계측·오류 합성·`derived` 캐시를 공통 처리하고, 사이드카 계약 테스트도 한 세트다. 새 사이드카(VLM 파서, Tika 단독)는 얇은 `convert` 어댑터만 추가한다.
 - `ArtifactRef` 교환이라 Temporal 2MB 한계와 정합하고(ADR-0003), 사이드카가 상태 없는 변환기로 남아 수평 확장·KEDA 스케일링이 단순하다.
-- `H("derived", content_hash, sidecar_image_digest)` 캐시로 같은 원본·같은 이미지의 재파싱·재청킹(프로파일 변경, blue/green)은 변환을 생략하고, 이미지 범프는 지문 변경으로 자동 재변환된다(리스크 #8 완화).
+- `H("derived", content_hash, sidecar_image_digest or "", options_hash or "")`(바이블 §6.2 1.3.0, AM-40) 캐시로 같은 원본·같은 이미지·같은 옵션의 재파싱·재청킹(프로파일 변경, blue/green)은 변환을 생략하고, 이미지 범프나 옵션 변경은 재변환을 유발한다(리스크 #8 완화).
 
 **부정**
 

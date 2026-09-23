@@ -2,7 +2,7 @@
 title: 보안과 컴플라이언스 운영
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -266,18 +266,19 @@ API 키는 `service:` 주체 전용이다(보안 아키텍처 §3.1 결정). 운
 
 | 항목 | 규칙 |
 |------|------|
+| 엔드포인트 | `GET/POST /v1/api-keys`(목록/발급, `secret`은 응답에 1회만), `DELETE /v1/api-keys/{api_key_id}`(폐기), `POST /v1/api-keys/{api_key_id}/rotate`(회전) — 바이블 §14 1.3.0 등재(AM-38·AM-39) |
 | 발급 | `tenant_admin`·`platform_admin`(`manage_api_keys`, 보안 아키텍처 §4.1)만; `platform_admin` 발급은 테넌트 부트스트랩(배포 가이드 §5.2)·사고 대응(§9)에 한정하고 `audit.admin.action`에 사유를 남긴다; 발급 키에 `pii_officer`·`tenant_admin`·`platform_admin` 역할 바인딩 불가 |
 | 저장 | 해시만(argon2id 권고, 기술 지형 12 §3.2); 조회용 `prefix` 컬럼은 제안(보안 아키텍처 미해결 이슈 17) |
 | 만료 | `expires_at` 필수, 최대 90일; 부트스트랩 키 30일 |
-| 회전 | 동시 유효 2개(유예 7일), 신규 발급·폐기는 `audit.admin.action{action: manage_api_keys}` |
+| 회전 | `POST .../rotate`로 동시 유효 2개(유예 7일), 신규 발급·폐기는 `audit.admin.action{action: manage_api_keys}` |
 | 스코프 | `allowed_collections[]`·`roles[]`(둘 다 제안 컬럼) 최소화; 테넌트 한도의 50% 하위 레이트리밋(보안 아키텍처 §10) |
-| 유출 대응 | 즉시 폐기(`revoked_at`, 제안) → §9 절차 |
+| 유출 대응 | `DELETE /v1/api-keys/{api_key_id}`로 즉시 폐기(`revoked_at`은 원장 컬럼 제안) → §9 절차 |
 
 전달 헤더(`Authorization: Bearer` 재사용 vs 전용 헤더)는 [관리 API](../05-api/04-management-api.md)가 확정한다(보안 아키텍처 미해결 이슈 18).
 
 ### 3.6 역할 매핑과 직무 분리
 
-**결정(보안 아키텍처 §4.1 위임 — `pii_officer` 직무 분리):** (1) `korean-gov` Cedar 정책 번들은 `unmask_pii`를 `principal.roles`에 `tenant_admin` 또는 `platform_admin`이 **함께** 있는 주체에게 `forbid`한다(겸직 차단). `standard`·`premium` 번들은 이 규칙을 기본 포함하지 않으며 운영자가 번들 변형으로 켤 수 있다. (2) `pii_officer` 부여·회수는 IdP에서만 이뤄지므로 플랫폼은 분기별(초안 목표) **접근권한 검토**를 수행한다: `audit.admin.action{action: unmask_pii}` 집계 + IdP 그룹 멤버십 대조 리포트(`rag audit report --action unmask_pii`, 제안)를 `tenant_admin`이 아닌 검토자(보안 담당)가 승인한다. (3) `unmask_pii` 호출은 IdP 단계 인증 강화(step-up, `acr` 클레임 검사)를 권고하며 강제 여부는 `korean-gov` 필수·그 외 옵션이다(제안, §미해결 이슈 4). (4) 매트릭스 변경은 `policy_version` 증가 + `audit.admin.action` 기록이다. 근거: ISMS-P 2.5.5 특수 계정 및 권한관리·2.5.6 접근권한 검토(항목 번호 확인 필요 as of 2026-09), FR-SEC-08. ([ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md))
+**결정(보안 아키텍처 §4.1 위임 — `tenant_admin`의 `pii_officer` 자기 부여 직무 분리 통제 수용, 완전성 #62 해소):** (1) `korean-gov` Cedar 정책 번들은 `unmask_pii`를 `principal.roles`에 `tenant_admin` 또는 `platform_admin`이 **함께** 있는 주체에게 `forbid`한다(겸직 차단) — `tenant_admin`이 IdP에서 스스로에게 `pii_officer`를 부여해도 겸직 상태에서는 `unmask_pii`를 쓸 수 없다. `standard`·`premium` 번들은 이 규칙을 기본 포함하지 않으며 운영자가 번들 변형으로 켤 수 있다. (2) `pii_officer` 부여·회수는 IdP에서만 이뤄지므로 플랫폼은 분기별(초안 목표) **접근권한 검토**를 수행한다: `audit.admin.action{action: unmask_pii}` 집계 + IdP 그룹 멤버십 대조 리포트(`rag audit report --action unmask_pii`, 제안)를 `tenant_admin`이 아닌 검토자(보안 담당)가 승인한다. (3) `unmask_pii` 호출은 IdP 단계 인증 강화(step-up, `acr` 클레임 검사)를 권고하며 강제 여부는 `korean-gov` 필수·그 외 옵션이다(제안, §미해결 이슈 4). (4) 매트릭스 변경은 `policy_version` 증가 + `audit.admin.action` 기록이다. 근거: ISMS-P 2.5.5 특수 계정 및 권한관리·2.5.6 접근권한 검토(항목 번호 확인 필요 as of 2026-09), FR-SEC-08. ([ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md))
 
 ## 4. 키 회전
 
@@ -459,7 +460,7 @@ optional_dependencies = ["kiwi", "docling-chunker", "gpu", "opensearch", "tempor
 
 ### 7.3 AGPL/GPL 사이드카 경계 문서화
 
-C 등급 구성요소(`lo-sidecar`의 H2Orestart, `rag-plugin-pyhwp-sidecar`, `rag-plugin-pymupdf-sidecar`, Redis 8·Loki·Grafana 등 사용자 선택 서비스)의 경계는 기술 지형 12 §6.4와 ADR-0001 준수 표가 정본이다. 운영자·릴리스 관리자가 매 릴리스에서 확인하는 문서화 항목:
+C 등급 구성요소 — `lo-sidecar`의 H2Orestart(GPL, ADR-0006 대안·기각 후 옵트인 격리), `rag-plugin-pyhwp-sidecar`(pyhwp, GPL — 기본 파서 체인 제외, ADR-0007 옵트인 사이드카), `rag-plugin-pymupdf-sidecar`(PyMuPDF, AGPL — 인프로세스 제외, ADR-0006 옵트인 사이드카), Redis 8(SSPL/RSAL — 기본은 Valkey이며 Redis 8은 관리형 호환 옵션에 한정, ADR-0011)·Loki·Grafana 등 사용자 선택 서비스 — 의 경계는 기술 지형 12 §6.4와 ADR-0001 준수 표가 정본이다. 운영자·릴리스 관리자가 매 릴리스에서 확인하는 문서화 항목:
 
 | # | 항목 | 위치 | 확인 |
 |---|------|------|------|
@@ -562,7 +563,7 @@ sequenceDiagram
 
 ### 8.3 감사 로그 보존
 
-감사 이벤트는 `audit.query.executed`, `audit.document.accessed`, `audit.acl.changed`, `audit.admin.action` 4종(바이블 §5.7)이고 `data`는 ID·해시만이다([잡·이벤트·상태 계약](../03-contracts/12-jobs-events-and-status.md) §6.4).
+감사 이벤트는 `audit.query.executed`, `audit.document.accessed`, `audit.acl.changed`, `audit.admin.action` 4종(바이블 §5.7)이고 `data`는 ID·해시만이다([잡·이벤트·상태 계약](../03-contracts/12-jobs-events-and-status.md) §6.4). 감사 로그의 주체 식별자는 `principal_hash = H("principal", tenant_id, subject)`(바이블 §6.2 1.3.0, AM-40)이며 주체 문자열 원문은 기록하지 않는다. 무키 해시라 테넌트·주체 목록 보유자는 역산할 수 있다는 점을 포함해 [관측성](03-observability.md)의 `tenant_id_hash` 키 정책 논의(미해결 이슈 3, `RAG_OTEL__TENANT_HASH_KEY_REF` HMAC 전환 여부)와 **같은 정책**을 따른다 — 두 해시 중 하나만 키 있는 방식으로 바꾸면 로그·감사·스팬 간 상관이 끊어진다.
 
 | 항목 | `lite` | `standard`/`premium` | `korean-gov` | 근거 |
 |------|--------|----------------------|--------------|------|
@@ -577,7 +578,7 @@ sequenceDiagram
 
 ### 8.4 PII 복원(`unmask_pii`) 통제
 
-`tokenize`+`encrypt` 토큰의 복호는 `pii_officer` 전용 액션 `unmask_pii`다(보안 아키텍처 §4.1). 운영 통제: (1) 호출마다 `audit.admin.action{action: unmask_pii, resource{type: document|collection, id}}`; (2) §3.6 직무 분리와 분기 검토; (3) 복호 결과는 API 응답에만 존재하고 로그·캐시·산출물에 저장하지 않는다; (4) 복호 API의 표면(엔드포인트·응답 형식)은 [관리 API](../05-api/04-management-api.md)가 정한다 — 바이블 §14에 없으므로 제안이다.
+`tokenize`+`encrypt` 토큰의 복호는 `pii_officer` 전용 액션 `unmask_pii`다(보안 아키텍처 §4.1). 운영 통제: (1) 호출마다 `audit.admin.action{action: unmask_pii, resource{type: document|collection, id}}`; (2) §3.6 직무 분리와 분기 검토; (3) 복호 결과는 API 응답에만 존재하고 로그·캐시·산출물에 저장하지 않는다; (4) 복호 API는 `POST /v1/documents/{document_id}/unmask`로 바이블 §14 1.3.0에 등재됐다(AM-39; `pii_tokenize_mode ∈ {tokenize, encrypt}` 문서만, 감사 `audit.document.accessed`); 응답 형식 세부는 [관리 API](../05-api/04-management-api.md)가 정한다.
 
 ## 9. 침해 대응 절차
 
@@ -605,7 +606,7 @@ flowchart TD
 |------|------|------|
 | 탐지 | 알림 규칙: `rag_authz_errors_total` 급증, `rag_egress_denied_total{component}` 급증 또는 장기 0, `rag_acl_recheck_denied_total` 급증, `rag_consistency_mismatch_total`, `rag_pii_detector_errors_total`; 카나리 잡 실패; §12 보고 채널 | 바이블 §6.5 정본 메트릭, [관측성](03-observability.md) |
 | 증적 보전 | 감사 이벤트(`security_context_hash`, `filters_effective_hash`, `principal_hash`) 범위 추출·해시 체인 확인; 관련 `IndexCommit`·`lineage` 스냅샷; 로그 TTL 연장 | 보안 아키텍처 §8, 바이블 §13.1 |
-| 격리 | 유출 API 키 폐기(`manage_api_keys`), IdP에서 세션·리프레시 토큰 무효화, `PATCH /v1/tenants/{tenant_id}/policies`로 `egress_policy.allowed_hosts=[]`·`llm_enrichment_allowed=false` 잠금, 구독 삭제, 인그레스에서 특정 테넌트 차단 | 바이블 §14 |
+| 격리 | 유출 API 키 폐기(`manage_api_keys`), IdP에서 세션·리프레시 토큰 무효화, `PATCH /v1/tenants/{tenant_id}/policies`로 `egress_policy.allowed_hosts=[]`·`llm_enrichment_allowed=false` 잠금, 구독 삭제, 인그레스에서 특정 테넌트 차단; 테넌트 전체 차단이 필요하면 `PATCH /v1/tenants/{tenant_id}`로 `status`(`TenantStatus`)를 `disabled`로 바꿔 이후 모든 요청을 `auth.forbidden` 403으로 fail-closed(바이블 §13.1·§14 1.3.0, AM-39) | 바이블 §14 |
 | 근절 | §4 키 회전(S1은 E8 서명 키·DEK·웹훅 키 전부), Trivy 재스캔·패치, Cedar 번들 수정 → `policy_version`, 이미지 재빌드·digest 갱신 | §4, §6 |
 | 복구 | 원장이 정본이므로 산출물 재적재(replay)로 인덱스 재구성(K6), `consistency_check` 잡, 삭제·ACL 회수 힌트 재기록, 카나리 침투 테스트 재실행 | 바이블 §2.1 K6, [ADR-0026](../06-adr/0026-index-commit-generation-saga-and-ledger.md) |
 | 사후 | 5영업일 내 보고서(타임라인·원인·재발 방지), 위협 모델 표 갱신, 플랫폼 결함이면 §12 GHSA, 체크리스트 §1 항목 추가 | NFR-SEC-17 |
@@ -640,7 +641,7 @@ ISMS-P(정보보호 및 개인정보보호 관리체계, 2023 개정 인증기�
 | 2.5.6 접근권한 검토 | 5.18 접근 권한 | 분기 검토(§3.6), API 키 만료 | 검토 리포트 | `standard`+ |
 | 2.6.1 네트워크 접근 | 8.20 네트워크 보안, 8.22 네트워크 분리 | 네임스페이스 기본 거부, Egress Gateway, `EgressPolicy`(E16) | SB-11·SB-12, `rag_egress_denied_total` | `standard`+ |
 | 2.6.2 정보시스템 접근, 2.6.4 데이터베이스 접근 | 8.3 정보 접근 제한 | RLS `FORCE`, DLS 요청별 JWT(E8), Qdrant API 키·`is_tenant` | SB-07~09 | 전체 |
-| 2.6.3 응용프로그램 접근 | 5.15 접근 통제 | Cedar RBAC 매트릭스(E2), ACL 사전 필터(E5~E10), `pack.acl_recheck`(E9) | 카나리 침투 테스트, 골든 시나리오 | 전체 |
+| 2.6.3 응용프로그램 접근 | 5.15 접근 통제 | Cedar RBAC 매트릭스(E2), ACL 사전 필터(E5~E10), `pack.acl_recheck`(E9); 잠금 ACL(`visibility=restricted` + 빈 `allow_principals` 또는 `deny_principals ∋ tenant:*`)은 수집을 거부하지 않고 경고 `contract.acl_deny_all`로 접수한다(바이블 §10.1 1.3.0, AM-17) — 운영자는 이 경고를 실패가 아니라 "권한 부여 전 선적재"로 판독한다 | 카나리 침투 테스트, 골든 시나리오 | 전체 |
 | 2.6.7 인터넷 접속 통제 | 8.23 웹 필터링 | `EgressPolicy.allowed_hosts`, `HF_HUB_OFFLINE=1`, `lo-sidecar` egress 0 | SB-12·SB-21·SB-23 | `standard`+ |
 | 2.7.1 암호정책 적용 | 8.24 암호 기술 사용 | TLS 1.2+/mTLS, SSE, 볼륨 암호화, DEK 봉투(`korean-gov`), `tokenize:encrypt` | SB-13·SB-15 | 전체 |
 | 2.7.2 암호키 관리 | 8.24 | `KeyProvider`(`openbao`·`aws_kms`), §4 회전표, 크립토 셰레딩 | 회전 기록, OpenBao 감사 | `standard`+ |
@@ -681,7 +682,7 @@ ISMS-P(정보보호 및 개인정보보호 관리체계, 2023 개정 인증기�
 | 공개 | 수정 릴리스와 동시에 GHSA(GitHub Security Advisory) 게시; CVE는 GitHub CNA를 통해 배정 요청(절차 확인 필요 as of 2026-09); PyPI 배포물(`rag-platform`, `rag-plugin-*`)은 GHSA로 PyPI Advisory Database에 반영(자동 반영 여부 확인 필요) |
 | 엠바고 | 보고 후 최대 90일; 활발한 악용이 확인되면 단축 |
 | 크레딧 | 보고자 동의 시 GHSA·릴리스 노트에 표기 |
-| 사이드카·플러그인 | `rag-platform-gpl-sidecars`·`rag-plugin-*`는 각자 `SECURITY.md`를 두되 같은 채널로 접수; 업스트림(LibreOffice·H2Orestart·pyhwp·PyMuPDF) 결함은 업스트림으로 전달하고 이미지 재빌드만 공개 |
+| 사이드카·플러그인 | `rag-platform-gpl-sidecars`·`rag-plugin-*`는 각자 `SECURITY.md`를 두되 같은 채널로 접수; 이 이미지들이 옵트인으로 격리해 쓰는 업스트림(LibreOffice·H2Orestart, 대안·기각 pyhwp·PyMuPDF — §7.3, ADR-0006·ADR-0007) 결함은 업스트림으로 전달하고 이미지 재빌드만 공개 |
 | 의존성 CVE | 플랫폼 결함이 아니면 GHSA를 만들지 않고 릴리스 노트 "보안 수정" 절에 CVE ID·영향·조치를 기재 |
 | 운영자 통지 | 릴리스 노트 RSS/GitHub Releases + 선택 메일링 리스트; `korean-gov` 운영자는 에어갭 반입 절차(배포 가이드 §6.3)로 수정 이미지를 적용 |
 | 보고자에게 요구하지 않는 것 | 침투 범위 확대, 타 테넌트 데이터 접근, 서비스 거부 재현 |

@@ -2,8 +2,8 @@
 title: 멀티테넌시와 보안 아키텍처
 status: active
 owner: architecture
-version: 0.2.1
-last_updated: 2026-09-22
+version: 0.2.3
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - 00-design-bible.md
@@ -51,6 +51,8 @@ erDiagram
         ulid tenant_id PK
         jsonb policies "llm_enrichment_allowed, allow_distribution_documents, classification_max, egress_policy"
         string tier
+        enum status "active, disabled (1.3.0)"
+        jsonb quotas "documents_max, storage_bytes_max, qps_max (1.3.0)"
     }
     COLLECTION {
         ulid collection_id PK
@@ -83,14 +85,14 @@ erDiagram
 
 | 계층 | 정본 저장소 | 식별자 | 정책 | 격리 단위로서의 의미 |
 |------|-------------|--------|------|----------------------|
-| 테넌트 | PostgreSQL `tenants`(바이블 §13.1) | `tenant_id`(ULID) | `tenants.policies`: `llm_enrichment_allowed`, `allow_distribution_documents`, `classification_max`, `egress_policy`; `tier`(테넌트 서비스 등급 — 아래 설명) | RLS `FORCE` 경계, 오브젝트 키 접두 `tenants/{tenant_id}/`, Qdrant `is_tenant` 파티션, OpenSearch `routing`·DLS, Valkey 키 접두 `{tenant}`, 레이트 리밋 키, `usage_ledger` |
+| 테넌트 | PostgreSQL `tenants`(바이블 §13.1) | `tenant_id`(ULID) | `tenants.policies`: `llm_enrichment_allowed`, `allow_distribution_documents`, `classification_max`, `egress_policy`; `tier`(테넌트 서비스 등급 — 아래 설명); `status`(`TenantStatus`: `active, disabled`, 1.3.0); `quotas{documents_max, storage_bytes_max, qps_max}`(1.3.0); `disabled_at`(1.3.0) | RLS `FORCE` 경계, 오브젝트 키 접두 `tenants/{tenant_id}/`, Qdrant `is_tenant` 파티션, OpenSearch `routing`·DLS, Valkey 키 접두 `{tenant}`, 레이트 리밋 키, `usage_ledger` |
 | 컬렉션 | `collections`(`CollectionSpec`, 바이블 §5.6) | `collection_id`(ULID) | `profile_hash` 고정, `tenant_isolation_tier`, `policies{pii_policy, pii_tokenize_mode, llm_enrichment_allowed, allow_distribution_documents, enrichment_budget_tokens, corpus_multiplier_max}`, `filterable_fields`, `license_policy` | 인가 자원(`allowed_collections`), 필터 불변식 `collection_id IN :collection_ids`, alias `col_{collection_id}_vec`·`col_{collection_id}_lex`, 채널 × 컬렉션 런 |
 | 문서 | `documents` | `document_id`(ULID; `(tenant_id, collection_id, external_id or source_uri)`로 접수 시 확정, 바이블 §11.2) | `acl`(`Acl`), `acl_hash`, `metadata` | ACL 판정 단위. 부모·요약·표 조각·`ChunkTextStore` 번들 등 모든 레벨 레코드가 문서 ACL을 상속하므로 small-to-big 확장으로 권한이 상승하지 않는다(E10) |
 | 레코드 | Qdrant·OpenSearch | `record_id = H("record", tenant_id, collection_id, document_id, str(index_generation), chunk_id)`(바이블 §6.2) | 문서 ACL 평탄화 payload | 물리 키에 스코프·세대가 합성되어 공유 컬렉션에서도 동일 바이트 문서의 교차 테넌트·교차 컬렉션 덮어쓰기가 없다(E17) |
 
 `tenants.tier`는 **테넌트 서비스 등급**(동시 잡 상한·큐 네임스페이스 등 운영 등급; 바이블 §7.1 `korean-gov` "테넌트 등급별 네임스페이스", §7.2 `runtime.tenant_concurrent_jobs_max` 등급별 8/32/128)이며, 격리 등급 `CollectionSpec.tenant_isolation_tier`(§2)나 프로파일 등급 `ProfileTier`(바이블 §5.7)와 다른 축이다. 값 집합은 바이블 §13.1에 없으므로 이 문서는 단정하지 않고 [관리 API](../05-api/04-management-api.md)와 함께 확정한다(§미해결 이슈 15; 저장소 아키텍처 미해결 이슈 15).
 
-**결정:** 테넌트·컬렉션·문서 세 계층만 보안 경계다. 컬렉션 하위의 폴더·네임스페이스 개념은 두지 않으며 원천 시스템의 계층은 `metadata.custom`·`filterable_fields`로 필터링만 한다. 문서보다 작은 ACL(블록·청크 단위)은 v1에 없고, 필요 시 `Block.acl_override`·`Chunk.acl`을 ADR로 추가한다(바이블 §10.1, [ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md)).
+**결정:** 테넌트·컬렉션·문서 세 계층만 보안 경계다. 컬렉션 하위의 폴더·네임스페이스 개념은 두지 않으며 원천 시스템의 계층은 `metadata.custom`·`filterable_fields`로 필터링만 한다. 문서보다 작은 ACL(블록·청크 단위)은 v1에 없고, 필요 시 `Block.acl_override`·`Chunk.acl`을 ADR로 추가한다(바이블 §10.1, [ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md)). **테넌트 상태·할당량(바이블 §5.7·§13.1 1.3.0, AM-38·AM-39):** `status=disabled`인 테넌트의 모든 요청은 `auth.forbidden` 403이다(인증 자체는 통과해도 인가 단계에서 차단). `quotas{documents_max, storage_bytes_max, qps_max}` 초과는 §10 레이트 리밋·쿼터를 따른다. `PATCH /v1/tenants/{tenant_id}` 또는 `/policies`로 `status`·`quotas`·정책이 바뀌면 `tenant.policies.changed`를 발행해 api 캐시(`collspec:` 류)를 무효화하며, 이 이벤트는 감사 이벤트(`audit.admin.action`)와 **겸용하지 않는다**(제어용 이벤트와 감사 이벤트 분리, E12 원칙).
 
 ### 1.2 주체(principal) 모델
 
@@ -287,7 +289,7 @@ Cedar 정책 모델(이 문서가 정의; cedarpy 4.12.0이 래핑한 Cedar 4.12
 |------|----|
 | principal 타입 | `User`(`user:`), `Service`(`service:`) — 속성 `tenant_id`, `roles`, `groups`, `allowed_collections`, `auth_method` |
 | resource 타입 | `Platform`, `Tenant`, `Collection`, `Document`, `Job`, `Subscription`, `Profile`, `EvalRun` — 속성 `tenant_id`, `collection_id` |
-| action | `search`, `read_document`, `ingest`, `reprocess_document`, `delete_document`, `update_acl`, `manage_jobs`, `manage_collection`, `manage_dictionary`, `manage_subscriptions`, `manage_tenant_policies`, `manage_api_keys`, `read_usage`, `run_eval`, `manage_profiles`, `manage_tenants`, `unmask_pii` |
+| action | `search`, `read_document`, `ingest`, `reprocess_document`, `delete_document`, `update_acl`, `manage_jobs`, `manage_collection`, `manage_dictionary`, `manage_subscriptions`, `manage_tenant_policies`, `manage_api_keys`, `read_usage`, `run_eval`, `manage_profiles`, `manage_tenants`, `read_registry`, `read_audit`, `unmask_pii` |
 | 컨텍스트 | `auth_method`, `classification_max`, `policy_version`, `actor`(위임 모델 C) |
 | 결정 | Allow/Deny + `policy_version`. 정책 엔진 오류·정책 미로딩은 **Deny**(fail-closed, `rag_authz_errors_total`) |
 
@@ -310,11 +312,13 @@ Cedar 정책 모델(이 문서가 정의; cedarpy 4.12.0이 래핑한 Cedar 4.12
 | `read_usage` → `GET /v1/tenants/{tenant_id}/usage` | O | O | - | - | - | - |
 | `run_eval` → `/v1/eval/*` | O | O | C | - | - | - |
 | `manage_profiles` → `POST /v1/profiles/validate`, 프로파일 게시(`GET /v1/profiles*`는 인증된 전원) | O | - | - | - | - | - |
-| `manage_tenants` → 테넌트 생성·`tier` 변경·플러그인 정책(관리 API) | O | - | - | - | - | - |
-| `unmask_pii` → `tokenize` 토큰 복호(관리 API) | - | - | - | - | - | C(`allowed_collections` 지정 시) / O(미지정 시 테넌트 전체) |
+| `manage_tenants` → `GET/POST /v1/tenants`, `GET/PATCH /v1/tenants/{tenant_id}`(`status`·`quotas{documents_max, storage_bytes_max, qps_max}`; `tier`는 읽기 전용, 승격은 `tier.promotion.v1`), `GET/PATCH /v1/tenants/{tenant_id}/policies`(관리 API, 바이블 §14 1.3.0; #56, AM-39 — CLI·Helm으로 옮기지 않는다) | O | - | - | - | - | - |
+| `read_registry` → `GET /v1/plugins`·`/v1/plugins/{plugin_id}`, `GET /v1/schemas`·`/v1/schemas/{name}`, `GET /v1/version`(바이블 §14 1.3.0; 05-api/04 미해결 12 신설) | O | O | O | O | O | O |
+| `read_audit` → `GET /v1/audit-events`(바이블 §14 1.3.0; 05-api/04 미해결 12 신설) | O | O | - | - | - | C(자기 `unmask_pii` 호출 이력만) |
+| `unmask_pii` → `tokenize`·`encrypt` 토큰 복호(`POST /v1/documents/{document_id}/unmask`, 바이블 §14 1.3.0) | - | - | - | - | - | C(`allowed_collections` 지정 시) / O(미지정 시 테넌트 전체) |
 | MCP `list_collections` | O | O | C | C | C(`allowed_collections`만, E14) | - |
 
-원칙: (1) `platform_admin`은 테넌트 데이터를 읽지 않는 것이 기본이며(`search`·`read_document` 허용은 운영 진단용으로 정책에서 끌 수 있다), 읽으면 `audit.admin.action`이 남는다. (2) 컬렉션 스코프 역할은 `allowed_collections` 밖의 컬렉션에 대해 항상 Deny다. (3) `service:` 주체(API 키·client credentials·mTLS)는 `ingestor`·`reader`·`collection_admin`만 가질 수 있고 `tenant_admin`·`platform_admin`·`pii_officer`는 사람 주체(`oidc`)에게만 부여한다(Cedar `forbid … when principal is RAG::Service`). (4) `unmask_pii`는 `pii_officer` 전용이며 다른 어떤 역할에도 합쳐지지 않는다(FR-SEC-08 별도 역할 요건); 복원 호출마다 `audit.admin.action{action: unmask_pii}`가 남는다. (5) 매트릭스 변경은 Cedar 정책 번들 버전(`policy_version`)을 올리고 `audit.admin.action`으로 기록한다.
+원칙: (1) `platform_admin`은 테넌트 데이터를 읽지 않는 것이 기본이며(`search`·`read_document` 허용은 운영 진단용으로 정책에서 끌 수 있다), 읽으면 `audit.admin.action`이 남는다. (2) 컬렉션 스코프 역할은 `allowed_collections` 밖의 컬렉션에 대해 항상 Deny다. (3) `service:` 주체(API 키·client credentials·mTLS)는 `ingestor`·`reader`·`collection_admin`만 가질 수 있고 `tenant_admin`·`platform_admin`·`pii_officer`는 사람 주체(`oidc`)에게만 부여한다(Cedar `forbid … when principal is RAG::Service`). (4) `unmask_pii`는 `pii_officer` 전용이며 다른 어떤 역할에도 합쳐지지 않는다(FR-SEC-08 별도 역할 요건); 복원 호출마다 `audit.admin.action{action: unmask_pii}`가 남는다. (5) 매트릭스 변경은 Cedar 정책 번들 버전(`policy_version`)을 올리고 `audit.admin.action`으로 기록한다. (6) **이 매트릭스가 관리 API 권한 액션의 정본이다**(바이블 §14는 경로만 열거, 바이블 미해결 이슈 23) — `manage_tenants`·`manage_api_keys`·`read_registry`·`read_audit`·`unmask_pii`를 포함한 모든 Cedar 액션 이름과 역할 대응은 이 표를 따른다.
 
 Cedar 정책 예시(형식 참고; 실제 번들은 `security/authz_cedar`가 소유):
 
@@ -379,7 +383,7 @@ permit (
 | `tenant` | 보임 | `acl_allow`에 `service:{client_id}`(또는 그 그룹·`tenant:*`)가 있을 때만 | `visible_set=[public]`(§3.2 규칙, `auth_method` 무관) |
 | `restricted` | `acl_allow` 매칭 시 | `acl_allow` 매칭 시 | `tenant:*`를 `allow_principals`에 넣으면 사실상 `tenant` |
 
-**결정:** ACL 의미는 바이블 §10.1을 그대로 채택하며, 부모·요약·표 조각·`ChunkTextStore` 번들의 별도 ACL 계산은 없다(문서 ACL 상속, E10). 원천 ACL 동기화는 푸시(`PATCH /v1/documents/{document_id}/acl`) + 주기 조정(`source_acl_hash` 비교)이며 회수 전파 SLO는 프로파일 `runtime.acl_propagation_slo`(`lite` 15m / `standard` 5m / `korean-gov` 1m, 바이블 §7.2)다([ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md)).
+**결정:** ACL 의미는 바이블 §10.1을 그대로 채택하며, 부모·요약·표 조각·`ChunkTextStore` 번들의 별도 ACL 계산은 없다(문서 ACL 상속, E10). **잠금 ACL(바이블 §10.1 1.3.0, AM-17):** `visibility=restricted` + 빈 `allow_principals`, 또는 `deny_principals ∋ tenant:*`는 인가 후에도 **누구에게도 보이지 않는** 문서다. 수집은 이를 거부하지 않고 경고 `contract.acl_deny_all`(§5.7)과 함께 접수한다(권한 부여 전 선적재 용도). 원천 ACL 동기화는 푸시(`PATCH /v1/documents/{document_id}/acl`) + 주기 조정(`source_acl_hash` 비교)이며 회수 전파 SLO는 프로파일 `runtime.acl_propagation_slo`(`lite` 15m / `standard` 5m / `korean-gov` 1m, 바이블 §7.2)다([ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md)).
 
 ## 5. ACL 강제 지점 17개
 
@@ -393,7 +397,7 @@ permit (
 | E4 | 수집 정규화 | 주체 접두어 정규화·상한 1,024; `pii_policy` 적용(`keep` 불가 항목: 고유식별정보·계좌·카드); PII 모델 로딩 실패 시 `keep` 폴백 금지(잡 실패); ACL은 문서 단위로 모든 레벨 레코드·부모 번들에 동일 전파(`acl_hash` 포함) | 잡 실패 | 계약 테스트 | `adapters/normalize/pii_presidio`, `api`(접수 검증) |
 | E5 | 인덱스 쓰기 | `tenant_id`·`collection_id`·`acl_allow`·`acl_visibility`·`acl_hash` 누락 레코드 1건이라도 있으면 **배치 전체 거부**; `record_id`가 `tenant_id`·`collection_id`·`document_id`·`index_generation`을 합성(E17); Qdrant `is_tenant` payload 인덱스; OpenSearch `routing=tenant_id` + filtered alias; 오브젝트 키 `tenants/{tenant_id}/` 접두 | `index.security_fields_missing` | 스키마 필수 + 어댑터 테스트 | `adapters/index/*`, `storage/keys` |
 | E6 | 플래너 | `SecurityContext` 서버 주입(요청 본문 무시), `filters.security`·`filters.strategy` 제거·완화 불가, `filters.relaxable_keys`에 보안·전략 키 금지(스키마) | `plan.security_context_missing` | 스키마 테스트 | `retrieval/planner`, `retrieval/filters` |
-| E7 | 리트리버 어댑터 | `search(plan, security)`에 `tenant_id` 부재 → 예외; 사전 필터만(사후 필터 금지); `security_context_hash` 서명 | 요청 실패(500 아닌 계약 위반) | 어댑터 계약 테스트("백엔드 요청에 tenant_id 필터 존재") | `adapters/retrieve/*` |
+| E7 | 리트리버 어댑터 | `search(plan, security)`에 `tenant_id` 부재 → 예외; 사전 필터만(사후 필터 금지); `security_context_hash` 서명 | `retrieve.security_context_missing` 500(바이블 §10.3 1.3.0, AM-25 — 미분류 500이 아니라 카탈로그 코드로 실패; 클라이언트 원인은 E6 `plan.security_context_missing` 400이 먼저 차단) | 어댑터 계약 테스트("백엔드 요청에 tenant_id 필터 존재") | `adapters/retrieve/*` |
 | E8 | 백엔드 이중 방어 | OpenSearch Security DLS `{"term":{"tenant_id":"${attr.jwt.tenant_id}"}}` — api가 **요청별 단명 JWT**(TTL ≤ 60s, 클레임 `tenant_id`·`sub`·`aud=opensearch`, 플랫폼 서명 키; JWKS를 OpenSearch Security `jwt` 인증 도메인에 등록, 역할 `rag_reader`에 DLS 매핑)를 발급해 OpenSearch 요청 `Authorization` 헤더로 전달하고 DLS는 그 클레임을 참조한다. `auth_method=api_key`·`mtls` 주체도 같은 경로(원 주체 토큰은 전달하지 않음). PostgreSQL RLS `FORCE`(모든 테넌트 표, `SET LOCAL app.tenant_id`). Qdrant는 `korean-gov`·`index_per_tenant`에서 Qdrant JWT RBAC(`access[].collections[].payload = {tenant_id}`, 요청별 테넌트 스코프 토큰; 확인 필요 as of 2026-09) 옵션이며 그 외 등급은 **사전 필터 단일 방어**(리스크 #3) | 서버 측 차단 | 카나리 테넌트 침투 테스트(주기), "서비스 계정 토큰만으로는 DLS가 0건" 테스트 | `security/backend_token`, `ledger` |
 | E9 | 패커 재검증 | 항목별 ACL·embargo·expires·classification을 `as_of`로 재평가. 입력은 `hydrate`가 채운 `results[].acl`과 Valkey 회수 힌트 `aclrev:{tenant_id}:{document_id}`(`acl.update.v1`·`delete.document.v1`이 백엔드 갱신 전에 기록). `omitted.reason=acl_denied`, `items[].acl{checked: true, checked_at, source}`, `classification_max`, `redaction_summary` | 항목 제외 | 골든 시나리오 "ACL 회수(또는 삭제) → 백엔드 전파 완료 전 질의 → 미반환", Valkey 불가 시 `degraded{acl_recheck}` | `retrieval/pack/acl_recheck`, `security/acl_recheck` |
 | E10 | 부모 확장·문서 조회 | `ChunkTextStore`·`get_document`·`hydrate`도 동일 보안 필터(§10.2 (a)); 부모·번들은 문서 ACL 상속(후보 `acl`과 동일) | 확장 생략 | 단위 테스트 | `retrieval/pack/chunk_text_store`, `api/documents`, `mcp/tools` |
@@ -459,7 +463,7 @@ AND item_kind IN :item_kinds
 AND <user filters> AND <self_query filters>
 ```
 
-네 그룹은 `CandidateSet.filters_applied`에 구분 기록되고, 백엔드에 실제 전송된 트리의 해시가 `filters.effective_hash = H("filters", canonical_json(security + strategy + user + self_query))`(바이블 §6.2)로 감사에 남는다. 검색 결과 캐시는 두지 않는다(ACL 시점성, 바이블 §4.3); 플랜 캐시 키에는 `H("principals", …)`가 포함되어 주체가 다르면 플랜이 공유되지 않는다.
+네 그룹은 `CandidateSet.filters_applied`에 구분 기록되고, 백엔드에 실제 전송된 트리의 해시가 `filters.effective_hash = H("filters", canonical_json(security + strategy + user + self_query))`(바이블 §6.2)로 감사에 남는다. 검색 결과 캐시는 두지 않는다(ACL 시점성, 바이블 §4.3); 플랜 캐시 키(`H("plan", normalized_query, …, profile_hash, H("principals", …), H("opts", canonical_json(플랜에 영향 주는 QueryRequest 옵션)))`, 바이블 §6.2 1.3.0 AM-40)에는 `H("principals", …)`가 포함되어 주체가 다르면 플랜이 공유되지 않고, 1.3.0의 `opts` 항 추가로 같은 질의라도 플랜에 영향을 주는 옵션이 다르면 캐시가 갈린다.
 
 ### 5.2 백엔드 사전 필터 매핑
 
@@ -620,7 +624,7 @@ flowchart LR
 | 정책 값 | 동작 | 재식별 | 검색 품질 | 기본 |
 |---------|------|--------|-----------|------|
 | `mask` | 유형 플레이스홀더(`<KR_RRN>` 등)로 치환 | 불가 | 문맥 유지, 값 검색 불가 | **기본**(전 프로파일) |
-| `tokenize` + `encrypt` | 테넌트 DEK(OpenBao Transit 래핑)로 AES 암호화 토큰 치환 | `pii_officer`(`unmask_pii`, §4.1)만 복호 | 동일 값 동일 토큰 여부는 모드 의존 | `korean-gov` 기본 |
+| `tokenize` + `encrypt` | 테넌트 DEK(OpenBao Transit 래핑)로 AES 암호화 토큰 치환 | `pii_officer`(`unmask_pii`, §4.1)만 `POST /v1/documents/{document_id}/unmask`로 복호(바이블 §14 1.3.0; `pii_tokenize_mode ∈ {tokenize, encrypt}` 문서만, 감사 `audit.document.accessed`) | 동일 값 동일 토큰 여부는 모드 의존 | `korean-gov` 기본 |
 | `tokenize` + `hash` | 테넌트 고정 salt로 해시 토큰 치환(Presidio `hash`는 salt 미지정 시 엔티티마다 임의 salt → 반드시 고정 salt 전달, 기술 지형 12 §4.3) | 불가(비가역) | 동일 값 동일 토큰 → 조인 가능 | 가명처리·통계 조인 |
 | `exclude` | 해당 블록을 색인에서 제외(`pii_spans[].operator=exclude`) | 원본만 | 재현율 손실 | 고유식별정보 다량 문서 |
 | `keep` | 원문 유지, `pii_spans`만 기록 | 해당 없음 | 최상 | 법적 근거 있는 폐쇄 테넌트만; **고유식별정보·계좌·카드·생체인식정보(제7조 암호화 대상 전부)는 `keep` 불가**(E4, 테넌트 설정으로도 해제 불가) |
@@ -643,7 +647,7 @@ flowchart LR
 | `audit.acl.changed` | `PATCH /v1/documents/{document_id}/acl` 접수 시(워크플로우 `acl.update.v1`의 도메인 이벤트 `acl.document.updated`와 별개) | `tenant/{tenant_id}/document/{document_id}` | `document_id, principal_hash, acl_hash_before, acl_hash_after, job_id` |
 | `audit.admin.action` | 컬렉션·테넌트 정책·구독·API 키·프로파일·삭제·재색인·`unmask_pii`·`platform_admin`의 데이터 읽기 | `tenant/{tenant_id}/{entity}/{id}`(바이블 §6.5 형식만) | `action(Cedar 액션명), resource{type, id}, principal_hash, decision, policy_version, request_id, job_id?` |
 
-`subject`는 바이블 §6.5 `tenant/{tenant_id}/{entity}/{id}` 형식만 쓰고 `CloudEventEnvelope.tenantid`(Y, 바이블 §5.3)를 항상 채운다. 테넌트가 없는 플랫폼 범위 행위(테넌트 생성, 프로파일 게시, `platform_admin`의 전 테넌트 감사 조회)는 이 형식으로 표현할 수 없으므로 `tenantid`·`subject` 처리(플랫폼 센티널 테넌트 등)를 §미해결 이슈 6에 등록하고, 확정 전에는 **대상 테넌트가 있는 행위만** `audit.admin.action`으로 발행하며 플랫폼 범위 행위는 `audit_log` 표에 직접 기록한다(저장소 아키텍처 §2.4 감사 트리거). `principal_hash = H("principal", tenant_id, subject)`는 이 문서의 제안 결합식이며(§미해결 이슈 6), 감사 조회 시 IdP 디렉터리로 역매핑한다. 감사 이벤트 예시:
+`subject`는 바이블 §6.5 `tenant/{tenant_id}/{entity}/{id}` 형식만 쓰고 `CloudEventEnvelope.tenantid`(Y, 바이블 §5.3)를 항상 채운다. 테넌트가 없는 플랫폼 범위 행위(테넌트 생성, 프로파일 게시, `platform_admin`의 전 테넌트 감사 조회)는 이 형식으로 표현할 수 없으므로 `tenantid`·`subject` 처리(플랫폼 센티널 테넌트 등)를 §미해결 이슈 6에 등록하고, 확정 전에는 **대상 테넌트가 있는 행위만** `audit.admin.action`으로 발행하며 플랫폼 범위 행위는 `audit_log` 표에 직접 기록한다(저장소 아키텍처 §2.4 감사 트리거). `principal_hash = H("principal", tenant_id, subject)`는 바이블 §6.2 1.3.0의 정본 결합식이다(AM-40; 계약 필드 아닌 감사·로그·캐시 상관 키). 감사 조회 시 IdP 디렉터리로 역매핑한다. 감사 이벤트 예시:
 
 ```json
 {
@@ -681,7 +685,7 @@ flowchart LR
 
 | 모드 | 저장 내용 | 기본 | 근거·제약 |
 |------|-----------|------|-----------|
-| `hash_only`(기본) | `query_hash = blake3_hex(utf8(normalized_query))`, `filters_effective_hash`, 반환 문서 ID | 전 프로파일 | 바이블 §8.1 "ID·해시만", NFR-PRV-04(로그·트레이스에 질의 원문 미기록), E13 |
+| `hash_only`(기본) | `query_hash = H("query", normalized_query)`(바이블 §6.2 1.3.0, AM-40), `filters_effective_hash`, 반환 문서 ID | 전 프로파일 | 바이블 §8.1 "ID·해시만", NFR-PRV-04(로그·트레이스에 질의 원문 미기록), E13 |
 | `encrypted_text`(테넌트 옵트인, 제안) | `normalized_query`를 PII 정책 적용 후 테넌트 DEK로 암호화해 감사 저장소의 별도 필드에 보존; 복호는 `unmask_pii`와 동일 권한 | 끔 | 규제 조사·오남용 탐지 요구가 있는 테넌트. 보존 TTL은 감사 보존 기간과 동일, 아웃박스 `data`에는 넣지 않고 감사 싱크가 직접 기록(§미해결 이슈 7) |
 | 평문 보존 | — | **금지** | 질의 자체가 PII·기밀을 담을 수 있음 |
 
@@ -728,6 +732,7 @@ flowchart LR
 | 입력 크기 | `IngestRequest` 64KB·`metadata` 16KB·원본 `fetch.max_bytes`(200MB 초안), `QueryRequest` 16KB·`query` 4,000자·`collection_ids` 20·`filters` 8KB, MCP 결과 20k 토큰 | 스키마·API 검증 | 400 `contract.violation`(바이블 §5.7; 413 `api.payload_too_large`는 [오류 모델](../03-contracts/13-error-model.md) §3.3 제안 코드 채택 후) | 바이블 §5.1 |
 | 계량(과금·알림) | `usage_ledger(tenant_id, day, meter)`: `llm_tokens`, `gpu_seconds`, `bytes_indexed`, `queries` | `IndexCommit.stats`·`EnrichedChunkSet.budget_used`·질의 카운트 집계 | `GET /v1/tenants/{tenant_id}/usage` | 바이블 §13.1 |
 | 일일 수집 바이트 한도(NFR-SEC-13) | `usage_ledger.bytes_indexed` 대비 테넌트 정책 상한(제안) | 접수 시 검사 | 429 또는 잡 거부 | §미해결 이슈 8 |
+| 테넌트 할당량(`tenants.quotas`) | `documents_max`, `storage_bytes_max`(1.3.0) | 접수 시 `usage_ledger` 대비 검사 | **결정:** `api.quota_exceeded` 403(트리아지 미해결 4; 05-api/01 §9와 동일값). QPS 초과는 별도로 기존 `api.rate_limited` 429(위 "요청 속도" 행)를 그대로 쓴다 — 두 코드를 혼용하지 않는다 | 바이블 §5.7, AM-39 |
 
 초안 목표 한도(`standard`, 테넌트당; 부하 테스트 후 프로파일 값으로 확정):
 
@@ -775,43 +780,9 @@ NFR-SEC-17에 따라 마이너 릴리스마다 검토한다. "완화" 열은 이
 
 ### 12.1 삭제 요청 처리
 
-삭제는 명시 삭제(`DELETE /v1/documents/{document_id}`), 컬렉션 삭제(`DELETE /v1/collections/{collection_id}`), 테넌트 삭제(관리 API), TTL 만료(NFR-PRV-07, 컬렉션 정책 제안)의 네 경로가 있고 모두 `delete.document.v1`(바이블 §11.2) 또는 그 벌크 변형으로 수렴한다. 데드라인은 NFR §9의 **최대값**이다(초안).
+삭제는 명시 삭제(`DELETE /v1/documents/{document_id}`), 컬렉션 삭제(`DELETE /v1/collections/{collection_id}`), 테넌트 삭제(관리 API), TTL 만료(NFR-PRV-07, 컬렉션 정책 제안)의 네 경로가 있고 모두 `delete.document.v1`(바이블 §11.2) 또는 그 벌크 변형으로 수렴한다. 전진 복구 사가의 단계별 시퀀스, 산출물 GC, 삭제 SLA(질의 결과 힌트 ≤ 5s, 벡터·렉시컬 인덱스 논리 삭제 ≤ 60s, 원장·산출물 물리 삭제 ≤ 24h, 백엔드 물리 소거 ≤ 7일, 백업 ≤ 35일, 트레이스·로그 ≤ 30일)는 [갱신·삭제·재인덱싱](../04-pipelines/19-update-delete-and-reindexing.md) §4가 소유한다(ISS-NFR-18). Valkey `plan:`·`cursor:`는 결과를 담지 않아 삭제 시 무효화가 불필요하고 `ptxt:`(부모 본문)만 즉시 `DEL`한다. 데드라인은 NFR §9의 **최대값**이다(초안).
 
-```mermaid
-sequenceDiagram
-    participant C as 클라이언트 (collection_admin+)
-    participant A as api
-    participant V as Valkey
-    participant L as PostgreSQL 원장
-    participant W as delete.document.v1
-    participant B as Qdrant · OpenSearch
-    participant O as Object Storage
-    C->>A: DELETE /v1/documents/{document_id}
-    A->>A: Cedar delete_document (E2) → audit.admin.action
-    A->>L: jobs INSERT (kind=delete_document)
-    A-->>C: 202 {job_id, status_url, events_url}
-    W->>L: documents 툼스톤 (원장 트랜잭션)
-    W->>V: SET aclrev:{tenant_id}:{document_id} = {acl_hash, acl, deleted: true} (E9, 백엔드 갱신 전, ≤ 5s 논리 차단)
-    W->>B: kind=delete 커밋: delete_by_filter(tenant_id, document_id) 양 백엔드 (논리 삭제 ≤ 60s)
-    W->>V: DEL ptxt:{tenant}:{chunk_set_blake3} (≤ 5s — plan:·cursor:는 결과를 담지 않아 무효화 불필요)
-    W->>L: index_commits(kind=delete, record_count=0) + outbox(ingest.document.deleted)
-    W->>O: 미참조 산출물·원본 소거 예약 (≤ 24h — derived/는 테넌트 내 공유라 참조 카운트 필요)
-    Note over B: 물리 소거는 백엔드 컴팩션 · 세그먼트 머지 (≤ 7일), maintenance.cleanup.v1
-    Note over L: 물리 삭제 ≤ 24h — 백업 보존 ≤ 35일, 복구 시 툼스톤 재적용
-```
-
-| 대상 | 논리 삭제(최대) | 물리 소거(최대) | 장치 | 검증 |
-|------|-----------------|-----------------|------|------|
-| 검색 결과(`pack`) | ≤ 5s | — | `aclrev` `deleted` 힌트(E9) | 골든 시나리오 "삭제 직후 질의 → 미반환" |
-| 벡터·렉시컬 인덱스 | ≤ 60s | ≤ 7일 | `delete_by_filter(tenant_id, document_id)`, `kind=delete` 커밋, `maintenance.cleanup.v1` | 삭제 문서 청크 검색 0건, 정합성 검사 |
-| 원장(`documents`, `jobs` 등) | 즉시(트랜잭션) | ≤ 24h | 툼스톤 → 하드 삭제 | 조회 API 삭제 상태 |
-| Valkey 캐시 | `ptxt:`(부모 본문) 명시 `DEL` ≤ 5s; `plan:`·`cursor:`는 본문·결과를 담지 않음(플랜 트리·`{query_id, offset, security_context_hash}`) → 다음 질의·다음 페이지가 `aclrev` `deleted` 힌트로 차단되므로 무효화 불필요 | 잔여 TTL 상한: `plan:` 5m / `cursor:` 10m / `ptxt:` 24h(바이블 §13.4; `ptxt:`는 DEL로 즉시) | 키 삭제·TTL; `plan:{tenant}:*` 와일드카드 삭제(SCAN 순회)는 하지 않는다 | 캐시 히트 검사(`ptxt:` 0건), 삭제 직후 커서 "더 보기" 미반환 |
-| 산출물·원본(`tenants/{tenant_id}/…`) | 해당 없음 | ≤ 24h(마지막 참조 기준) | 참조 카운트 GC(`derived/`·`sources/`는 테넌트 내 공유) | 버킷 리스팅 |
-| 트레이스·로그 | 본문 미기록 | ≤ 30일 | 저장소 TTL | TTL 설정 감사 |
-| 백업 | — | ≤ 35일 | 보존 만료, 복구 후 툼스톤 재적용 | 복구 리허설 |
-| 이벤트 | `ingest.document.deleted` ≤ 5s(논리 삭제 후) | — | 아웃박스 릴레이 | 수신 확인 |
-
-테넌트 삭제는 (1) `index_per_tenant`면 물리 컬렉션·인덱스 삭제 + 테넌트 DEK 폐기(크립토 셰레딩, 즉시 복호 불가), 공유 등급이면 `delete_by_filter(tenant_id)`; (2) 오브젝트 접두 `tenants/{tenant_id}/` 삭제; (3) 원장 RLS 범위 CASCADE; (4) Valkey `{tenant}` 접두 키 삭제; (5) 감사 로그는 **보존 기간까지 유지**(법정 보존 의무가 삭제권보다 우선하는 항목, 법률 자문 필요)다. 삭제는 멱등하며(NFR-PRV-09) 삭제·재수집 경쟁은 디스패처의 문서 단위 직렬화(바이블 §11.2)로 마지막 요청 의도를 따른다(NFR-PRV-10). 메커니즘 확정은 [갱신·삭제·재인덱싱](../04-pipelines/19-update-delete-and-reindexing.md)(ISS-NFR-18)이 소유한다.
+테넌트 삭제는 (1) `index_per_tenant`면 물리 컬렉션·인덱스 삭제 + 테넌트 DEK 폐기(크립토 셰레딩, 즉시 복호 불가), 공유 등급이면 `delete_by_filter(tenant_id)`; (2) 오브젝트 접두 `tenants/{tenant_id}/` 삭제; (3) 원장 RLS 범위 CASCADE; (4) Valkey `{tenant}` 접두 키 삭제; (5) 감사 로그는 **보존 기간까지 유지**(법정 보존 의무가 삭제권보다 우선하는 항목, 법률 자문 필요)다. 삭제는 멱등하며(NFR-PRV-09) 삭제·재수집 경쟁은 디스패처의 문서 단위 직렬화(바이블 §11.2)로 마지막 요청 의도를 따른다(NFR-PRV-10).
 
 ### 12.2 데이터 위치(거주성)
 
@@ -866,12 +837,12 @@ NFR-PRV-08(테넌트별 데이터 흐름 조회)은 `CollectionSpec.policies`·`
 
 ## 미해결 이슈
 
-1. depends_on 대조 상태: [저장소 아키텍처](04-storage-architecture.md)(active, 2026-09-22)는 §2.3(원장 단일 스키마)·§2.4(RLS 정책·`lookup_api_key`)·§2.5(PgBouncer 트랜잭션 모드 `SET LOCAL` 프롤로그 — 바이블 미해결 이슈 9·저장소 미해결 이슈 18의 해소안, 이 문서가 채택)·§4.1(테넌트 전략)·§5.3(DLS 역할 `rag_reader`)·§6.1(Valkey 키)과 **대조 완료**했고 불일치는 §미해결 이슈 20(`aclrev:` 값) 하나다. [질의 요청과 질의 계획 계약](../03-contracts/09-query-request-and-query-plan.md)은 미작성이므로 `filters.security`의 스키마 표현은 바이블 §5.5·§10.2를 정본으로 썼고 게시 후 대조한다. 그 밖에 이 문서가 링크한 문서 맵 경로 중 미게시 문서(03-contracts/09·11·12·15, 04-pipelines/02·09·17·19, 05-api/01·03·04·05·07, 08-evaluation/03, 09-operations/03·05)는 게시 후 링크 검증한다(바이블 미해결 이슈 11: 링크 검사 CI는 경고 처리). [ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md)·[ADR-0038](../06-adr/0038-outbound-egress-policy-and-webhook-signing.md)(둘 다 accepted, 2026-09-22; 번호·slug는 바이블 §3.3과 동일)은 **대조 완료**: ADR-0038의 `EgressPolicy` 기본값(`allowed_schemes=[https, s3, gs, az]`, `http`는 테넌트 옵트인, `deny_cidrs` 기본 9개 축소 불가, `max_redirects=3`, `resolve_pin=true`)과 웹훅 서명 `RAG-Signature: t={ts},v1=HMAC-SHA256(secret, "{ts}.{body}")`·5분 재생 창은 이 문서 §6.1 표·§6.2·E16 행과 일치하고, ADR-0037의 `stage_key` 스코프 합성·`fetch` 캐시 제외는 §1.3 오브젝트 스토리지 행·E17과 일치한다 — 불일치 없음.
+1. depends_on 대조 상태: [저장소 아키텍처](04-storage-architecture.md)(active, 2026-09-22)는 §2.3(원장 단일 스키마)·§2.4(RLS 정책·`lookup_api_key`)·§2.5(PgBouncer 트랜잭션 모드 `SET LOCAL` 프롤로그 — 바이블 미해결 이슈 9·저장소 미해결 이슈 18의 해소안, 이 문서가 채택)·§4.1(테넌트 전략)·§5.3(DLS 역할 `rag_reader`)·§6.1(Valkey 키)과 **대조 완료**했고 불일치는 §미해결 이슈 20(`aclrev:` 값) 하나다. [질의 요청과 질의 계획 계약](../03-contracts/09-query-request-and-query-plan.md)은 미작성이므로 `filters.security`의 스키마 표현은 바이블 §5.5·§10.2를 정본으로 썼고 게시 후 대조한다. 그 밖에 이 문서가 링크한 문서 맵 경로(03-contracts/09·11·12·15, 04-pipelines/02·09·17·19, 05-api/01·03·04·05·07, 08-evaluation/03, 09-operations/03·05)는 모두 게시되었다(v1.2.2, 전방 참조 표기 제거); 세부 절 대조는 각 문서 개정과 함께 갱신한다(바이블 미해결 이슈 11: 링크 검사 CI는 경고 처리). [ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md)·[ADR-0038](../06-adr/0038-outbound-egress-policy-and-webhook-signing.md)(둘 다 accepted, 2026-09-22; 번호·slug는 바이블 §3.3과 동일)은 **대조 완료**: ADR-0038의 `EgressPolicy` 기본값(`allowed_schemes=[https, s3, gs, az]`, `http`는 테넌트 옵트인, `deny_cidrs` 기본 9개 축소 불가, `max_redirects=3`, `resolve_pin=true`)과 웹훅 서명 `RAG-Signature: t={ts},v1=HMAC-SHA256(secret, "{ts}.{body}")`·5분 재생 창은 이 문서 §6.1 표·§6.2·E16 행과 일치하고, ADR-0037의 `stage_key` 스코프 합성·`fetch` 캐시 제외는 §1.3 오브젝트 스토리지 행·E17과 일치한다 — 불일치 없음.
 2. Qdrant JWT RBAC(`access[].collections[].payload` 제한)의 문법·요청별 토큰 발급 비용, OpenSearch Security `jwt` 인증 도메인의 키 회전·서비스 계정 혼용, Qdrant·OpenSearch 오픈소스 판의 인덱스 수준 저장 암호화 내장 여부는 확인 필요(as of 2026-09). 확인 전까지 Qdrant는 사전 필터 단일 방어다.
 3. 위임 모델 C(on-behalf-of): OAuth 2.0 Token Exchange(RFC 8693)의 `act` 클레임을 `PrincipalResolver`가 읽어 감사에 병기하려면 `Principal.actor`(string \| null, N)와 `audit.*.data.actor_client_id` 필드가 필요하다. Keycloak·Dex의 토큰 교환 지원 범위 확인 필요(as of 2026-09). minor ADR로 제안.
 4. MCP 커서 핸들 값 `{query_id, offset, security_context_hash}`(주체 불일치 시 거부)는 [저장소 아키텍처](04-storage-architecture.md) §6.1과 일치한다. `cursor_store` 스키마(필드 타입·만료 응답 코드 `api.cursor_invalid` 제안 채택)는 [MCP 서버](../05-api/05-mcp-server.md)에서 확정.
 5. 역할 집합의 바이블 §5.7 등재(`Role` 열거 타입: `platform_admin, tenant_admin, collection_admin, ingestor, reader, pii_officer`)를 minor ADR로 발의한다. 현재 `Principal.roles`는 `array<string>`이므로 등재는 minor 변경이다. `pii_officer` 추가에 따라 FR-SEC-02 역할 목록(4개)과 NFR-SEC-04 명칭 정렬(US-I-10) 갱신을 요청한다.
-6. 감사 `data` 필드(`principal_hash = H("principal", tenant_id, subject)`, `query_hash`, `returned`, `omitted`)는 제안이다. [잡·이벤트·상태 계약](../03-contracts/12-jobs-events-and-status.md)이 `audit.*` 이벤트의 `dataschema`를 확정한다. 같은 문서에서 **플랫폼 범위 감사 이벤트**(테넌트 생성·프로파일 게시·`platform_admin`의 전 테넌트 조회)의 `tenantid`(Y)·`subject`(`tenant/{tenant_id}/…` 고정, 바이블 §5.3·§6.5) 처리 — 플랫폼 센티널 테넌트 ID 도입, 또는 `subject` 형식에 `platform/{entity}/{id}`를 추가하는 바이블 §6.5 minor 개정 — 를 결정해야 한다. 확정 전 플랫폼 범위 행위는 `audit_log` 표에 직접 기록한다(§8.1).
+6. 해소(v1.3, AM-40): `principal_hash`·`query_hash` 결합식은 바이블 §6.2 1.3.0으로 확정되었다. 남은 것은 감사 `data` 필드 구성(`returned`, `omitted` 등 이 문서의 제안 필드 목록) 자체이며 [잡·이벤트·상태 계약](../03-contracts/12-jobs-events-and-status.md)이 `audit.*` 이벤트의 `dataschema`를 확정한다. 같은 문서에서 **플랫폼 범위 감사 이벤트**(테넌트 생성·프로파일 게시·`platform_admin`의 전 테넌트 조회)의 `tenantid`(Y)·`subject`(`tenant/{tenant_id}/…` 고정, 바이블 §5.3·§6.5) 처리 — 플랫폼 센티널 테넌트 ID 도입, 또는 `subject` 형식에 `platform/{entity}/{id}`를 추가하는 바이블 §6.5 minor 개정 — 를 결정해야 한다. 확정 전 플랫폼 범위 행위는 `audit_log` 표에 직접 기록한다(§8.1).
 7. 질의 텍스트 `encrypted_text` 옵트인 모드(테넌트 DEK 암호화, 감사 싱크 직접 기록)는 규제 요구가 확인된 뒤 [보안과 컴플라이언스](../09-operations/05-security-and-compliance.md)에서 결정한다. 접속기록 보존 1년/2년·권한 변경 3년은 개인정보의 안전성 확보조치 기준 원문 확인 필요.
 8. 일일 수집 바이트 한도(NFR-SEC-13)와 컬렉션 TTL(NFR-PRV-07)은 `tenants.policies`·`CollectionSpec.policies`에 필드가 없다. `ingest_bytes_per_day_max`, `document_ttl` 선택 필드(N)를 [컬렉션·프로파일·정책 계약](../03-contracts/15-collection-profile-and-policy-contracts.md)에 제안한다. §10 초안 한도는 부하 테스트 후 프로파일 값으로 확정.
 9. 데이터 거주성(테넌트별 버킷·리전 `tenants.policies.storage_region`)과 처리 기록 조회(NFR-PRV-08) 엔드포인트는 바이블 §14에 없다. [관리 API](../05-api/04-management-api.md)에 제안.

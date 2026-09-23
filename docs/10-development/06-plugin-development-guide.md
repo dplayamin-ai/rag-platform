@@ -2,7 +2,7 @@
 title: 플러그인 개발 가이드
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -139,17 +139,17 @@ forbidden_modules = ["rag_platform.adapters", "rag_platform.orchestration", "rag
 
 | 멤버 | 플러그인이 쓰는 값 | 쓰지 말 것 |
 |------|--------------------|------------|
-| `plugin_id: str` | `"{extension_point}.{implementation}"`(snake_case 둘) | 버전·벤더명을 `plugin_id`에 넣기(버전은 `PluginMeta.version`) |
+| `plugin_id: str` | `"{extension_point}.{implementation}"`(snake_case 둘); 여러 플러그인을 합성한 생산자는 예약 구현명 `{extension_point}.pipeline`(예: `enricher.pipeline`, `retriever.pipeline`, 바이블 §6.1 AM-11)을 쓴다. API 모델은 `model_id = {provider}:{model}`(예: `anthropic:<model-id>`)로 자체 호스팅 `{repo}@{revision}`과 구분한다 | 버전·벤더명을 `plugin_id`에 넣기(버전은 `PluginMeta.version`) |
 | `config_schema: type[BaseModel]` | `ConfigDict(extra="forbid", frozen=True)`; 기본값 = 바이블 §7.2 `standard` 값 | 격리·큐·재시도·타임아웃 필드(그것은 `StagePolicy`), 절대 경로·호스트명·비밀·시각 |
 | `capabilities() -> Capabilities` | 설정 반영 후 실행 시 값(임베더 `model_ids` 등) | `PluginMeta.capabilities`(정적)와 정적 부분이 다른 값 |
 | `fingerprint() -> str` | SDK `hash_of("producer", plugin_id, plugin_version, config_hash, image_digest or "", ",".join(model_ids))` 단일 식 — `StageBase`(01 §2.4 제안) 상속 시 자동 | 자유 구성(ADR-0032 기각 대안 D) |
 | `async run(inp, ctx) -> Out` | 순수 변환; 외부 세계는 `ctx`만 | `datetime.now`, `random`, 파일·네트워크 직접 I/O, 재시도 루프, 전역 캐시 |
-| `requires_lineage`(선택) | `index`만 `("EnrichedChunkSet", "ChunkSet", "SourceDocument")` | 다른 확장 지점에서 선언(`evaluator` 확장은 05 미해결 이슈 19) |
+| `requires_lineage`(선택) | `index` = `("EnrichedChunkSet", "ChunkSet", "SourceDocument")`; `chunk` = `("ParsedDocument",)`(구조 필드용, 기본 청커 `structure_aware` 필수); `enrich` LLM 서브스텝 = `("ChunkSet",)`(1.3.0, 바이블 §4.1, AM-26) | 선언 가능한 대상은 입력 산출물의 `lineage_refs`로 고정되는 상류 산출물뿐(결정성 보장); 그 밖의 확장 지점에서 선언(`evaluator` 확장은 05 미해결 이슈 19) |
 | `StageLifecycle`(선택, 제안) | `init(services)`·`warmup()`·`health()`·`close()` — 모델·커넥션 풀은 여기서만 | `run()` 안에서 모델 로딩 |
 
 ### 3.2 `StageContext`에서 허용되는 것(01 §2.5·§3.1)
 
-`ctx.tenant_id`·`collection_id`·`document_id`·`job_id`·`trace_id`·`profile_hash`, `ctx.security`·`ctx.plan`(질의 측), `ctx.token_counter`·`ctx.token_counters`, `ctx.analyzer`, `ctx.lineage`, `ctx.now()`, `ctx.heartbeat(details)`·`ctx.resume_details`, `ctx.artifacts.put_source/put_derived`(쓰기 전용), `ctx.remaining_ms()`, `ctx.cancelled`(제안). 원본 바이트는 스테이지가 스토리지에서 읽지 않으며 셸이 넘긴 포트 `ctx.source_bytes()`(**제안**, 04-pipelines/04 미해결 이슈 18)를 쓴다. 외부 서버 호출은 `RuntimeServices.http`(EgressGuard 적용) 팩토리로만 클라이언트를 얻고 `ctx.remaining_ms()`를 존중한다.
+`ctx.tenant_id`·`collection_id`·`document_id`·`job_id`·`trace_id`·`profile_hash`, `ctx.security`·`ctx.plan`(`QueryPlan | None`, 질의 측 스테이지만 채움, 수집 측은 `None`; 1.3.0 선택 멤버, 바이블 §4.1 AM-27), `ctx.token_counter`·`ctx.token_counters`, `ctx.analyzer`, `ctx.lineage`, `ctx.now()`, `ctx.heartbeat(details)`·`ctx.resume_details`, `ctx.artifacts`(`DerivedArtifacts`, 파생물 쓰기 포트 `put_source`/`put_derived`; 1.3.0 선택 멤버, 바이블 §4.1 AM-27), `ctx.remaining_ms()`, `ctx.cancelled`(제안). 원본 바이트는 스테이지가 스토리지에서 읽지 않으며 셸이 넘긴 포트 `ctx.source_bytes()`(**제안**, 04-pipelines/04 미해결 이슈 18)를 쓴다. 외부 서버 호출은 `RuntimeServices.http`(EgressGuard 적용) 팩토리로만 클라이언트를 얻고 `ctx.remaining_ms()`를 존중한다.
 
 ### 3.3 오류
 
@@ -187,7 +187,7 @@ class PptxParserConfig(BaseModel):
     notes_mode: Literal["annotation", "paragraph", "skip"] = "annotation"   # 발표자 노트 처리
     include_hidden_slides: bool = False
     default_language: str = Field("ko", pattern=r"^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$")   # 코어 속성에 언어가 없을 때(BCP 47)
-    profile_option: Literal["pptx_default"] = "pptx_default"                # ParsedDocument.parser_fingerprint.profile_option
+    profile_option: Literal["pptx_default"] = "pptx_default"                # {format}_{variant} snake_case(바이블 §5.4 AM-09), ParsedDocument.parser_fingerprint.profile_option
 ```
 
 ```python
@@ -245,8 +245,8 @@ class PptxParser(StageBase[SourceDocument, ParsedDocument]):
             producer=self.producer(), quality="full" if not warnings else "degraded", warnings=warnings, created_at=ctx.now(),
             lineage_refs=dict(inp.lineage_refs),                                          # 자기 입력 키(source)는 셸이 완성(01 §5.3)
             document_id=inp.document_id, doc_version=inp.doc_version, source_ref=inp.artifact,
-            parser_fingerprint={"parser_id": self.plugin_id, "parser_version": pptx_version, "model_ids": [],
-                                "sidecar_image_digest": None, "profile_option": self.config.profile_option},
+            parser_fingerprint={"parser_id": self.plugin_id, "parser_version": f"python-pptx=={pptx_version}",  # {package}=={version}, 복수는 ';' 결합(바이블 §5.4 AM-09)
+                                "model_ids": [], "sidecar_image_digest": None, "profile_option": self.config.profile_option},
             parser_chain=[self.plugin_id], source_kind="born_digital", page_count=len(slides),
             language=prs.core_properties.language or self.config.default_language,
             metadata={"title": prs.core_properties.title or None, "authors": [a for a in [prs.core_properties.author] if a]},
@@ -420,7 +420,7 @@ class PgvectorBackend:                                    # IndexBackend 포트(
     async def update_acl(self, scope: DocumentScope, *, acl_fields: Mapping[str, Any]) -> BackendResult: ...   # acl_* 컬럼 + acl_hash만(E11)
 
     async def search(self, req: BackendSearchRequest) -> list[BackendHit]:
-        if "tenant_id" not in req.filter.security_fields:         # E7: 사후 필터 금지, tenant_id 없으면 예외
+        if "tenant_id" not in req.filter.security_fields:         # E7: 사후 필터 금지, tenant_id 없으면 예외(500, 비재시도, AM-25)
             raise StageFailure(stage_error("retrieve.security_context_missing", stage="retrieve", plugin_id=self.plugin_id))
         table = self._physical.resolve(req.physical_name)         # ensure_physical/swap_alias가 등록한 이름만 허용, quote_ident 적용; 미등록 → contract.violation
         where, params = to_sql(req.filter, start=2)               # EffectiveFilter{security, strategy, user, self_query} → WHERE (사전 필터); 값은 전부 $n 바인딩
@@ -459,7 +459,7 @@ class PgvectorDenseRetriever(StageBase[RetrieveInput, ChannelRun]):   # 질의 �
 
     async def run(self, inp: RetrieveInput, ctx: StageContext) -> ChannelRun:
         if ctx.security is None or ctx.plan is None:
-            raise StageFailure(stage_error("retrieve.security_context_missing", stage="retrieve", plugin_id=self.plugin_id))
+            raise StageFailure(stage_error("retrieve.security_context_missing", stage="retrieve", plugin_id=self.plugin_id))  # 500, 비재시도(E7, 바이블 §5.7·§10.3, AM-25)
         t0 = ctx.now()
         try:
             hits = await self._backend.search(BackendSearchRequest(
@@ -783,7 +783,7 @@ class PptRenderSidecarParser(SidecarStage[SourceDocument, ParsedDocument]):   # 
 
 | 축 | 선언 위치 | 규칙 |
 |----|-----------|------|
-| 계약 `schema_version` | `contracts_compat`(`PluginMeta`·`Capabilities` 동치), 문법 `(>=|<=|==|<|>)MAJOR.MINOR` 쉼표 결합(patch 불참) | 코어 현재 계약 집합이 범위 밖이면 `plugin.capability_unsupported`; 산출물 minor > 소비자 minor는 `contract.violation`(관용 읽기 없음, 05 §8); 계약 major 상승 시 `">=1.0,<3.0"`으로 넓혀 두 major 모두 키트 통과 |
+| 계약 `schema_version` | `contracts_compat`(`PluginMeta`·`Capabilities` 동치), 문법 `(>=|<=|==|<|>)MAJOR.MINOR` 쉼표 결합(patch 불참; 정본 문법·평가 범위: [스키마 버전 관리와 호환성](../03-contracts/14-schema-versioning-and-compatibility.md) §4.3, CR-38) | 코어 현재 계약 집합이 범위 밖이면 `plugin.capability_unsupported`; 산출물 minor > 소비자 minor는 `contract.violation`(관용 읽기 없음, 05 §8); 계약 major 상승 시 `">=1.0,<3.0"`으로 넓혀 두 major 모두 키트 통과 |
 | SDK 버전 | `dependencies = ["rag-platform>=1.0,<2.0"]` | 코어 패키지 버전 = SDK 버전; `Stage` 멤버 추가는 minor, 시그니처 변경은 major. 별도 `sdk.API_VERSION` 상수는 제안(10-development/08) |
 | 플러그인 버전 | `[project].version` = `PluginMeta.version` = `Producer.plugin_version` | **출력에 영향을 주는 변경(알고리즘·기본값·래핑 라이브러리 버전·번들 네이티브)은 minor 이상**. 버전이 지문에 들어가 `stage_key`를 바꾸므로 patch로 출력이 바뀌면 낡은 산출물이 재사용된다(바이블 §15 #8, [ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md)) |
 | 래핑 라이브러리 | `uv.lock` 정확 고정, `pyproject` 상한(`python-pptx>=1.0,<2`처럼) | pin-and-bump: 업스트림 릴리스마다 계약 코퍼스·골든 통과 후 범프 + 플러그인 minor |

@@ -2,7 +2,7 @@
 title: 파싱 라우터와 포맷 판별
 status: active
 owner: architecture
-version: 0.1.2
+version: 0.1.3
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -53,7 +53,7 @@ depends_on:
 | 요소 | `plugin_id` / 소유 | 입력 → 출력 | 격리 | `StagePolicy`(바이블 §4.4) |
 |------|-------------------|-------------|------|------------------------------|
 | `detect` | `parser.format_detector`(role `format_detector`, A 등급 puremagic + 자체 ZIP/OLE 스니퍼; [플러그인 아키텍처](../02-architecture/05-plugin-architecture.md) §13.1) | `SourceDocument`(fetch 출력) → `SourceDocument`(판정 필드 채움) | `in_process` | `ingest-cpu`, `start_to_close` 1m, 하트비트 없음, 3회; 비재시도 `parse.unsupported_format`·`parse.corrupt_container` |
-| `parser.router` | 플랫폼(`adapters/parse/router.py` 제안; 위치는 미해결 이슈 1) | `SourceDocument` → `ParsedDocument`(+ `derived` 파생물) | 후보별(§5) | parse(텍스트) `ingest-cpu` 15m / 60s / 3; parse(OCR) `ingest-gpu-ocr`(premium) 또는 `ingest-cpu` 60m / 60s / 3; `resumable=yes(heartbeat_details.page)` |
+| `parser.router` | 플랫폼(`adapters/parse/router.py`, 바이블 §12 1.3.0 AM-22 등재; 미해결 이슈 1 해소) | `SourceDocument` → `ParsedDocument`(+ `derived` 파생물) | 후보별(§5) | parse(텍스트) `ingest-cpu` 15m / 60s / 3; parse(OCR) `ingest-gpu-ocr`(premium) 또는 `ingest-cpu` 60m / 60s / 3; `resumable`은 후보 어댑터 `Capabilities`로 결정(흐름 포맷 no, 바이블 §4.4 1.3.0 AM-07; 페이지 포맷 `yes(heartbeat_details.page)`) |
 | 후보 파서 `parser.*` | 프로파일 체인 항목(§3) | `SourceDocument` → `ParsedDocument` | `in_process` / `helper_process` / `sidecar` | 라우터 잔여 시간(`ctx.remaining_ms()`) 안에서 실행; 자체 재시도·타임아웃 금지(프레임워크 01 §2.5) |
 
 ```mermaid
@@ -78,7 +78,7 @@ sequenceDiagram
     W->>O: 출력 검증 · 콘텍스트 주소화 저장 · lineage · ingest.document.parsed
 ```
 
-**결정:** 라우터의 작업 입력은 **fetch 출력**을 기준으로 하고, `detect` 출력에서는 콘텍스트에서 파생된 판정 필드(`media_type`, `format`, `format_confidence`, `container_flags`, `detect_report`)만 가져온다. 정책·봉투 필드(`acl`·`acl_hash`·`metadata`·`pii_policy`·`credentials_ref`·`request_id`·`fetched_at`)는 항상 fetch 출력의 값이다. 근거: `detect`의 `stage_key`는 `H("stage","detect", scope_key, content_hash, fingerprint)`(바이블 §4.2)라 같은 스코프(테넌트·컬렉션·`document_id`)에서 같은 바이트를 다른 잡이 재수집하면 이전 잡의 인스턴스가 적중하는데(02 미해결 이슈 1), 판정 필드는 바이트에서만 파생되므로 재사용해도 옳고 봉투·정책 필드는 잡마다 새로 발급된 fetch 출력이 유일한 진실이다. 같은 이유로 `ParsedDocument.lineage_refs.source`는 **fetch 출력** 참조를 싣고(01 §5.6과 일치), `detect` 출력은 `lineage(detect_ref, parent=fetch_ref, stage_key)` 행으로 도달한다. 02 §1.2의 "하류는 detect 출력을 참조" 서술은 정정을 요청한다(미해결 이슈 2).
+**결정:** 라우터의 작업 입력 **값**은 fetch 출력을 기준으로 하고, `detect` 출력에서는 콘텍스트에서 파생된 판정 필드(`media_type`, `format`, `format_confidence`, `container_flags`, `detect_report`)만 가져온다. 정책·봉투 필드(`acl`·`acl_hash`·`metadata`·`pii_policy`·`credentials_ref`·`request_id`·`fetched_at`)는 항상 fetch 출력의 값이다 — `detect`의 `stage_key`는 `H("stage","detect", scope_key, content_hash, fingerprint)`(바이블 §4.2)라 같은 스코프(테넌트·컬렉션·`document_id`)에서 같은 바이트를 다른 잡이 재수집하면 이전 잡의 인스턴스가 적중하므로(02 미해결 이슈 1), 판정 필드는 바이트에서만 파생되어 재사용해도 옳지만 봉투·정책 필드는 잡마다 새로 발급된 fetch 출력만이 유일한 진실이다. **다만 `ParsedDocument.lineage_refs.source`(계보 포인터)는 값이 아니라 `parse`의 실제 `run()` 입력을 가리키므로 `detect` 산출물(판정 완료된 `SourceDocument`) 참조를 싣는다(바이블 §4.2 1.3.0, R-10, CR-01·CR-11; 01 §5.6과 일치 — 01·03 양쪽이 이전에 "fetch 출력"으로 적었던 것을 정정, 미해결 이슈 2 해소).** 값(정책·봉투 필드)과 계보 포인터(`lineage_refs`)는 별개다: `fetch` 원본은 `lineage(detect_ref, parent=fetch_ref, stage_key)` 행으로 계속 도달한다.
 
 ## 2. 포맷 판별 알고리즘
 
@@ -225,7 +225,7 @@ flowchart TD
 | ZIP | `hwpx` | `parser.hwpx_python_hwpx`(in_process, A) | — | — | `encrypted`: `korean-gov`만 `parser.hwpx_hwpxlib_sidecar`(제안, `parser-workers`, `credentials_ref` 필수) 앞에 둠; 그 외 프로파일은 `parse.document_encrypted` |
 | OLE | `hwp5` | `parser.hwp5_java_sidecar`(sidecar `parser-workers`, A) | `parser.hwp5_unhwp`(helper_process, x64만) | `parser.hwp5_hwp_hwpx_parser`(in_process) → `parser.office_lo_sidecar`(`lo-sidecar`, C, opt-in) | `lite`: unhwp → hwp-hwpx-parser만. `distribution`: `allow_distribution_documents`(요청 AND 테넌트) 참이고 `parser-workers` 존재 시 Tika `HwpV5Parser`(`parser.hwp5_tika_distribution` 제안) 텍스트 전용 `quality=degraded`, 아니면 `parse.distribution_document`. `encrypted`: `credentials_ref` 있을 때 사이드카 후보만 시도(hwplib 암호 문서 지원 확인 필요 as of 2026-09), 없으면 `parse.document_encrypted`. arm64 노드는 unhwp 비활성 |
 | OLE | `hwp3` | 종결 `parse.unsupported_variant` | — | — | 전 프로파일 |
-| PDF | `pdf`(`born_digital`·`pre_ocr`) | `parser.pdf_docling_standard`(`pdf_standard`, in_process, A) | — | 손상 PDF: Docling 백엔드 폴백(THREADED → PYPDFIUM2)은 어댑터 내부 | `lite`: `parser.pdf_fast_pdftext`(`pdf_fast_cpu`, [ADR-0006](../06-adr/0006-pdf-fast-path-pypdfium2-pdftext-replaces-pymupdf.md)). `encrypted`: 빈 사용자 암호 → `credentials_ref` → `parse.document_encrypted`(§4.6). PyMuPDF는 `rag-plugin-pymupdf-sidecar`(C) 옵트인만 |
+| PDF | `pdf`(`born_digital`·`pre_ocr`) | `parser.pdf_docling_standard`(`pdf_standard`, in_process, A) | — | 손상 PDF: Docling 백엔드 폴백(THREADED → PYPDFIUM2)은 어댑터 내부 | `lite`: `parser.pdf_fast_pdftext`(`pdf_fast_cpu`, [ADR-0006](../06-adr/0006-pdf-fast-path-pypdfium2-pdftext-replaces-pymupdf.md)). `encrypted`: 빈 사용자 암호 → `credentials_ref` → `parse.document_encrypted`(§4.6). PyMuPDF(AGPL, 인프로세스 제외 — ADR-0006)는 `rag-plugin-pymupdf-sidecar`(C 등급) 옵트인만 |
 | PDF | `pdf`(`scanned`) | `parser.pdf_docling_standard` + OCR `parse.options.ocr`(RapidOCR PP-OCRv5 korean mobile, in_process, A; [ADR-0008](../06-adr/0008-ocr-default-rapidocr-ppocrv5-korean.md)) | `premium`: `parser.ocr_paddleocr`(sidecar `ocr-gpu`, `pdf_scanned_gpu`) | `parser.ocr_tesseract`(`kor+eng`, `kor_vert`; `korean-gov` `pdf_airgapped`) | 페이지 타임아웃 CPU 60s / GPU 20s; `ocr-gpu` 불가 → `parse.sidecar_unavailable` 재시도 후 RapidOCR CPU 폴백 + `quality=degraded`(09 F-08). `pdf_vlm_gpu`는 골든셋 후 |
 | PDF | `pdf`(`mixed`) | `page_route`: 디지털 페이지 = `born_digital` 항목, 스캔 페이지 = `scanned` 항목의 OCR(§4.2) | — | — | 한 `ParsedDocument`로 병합, `Block.source`가 페이지별 진실 |
 | ZIP | `docx` | `parser.docx_docling_docx2python`(in_process, A; 각주·미주 병합 필수, D-18) | — | — | `encrypted`(OOXML): `credentials_ref`로 msoffcrypto-tool 복호화 → 재판정 → `docx`(§4.6) |
@@ -321,14 +321,15 @@ OCR 엔진은 프로파일 `ingest.parse.options.ocr {plugin, lang, version, mod
 
 ### 4.5 프로파일 오버라이드
 
-`IngestRequest.profile_overrides`는 컬렉션 프로파일의 **허용 키만** 받고 그 외는 422다(바이블 §5.4). 파싱 관련 허용 키는 `parse.pdf.route` 하나이며 값 집합은 바이블에 없으므로 이 문서가 다음을 제안하고 확정 전까지 `auto`만 유효한 것으로 취급한다(미해결 이슈 9).
+`IngestRequest.profile_overrides`는 컬렉션 프로파일의 **허용 키만** 받고 그 외는 422다(바이블 §5.4). 파싱 관련 허용 키는 `parse.pdf.route` 하나이며, **값 집합은 03-contracts/01 §2.5가 정본으로 고정한다**(`pdf_fast_cpu`·`pdf_standard`·`pdf_scanned_gpu`·`pdf_airgapped` — §4.4·§8.2의 `profile_option` 값과 동일 이름 공간, #76 해소): 이 문서가 이전에 제안한 `auto`/`born_digital`/`scanned`/`mixed` 값 집합은 대체한다.
 
-| 키 | 값(제안) | 효과 |
-|----|----------|------|
-| `parse.pdf.route` | `auto`(기본) | §4.2 프로브 판정대로 |
-| | `born_digital` / `scanned` / `mixed` | 프로브를 건너뛰고 지정 `PdfRoute` 항목을 강제(스캔을 `born_digital`로 강제하면 빈 텍스트가 나올 수 있으며 §6.3 빈 산출 규칙이 적용된다) |
+| 키 | 값(03-contracts/01 §2.5 정본) | 효과 |
+|----|-------------------------------|------|
+| `parse.pdf.route` | `pdf_standard`(기본) | §4.2 프로브 판정 대신 지정 라우트(=해당 `profile_option`의 후보 체인)를 강제(스캔 문서를 `pdf_fast_cpu`/`pdf_standard`로 강제하면 빈 텍스트가 나올 수 있으며 §6.3 빈 산출 규칙이 적용된다) |
+| | `pdf_scanned_gpu` | OCR 경로 강제 |
+| | `pdf_airgapped` | 폐쇄망 경로 강제(네트워크 모델 호출 없음) |
 
-오버라이드는 `stage_key`에 반영되어야 한다. 라우터 `fingerprint()`는 프로파일 설정만 포함하므로, 요청 단위 오버라이드는 셸이 `StageActivityInput`의 `overrides_hash`를 `config_hash` 입력에 합성하는 방식이 필요하다 — 01 §7.1과 합의할 항목이다(미해결 이슈 9). 확정 전까지 오버라이드가 있는 잡은 `force=true`로 캐시를 조회하지 않는다.
+오버라이드는 `stage_key`에 반영되어야 한다. 라우터 `fingerprint()`는 프로파일 설정만 포함하므로, 요청 단위 오버라이드는 셸이 `StageActivityInput`의 `overrides_hash`를 `config_hash` 입력에 합성하는 방식이 필요하다 — 01 §7.1과 합의할 항목이다(미해결 이슈 9, 값 집합 부분은 해소). 확정 전까지 오버라이드가 있는 잡은 `force=true`로 캐시를 조회하지 않는다.
 
 ### 4.6 암호화·배포용·DRM
 
@@ -358,7 +359,7 @@ OCR 엔진은 프로파일 `ingest.parse.options.ocr {plugin, lang, version, mod
 |------|------|------|-------------|-----------|
 | `in_process` | A 등급 순수 Python(`linkage=pure_python`) | `ingest-cpu` 큐에서는 전용 스레드(`asyncio.to_thread`)에서 `run`, 메인 루프는 하트비트·취소 감시. GIL을 놓지 않는 네이티브 호출이 `heartbeat/2`를 넘기면 다음 릴리스에서 `helper_process`로 승격 대상(02 §4.2) | 예외 → `StageFailure` 또는 미분류(재시도 가능 취급) | `plugin_version`·`config_hash`·`model_ids` |
 | `helper_process` | ctypes·네이티브 크래시 위험(`parser.hwp5_unhwp`) | 문서 1건 = `multiprocessing` `spawn` 프로세스 1개(상주 풀 없음; ADR-0033 재검토 조건 3). 입력은 부모가 로컬 tmpfs에 내린 경로, 결과는 파이프로 `ArtifactRef` 회신 | 비정상 종료·시그널·`OSError` → `parse.conversion_failed`(폴백); 전용 코드 `parse.helper_crashed`는 13 §3.3 제안 | 번들 네이티브 바이너리 변경 = `PluginMeta.version` 상승 |
-| `sidecar` | JVM(`parser-workers`), LibreOffice(`lo-sidecar`, C), CUDA(`ocr-gpu`), 모든 C 등급 | `POST /v1/convert`(`ConvertRequest{input: ArtifactRef, options, tenant_id, document_id, deadline_ms, trace_id, credentials_ref}` → `ConvertResponse{output, derived[], warnings, error, took_ms, producer}`); 호출 전 `H("derived", content_hash, image_digest)` 조회로 재변환 생략 | 연결 실패·5xx·타임아웃 → `parse.sidecar_unavailable`(재시도 후 폴백); `200 + output=null` → `error` 그대로(`parse.conversion_failed` 등, 즉시 폴백) | `Producer.image_digest`(`sha256:…`) 필수 |
+| `sidecar` | JVM(`parser-workers`), LibreOffice(`lo-sidecar`, C), CUDA(`ocr-gpu`), 모든 C 등급 | `POST /v1/convert`(`ConvertRequest{input: ArtifactRef, options, tenant_id, document_id, deadline_ms, trace_id, credentials_ref}` → `ConvertResponse{output, derived[], warnings, error, took_ms, producer}`); 호출 전 `H("derived", content_hash, sidecar_image_digest or "", options_hash or "")` 조회로 재변환 생략(바이블 §6.2 1.3.0, AM-40 — `options_hash`는 DPI·OCR 언어 등 `ConvertRequest.options` 중 산출물에 영향을 주는 값의 해시, #86 해소) | 연결 실패·5xx·타임아웃 → `parse.sidecar_unavailable`(재시도 후 폴백); `200 + output=null` → `error` 그대로(`parse.conversion_failed` 등, 즉시 폴백) | `Producer.image_digest`(`sha256:…`) 필수 |
 
 워커 측 동시성은 큐별 워커 프로세스 다중화 + `max_concurrent_activities` 고정 슬롯이다(바이블 §4.4; `ingest-cpu`는 프로세스당 1~2 슬롯·파드당 4 프로세스, [오케스트레이션](../02-architecture/06-orchestration-and-workflows.md) §큐 표). 라우터는 슬롯을 늘리거나 스레드 풀을 따로 만들지 않는다.
 
@@ -387,7 +388,7 @@ OCR 엔진은 프로파일 `ingest.parse.options.ocr {plugin, lang, version, mod
 
 - 페이지 포맷 파서(`supports_resumable=true`)는 페이지 완료마다 `ctx.heartbeat(ResumeCursor{stage: parse, unit: page, done, total, page, partial_ref?})`를 부른다(01 §11.2). 부분 산출물 `partial_ref`는 `derived/partial_parse/`의 파생물(`application/json`)이며 계약 인스턴스가 아니다.
 - 재시도 시 `ctx.resume_details`가 있고 `partial_ref`의 `blake3`가 검증되면 그 페이지부터 이어간다. 재개 여부와 무관하게 최종 `ParsedDocument`의 정규화 해시(`golden_hash`)는 같아야 한다(01 §11.3).
-- 흐름 포맷 파서는 재개 대상이 아니며(`supports_resumable=false`) 셸 타이머 하트비트만 받는다. 파서 행(hang)은 하트비트로 감지되지 않고 `start_to_close`로만 감지된다(09 F-05) — 진행 정지 규칙은 09 미해결 이슈 7과 01이 합의한다.
+- 흐름 포맷 파서는 재개 대상이 아니며(`supports_resumable=false`) 셸 타이머 하트비트만 받는다. 파서 행(hang)은 하트비트로 감지되지 않고 `start_to_close`로만 감지된다(09 F-05) — 진행 정지 규칙은 09 미해결 이슈 7과 01이 합의한다. `parse`(텍스트) 스테이지 표의 `resumable`은 스테이지 전체를 `yes`/`no`로 선언하지 않는다 — **결정(바이블 §4.4 1.3.0, AM-07):** 실제 재개 가능 여부는 **후보 어댑터의 `Capabilities.supports_resumable`**로 결정되며, 흐름 포맷(TXT·MD·HTML·HWPX)은 `no`, 페이지 포맷(PDF·HWP5 등)은 어댑터별로 `yes`다.
 - 취소는 `ctx.cancelled`를 페이지 경계에서 확인해 현재 페이지를 마무리한 뒤 반환한다. 헬퍼는 프로세스 그룹 KILL, 사이드카는 `deadline_ms` 만료로 정리된다(01 §11.4).
 
 ## 6. 부분 성공과 폴백
@@ -450,7 +451,7 @@ OCR 엔진은 프로파일 `ingest.parse.options.ocr {plugin, lang, version, mod
 
 | 구분 | 검사 | 위반 |
 |------|------|------|
-| 봉투·계보 | `schema_type="ParsedDocument"`, `tenant_id`·`collection_id`가 입력과 같음, `lineage_refs`는 정확히 `{source}`(fetch 출력 참조), `doc_version = source_ref.blake3 = SourceDocument.content_hash` | P-1 |
+| 봉투·계보 | `schema_type="ParsedDocument"`, `tenant_id`·`collection_id`가 입력과 같음, `lineage_refs`는 정확히 `{source}`(`detect` 출력 참조, R-10/CR-01), `doc_version = source_ref.blake3 = SourceDocument.content_hash` | P-1 |
 | 지문 | `producer.plugin_id = parser_fingerprint.parser_id = parser_chain[-1]`; `sidecar`면 `producer.image_digest = parser_fingerprint.sidecar_image_digest ≠ null`; `parser_fingerprint.profile_option` 존재 | P-1 |
 | 트리 무결성 | `block_id` 유일 + `H("block", doc_version, element_path)[:32]` 재계산 일치; `element_path` 유일(텍스트 해시 금지); `parent_block_id`는 존재하고 평면 순서에서 선행; 순환 없음; 형제 `ordinal` 0..n−1 연속; 평면 순서 = 전위 순회 | P-2, P-4, P-5 |
 | provenance 필수 | 모든 블록에 `provenance{element_path, char_start, char_end}`; `0 ≤ char_start ≤ char_end ≤ len(text)`(코드포인트); `page=null ⇒ bbox=null` | P-3 |
@@ -468,12 +469,23 @@ OCR 엔진은 프로파일 `ingest.parse.options.ocr {plugin, lang, version, mod
 | 필드 | 값 | 규칙 |
 |------|----|------|
 | `parser_chain[]` | 실제 시도 순서의 `plugin_id` | 실패·성공 모두 기록, 마지막 = 산출 파서; `then` 재라우팅의 변환기도 포함(예 `["parser.office_lo_sidecar", "parser.docx_docling_docx2python"]`); `page_route`는 호출된 파서 모두 |
-| `parser_fingerprint` | 산출 파서의 `parser_id`·`parser_version`(`{package}=={version}`)·`model_ids`·`sidecar_image_digest`·`profile_option` | `profile_option`의 정본 값은 바이블 §7.1·§5.4의 `pdf_standard`, `pdf_fast_cpu`, `pdf_scanned_gpu`, `pdf_airgapped`(`pdf_vlm_gpu`는 골든셋 후)이다. PDF 외 포맷의 값(예 `hwpx_standard`, `hwp5_lo_render`)은 바이블에 없으므로 제안이며 각 파서 문서·15 문서와 확정한다(미해결 이슈 18) |
+| `parser_fingerprint` | 산출 파서의 `parser_id`·`parser_version`(`{package}=={version}`)·`model_ids`·`sidecar_image_digest`·`profile_option` | `profile_option` 값 목록의 **정본은 이 문서**다(AM-09) — 형식은 `{format}_{variant}`(snake_case). PDF는 바이블 §7.1·§5.4가 값 자체를 고정(`pdf_standard`·`pdf_fast_cpu`·`pdf_scanned_gpu`·`pdf_airgapped`·`pdf_vlm_gpu`는 골든셋 후); PDF 외 포맷 값(`hwpx_standard`·`hwp5_lo_render` 등)은 각 파서 문서(04~08)가 제안하고 이 문서가 아래 표에 등록해 충돌을 막는다(미해결 이슈 18) |
+
+**`profile_option` 레지스트리(정본, 각 파서 문서가 갱신 요청):**
+
+| 포맷 | 값 | 소유 문서 |
+|------|----|-----------|
+| `pdf` | `pdf_standard`, `pdf_fast_cpu`, `pdf_scanned_gpu`, `pdf_airgapped`, `pdf_vlm_gpu`(골든셋 후) | 03(§4)·05, 바이블 §7.1·§5.4 |
+| `hwpx` | `hwpx_standard`(제안) | 04 |
+| `hwp5` | `hwp5_java_sidecar`, `hwp5_lo_render`, `hwp5_tika_distribution`(제안) | 04, 미해결 이슈 18 조정 중 |
+| `docx`/`doc` | `docx_docling_docx2python`류(제안) | 06 |
+| `html` | 제안 | 07 |
+| `txt`/`md` | 제안 | 08 |
 | `producer` | 산출 파서의 `Producer` | 라우터 자신이 아니라 **산출 파서**(P-1). 라우터 지문은 `stage_key`에만 쓰인다 |
 | `quality` / `warnings[]` | §6.4 규칙으로 승격; 어댑터 경고 병합 | 라우터는 `degraded`를 `full`로 되돌리지 않는다 |
 | `artifacts[]` | 어댑터 `ctx.artifacts.put_derived` 결과 + `ConvertResponse.derived[]` + 변환본 `derived_source` | 참조만, 인라인 금지 |
 | `language` | 파서 판정, 실패 시 `metadata.language_hint`(기본 `ko`) | §6.3 |
-| `lineage_refs` | 어댑터는 입력을 복사, 셸이 `source` 키 완성(fetch 출력) | 01 §6.1, §1 결정 |
+| `lineage_refs` | 어댑터는 입력을 복사, 셸이 `source` 키 완성(`detect` 출력, R-10/CR-01) | 01 §6.1, §1 결정 |
 
 `stage.parse`의 `stage_key`는 `H("stage", "parse", scope_key, content_hash, router.fingerprint())`이며 라우터 `fingerprint()`의 `config_hash`는 프로파일 `parse.router`·`parse.options` 전체와 **체인 멤버 각각의 `fingerprint()`**(멤버의 `plugin_version`·`config_hash`·`image_digest`·`model_ids`를 포함)를 `canonical_json`으로 합성한 값이다(01 §7.1). 따라서 어느 포맷의 어느 멤버가 바뀌어도 모든 포맷의 `parse` 캐시가 미스한다 — 보수적이지만 낡은 산출물 재사용(리스크 #8)을 원천 차단한다. 포맷별 지문·지연 조회 최적화는 미해결 이슈 13.
 
@@ -580,9 +592,8 @@ OCR 엔진은 프로파일 `ingest.parse.options.ocr {plugin, lang, version, mod
 
 | 항목 | 값 | 지위 |
 |------|----|------|
-| 스팬 | `rag.ingest.parse`(액티비티) → 자식 `rag.ingest.detect`(01 §5.6), 후보별 자식 `rag.parse.call`(제안; 속성 `rag.plugin_id`, `rag.isolation_mode`, `rag.image_digest`, `rag.cache_hit`) | 바이블 §6.5 / 05 §9·01 미해결 이슈 9 제안 |
-| 메트릭(정본) | `rag_ingest_stage_duration_seconds{stage="parse", outcome, queue}`, `rag_parser_sidecar_unavailable_total` | 바이블 §6.5 |
-| 메트릭(제안) | `rag_parse_format_mismatch_total{format}`(`hint_agrees=false`), `rag_parse_fallback_total{format, from_plugin, to_plugin}`, `rag_parse_source_kind_total{source_kind}`, `rag_parse_page_status_total{status}` | 라벨은 저카디널리티만; 바이블 §6.5 정본 목록 추가 제안(미해결 이슈 14) |
+| 스팬(정본) | `rag.ingest.parse`(액티비티) → 자식 `rag.ingest.detect`(01 §5.6), 후보별 자식 `rag.parse.call`(속성 `rag.plugin_id`, `rag.isolation_mode`, `rag.image_digest`, `rag.cache_hit`) | 바이블 §6.5 1.3.0(AM-41) |
+| 메트릭(정본) | `rag_ingest_stage_duration_seconds{stage="parse", outcome, queue}`, `rag_parser_sidecar_unavailable_total`, `rag_parse_format_mismatch_total`(라벨 없음, `hint_agrees=false` 시 증가), `rag_parse_fallback_total{stage}`, `rag_parse_source_kind_total{outcome}`, `rag_parse_page_status_total{outcome}` | 바이블 §6.5 1.3.0(AM-41, 미해결 이슈 14 종결) |
 | 이벤트 | `ingest.document.parsed`(`data`: `stage_key`, `block_count`, `page_count`, `cache_hit`, `warning_count`; [12 문서](../03-contracts/12-jobs-events-and-status.md)); 실패는 `ingest.document.failed`; `detect` 전용 이벤트 없음 | 바이블 §5.7 |
 | 로그 | structlog `event=parse.candidate`, 필드 `stage`, `code`, `plugin_id`, `format`, `source_kind`, `attempt`; 콘텍스트·비밀 없음(E13) | 바이블 §6.5 |
 | 감사(`korean-gov`) | 배포용·암호화 문서의 정책 판정(`allow_distribution_documents`, `credentials_ref` 존재 여부)은 `audit.document.accessed`가 아니라 잡 `last_error`·`parser_chain[]`로 남긴다; 전용 감사 이벤트는 바이블 §7.1 "감사 로그" 요구의 구현 항목으로 09-operations에 위임 | 바이블 §7.1 |
@@ -629,7 +640,7 @@ class ParseRouterStage(Stage[SourceDocument, ParsedDocument]):
 
 ## 결정 사항 요약
 
-- **결정:** `parse`는 플랫폼 소유 합성 스테이지 `parser.router`가 실행하며, 한 액티비티 안에서 `detect`(셸 `SubstageRunner`, 별도 `stage_key`, 1m) → 후보 체인 순차 시도 → 첫 성공 반환·`parser_chain[]` 기록의 순서를 따른다. 라우터의 작업 입력은 fetch 출력 + detect의 콘텐츠 파생 판정 필드이고 `ParsedDocument.lineage_refs.source`는 fetch 출력 참조다 — 바이블 §4.2, [ADR-0007](../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [ADR-0033](../06-adr/0033-sidecar-convert-contract-and-isolation-ladder.md).
+- **결정:** `parse`는 플랫폼 소유 합성 스테이지 `parser.router`가 실행하며, 한 액티비티 안에서 `detect`(셸 `SubstageRunner`, 별도 `stage_key`, 1m) → 후보 체인 순차 시도 → 첫 성공 반환·`parser_chain[]` 기록의 순서를 따른다. 라우터의 작업 입력 **값**은 fetch 출력(정책·봉투 필드) + detect의 콘텐츠 파생 판정 필드이지만, `ParsedDocument.lineage_refs.source`(계보 포인터)는 `detect` 출력 참조다(바이블 §4.2 1.3.0, R-10, CR-01·CR-11) — 바이블 §4.2, [ADR-0007](../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [ADR-0033](../06-adr/0033-sidecar-convert-contract-and-isolation-ladder.md).
 - **결정:** 포맷 판별은 매직 바이트 → 컨테이너 내부 검사(ZIP 중앙 디렉터리·`mimetype`·`[Content_Types].xml`·`content.hpf` / OLE 스트림·`FileHeader` 플래그) → 선언 콘텐츠 타입 → 확장자의 고정 우선순위이며, 신뢰도는 02 §4.1 표를 정본으로 하고 라우팅은 `format`만으로 결정한다. `unknown`·손상 컨테이너는 `detect`가 `parse.unsupported_format`·`parse.corrupt_container`로 종료한다 — 바이블 §5.4·§5.7, [ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md).
 - **결정:** `parse.router` 항목은 후보 체인 / 종결 코드 / `PdfRoute` / `SplitRoute` 네 형이고 배열 순서가 유일한 우선순위다. 후보 선별은 건너뛰기만 허용하고 재배열은 금지한다. `then` 재라우팅은 깊이 1이며 산출물 시그니처를 재검증한다 — 바이블 §7.3·§7.4 (10), [ADR-0031](../06-adr/0031-profile-schema-extends-and-quality-gates.md).
 - **결정:** PDF는 pypdfium2 프로브로 `source_kind`를 정해 `PdfRoute`를 고르고 `mixed`는 `page_route`로 페이지별 처리 후 한 `ParsedDocument`로 병합한다. `pre_ocr`은 텍스트 레이어를 신뢰하고 깨진 페이지만 재OCR한다. `stage.parse` 정책은 잠정 `format=pdf`이면 `policy_ocr`, 아니면 `policy`로 스케줄한다 — [ADR-0006](../06-adr/0006-pdf-fast-path-pypdfium2-pdftext-replaces-pymupdf.md), [ADR-0008](../06-adr/0008-ocr-default-rapidocr-ppocrv5-korean.md).
@@ -643,21 +654,21 @@ class ParseRouterStage(Stage[SourceDocument, ParsedDocument]):
 
 | # | 이슈 | 제안 |
 |---|------|------|
-| 1 | `ParseRouterStage`의 모듈 위치가 바이블 §12 트리에 없다(02 미해결 이슈 5). `adapters/parse/router.py` vs `pipelines/` vs `sdk/` | `adapters/parse/router.py`로 등재(patch). 라우터는 벤더 라이브러리를 임포트하지 않으므로 import-linter 규칙 위반이 없다 |
-| 2 | `ParsedDocument.lineage_refs.source`가 fetch 출력인지 detect 출력인지 02 §1.2(detect)와 01 §5.6(fetch)이 어긋난다. 이 문서는 fetch 출력으로 확정했다(§1) | 02 §1.2·§11 문구 정정 요청(patch): "하류가 참조하는 `SourceDocument`는 fetch 출력이며 detect 출력은 계보로 도달". 02 미해결 이슈 1(캐시 적중 시 낡은 봉투)은 이 결정으로 해소된다 |
+| 1 | **해소(바이블 §12 1.3.0, AM-22).** `ParseRouterStage` 모듈 위치는 `adapters/parse/router.py`로 등재됐다. 라우터는 벤더 라이브러리를 임포트하지 않으므로 import-linter 규칙 위반이 없다 | — |
+| 2 | **해소(R-10, CR-01·CR-11, 바이블 §4.2 1.3.0).** `ParsedDocument.lineage_refs.source`는 `detect` 출력이다 — 이 문서와 01이 이전에 "fetch 출력"으로 적었던 쪽이 정정 대상이었고, 02는 이미 정합했다(§1) | 값(정책·봉투 필드)은 여전히 fetch 출력을 쓴다(§1); 02 미해결 이슈 1(캐시 적중 시 낡은 봉투)은 이 구분으로 해소된다 |
 | 3 | 판별 신뢰도·텍스트 계열 임계(§2.4·§2.5), 스캔 판별 임계(§4.3), 품질 신호 임계(§6.3)는 모두 초안 목표다 | 골든 코퍼스(HWPX·HWP·PDF 디지털/스캔/혼재·HTML·TXT cp949·확장자 위장 각 ≥ 50건, 초안)를 [테스트 전략](../10-development/04-testing-strategy.md)에 등재하고 M1에서 확정 |
 | 4 | `then` 깊이 1 규칙과 `then` 대상 체인의 `then` 금지, `lite`의 `sidecar` 항목 거부는 프로파일 검증 규칙(바이블 §7.4)에 없다 | 15 문서 스키마·모델 검증기에 규칙 추가 제안(바이블 §7.4 규칙 13·14, minor) |
 | 5 | [범위 문서](../00-vision/04-scope-and-non-goals.md) §6.2의 HWP 5.0 "pyhwp + LibreOffice 폴백", PDF "PyMuPDF", PDF(암호화) "비지원" 문구가 D-18 v1.1·ADR-0006·0007과 어긋난다 | 범위 문서 §6.2 갱신(patch): 기본 파서 열을 D-18 v1.1로, PDF(암호화)는 "2급(자격 증명 제공 시)" |
 | 6 | `SourceFormat`에 `pptx`·`xlsx`·`csv`·이미지(`image`) 값이 없어 범위 문서 §6.2의 2급·실험 포맷이 v1에서 `unknown`으로 거절된다 | 열거값 추가 ADR(minor; 바이블 §1.2)과 함께 `parse.router` 키 확장 — 라우터는 규칙 (10)으로 자동 강제된다 |
 | 7 | `stage.parse` 정책 선택을 잠정 `format`으로 하는 v1 규칙(§4.4)은 힌트 오판 시 텍스트 정책(15m·`queues.parse`)으로 스캔 PDF를 처리한다. `source_kind` 확정 후 OCR 큐로 재디스패치하는 경로(액티비티가 `SourceDocument` 참조를 반환하면 워크플로우가 `policy_ocr`로 재스케줄)가 필요하다 | [오케스트레이션](../02-architecture/06-orchestration-and-workflows.md)과 합의 후 06·바이블 §11.2 반영 |
 | 8 | 비용 등급(`cost_class`)은 계약에 없다 | `Capabilities.extra.cost_class: enum[cpu_light, cpu_heavy, gpu]`(N)을 05 §5 `parser` `extra` 제안에 추가; 15 문서가 `capabilities.schema.json`에서 확정 |
-| 9 | `profile_overrides.parse.pdf.route`의 값 집합이 바이블에 없고, 요청 단위 오버라이드가 `stage_key`에 반영되는 경로가 없다 | 값 집합 `auto \| born_digital \| scanned \| mixed`를 15 문서에 제안; `StageActivityInput.overrides_hash`를 라우터 `config_hash` 입력에 합성하는 규칙을 01 §7.1과 합의. 확정 전까지 오버라이드 잡은 `force=true` |
+| 9 | 값 집합은 해소(#76, 03-contracts/01 §2.5: `pdf_fast_cpu`\|`pdf_standard`\|`pdf_scanned_gpu`\|`pdf_airgapped`). 남은 것: 요청 단위 오버라이드가 `stage_key`에 반영되는 경로가 없다 | `StageActivityInput.overrides_hash`를 라우터 `config_hash` 입력에 합성하는 규칙을 01 §7.1과 합의. 확정 전까지 오버라이드 잡은 `force=true` |
 | 10 | `SplitRoute`의 멤버 전개 주체(`fetch` vs 디스패처), 멤버 상한, 초과 경고 코드(`parse.member_limit_exceeded`, —) | 01 미해결 이슈 5와 동일. [02 페치](02-fetching-and-source-resolution.md)·06에서 확정 후 바이블 §4.2·§5.7 갱신(minor) |
 | 11 | 품질 신호에 의한 재OCR·재디코딩·빈 산출·힌트 불일치를 기록할 경고 코드가 카탈로그에 없다 | `parse.page_reocr`(—), `parse.encoding_redecoded`(—), `parse.empty_output`(—), `parse.format_hint_mismatch`(—) 추가를 13 §3.3 절차로 제안; `parse.options.pdf.probe_thresholds` 키는 15 문서 제안 |
 | 12 | 03 §5.3 (e) "`len(parser_chain) > 1`이면 `degraded`"를 이 문서 §6.4가 "실패 뒤 성공"으로 정밀화했다 | 03 §5.3 (e) 문구 정정(patch) 및 바이블 §4.1 부분 성공 행 주석 보강 |
 | 13 | 라우터 지문이 전 포맷 체인 멤버 지문을 합성하므로 한 멤버(예 OCR 이미지) 변경이 모든 포맷의 `parse` 캐시를 미스시킨다 | 포맷별 지문 + `parse` 캐시 조회를 `detect` 뒤로 미루는 "지연 조회"를 01 §5.1·§7.1과 ADR-0037 개정으로 검토. 대량 코퍼스 재파싱 비용 측정([벤치마크 계획](../08-evaluation/05-benchmark-plan-and-baselines.md)) 후 결정 |
-| 14 | 메트릭 `rag_parse_format_mismatch_total`, `rag_parse_fallback_total`, `rag_parse_source_kind_total`, `rag_parse_page_status_total`과 스팬 `rag.parse.call`은 바이블 §6.5 정본 목록에 없다 | [관측성](../09-operations/03-observability.md)과 합의 후 ADR-0022 minor |
-| 15 | `parser.format_detector`의 프로파일 위치(`parse.detect` 키 신설 vs 고정 기본)가 미정이다(01 미해결 이슈 18 (a)). 15 문서의 `ParseConfig`는 닫힌 객체(`router`·`options`·`policy`·`policy_ocr`)다 | v1은 고정 기본(entry point 교체로만 대체). `parse.detect: {plugin}` 키는 15 문서 minor 제안. 02 예시의 `parser.format_detector_puremagic` 표기는 `parser.format_detector`로 통일 요청 |
+| 14 | **종결(바이블 §6.5 1.3.0, AM-41).** 메트릭 `rag_parse_format_mismatch_total`(라벨 없음)·`rag_parse_fallback_total{stage}`·`rag_parse_source_kind_total{outcome}`·`rag_parse_page_status_total{outcome}`과 스팬 `rag.ingest.detect`·`rag.parse.call`이 정본 목록에 등재됐다 | — |
+| 15 | **해소(#7, 01과 합의).** `parser.format_detector`의 프로파일 위치는 이 문서가 정본으로 소유한다: `parse.detect: {plugin}` 키 신설을 채택한다(고정 기본 대체). 15 문서의 `ParseConfig`(닫힌 객체 `router`·`options`·`policy`·`policy_ocr`)에 `parse.detect` 키 추가는 남은 patch다. 02 예시의 `parser.format_detector_puremagic` 표기는 `parser.format_detector`로 통일 요청 | `parse.detect: {plugin}` 키를 15 문서 스키마에 minor로 반영 |
 | 16 | `parser.hwpx_hwpxlib_sidecar`·`parser.hwp5_tika_distribution`(05 §13.1 제안)이 바이블 §12 모듈 맵에 없고, hwplib의 암호화 HWP 5.0 지원·`FileHeader` 비트 위치·`hwp3` 시그니처·`application/hwpml-package+xml` 허용 여부는 확인 필요(as of 2026-09) | [04 HWPX/HWP](04-parser-hwpx-and-hwp.md)가 스펙 원문·라이브러리 소스로 확인 후 바이블 §12 추가(patch) |
 | 17 | `page_route` 병합 시 서로 다른 어댑터 문법의 `element_path` 유일성과 `page_break` 삽입·읽기 순서 규칙, `lite`에서 pdftext + Docling OCR 병합의 `parser_fingerprint` 표현(마지막 호출 파서 1개만 기록됨) | [05 PDF](05-parser-pdf.md)가 확정; 복수 파서 지문이 필요하면 03 문서에 `parser_chain_report[]{plugin_id, outcome, took_ms}`(N) 제안 |
 | 18 | `then` 재라우팅의 `parser_chain[]` 기록 순서: 이 문서(§7.2)는 변환기 → 산출 파서 순으로 기록해 `parser_chain[-1]`이 `ParsedDocument`를 만든 파서(예 `parser.docx_docling_docx2python`)가 되도록 했으나, [04 HWPX/HWP](04-parser-hwpx-and-hwp.md)의 `lo-sidecar` 최후 폴백 절은 `parser_chain[-1]="parser.office_lo_sidecar"`로 적는다(P-1 `producer.plugin_id = parser_chain[-1]`과의 정합). 배포용 Tika 경로의 `plugin_id`도 `parser.hwp5_java_sidecar`(04) vs `parser.hwp5_tika_distribution`(05 §13.1 제안)으로 갈린다 | 04·05·03 문서와 합의: `then` 체인은 "변환기, 산출 파서" 순 기록 + `profile_option`으로 변환 경로를 구분(예 `hwp5_lo_render`); Tika 경로 `plugin_id`는 바이블 §12 모듈 맵 추가 시 하나로 확정 |

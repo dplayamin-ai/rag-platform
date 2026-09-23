@@ -2,7 +2,7 @@
 title: 관리 API
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.2.0
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -70,29 +70,31 @@ flowchart LR
 
 | 메서드 | 경로 | 정본 | 성공 | 응답 본문 | Cedar 액션 | `operationId` |
 |--------|------|------|------|-----------|------------|---------------|
+| GET / POST | `/v1/tenants` | §14 | 200 / 201 | `{items: Tenant[], next_cursor}` / `Tenant`(§2.4) | `manage_tenants` | `list_tenants` / `create_tenant` |
+| GET / PATCH | `/v1/tenants/{tenant_id}` | §14 | 200 / 200 | `Tenant`(§2.4) | `manage_tenants` | `get_tenant` / `update_tenant` |
 | GET | `/v1/tenants/{tenant_id}/usage` | §14 | 200 | `TenantUsage`(§2.2) | `read_usage` | `get_tenant_usage` |
-| GET | `/v1/tenants/{tenant_id}/policies` | 제안 | 200 | `TenantPolicies`(§2.1) | `manage_tenant_policies` | `get_tenant_policies` |
+| GET | `/v1/tenants/{tenant_id}/policies` | §14 | 200 | `TenantPolicies`(§2.1) | `manage_tenant_policies` | `get_tenant_policies` |
 | PATCH | `/v1/tenants/{tenant_id}/policies` | §14 | 200 | `TenantPolicies` | `manage_tenant_policies` | `update_tenant_policies` |
 | GET / PUT | `/v1/tenants/{tenant_id}/dictionary` | 제안 | 200 / 200 | `{items: UserDictEntry[], next_cursor}` / `DictionaryReplaceResult`(§3.7) | `manage_dictionary` | `list_tenant_dictionary_entries` / `replace_tenant_dictionary` |
 | GET / POST | `/v1/collections` | §14 | 200 / 201 | `{items: CollectionSpec[], next_cursor}` / `CollectionSpec` | `manage_collection`(GET은 인증된 전원, `allowed_collections` 필터) | `list_collections` / `create_collection` |
-| GET / PATCH / DELETE | `/v1/collections/{collection_id}` | §14 | 200 / 200·202 / 202 | `CollectionSpec` / `CollectionSpec`·`JobStatus(kind=reindex_collection)` / `JobStatus` | `manage_collection`(GET은 `search` 또는 `read_document` 보유자) | `get_collection` / `update_collection` / `delete_collection` |
+| GET / PATCH / DELETE | `/v1/collections/{collection_id}` | §14 | 200 / 200·202 / 202 | `CollectionSpec` / `CollectionSpec`·`JobStatus(kind=reindex_collection)` / `JobStatus(kind=delete_collection)`(바이블 §5.7·§11.2 1.3.0, AM-37) | `manage_collection`(GET은 `search` 또는 `read_document` 보유자) | `get_collection` / `update_collection` / `delete_collection` |
 | POST | `/v1/collections/{collection_id}/reindex` | §14 | 202 / 200(`dry_run`) | `JobStatus(kind=reindex_collection)` / `ReindexEstimate`(§3.5) | `manage_collection` | `reindex_collection` |
 | GET | `/v1/collections/{collection_id}/stats` | §14 | 200 | `CollectionStatsView`(§3.6) | `manage_collection` | `get_collection_stats` |
 | GET / PUT | `/v1/collections/{collection_id}/dictionary` | §14 | 200 / 200 | `{items: UserDictEntry[], next_cursor}` / `DictionaryReplaceResult` | `manage_dictionary` | `list_dictionary_entries` / `replace_dictionary` |
-| POST | `/v1/collections/{collection_id}/consistency-check` | 제안 | 202 | `JobStatus(kind=consistency_check)` | `manage_collection` | `check_collection_consistency` |
+| POST | `/v1/collections/{collection_id}/consistency-check` | §14 | 202 | `JobStatus(kind=consistency_check)` | `manage_collection` | `check_collection_consistency` |
 | GET | `/v1/profiles` | §14 | 200 | `{items: ProfileSummary[], next_cursor}`(`view=full`이면 `Profile[]`) | `read_registry` | `list_profiles` |
 | GET | `/v1/profiles/{profile_id}` | §14 | 200 | `Profile`(해소 결과) | `read_registry` | `get_profile` |
 | POST | `/v1/profiles/validate` | §14 | 200 / 422 | `ProfileValidationResult`(§4.2) / `ProblemDetails` | `manage_profiles` | `validate_profile` |
-| POST | `/v1/profiles` | 제안 | 201 | `Profile` | `manage_profiles` | `create_profile` |
-| GET | `/v1/plugins` | 제안 | 200 | `{items: PluginMeta[], next_cursor}` | `read_registry` | `list_plugins` |
-| GET | `/v1/plugins/{plugin_id}` | 제안 | 200 | `PluginMeta` | `read_registry` | `get_plugin` |
+| POST | `/v1/profiles` | §14 | 201 | `Profile` | `manage_profiles` | `create_profile` |
+| GET | `/v1/plugins` | §14 | 200 | `{items: PluginMeta[], next_cursor}` | `read_registry` | `list_plugins` |
+| GET | `/v1/plugins/{plugin_id}` | §14 | 200 | `PluginMeta` | `read_registry` | `get_plugin` |
 | GET | `/v1/plugins/{plugin_id}/capabilities` | 제안 | 200 | `PluginCapabilitiesView`(§5.2) | `read_registry` | `get_plugin_capabilities` |
-| GET | `/v1/plugins/{plugin_id}/health` | 제안 | 200 | `PluginHealth`(§5.3) | `read_registry` | `get_plugin_health` |
-| GET | `/v1/schemas` | 제안 | 200 | `{items: SchemaDescriptor[], next_cursor}` | 공개 | `list_schemas` |
+| GET | `/v1/plugins/{plugin_id}/health` | 제안(AM-53 보류) | 200 | `PluginHealth`(§5.3) | `read_registry` | `get_plugin_health` |
+| GET | `/v1/schemas` | §14 | 200 | `{items: SchemaDescriptor[], next_cursor}` | 공개 | `list_schemas` |
 | GET | `/v1/schemas/{name}` | §14 | 200 / 304 | `application/schema+json` | 공개 | `get_schema` |
-| GET / POST | `/v1/api-keys` | 제안 | 200 / 201 | `{items: ApiKey[], next_cursor}` / `ApiKey`(+`secret` 1회) | `manage_api_keys` | `list_api_keys` / `create_api_key` |
-| GET / DELETE | `/v1/api-keys/{api_key_id}` | 제안 | 200 / 204 | `ApiKey` / 없음(폐기) | `manage_api_keys` | `get_api_key` / `delete_api_key` |
-| POST | `/v1/api-keys/{api_key_id}/rotate` | 제안 | 201 | `ApiKey`(새 키, +`secret` 1회) | `manage_api_keys` | `rotate_api_key` |
+| GET / POST | `/v1/api-keys` | §14 | 200 / 201 | `{items: ApiKey[], next_cursor}` / `ApiKey`(+`secret` 1회) | `manage_api_keys` | `list_api_keys` / `create_api_key` |
+| GET / DELETE | `/v1/api-keys/{api_key_id}` | §14 | 200 / 204 | `ApiKey` / 없음(폐기) | `manage_api_keys` | `get_api_key` / `delete_api_key` |
+| POST | `/v1/api-keys/{api_key_id}/rotate` | §14 | 201 | `ApiKey`(새 키, +`secret` 1회) | `manage_api_keys` | `rotate_api_key` |
 | GET / POST | `/v1/subscriptions` | §14 | 200 / 201 | `{items: Subscription[], next_cursor}` / `Subscription` | `manage_subscriptions` | `list_subscriptions` / `create_subscription` |
 | GET / PATCH / DELETE | `/v1/subscriptions/{subscription_id}` | §14(PATCH는 07) | 200 / 200 / 204 | `Subscription` / `Subscription` / 없음 | `manage_subscriptions` | `get_subscription` / `update_subscription` / `delete_subscription` |
 | POST | `/v1/subscriptions/{subscription_id}/test` · `/rotate-secret` · `/redeliver` | 07 | 200 / 200 / 202 | 07 §10 · §3.4 · §6.5 | `manage_subscriptions` | `test_subscription` / `rotate_subscription_secret` / `redeliver_subscription_events` |
@@ -101,20 +103,20 @@ flowchart LR
 | GET / POST | `/v1/eval/runs` | §14 | 200 / 202 | `{items: EvalRun[], next_cursor}` / `JobStatus(kind=evaluate)` + `Link rel="related"` | `run_eval` | `list_eval_runs` / `create_eval_run` |
 | GET | `/v1/eval/runs/{run_id}` · `/report` | §14 | 200 | `EvalRun` / `EvalReport` | `run_eval` | `get_eval_run` / `get_eval_report` |
 | GET | `/healthz` · `/readyz` | §14 | 200 / 503 | 상태 객체(01 §21.4) | 공개 | `healthz` / `readyz` |
-| GET | `/v1/version` | 제안 | 200 | `VersionInfo`(§10.2) | `read_registry` | `get_version` |
-| GET | `/v1/capacity` | 제안 | 200 | `CapacityView`(§10.3) | `read_usage` | `get_capacity` |
-| GET | `/v1/audit-events` | 제안 | 200 | `{items: CloudEventEnvelope[], next_cursor}` | `read_audit` | `list_audit_events` |
+| GET | `/v1/version` | §14 | 200 | `VersionInfo`(§10.2) | `read_registry` | `get_version` |
+| GET | `/v1/capacity` | 제안(AM-53 보류) | 200 | `CapacityView`(§10.3) | `read_usage` | `get_capacity` |
+| GET | `/v1/audit-events` | §14 | 200 | `{items: CloudEventEnvelope[], next_cursor}` | `read_audit` | `list_audit_events` |
 | GET | `/v1/documents/{document_id}` | §14(형식은 이 문서) | 200 | `Document`(§12.1) | `read_document` | `get_document` |
 | PATCH | `/v1/documents/{document_id}/metadata` | §14(형식은 이 문서) | 200 | `Document`(+`reprocess_suggested`) | `reprocess_document` | `update_document_metadata` |
-| POST | `/v1/documents/{document_id}/unmask` | 제안 | 200 | `{items: [{token, value}]}`(§12.2) | `unmask_pii` | `unmask_document_pii` |
+| POST | `/v1/documents/{document_id}/unmask` | §14 | 200 | `{items: [{token, value}]}`(§12.2) | `unmask_pii` | `unmask_document_pii` |
 
-`/v1/version`·`/v1/capacity`는 단일 인스턴스 자원(singleton)이라 단수형이며, 01 §3.1 경로 정규식(`^/v1/[a-z-]+(/\{[a-z_]+_id\}(/[a-z-]+)?)*$`)에는 부합하고 "복수 명사" 관례만 벗어난다 — 예외 등재를 01에 요청한다(§미해결 이슈 1). 다른 제안 경로는 정규식과 관례를 모두 만족한다. 새 `operationId` 동사 `check`·`rotate`·`unmask`·`test`·`redeliver`는 01 §17.3 동사 목록의 확장 제안이다.
+`/v1/version`은 바이블 §14 1.3.0이 단일 인스턴스 자원(singleton) 예외로 확정했다(AM-39; 01 §3.1 경로 정규식 `^/v1/[a-z-]+(/\{[a-z_]+_id\}(/[a-z-]+)?)*$`에는 부합하고 "복수 명사" 관례만 벗어난다). `/v1/capacity`는 같은 관례 예외가 필요하지만 AM-53 보류라 채택 전이다(§미해결 이슈 1). 나머지 제안 경로(`/plugins/{plugin_id}/capabilities`·`/plugins/{plugin_id}/health`·`/tenants/{tenant_id}/dictionary`)는 정규식과 명사 관례를 모두 만족하므로 예외 등재가 필요 없다. 새 `operationId` 동사 `check`·`rotate`·`unmask`·`test`·`redeliver`는 01 §17.3 동사 목록의 확장 제안이다.
 
 ## 2. 테넌트
 
-테넌트 자원은 `/v1/tenants/{tenant_id}/…` 둘(바이블 §14)이며 경로의 `{tenant_id}`는 토큰의 `tenant_id`와 같아야 한다(불일치 403 `auth.forbidden`, 01 §3.2). 테넌트 생성·`tier` 변경·삭제는 v1 API 표면에 없고 `rag` CLI·원장 마이그레이션 경로다(01 §3.2; `manage_tenants`는 `platform_admin` 전용). 정본 저장소는 `tenants(tenant_id, name, tier, policies jsonb)`(바이블 §13.1)다.
+테넌트 자원은 `GET/POST /v1/tenants`(플랫폼 관리자의 목록·생성), `GET/PATCH /v1/tenants/{tenant_id}`(조회·상태·할당량 변경, §2.4)와 `/v1/tenants/{tenant_id}/…` 둘(§2.1·§2.2)이다(바이블 §14 1.3.0, AM-39). 경로의 `{tenant_id}`는 토큰의 `tenant_id`와 같아야 한다(불일치 403 `auth.forbidden`, 01 §3.2). **`tier` 변경(승격)과 테넌트 삭제만은 v1 API 표면에 없다** — 승격은 `tier.promotion.v1` 잡 전용(읽기 전용 `tier`), 삭제는 원장 마이그레이션 경로다(01 §3.2; `manage_tenants`는 `platform_admin` 전용). 이 결정으로 "테넌트 생성은 CLI·Helm 경로여야 한다"는 이전 정정 요청(트리아지 §4 #3)은 기각한다 — `rag` CLI는 `POST /v1/tenants`를 호출하는 래퍼일 뿐 별도 경로가 아니다. 정본 저장소는 `tenants(tenant_id, name, tier, status, quotas jsonb, policies jsonb, disabled_at)`(바이블 §13.1 1.3.0)다.
 
-### 2.1 정책 — `GET`(제안)·`PATCH /v1/tenants/{tenant_id}/policies`
+### 2.1 정책 — `GET`·`PATCH /v1/tenants/{tenant_id}/policies`
 
 **결정:** 테넌트 정책 응답 객체 `TenantPolicies`는 바이블 §13.1 `tenants.policies`의 네 키를 필수로 갖고, PATCH는 JSON Merge Patch(01 §3.4)로 이 네 키와 제안 키만 바꾼다. `tier`·`tenant_id`·`updated_at`은 읽기 전용이며 패치에 포함되면 400 `contract.violation`(pointer). 컬렉션 정책과의 관계는 **AND**다: 컬렉션 `policies.llm_enrichment_allowed=true`라도 테넌트가 `false`면 LLM 보강은 실행되지 않고, 컬렉션 `EgressPolicy`는 프로파일 정책 AND 테넌트 정책의 교집합이다(바이블 §10.3 E16, [ADR-0038](../06-adr/0038-outbound-egress-policy-and-webhook-signing.md)).
 
@@ -172,7 +174,7 @@ flowchart LR
 
 응답 예시의 `max_bytes`·`connect_timeout_ms`·`allowed_ports`는 15 §8 추가 필드(N)이며 바이블 §5.3 `EgressPolicy` 정본 필드 집합에는 없다 — 이 세 키의 수용은 15 §8의 바이블 §5.3 patch 발의 채택에 종속되고, 채택 전 정본 스키마(`egress-policy.schema.json`)만으로 검증하는 구현은 이 키를 거부할 수 있다.
 
-규칙: (1) `egress_policy.deny_cidrs`가 기본 9개 CIDR(바이블 §5.3)을 모두 포함하지 않으면 400 `contract.violation`(pointer `/egress_policy/deny_cidrs`); `allowed_hosts` 항목은 소문자 호스트명(선행 `.`은 접미 일치, IP 리터럴 불가, 15 §8)이다. (2) 패치 적용 결과는 `EgressPolicy` 스키마로 재검증되고, 프로파일 정책과의 합성 결과(`allowed_schemes`·`allowed_hosts`, 15 §8 추가 필드 채택 시 `allowed_ports`도)가 공집합이면 422 `profile.invalid`(15 §8 E-1)로 거부한다. (3) 변경은 `audit.admin.action{action: manage_tenant_policies, resource: {type: "tenant", id}}`를 같은 트랜잭션에 기록한다. (4) 워커는 잡 시작 시 `tenants.policies`를 읽으므로(RLS `SELECT`, 바이블 §13.1) 진행 중 잡에는 적용되지 않으며, api 프로세스 캐시는 TTL 60초(초안 목표)다 — 테넌트 정책 변경 이벤트가 카탈로그에 없어 즉시 무효화가 불가하다(§미해결 이슈 3). (5) `If-Match`를 받으며 불일치는 01 §3.4 규칙(412 코드 채택 전 400)이다.
+규칙: (1) `egress_policy.deny_cidrs`가 기본 9개 CIDR(바이블 §5.3)을 모두 포함하지 않으면 400 `contract.violation`(pointer `/egress_policy/deny_cidrs`); `allowed_hosts` 항목은 소문자 호스트명(선행 `.`은 접미 일치, IP 리터럴 불가, 15 §8)이다. (2) 패치 적용 결과는 `EgressPolicy` 스키마로 재검증되고, 프로파일 정책과의 합성 결과(`allowed_schemes`·`allowed_hosts`, 15 §8 추가 필드 채택 시 `allowed_ports`도)가 공집합이면 422 `profile.invalid`(15 §8 E-1)로 거부한다. (3) 변경은 같은 트랜잭션에 `audit.admin.action{action: manage_tenant_policies, resource: {type: "tenant", id}}`와 `tenant.policies.changed`(바이블 §5.7 1.3.0, AM-38) 아웃박스 이벤트를 함께 기록한다 — api 프로세스 캐시(TTL 60초 초안)는 이 이벤트로 즉시 무효화한다(§미해결 이슈 3 종결). (4) 워커는 잡 시작 시 `tenants.policies`를 읽으므로(RLS `SELECT`, 바이블 §13.1) 진행 중 잡에는 적용되지 않는다. (5) `If-Match`를 받으며 불일치는 01 §3.4 규칙(412 코드 채택 전 400)이다.
 
 ### 2.2 계량 — `GET /v1/tenants/{tenant_id}/usage`
 
@@ -215,6 +217,23 @@ flowchart LR
 | `dedicated` | 128 | 테넌트 전용 네임스페이스 | 규제·계약 요구 |
 
 `lite`·`standard`·`premium`은 등급 무관 단일 값(4/32/64)이며 `tier`는 정보 표시만 한다. 바이블 §5.7 등재(`TenantTier`)와 §13.1 `CHECK` 추가는 §미해결 이슈 2다.
+
+### 2.4 테넌트 자원 — `GET`·`POST /v1/tenants`, `GET`·`PATCH /v1/tenants/{tenant_id}`
+
+**결정:** 테넌트 자체를 자원으로 다루는 유일한 목록·단일 경로다(01 §3.2 "교차 테넌트 관리" 예외). `POST /v1/tenants`는 `platform_admin` 전용이며 `{name, quotas?}`를 받아 `status=active`·`tier=shared`(§2.3 기본값)로 생성한다(바이블 §14·§13.1 1.3.0, AM-39). `GET /v1/tenants`는 `platform_admin`만 전체 목록을, 그 외 인증 주체는 자기 테넌트 하나만 본다. `GET/PATCH /v1/tenants/{tenant_id}`의 `{tenant_id}`는 토큰 테넌트와 같아야 한다(§2 본문 규칙; `platform_admin`은 예외적으로 임의 테넌트 조회 가능, 감사 기록).
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `schema_type` | string(const `Tenant`) | Y | 계약 인벤토리 밖의 관리 객체(§미해결 이슈 2) |
+| `tenant_id` | string(ulid) | Y | 서버 발급(readOnly) |
+| `name` | string(1..128) | Y | 표시 이름 |
+| `tier` | enum(TenantTier) | Y | 읽기 전용(readOnly) — 변경은 `tier.promotion.v1` 잡(§2.3)뿐이며 이 자원의 PATCH로 바꿀 수 없다 |
+| `status` | enum(TenantStatus) | Y | `active, disabled`(바이블 §5.7 1.3.0, AM-38). `disabled`인 테넌트의 모든 요청은 403 `auth.forbidden`(E2) |
+| `quotas` | object `{documents_max, storage_bytes_max, qps_max}` | Y | 각 필드 정수 \| null(무제한). 바이블 §13.1 1.3.0, AM-39 |
+| `disabled_at` | string(date-time) \| null | Y(nullable) | `status=disabled` 전이 시각(바이블 §13.1 1.3.0) |
+| `created_at`, `updated_at` | string(date-time) | Y | |
+
+PATCH(JSON Merge Patch)는 `name`·`status`·`quotas`만 바꾼다. `tier`를 패치에 포함하면 400 `contract.violation`(pointer `/tier`, readOnly). `status`를 `disabled`로 바꾸면 그 순간부터 해당 테넌트의 신규 요청이 403이고, 진행 중 잡은 계속 실행되어 종결까지 간다(강제 취소 없음). 변경은 `audit.admin.action{action: manage_tenants}`를 같은 트랜잭션에 남긴다. 테넌트 삭제(하드/논리)는 이 자원에 없다(§2 본문).
 
 ## 3. 컬렉션
 
@@ -267,7 +286,7 @@ flowchart LR
 
 ### 3.4 삭제 — `DELETE /v1/collections/{collection_id}`
 
-202 + `JobStatus`. 잡 종류 `delete_collection`·워크플로우 `collection.delete.v1`·`collections.deleted_at`은 [갱신·삭제·재색인](../04-pipelines/19-update-delete-and-reindexing.md) §6.1(미해결 이슈 17)의 **제안**이며 채택 전까지 `JobStatus.kind`는 부모 잡 없이 첫 자식 `delete_document` 잡을 가리키지 못하므로, 이 문서는 19의 제안 채택을 전제로 `kind=delete_collection`을 쓴다(§미해결 이슈 6). 접수 트랜잭션에서 논리 삭제·alias 제거·`collspec:` 무효화가 일어나 이후 질의는 `plan.collection_forbidden`이다. `If-Match` 권장. 활성 잡(`queued`·`running`)이 있는 컬렉션은 400 `contract.violation`(`detail="active jobs: n"`).
+202 + `JobStatus(kind=delete_collection)`. 잡 종류 `JobKind.delete_collection`·워크플로우 `collection.delete.v1`·`collections.deleted_at`(논리 삭제)은 바이블 §5.7·§11.2·§13.1 1.3.0이 채택했다(AM-37; [갱신·삭제·재색인](../04-pipelines/19-update-delete-and-reindexing.md) §6.1이 원 제안) — 워크플로우가 컬렉션의 문서 ID 페이지를 순회해 자식 `delete.document.v1` 잡을 팬아웃하고, 부모 `JobStatus`가 전체 진행률을 보고한다(§미해결 이슈 6 종결). 접수 트랜잭션에서 논리 삭제·alias 제거·`collspec:` 무효화가 일어나 이후 질의는 `plan.collection_forbidden`이다. `If-Match` 권장. 활성 잡(`queued`·`running`)이 있는 컬렉션은 400 `contract.violation`(`detail="active jobs: n"`). 본문 없는 잡 접수형 DELETE이므로 지문은 `wire_body = {}`다 — [수집 API](02-ingestion-api.md) `DELETE /v1/documents/{document_id}`와 같은 규칙으로 대조 완료(#52).
 
 ### 3.5 재색인 — `POST /v1/collections/{collection_id}/reindex`
 
@@ -361,9 +380,9 @@ flowchart LR
 
 규칙: (1) 해시가 바뀌면 `collections.dictionary_hash`·`dictionary_ref` 갱신 + `collection.profile.changed` + `audit.admin.action{action: manage_dictionary}`를 같은 트랜잭션에 기록하고 `reindex_suggested=true`를 돌려준다. **재색인은 자동으로 시작하지 않는다**(16 §6.2). (2) 테넌트 경로는 모든 컬렉션의 해시를 바꾸므로 `affected_collection_ids`가 여럿이고 이벤트도 컬렉션마다 발행된다. (3) 검증 실패(NFC·공백·`pos` 패턴·`decompound` 결합)는 400 `contract.violation`(pointer `/items/{i}/…`). (4) `If-Match`(현재 `dictionary_hash` 앞 16 hex)를 권장한다 — 전체 교체는 갱신 유실이 크다. (5) `lite`(Qdrant 단독)도 같은 경로를 쓰며 `normalizer_fingerprint`에 `dictionary_hash`가 들어가므로 새 수집은 자동으로 새 사전을 쓴다.
 
-### 3.8 정합성 점검 — `POST /v1/collections/{collection_id}/consistency-check`(제안)
+### 3.8 정합성 점검 — `POST /v1/collections/{collection_id}/consistency-check`
 
-`maintenance.consistency.v1`은 스케줄(시간 1회 샘플·일 1회 전체)로 돌지만([저장소 아키텍처](../02-architecture/04-storage-architecture.md) §7.3) 운영자가 롤백·복구 뒤 즉시 확인할 경로가 필요하다. 본문 `{mode: enum[sample, full], document_ids?: array<string(ulid)>(≤ 1,000)}`(기본 `sample`), 응답 202 `JobStatus(kind=consistency_check)`. 결과는 `index.consistency.mismatch` 이벤트와 `rag_consistency_mismatch_total{backend_id, outcome}`로 관측하고 요약은 §3.6 `last_consistency_check`에 반영된다. 복구(`missing_records`·`hash_mismatch` → `reprocess from_stage=index`)는 잡이 자동 수행하며 본문 `repair: false`(N, 기본 `true`)로 감지만 할 수 있다. 진행 중 blue/green의 green 커밋은 `pending_swap`으로 제외된다(04 §7.3).
+엔드포인트는 바이블 §14·§11.2 1.3.0 등재다(`JobKind.consistency_check`, AM-39). `maintenance.consistency.v1`은 스케줄(시간 1회 샘플·일 1회 전체)로 돌지만([저장소 아키텍처](../02-architecture/04-storage-architecture.md) §7.3) 운영자가 롤백·복구 뒤 즉시 확인할 경로가 필요하다. 본문 `{mode: enum[sample, full], document_ids?: array<string(ulid)>(≤ 1,000)}`(기본 `sample`), 응답 202 `JobStatus(kind=consistency_check)`. 결과는 `index.consistency.mismatch` 이벤트와 `rag_consistency_mismatch_total{backend_id, outcome}`로 관측하고 요약은 §3.6 `last_consistency_check`에 반영된다. 복구(`missing_records`·`hash_mismatch` → `reprocess from_stage=index`)는 잡이 자동 수행하며 본문 `repair: false`(N, 기본 `true`)로 감지만 할 수 있다. 진행 중 blue/green의 green 커밋은 `pending_swap`으로 제외된다(04 §7.3).
 
 ## 4. 프로파일
 
@@ -371,7 +390,7 @@ flowchart LR
 
 ### 4.1 목록·조회 — `GET /v1/profiles`, `GET /v1/profiles/{profile_id}`
 
-`GET /v1/profiles`의 기본 뷰는 `view=summary`(`ProfileSummary`, 제안)이고 `view=full`은 `Profile[]`(항목 ≤ 256KB라 `limit` 상한 10)이다. 필터 `tier=`, `extends=`, `deprecated=`. `GET /v1/profiles/{profile_id}`는 `?version=`(생략 = 최신 게시)·`?resolved=true|false`(기본 `true`: `extends` 해소·기본값 채움 뒤; `false`: 원본 YAML을 JSON으로 변환한 형태)를 받고, `ETag`는 `profile_hash` 앞 16 hex다 — `Profile` 계약에는 `profile_hash` 필드가 없으므로 헤더로 전달한다(§미해결 이슈 8).
+`GET /v1/profiles`의 기본 뷰는 `view=summary`(`ProfileSummary`, 제안)이고 `view=full`은 `Profile[]`(항목 ≤ 256KB라 `limit` 상한 10)이다. 필터 `tier=`, `extends=`, `deprecated=`. `GET /v1/profiles/{profile_id}`는 `?version=`(생략 = 최신 게시)·`?resolved=true|false`(기본 `true`: `extends` 해소·기본값 채움 뒤; `false`: 원본 YAML을 JSON으로 변환한 형태)를 받고, `ETag`는 `profile_hash` 앞 16 hex다 — `Profile.profile_hash`(readOnly, 바이블 §5.6 1.3.0 AM-34)가 본문에도 있으므로 헤더는 캐시 검증용 사본이다(§미해결 이슈 8 종결).
 
 | `ProfileSummary` 필드 | 타입 | 필수 | 설명 |
 |----------------------|------|------|------|
@@ -414,15 +433,15 @@ flowchart LR
 }
 ```
 
-`warnings[].code`는 오류 카탈로그 밖의 검증기 경고이며 `profile.` 접두를 쓴다(제안; 바이블 §5.7 카탈로그의 `—`(경고) 행 등재 대상, §미해결 이슈 9). `auto_degraded`는 바이블 §7.4 (2)의 자동 저하 항목이다. 검증은 계산형이라 `Idempotency-Key`를 무시하고 감사 이벤트를 남기지 않는다. 본문 상한 256KB(바이블 §5.1 `Profile`).
+`warnings[].code`는 `profile.` 접두를 쓰는 검증기 경고다 — `profile.gate_pending`은 바이블 §5.7 1.3.0에 카탈로그 코드(경고, `—`행)로 등재되었다(AM-36, §미해결 이슈 9 종결). `auto_degraded`는 바이블 §7.4 (2)의 자동 저하 항목이다. 검증은 계산형이라 `Idempotency-Key`를 무시하고 감사 이벤트를 남기지 않는다. 본문 상한 256KB(바이블 §5.1 `Profile`).
 
-### 4.3 커스텀 프로파일 등록 — `POST /v1/profiles`(제안)
+### 4.3 커스텀 프로파일 등록 — `POST /v1/profiles`
 
-바이블 §14에는 프로파일 게시 경로가 없고 07 §4.1은 "프로파일 게시"를 `manage_profiles`에 둔다. 코어 프로파일 4종(`lite`·`standard`·`premium`·`korean-gov`)은 릴리스에 번들되어 기동 시 등록되고, 커스텀 프로파일(`standard-ko-hybrid` 등)은 CLI 또는 이 엔드포인트로 등록한다. 본문은 §4.2와 같고, 검증 통과 시 `profiles` INSERT(`(profile_id, version)` 불변 — 같은 키 재등록은 400 `contract.violation`, `detail="profile version already registered"`; 수정은 `version` 증가) + `audit.admin.action{action: manage_profiles}` 뒤 201 + `Location: /v1/profiles/{profile_id}?version={version}`으로 해소된 `Profile`을 돌려준다. `extends`가 코어 프로파일이 아닌 커스텀 프로파일을 가리키는 것도 허용되되 체인은 비순환(15 P-1)이어야 한다. 품질 기본값(`gate` 붙은 값)을 바꾼 프로파일은 게이트 결과(`EvalReport.gate_result.passed`) 없이 등록될 수 있지만 컬렉션 바인딩 시 `warnings`로 남으며 정책상 ADR이 필요하다(바이블 §7.4). `platform_admin` 전용이고 테넌트 스코프가 없다(01 §3.2 "교차 테넌트 관리" 예외 — 프로파일은 전역 자원이라 테넌트 데이터가 아니다).
+엔드포인트는 바이블 §14 1.3.0 등재다(`(profile_id, version)` 불변, AM-39). 07 §4.1은 "프로파일 게시"를 `manage_profiles`에 둔다. 코어 프로파일 4종(`lite`·`standard`·`premium`·`korean-gov`)은 릴리스에 번들되어 기동 시 등록되고, 커스텀 프로파일(`standard-ko-hybrid` 등)은 CLI 또는 이 엔드포인트로 등록한다. 본문은 §4.2와 같고, 검증 통과 시 `profiles` INSERT(`(profile_id, version)` 불변 — 같은 키 재등록은 400 `contract.violation`, `detail="profile version already registered"`; 수정은 `version` 증가) + `audit.admin.action{action: manage_profiles}` 뒤 201 + `Location: /v1/profiles/{profile_id}?version={version}`으로 해소된 `Profile`을 돌려준다. `extends`가 코어 프로파일이 아닌 커스텀 프로파일을 가리키는 것도 허용되되 체인은 비순환(15 P-1)이어야 한다. 품질 기본값(`gate` 붙은 값)을 바꾼 프로파일은 게이트 결과(`EvalReport.gate_result.passed`) 없이 등록될 수 있지만 컬렉션 바인딩 시 `warnings`로 남으며 정책상 ADR이 필요하다(바이블 §7.4). `platform_admin` 전용이고 테넌트 스코프가 없다(01 §3.2 "교차 테넌트 관리" 예외 — 프로파일은 전역 자원이라 테넌트 데이터가 아니다).
 
-## 5. 플러그인 레지스트리(제안)
+## 5. 플러그인 레지스트리
 
-플러그인 레지스트리는 Python entry points + `PluginMeta`로 프로세스 기동 시 구성되며 PostgreSQL 표가 아니다([플러그인 아키텍처](../02-architecture/05-plugin-architecture.md) §6, 04 §2.2). 따라서 이 절의 엔드포인트는 **api 프로세스에 설치된 배포 세트**를 노출한다 — 파서 워커 이미지(`parser-workers`)나 GPL 사이드카 저장소의 플러그인은 프로파일이 참조하면 `PluginMeta`가 있어도 api 프로세스에 설치되지 않을 수 있고, 그 경우 `installed: false`로 표시한다. 인가는 `read_registry`(인증된 전원)다. 플러그인 정책(`optIn.*` 허용 목록)의 변경은 Helm 값·`manage_tenants`(CLI) 경로이며 API 표면에 없다 — 07 §4.1 `manage_tenants` 행의 "(관리 API)" 표기는 이 결정과 어긋나므로 "CLI·Helm(01 §3.2)"으로 정정을 요청한다(§미해결 이슈 12).
+`GET /v1/plugins`·`GET /v1/plugins/{plugin_id}`는 바이블 §14 1.3.0 등재다(AM-39). `/capabilities`·`/health`(§5.3, AM-53 보류)는 바이블 §14에 없는 이 문서의 제안으로 남는다. 플러그인 레지스트리는 Python entry points + `PluginMeta`로 프로세스 기동 시 구성되며 PostgreSQL 표가 아니다([플러그인 아키텍처](../02-architecture/05-plugin-architecture.md) §6, 04 §2.2). 따라서 이 절의 엔드포인트는 **api 프로세스에 설치된 배포 세트**를 노출한다 — 파서 워커 이미지(`parser-workers`)나 GPL 사이드카 저장소의 플러그인은 프로파일이 참조하면 `PluginMeta`가 있어도 api 프로세스에 설치되지 않을 수 있고, 그 경우 `installed: false`로 표시한다. 인가는 `read_registry`(인증된 전원)다. 플러그인 **정책**(`optIn.*` 허용 목록)의 변경은 Helm 값 경로이며 API 표면에 없다 — 이 문서는 테넌트 CRUD(§2.4, 바이블 §14 1.3.0 AM-39로 실제 API에 들어왔다)와 플러그인 옵트인 정책(CLI·Helm 전용, 01 §3.2)을 구분한다(§미해결 이슈 12).
 
 ### 5.1 목록·조회 — `GET /v1/plugins`, `GET /v1/plugins/{plugin_id}`
 
@@ -432,7 +451,7 @@ flowchart LR
 
 `PluginCapabilitiesView`(제안) = `{plugin_id, static: Capabilities, config_schema: object(JSON Schema 2020-12), extra_schema: object | null}`. `static`은 `PluginMeta.capabilities`(정적 선언)이고, `capabilities()`의 **실행 시 값**(임베더 `model_ids` 등)은 프로파일·설정에 종속되어 인스턴스를 만들어야 하므로 이 엔드포인트가 만들지 않는다(05 §5) — 실행 시 값은 `IndexCommit.producer`·`QueryPlan.producer`에 기록된 `Producer`에서 읽는다. `config_schema`는 `Stage.config_schema`(05 §4)로 프로파일 작성 시 필드 확인에 쓰인다. `index_backend`의 `static.extra`는 `IndexBackendCapabilities`(바이블 §5.3)다.
 
-### 5.3 헬스 — `GET /v1/plugins/{plugin_id}/health`
+### 5.3 헬스 — `GET /v1/plugins/{plugin_id}/health`(제안, AM-53 보류)
 
 ```json
 {
@@ -455,7 +474,7 @@ flowchart LR
 
 `GET /v1/schemas/{name}`은 바이블 §14 정본이며 규약은 [스키마 버전과 호환성](../03-contracts/14-schema-versioning-and-compatibility.md) §5.2와 01 §12.3이 확정했다: `{name}`은 kebab-name(`collection-spec`; PascalCase는 404), 본문은 배포 빌드의 `schemas/{name}.schema.json` 바이트 그대로(현재 major의 최신 minor·patch), `Content-Type: application/schema+json`, `ETag`(BLAKE3 앞 16 hex)·`If-None-Match` 304, `Cache-Control: public, max-age=3600`, **무인증 공개**. 이 문서가 더하는 것은 다음이다.
 
-**결정:** (1) 목록 `GET /v1/schemas`(제안, 14 미해결 이슈 10)는 `{items: SchemaDescriptor[], next_cursor: null}`이며 항목은 `{name, schema_id, schema_type, schema_version, media_type, deprecated, sunset}`이다 — `schema_id = urn:rag:schema:{name}:{major}`, `media_type = application/vnd.rag.{name}+json`(바이블 §6.4). 도구 스키마(`schema-diff-report`)는 인벤토리 밖이라 목록에 없다(14 범위). (2) 이전 major는 폐기 창(180일 또는 2 minor 중 긴 것, 01 §16) 동안 `GET /v1/schemas/{name}?major={n}`으로 게시하고 창 종료 후 404다. (3) 경로 변수로 버전을 받는 `GET /v1/schemas/{name}/{version}`은 **채택하지 않는다** — 스키마 파일은 major 단위(`$id`에 major만)이고 minor·patch는 같은 파일의 현재 값만 게시하므로 주소화 단위가 major뿐이며, 01 §3.1 경로 정규식(`{snake_id}`만 허용)에도 맞지 않는다. `?major=`는 목록에도 필터로 적용된다.
+**결정:** (1) 목록 `GET /v1/schemas`(바이블 §14 1.3.0 등재, AM-39; 14 미해결 이슈 10이 요청한 항목)는 `{items: SchemaDescriptor[], next_cursor: null}`이며 항목은 `{name, schema_id, schema_type, schema_version, media_type, deprecated, sunset}`이다 — `schema_id = urn:rag:schema:{name}:{major}`, `media_type = application/vnd.rag.{name}+json`(바이블 §6.4). 도구 스키마(`schema-diff-report`)는 인벤토리 밖이라 목록에 없다(14 범위). (2) 이전 major는 폐기 창(180일 또는 2 minor 중 긴 것, 01 §16) 동안 `GET /v1/schemas/{name}?major={n}`으로 게시하고 창 종료 후 404다. (3) 경로 변수로 버전을 받는 `GET /v1/schemas/{name}/{version}`은 **채택하지 않는다** — 스키마 파일은 major 단위(`$id`에 major만)이고 minor·patch는 같은 파일의 현재 값만 게시하므로 주소화 단위가 major뿐이며, 01 §3.1 경로 정규식(`{snake_id}`만 허용)에도 맞지 않는다. `?major=`는 목록에도 필터로 적용된다.
 
 ```json
 {
@@ -468,9 +487,9 @@ flowchart LR
 }
 ```
 
-## 7. API 키(제안)
+## 7. API 키
 
-API 키는 `service:` 주체 전용 자격 증명이며(07 §3.1 결정) `Authorization: Bearer <key>`로 제시한다(01 §5.1). 바이블 §13.1 `api_keys(api_key_id, tenant_id, hash, principal, expires_at)`가 저장소이고, 07 §4.1의 `manage_api_keys`가 "(관리 API, 05-api/04)"로 위임한 엔드포인트가 이 절이다. 바이블 §14에 경로가 없으므로 전부 **제안**이다.
+API 키는 `service:` 주체 전용 자격 증명이며(07 §3.1 결정) `Authorization: Bearer <key>`로 제시한다(01 §5.1). 바이블 §13.1 `api_keys(api_key_id, tenant_id, hash, principal, expires_at)`가 저장소이고, 07 §4.1의 `manage_api_keys`가 "(관리 API, 05-api/04)"로 위임한 엔드포인트가 이 절이다. 엔드포인트 자체(`/v1/api-keys*`)는 바이블 §14 1.3.0에 등재되었다(AM-39); 정확한 키 표기·해시 알고리즘(§7.1)은 이 문서가 여전히 **제안**한다.
 
 ### 7.1 키 형식과 저장
 
@@ -537,7 +556,7 @@ API 키 주체가 보는 데이터 범위는 ACL이 결정한다: `visibility=te
 
 정본은 바이블 §14 `/v1/eval/*`, 계약은 [16 §2~4](../03-contracts/16-eval-feedback-and-sidecar-contracts.md), 실행·메트릭·산출물은 [리트리벌 메트릭과 하네스](../08-evaluation/02-retrieval-metrics-and-harness.md) §8이다([ADR-0023](../06-adr/0023-evaluation-qrels-answer-spans-and-linear-ndcg.md)). 이 문서는 API 표면의 두 위임 항목을 닫는다.
 
-**결정:** (1) `POST /v1/eval/runs`는 202 `JobStatus(kind=evaluate)` + `Location: status_url`(01 §9.3)이며, 생성된 런의 식별자는 응답 헤더 `Link: <{base}/v1/eval/runs/{run_id}>; rel="related"`로 전달한다(08-evaluation/02 §8 "run_id를 202 응답에서 얻는 경로"). 역방향은 `EvalRun.job_id`(16 §3.1, N)다. `JobStatus`에 `run_id`를 넣지 않는 이유는 `run_id`가 `EvalRun` 전용 식별자(바이블 §6.1)이고 `JobStatus` 계약을 바꾸는 것은 minor 발의이기 때문이다. (2) `GET /v1/eval/runs/{run_id}/report`는 `status=running`이면 "아직 없음"(404, `api.not_found` 채택 전 400 `contract.violation` `detail="not found: report for running eval run"`), `failed`면 리포트 없이 `EvalRun.error`를 보라는 같은 응답이다. (3) 목록 필터: `/v1/eval/datasets`는 `corpus_collection_id=`, `judgment_level=`, `label_provenance=`; `/v1/eval/runs`는 `dataset_id=`, `profile_id=`, `status=`(쉼표 `in`), `experiment_id=`, `started_at_gte`·`started_at_lt`. (4) `POST /v1/eval/datasets` 본문은 `EvalDataset`의 readOnly 필드(`dataset_id`, `content_hash`, `created_at`)를 제외한 인스턴스이며 `qrels_ref`·`answer_spans_ref`는 이미 업로드된 산출물 `ArtifactRef`다(업로드 경로는 CLI `rag eval datasets register`, 08-evaluation/02 §8). (5) 인가는 `run_eval`(`collection_admin`은 `corpus_collection_id ∈ allowed_collections`일 때만).
+**결정:** (1) `POST /v1/eval/runs`는 202 `JobStatus(kind=evaluate)` + `Location: status_url`(01 §9.3)이며, 생성된 런의 식별자는 응답 헤더 `Link: <{base}/v1/eval/runs/{run_id}>; rel="related"`로 전달한다(08-evaluation/02 §8 "run_id를 202 응답에서 얻는 경로"). 역방향은 `EvalRun.job_id`(16 §3.1, N)다. `JobStatus`에 `run_id`를 넣지 않는 이유는 `run_id`가 `EvalRun` 전용 식별자(바이블 §6.1)이고 `JobStatus` 계약을 바꾸는 것은 minor 발의이기 때문이다. (2) `GET /v1/eval/runs/{run_id}/report`는 `status=running`이면 404 `api.not_found`(바이블 §5.7 1.3.0, AM-36; `detail="not found: report for running eval run"`), `failed`면 리포트 없이 `EvalRun.error`를 보라는 같은 응답이다. (3) 목록 필터: `/v1/eval/datasets`는 `corpus_collection_id=`, `judgment_level=`, `label_provenance=`; `/v1/eval/runs`는 `dataset_id=`, `profile_id=`, `status=`(쉼표 `in`), `experiment_id=`, `started_at_gte`·`started_at_lt`. (4) `POST /v1/eval/datasets` 본문은 `EvalDataset`의 readOnly 필드(`dataset_id`, `content_hash`, `created_at`)를 제외한 인스턴스이며 `qrels_ref`·`answer_spans_ref`는 이미 업로드된 산출물 `ArtifactRef`다(업로드 경로는 CLI `rag eval datasets register`, 08-evaluation/02 §8). (5) 인가는 `run_eval`(`collection_admin`은 `corpus_collection_id ∈ allowed_collections`일 때만).
 
 ```http
 HTTP/1.1 202 Accepted
@@ -550,9 +569,9 @@ Content-Type: application/json
 
 ### 10.1 `GET /healthz`·`GET /readyz`
 
-바이블 §14 정본, 형식은 01 §21.4(`/healthz` `{"status": "ok"}`, `/readyz` `{status, checks}` 제안). 무인증·`Cache-Control: no-store`·`ProblemDetails` 규칙의 명시적 예외다. 이 문서가 더하는 규칙: `/readyz.checks`의 키는 `pg`, `valkey`, `object_store`, `vector_backend`, `lexical_backend`, `temporal`에 `plugin_registry`(entry point 로딩 완료)와 `schemas`(번들 로딩·`$id` 해석 완료)를 더하고, 각 값은 `{status: enum[ok, degraded, unavailable], latency_ms}`다. 필수 의존(PG·오브젝트 스토리지·벡터 백엔드·`plugin_registry`·`schemas`) 불가 → 503, Temporal·Valkey 불가 → `degraded`(수집 접수는 503 + `Retry-After`, 검색은 정상, 바이블 §11.5). 버전 정보는 무인증 표면에 넣지 않는다(01 §19 버전 비노출).
+바이블 §14 정본, 형식은 01 §21.4(`/healthz` `{"status": "ok"}`, `/readyz` `{status, checks}` 제안). `/healthz`는 liveness(의존성 상태를 포함하지 않는다), 의존성 상태(PG·오브젝트 스토리지·벡터·렉시컬 백엔드·Temporal 등)는 `/readyz`로만 노출한다 — [관측성](../09-operations/03-observability.md)과 정합(#174 확인). 무인증·`Cache-Control: no-store`·`ProblemDetails` 규칙의 명시적 예외다. 이 문서가 더하는 규칙: `/readyz.checks`의 키는 `pg`, `valkey`, `object_store`, `vector_backend`, `lexical_backend`, `temporal`에 `plugin_registry`(entry point 로딩 완료)와 `schemas`(번들 로딩·`$id` 해석 완료)를 더하고, 각 값은 `{status: enum[ok, degraded, unavailable], latency_ms}`다. 필수 의존(PG·오브젝트 스토리지·벡터 백엔드·`plugin_registry`·`schemas`) 불가 → 503, Temporal·Valkey 불가 → `degraded`(수집 접수는 503 + `Retry-After`, 검색은 정상, 바이블 §11.5). 버전 정보는 무인증 표면에 넣지 않는다(01 §19 버전 비노출).
 
-### 10.2 `GET /v1/version`(제안)
+### 10.2 `GET /v1/version`
 
 ```json
 {
@@ -573,15 +592,15 @@ Content-Type: application/json
 }
 ```
 
-`version`은 플랫폼 릴리스 semver(OpenAPI `info.version`과 동일, 01 §17.5)이고 계약 버전은 §6 스키마 레지스트리에서 읽는다. `deprecations[]`는 현재 폐기 표기 중인 연산·경로 major(`{route, deprecated_at, sunset}`)다. 인증 필수(`read_registry`).
+`version`은 플랫폼 릴리스 semver(OpenAPI `info.version`과 동일, 01 §17.5)이고 계약 버전은 §6 스키마 레지스트리에서 읽는다. `deprecations[]`는 현재 폐기 표기 중인 연산·경로 major(`{route, deprecated_at, sunset}`)다. 인증 필수(`read_registry`). 엔드포인트는 바이블 §14·§6.7 1.3.0 등재다(AM-39, 단일 인스턴스 자원 예외 §1.2 참고).
 
-### 10.3 `GET /v1/capacity`(제안)
+### 10.3 `GET /v1/capacity`(제안, AM-53 보류)
 
 테넌트 스코프의 용량·동시성 요약이다(교차 테넌트 집계는 v1 API에 없다, 01 §3.2). `CapacityView` = `{schema_type, tenant_id, tier, tenant_concurrent_jobs_max, jobs: {queued, running, waiting_for_document}, collections: integer, isolation_tiers: {payload_filter, shard_key, index_per_tenant}, stats: CollectionStats(테넌트 합산), tiering: {shard_key_threshold_chunks, leaf_count_ratio, promotion_pending: boolean}, generated_at}`. `stats`는 §3.6과 같은 커밋 시점 집계이고 `tiering.leaf_count_ratio = Σ leaf_count / shard_key_threshold_chunks`는 E15 승격 판정의 입력이다([ADR-0028](../06-adr/0028-tenant-isolation-tiering-policy.md)). 플랫폼 전체 용량은 Prometheus(`rag_index_bytes_total{vector}`, 바이블 §6.5)와 [저장소 아키텍처](../02-architecture/04-storage-architecture.md) §8 산정표로 본다.
 
-## 11. 감사 로그 조회(제안) — `GET /v1/audit-events`
+## 11. 감사 로그 조회 — `GET /v1/audit-events`
 
-감사 이벤트는 바이블 §5.7 카탈로그의 네 종류(`audit.query.executed`, `audit.document.accessed`, `audit.acl.changed`, `audit.admin.action`)이며 `CloudEventEnvelope`로 아웃박스에 기록되어 감사 저장소(`audit_log` 또는 OpenSearch 감사 인덱스, 07 §8.3)에 저장된다. **결정(제안):** 조회 응답 항목은 저장 형식이 아니라 발행 당시의 `CloudEventEnvelope` 그대로다 — SSE `/v1/events` 프레임·웹훅 본문과 같은 타입이라 소비자가 하나의 파서를 쓴다. `data`에는 ID·해시·상태만 있고 질의 원문·문서 본문·주체 평문은 없다(E12·E13; `principal_hash = H("principal", tenant_id, subject)`는 07 §8.1 제안). 파라미터: `type=`(쉼표 `in`, `audit.*`만), `subject=`(정확 일치 또는 `tenant/{tenant_id}/document/` 접두), `principal_hash=`, `action=`(Cedar 액션명, `audit.admin.action`만), `trace_id=`, `created_at_gte`·`created_at_lt`(기본 최근 7일, 최대 창 90일), `sort` 기본 `-created_at`. 인가 `read_audit`(`tenant_admin`·`platform_admin`; `pii_officer`는 `type=audit.admin.action&action=unmask_pii`만). `platform_admin`의 조회는 그 자체가 `audit.admin.action{action: read_audit}`이다(07 §8.3). 한도 클래스 `admin`. `korean-gov`의 `encrypted_text` 보존 필드(07 §8.2)는 이 엔드포인트가 노출하지 않으며 복호는 `unmask_pii` 권한의 별도 경로(§12.2)다.
+엔드포인트는 바이블 §14 1.3.0 등재다(AM-39). 감사 이벤트는 바이블 §5.7 카탈로그의 네 종류(`audit.query.executed`, `audit.document.accessed`, `audit.acl.changed`, `audit.admin.action`)이며 `CloudEventEnvelope`로 아웃박스에 기록되어 감사 저장소(`audit_log` 또는 OpenSearch 감사 인덱스, 07 §8.3)에 저장된다. **결정:** 조회 응답 항목은 저장 형식이 아니라 발행 당시의 `CloudEventEnvelope` 그대로다 — SSE `/v1/events` 프레임·웹훅 본문과 같은 타입이라 소비자가 하나의 파서를 쓴다. `data`에는 ID·해시·상태만 있고 질의 원문·문서 본문·주체 평문은 없다(E12·E13; `principal_hash = H("principal", tenant_id, subject)`는 07 §8.1 제안). 파라미터: `type=`(쉼표 `in`, `audit.*`만), `subject=`(정확 일치 또는 `tenant/{tenant_id}/document/` 접두), `principal_hash=`, `action=`(Cedar 액션명, `audit.admin.action`만), `trace_id=`, `created_at_gte`·`created_at_lt`(기본 최근 7일, 최대 창 90일), `sort` 기본 `-created_at`. 인가 `read_audit`(`tenant_admin`·`platform_admin`; `pii_officer`는 `type=audit.admin.action&action=unmask_pii`만). `platform_admin`의 조회는 그 자체가 `audit.admin.action{action: read_audit}`이다(07 §8.3). 한도 클래스 `admin`. `korean-gov`의 `encrypted_text` 보존 필드(07 §8.2)는 이 엔드포인트가 노출하지 않으며 복호는 `unmask_pii` 권한의 별도 경로(§12.2)다.
 
 ```json
 {
@@ -630,9 +649,9 @@ Content-Type: application/json
 | `reprocess_suggested` | object \| null | N | `PATCH …/metadata` 응답에만: `{from_stage: "enrich", reason: "context_prefix_inputs_changed", url}` — 접두어 입력(제목·heading 경로·캡션에 영향을 주는 키)이 바뀌었을 때(바이블 §14) |
 | `created_at`, `updated_at` | string(date-time) | Y | |
 
-### 12.2 PII 복원 — `POST /v1/documents/{document_id}/unmask`(제안)
+### 12.2 PII 복원 — `POST /v1/documents/{document_id}/unmask`
 
-07 §4.1은 `unmask_pii`("`tokenize` 토큰 복호")를 관리 API에 위임했다. 본문 `{tokens: array<string>(1..100)}`(`pii_policy=tokenize` 청크 텍스트의 토큰 표기), 응답 200 `{document_id, items: [{token, value, category}], unresolved: [token]}`. `pii_tokenize_mode=hash`는 복원 불가라 `unresolved`로만 돌아오고, `encrypt`는 테넌트 DEK(OpenBao Transit)로 복호한다. 인가는 `pii_officer` 전용(`allowed_collections` 지정 시 그 안), `service:` 주체 금지이며 호출마다 `audit.admin.action{action: unmask_pii, resource: {type: "document", id}}`를 남긴다(FR-SEC-08). 응답에는 `Cache-Control: no-store`가 붙고 값은 로그·트레이스에 기록되지 않는다(E13). 한도 클래스 `admin`, 테넌트당 분당 30회(초안 목표).
+엔드포인트는 바이블 §14 1.3.0 등재다(`pii_officer` 전용, `pii_tokenize_mode ∈ {tokenize, encrypt}` 문서만; 감사 `audit.document.accessed`; AM-39). 07 §4.1은 `unmask_pii`("`tokenize` 토큰 복호")를 관리 API에 위임했다. 본문 `{tokens: array<string>(1..100)}`(`pii_policy=tokenize` 청크 텍스트의 토큰 표기), 응답 200 `{document_id, items: [{token, value, category}], unresolved: [token]}`. `pii_tokenize_mode=hash`는 복원 불가라 `unresolved`로만 돌아오고, `encrypt`는 테넌트 DEK(OpenBao Transit)로 복호한다. 인가는 `pii_officer` 전용(`allowed_collections` 지정 시 그 안), `service:` 주체 금지이며 호출마다 `audit.admin.action{action: unmask_pii, resource: {type: "document", id}}`를 남긴다(FR-SEC-08). 응답에는 `Cache-Control: no-store`가 붙고 값은 로그·트레이스에 기록되지 않는다(E13). 한도 클래스 `admin`, 테넌트당 분당 30회(초안 목표).
 
 ## 13. 권한 역할 매트릭스
 
@@ -640,6 +659,7 @@ Content-Type: application/json
 
 | 엔드포인트 | Cedar 액션 | `platform_admin` | `tenant_admin` | `collection_admin` | `ingestor` | `reader` | `pii_officer` |
 |-----------|------------|:---:|:---:|:---:|:---:|:---:|:---:|
+| `GET`·`POST /v1/tenants`, `GET`·`PATCH /v1/tenants/{tenant_id}` | `manage_tenants` | O(전체 목록·임의 테넌트, 감사 기록) | O(자기 테넌트만) | - | - | - | - |
 | `GET /v1/tenants/{tenant_id}/usage`, `GET /v1/capacity` | `read_usage` | O | O | - | - | - | - |
 | `GET`·`PATCH /v1/tenants/{tenant_id}/policies` | `manage_tenant_policies` | O | O | - | - | - | - |
 | `GET /v1/collections` | (인증된 전원; `allowed_collections` 필터) | O | O | C | C | C | C |
@@ -675,7 +695,8 @@ Content-Type: application/json
 | 웹훅 URL egress 거부 | 422 | `outbox.egress_denied`(07 §3.3 S2) |
 | 컬렉션 이름 중복·프로파일 버전 중복·구독 중복 | 400 | `contract.violation`(`detail="duplicate …"`; 전용 코드 없음) |
 | 재색인 진행 중 PATCH·활성 잡 있는 DELETE | 400 | `contract.violation`(`detail="reindex in progress …"`; `api.job_state_conflict` 채택 후 409) |
-| 부재 자원(권한 있는 스코프 안) | 400 | `contract.violation`(`detail="not found: …"`; `api.not_found` 채택 후 404) |
+| 부재 자원(권한 있는 스코프 안) | 404 | `api.not_found`(바이블 §5.7 1.3.0, AM-36) |
+| 테넌트 할당량 초과(`quotas.documents_max`·`storage_bytes_max`) | 403 | `api.quota_exceeded`(바이블 §5.7 1.3.0, AM-39 — [API 설계 가이드라인](01-api-design-guidelines.md) §9·[멀티테넌시·보안 아키텍처](../02-architecture/07-multi-tenancy-and-security-architecture.md) §10과 같은 값. QPS 초과는 429 `api.rate_limited`를 그대로 쓴다) |
 | `If-Match` 불일치 | 400 | `contract.violation`(`api.precondition_failed` 채택 후 412) |
 | 오케스트레이터 불가(202 접수형) | 503 + `Retry-After: 30` | 코드 없음(`api.orchestrator_unavailable` 채택 후) |
 | 사전 항목 검증(NFC·`pos`·`decompound`) | 400 | `contract.violation`(pointer `/items/{i}/…`) |
@@ -696,11 +717,11 @@ Content-Type: application/json
 
 ## 결정 사항 요약
 
-- **결정:** 관리 API의 경로·메서드는 바이블 §14 그대로이며, 표면에 없는 기능(API 키, 플러그인 레지스트리, 스키마 목록, `/v1/version`·`/v1/capacity`, 정합성 점검 트리거, 감사 조회, 테넌트 전역 사전, 프로파일 등록, PII 복원)은 01 §3.1 경로 규약에 맞춘 **제안 엔드포인트**로 정의하고 바이블 §14 minor 발의로 채택한다([ADR-0018](../06-adr/0018-api-rest-sse-mcp-no-grpc-rfc9457.md), [ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md)).
-- **결정:** 테넌트 정책은 `TenantPolicies`(바이블 §13.1 네 키 + 제안 키 2개)이며 컬렉션 정책과 AND로 합성된다. `tenants.tier`는 `TenantTier = shared, reserved, dedicated`(제안)로 디스패처 동시성만 결정한다([ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md), [ADR-0038](../06-adr/0038-outbound-egress-policy-and-webhook-signing.md)).
+- **결정:** 관리 API의 경로·메서드는 바이블 §14 그대로다. 바이블 1.3.0(AM-39)이 테넌트 CRUD, API 키, 플러그인 목록·조회, 스키마 목록, `/v1/version`, 정합성 점검 트리거, 감사 조회, 프로파일 등록, PII 복원을 정식 등재했다. 아직 표면에 없는 나머지(`/v1/capacity`, 테넌트 전역 사전, 플러그인 `capabilities`·`health`)만 01 §3.1 경로 규약에 맞춘 **제안 엔드포인트**로 남는다(대부분 AM-53 보류; [ADR-0018](../06-adr/0018-api-rest-sse-mcp-no-grpc-rfc9457.md), [ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md)).
+- **결정:** 테넌트 자원은 `GET/POST /v1/tenants`·`GET/PATCH /v1/tenants/{tenant_id}`(§2.4, 바이블 §14 1.3.0 AM-39)로 관리하며 `status`(`TenantStatus = active, disabled`)·`quotas{documents_max, storage_bytes_max, qps_max}`·`disabled_at`을 필드로 갖는다. `tier`는 읽기 전용이고 승격은 `tier.promotion.v1` 잡뿐이다. 테넌트 정책은 별도 자원 `TenantPolicies`(바이블 §13.1 네 키 + 제안 키 2개)이며 컬렉션 정책과 AND로 합성된다. `tenants.tier`의 값 집합 `TenantTier = shared, reserved, dedicated`(제안)는 디스패처 동시성만 결정한다([ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md), [ADR-0038](../06-adr/0038-outbound-egress-policy-and-webhook-signing.md)).
 - **결정:** 컬렉션 생성 본문은 `CollectionCreateRequest`(서버 파생 필드 제외)이고 응답은 `CollectionSpec` 그대로다. PATCH는 재색인 불필요 시 200 `CollectionSpec`, blue/green 유발 시 202 `JobStatus(kind=reindex_collection)`이다. 재색인 본문은 `{profile_id?, profile_version?, from_stage?, dry_run?, reindex_max_share?}`이며 `dry_run`은 200 `ReindexEstimate`다([ADR-0026](../06-adr/0026-index-commit-generation-saga-and-ledger.md), [ADR-0031](../06-adr/0031-profile-schema-extends-and-quality-gates.md)).
 - **결정:** 사용자 사전 PUT은 전체 교체이며 `dictionary_hash` 변경 시 `reindex_suggested=true`와 `collection.profile.changed`만 내고 재색인을 자동 시작하지 않는다. 테넌트 전역 항목은 `/v1/tenants/{tenant_id}/dictionary`(제안)로 관리한다([ADR-0021](../06-adr/0021-korean-analyzer-kiwi-promotion-and-interim-mecab-kss.md)).
-- **결정:** `POST /v1/profiles/validate`는 `{"yaml"}` 또는 `{"profile"}` JSON 본문을 받아 컬렉션 생성·PATCH와 같은 검증기를 호출하고 200 `ProfileValidationResult` / 422 `profile.invalid`·`plugin.*`를 낸다. 프로파일 조회의 `profile_hash`는 `ETag`로 전달한다.
+- **결정:** `POST /v1/profiles/validate`는 `{"yaml"}` 또는 `{"profile"}` JSON 본문을 받아 컬렉션 생성·PATCH와 같은 검증기를 호출하고 200 `ProfileValidationResult` / 422 `profile.invalid`·`plugin.*`를 낸다. 프로파일 조회의 `profile_hash`는 `ETag`와 `Profile.profile_hash`(readOnly, 바이블 §5.6 1.3.0 AM-34) 둘로 전달한다.
 - **결정:** 스키마 레지스트리는 `GET /v1/schemas`(목록) + `GET /v1/schemas/{name}?major=`이며 경로 버전(`/{version}`)은 채택하지 않는다 — 주소화 단위가 major뿐이다.
 - **결정:** API 키는 `rag_ak_` + base64url 43자(51자), `service:` 주체 전용, 역할은 `ingestor`·`reader`·`collection_admin`만, 만료 ≤ 90일, 회전은 새 키 발급 + 이전 키 7일 유예(동시 유효 2개), 폐기는 `DELETE`(행 보존·즉시 무효). 비밀은 생성·회전 응답에 1회만 노출된다.
 - **결정:** `POST /v1/eval/runs`의 `run_id`는 202 응답의 `Link: <…/v1/eval/runs/{run_id}>; rel="related"` 헤더로 전달하고 `EvalRun.job_id`가 역방향이다([ADR-0023](../06-adr/0023-evaluation-qrels-answer-spans-and-linear-ndcg.md)).
@@ -709,21 +730,21 @@ Content-Type: application/json
 
 ## 미해결 이슈
 
-1. **바이블 §14 minor 발의(제안 엔드포인트 묶음)**: `/v1/api-keys*`, `/v1/plugins*`, `GET /v1/schemas`, `/v1/version`, `/v1/capacity`, `POST /v1/collections/{collection_id}/consistency-check`, `GET /v1/audit-events`, `GET`·`PUT /v1/tenants/{tenant_id}/dictionary`, `GET /v1/tenants/{tenant_id}/policies`, `POST /v1/profiles`, `POST /v1/documents/{document_id}/unmask`. 01 §3.1 예외 목록에 단일 인스턴스 자원(`/v1/version`, `/v1/capacity`) 관례 예외와 §17.3 동사(`check`·`rotate`·`unmask`·`test`·`redeliver`) 추가를 함께 요청한다.
-2. **관리 응답 객체의 계약 지위**: `TenantPolicies`, `TenantUsage`, `CollectionCreateRequest`, `ReindexEstimate`, `CollectionStatsView`, `DictionaryReplaceResult`, `ProfileSummary`, `ProfileValidationResult`, `PluginCapabilitiesView`, `PluginHealth`, `SchemaDescriptor`, `ApiKey`, `VersionInfo`, `CapacityView`, `Document`는 바이블 §5.1 인벤토리 밖이다. `schemas/` 파일·`GET /v1/schemas` 게시 대상으로 등재할지(등재 시 소유 문서는 03-contracts/15 또는 신설), 아니면 OpenAPI `components.schemas`에만 두는 API 전용 DTO로 둘지 결정이 필요하다. `TenantTier`(§2.3)·`Role`(07 미해결 이슈 5)의 §5.7 등재도 같은 묶음이다.
-3. **테넌트 정책 변경 이벤트**: 카탈로그(바이블 §5.7)에 테넌트 정책 변경 도메인 이벤트가 없어 api 캐시가 TTL(60초 초안)로만 갱신된다. `tenant.policies.changed`(제안) 등재 여부와, 없다면 `audit.admin.action{manage_tenant_policies}`를 캐시 무효화 트리거로 재사용해도 되는지(감사 이벤트의 제어 용도 겸용은 E12 원칙과 충돌 가능).
+1. **바이블 §14 minor 발의(제안 엔드포인트 묶음) — 대부분 종결**: 바이블 1.3.0(AM-39)이 `/v1/tenants*`, `/v1/api-keys*`, `/v1/plugins`·`/v1/plugins/{plugin_id}`, `GET /v1/schemas`, `/v1/version`(01 §3.1 단일 인스턴스 자원 예외 포함), `POST /v1/collections/{collection_id}/consistency-check`, `GET /v1/audit-events`, `GET /v1/tenants/{tenant_id}/policies`, `POST /v1/profiles`, `POST /v1/documents/{document_id}/unmask`, §17.3 동사(`check`·`rotate`·`unmask`·`test`·`redeliver`)를 채택해 종결한다. **AM-53 보류로 남은 것**: `/v1/capacity`(단일 인스턴스 자원 예외 포함), `GET`·`PUT /v1/tenants/{tenant_id}/dictionary`, `GET /v1/plugins/{plugin_id}/health`, `GET /v1/plugins/{plugin_id}/capabilities`(바이블 §14 미등재, AM-53과 별개로 계속 제안).
+2. **종결(바이블 §5.1 각주, AM-02): 관리 응답 객체의 계약 지위.** `TenantPolicies`, `TenantUsage`, `Tenant`, `CollectionCreateRequest`, `ReindexEstimate`, `CollectionStatsView`, `DictionaryReplaceResult`, `ProfileSummary`, `ProfileValidationResult`, `PluginCapabilitiesView`, `PluginHealth`, `SchemaDescriptor`, `ApiKey`, `VersionInfo`, `CapacityView`, `Document`는 바이블 §5.1 1.3.0이 명시적으로 **API 전용 뷰**로 확정했다 — 계약 인벤토리·`schemas/`·`GET /v1/schemas` 게시 대상이 아니고, 단일 출처는 `src/rag_platform/api/`의 Pydantic 모델이며 OpenAPI `components.schemas`에만 정의한다(FR-API-04). `TenantTier`(§2.3)·`Role`(07 미해결 이슈 5)도 같은 이유로 §5.7에 등재하지 않는다(트리아지 §4 #5).
+3. **종결(AM-38): 테넌트 정책 변경 이벤트.** 바이블 §5.7 1.3.0이 `tenant.policies.changed`(도메인 "테넌트", 정책·할당량·상태 변경 시 발행, 캐시 무효화 트리거)를 이벤트 카탈로그에 등재했다 — api 캐시(TTL 60초 초안)는 이 이벤트로 즉시 무효화할 수 있고, 감사 이벤트(`audit.admin.action`)를 제어 용도로 겸용할 필요가 없어졌다(E12 원칙과의 충돌도 해소).
 4. **`CollectionCreateRequest`·`POST /v1/eval/datasets`·`POST /v1/profiles` 본문의 래퍼 DTO 등재**: 01 §8은 래퍼를 셋으로 한정한다. 서버 파생 필드가 있는 계약의 생성 요청은 인스턴스를 그대로 쓸 수 없으므로 "생성 요청 DTO" 부류의 일반 규칙(계약의 readOnly 필드를 제외한 부분 스키마 자동 생성 등)을 01에 요청한다.
 5. **01 §9.3 표 갱신**: `PATCH /v1/collections/{collection_id}` 200·202 이원화(§3.3), `DELETE /v1/collections/{collection_id}` 202 `JobStatus(kind=delete_collection)`, `PATCH …/metadata` 200 `Document`(+`reprocess_suggested`), `POST /v1/eval/runs`의 `Link rel="related"`.
-6. **컬렉션 삭제 잡 종류**: `JobKind.delete_collection`·`collection.delete.v1`·`collections.deleted_at`은 19 §6.1(미해결 이슈 17)의 제안이며 이 문서는 채택을 전제로 썼다. 기각되면 §3.4는 "첫 자식 `delete_document` 잡의 `JobStatus`"로 바뀌어야 하고 진행률 표현이 약해진다. 삭제의 감사 값은 이 문서가 Cedar 액션명 `audit.admin.action{action: manage_collection}`(§14.2)을 쓰고 19 §6.1은 `action: delete_collection`(값 제안, 19 미해결 이슈 19)을 쓰므로 `audit.admin.action.action` 어휘 확정 시 한쪽으로 맞춘다.
+6. **종결(AM-37): 컬렉션 삭제 잡 종류.** `JobKind.delete_collection`·워크플로우 `collection.delete.v1`·`collections.deleted_at`을 바이블 §5.7·§11.2·§13.1 1.3.0이 채택했다(19 §6.1이 원 제안). 남은 세부: 삭제의 감사 값은 이 문서가 Cedar 액션명 `audit.admin.action{action: manage_collection}`(§14.2)을 쓰고 19 §6.1은 `action: delete_collection`(값 제안, 19 미해결 이슈 19)을 쓰므로 `audit.admin.action.action` 어휘 확정 시 한쪽으로 맞춘다.
 7. **롤백 액션**: alias 되돌림·superseded 커밋 재적재(19 미해결 이슈 6)를 v1 API에 두지 않고 런북 경로로 남겼다. 운영 요구가 확인되면 `POST /v1/collections/{collection_id}/rollback`(제안)과 ADR-0026 개정으로 다룬다.
-8. **`profile_hash`의 전달 위치**: `Profile` 계약에 `profile_hash`가 없어 `ETag`와 `ProfileSummary`로만 전달한다. `Profile`에 readOnly `profile_hash`(N)를 추가하는 minor 제안을 03-contracts/15에 요청한다.
-9. **검증기 경고 코드**: `profile.gate_pending` 등 `ProfileValidationResult.warnings[].code`는 바이블 §5.7 카탈로그의 `—`(경고) 행에 없다. 코드 목록을 확정해 등재를 요청한다.
+8. **종결(AM-34): `profile_hash`의 전달 위치.** 바이블 §5.6 1.3.0이 `Profile.profile_hash`(readOnly, N)를 추가했다 — `ETag`·`ProfileSummary` 전달에 더해 `Profile` 응답 본문 자체에서도 읽을 수 있다. §4.1의 "`Profile` 계약에는 `profile_hash` 필드가 없으므로 헤더로 전달한다"는 서술은 이 필드가 배포에 반영되면 갱신한다.
+9. **종결(AM-36): 검증기 경고 코드.** `profile.gate_pending`(경고: 게이트 미통과 기본값)이 바이블 §5.7 오류·경고 코드 카탈로그의 `—`(경고) 행에 1.3.0으로 등재되었다. `ProfileValidationResult.warnings[].code`는 이 카탈로그 코드를 그대로 쓴다.
 10. **`PluginMeta` 응답 확장**: 목록 항목에 `installed`·`package`를 덧붙이면 `additionalProperties: false`와 충돌한다. `PluginMeta`에 N 필드로 추가(minor)하거나 `{meta: PluginMeta, installed, package}` 래퍼로 바꾼다. 또한 레지스트리가 프로세스별이라 워커 이미지의 플러그인 세트를 api가 정확히 알 수 없다 — 04 미해결 이슈 3의 `plugin_snapshots` 표 제안이 채택되면 그 표를 원천으로 바꾼다.
 11. **API 키 세부(07 미해결 이슈 17·01 미해결 이슈 9 공동)**: 해시 알고리즘(argon2id 권고 vs SHA-256; 09-operations/05 확정), `prefix` 컬럼·`roles[]`·`allowed_collections[]` 컬럼의 바이블 §13.1 등재, 인증 캐시 키 `apikey:{tenant}:{hash}`의 §13.4 등재, 09-operations/05 §6.1 스캐너 접두 `rgp_` → `rag_ak_`·`rag_whs_` 정정, 회전 유예(7일)와 웹훅 비밀 유예(24h/7일, 07 미해결 이슈 11)의 통일.
-12. **07 §4.1 매트릭스 갱신**: `read_registry`·`read_audit` 액션 신설, `manage_collection`의 생성·삭제(관리자만) vs 변경(`collection_admin` C) 세분, `run_eval`의 `collection_admin` 조건(`corpus_collection_id`), `pii_officer`의 감사 조회 범위, 그리고 `manage_tenants` 행의 "테넌트 생성·`tier` 변경·플러그인 정책(관리 API)" → "…(CLI·Helm, 01 §3.2)" 정정 — 이 문서는 테넌트 생성·`tier` 변경·플러그인 정책(`optIn.*`)을 v1 API 표면에 두지 않는다(§2, §5).
+12. **07 §4.1 매트릭스 갱신**: `read_registry`·`read_audit` 액션 신설, `manage_collection`의 생성·삭제(관리자만) vs 변경(`collection_admin` C) 세분, `run_eval`의 `collection_admin` 조건(`corpus_collection_id`), `pii_officer`의 감사 조회 범위, 그리고 `manage_tenants` 행의 "플러그인 정책(관리 API)" → "…(CLI·Helm, 01 §3.2)" 정정(테넌트 생성·`GET/PATCH`는 이제 §2.4의 실제 관리 API이므로 이 행에서 제외) — 이 액션별 인가 목록의 정본은 07 §4.1이며 §13 표는 그 엔드포인트 단위 투영으로 이관되었으니 두 표가 갈리면 07 §4.1을 따른다. 이 문서는 플러그인 옵트인 정책(`optIn.*`)만 v1 API 표면에 두지 않는다(§5).
 13. **`GET /v1/plugins/{plugin_id}/health`의 사이드카 프록시 범위**: 사이드카 `GET /healthz`는 서비스 디스커버리 주소만 허용되는 내부 표면이다. api가 프록시하는 것이 배포 아키텍처 §5.2 NetworkPolicy와 정합한지, 아니면 워커가 주기적으로 스냅샷을 원장에 쓰는 방식이 나은지 확정이 필요하다.
 14. **`usage_ledger.bytes_stored`·일일 수집 한도**: 계량기 `bytes_stored`(04 미해결 이슈 16)와 `daily_ingest_bytes_max`(07 §10) 채택 여부. 채택 전 `TenantUsage.meter`는 바이블 네 값만 반환한다.
-15. **depends_on 대조 상태**: [수집 API](02-ingestion-api.md)·[MCP 서버](05-mcp-server.md)·[구성 참조](../09-operations/02-configuration-reference.md)는 작성 시점 미게시다(문서 맵 경로로만 링크). 게시 후 `Document` 객체의 사용, `list_collections`와 §3.1 필터 규칙, 캐시 TTL 설정 키 이름을 대조한다.
+15. **depends_on 대조 상태**: [수집 API](02-ingestion-api.md)·[MCP 서버](05-mcp-server.md)·[구성 참조](../09-operations/02-configuration-reference.md)는 모두 게시되었다(문서 맵 경로, 브리프 §8). `Document` 객체의 사용, `list_collections`와 §3.1 필터 규칙, 캐시 TTL 설정 키 이름의 대조는 남은 작업이다.
 
 ## 참조
 

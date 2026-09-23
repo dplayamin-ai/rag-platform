@@ -2,7 +2,7 @@
 title: 릴리스 프로세스
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -336,7 +336,7 @@ flowchart LR
 |---|--------|------|-----------|------|---------|
 | 1 | 잠금·툴체인 | `uv lock --check`; `requires-python = ">=3.12,<3.14"` 범위 검사; 3.12·3.13 두 인터프리터 모두 통과 | uv, `tools/ci/check_lock_ranges.py`(제안) | ADR-0035, 바이블 §11.6 | `devex` |
 | 2 | 정적 검사 | ruff, mypy strict, import-linter 5계약(C 등급 임포트 차단 포함), 스팬 리터럴 린트 | 루트 `pyproject.toml` 설정 | 저장소 구조 §3.2·§4.2 | `devex` |
-| 3 | 계약 | 스키마 문법(2020-12 메타스키마·`$ref` 해소·`additionalProperties` 명시), 래퍼 게이트, 열거 대조(바이블 §5.7·이벤트·오류 코드·메트릭), 골든 예시 회귀, Pydantic 동치, 불변식 테스트, 해시 벡터, `SchemaDiffReport.declared_level ≥ computed_level`, `versioning.py` 표 = 03-contracts `## 버전 이력` | `tools/validate-contracts.mjs`, `python -m rag_platform.contracts.export`, `rag schema diff`(제안) | 바이블 §1.2, 계약 개요 §10.3, 14 §10 | `contracts` |
+| 3 | 계약 | 스키마 문법(2020-12 메타스키마·`$ref` 해소·`additionalProperties` 명시), 래퍼 게이트, 열거 대조(바이블 §5.7·이벤트·오류 코드·메트릭), 골든 예시 회귀, Pydantic 동치, 불변식 테스트, 해시 벡터, `SchemaDiffReport`(바이블 §5.1 인벤토리 35종 등재, AM-01) `declared_level ≥ computed_level`, `versioning.py` 표 = 03-contracts `## 버전 이력`; 계약 `schema_version`은 M1 이전(GA `contracts-v1.0` 동결 전)이므로 minor·patch 가산만 있어도 1.0.0을 유지한다(바이블 §1.2, 1.3.0 결정 사항 요약) | `tools/validate-contracts.mjs`, `python -m rag_platform.contracts.export`, `rag schema diff`(제안) | 바이블 §1.2, 계약 개요 §10.3, 14 §10 | `contracts` |
 | 4 | 테스트 | `tests/contracts`·`adapters`(계약 코퍼스)·`security`(카나리 E1~E17)·`replay`(`Replayer`)·`eval`(소형 골든셋)·`golden`·`unit`·`integration`·`e2e`(5분 기동) | pytest 매트릭스 | 저장소 구조 §7, ADR-0003 | 각 CODEOWNERS |
 | 5 | 통합 매트릭스 | Temporal × Qdrant × OpenSearch(`analysis-nori` 동일 버전) × PostgreSQL 조합; 통과 조합 → `compat-matrix.json.components[].tested` | 스테이징 형상 | 09-operations/08 §2.3 | `platform-ops` |
 | 6 | 평가 게이트 | 소형 골든셋 `EvalReport.gate_result.passed = true`(nDCG@10 회귀 `max_regression` 0.01, Holm); builtin 프로파일 값이 바뀐 릴리스는 해당 프로파일 `eval.gates` 전체 게이트 통과 근거(ADR 첨부) | `rag eval`(`[eval]` extra) | D-12, 바이블 §7.4, ADR-0031 | `evaluation` |
@@ -379,6 +379,8 @@ flowchart LR
 | `docs/05-api/openapi.yaml` | `info.version` = 태그, 재생성 | `python -m rag_platform.api.openapi`(제안) |
 | `sdk/python/pyproject.toml`, `sdk/typescript/package.json` | SDK 변경이 있을 때만 `version` | 릴리스 관리자 |
 | `docs/09-operations/08-upgrade-and-migration.md` | 릴리스별 마이그레이션 노트가 필요한 항목 반영 여부 확인(본문 규칙 자체는 바꾸지 않음) | 릴리스 관리자 |
+
+핫픽스(§10)는 `release/X.Y`에 cherry-pick된 뒤 같은 표의 파일 집합을 대상으로 `release: vX.Y.Z(hotfix)` 제목의 동등 PR이 자동 개설된다(스코프 `release-hotfix`; SDK·플러그인 `version` 행은 해당 변경이 없으면 생략, `deploy/compat-matrix.json`은 §5.3 게이트 5 축약 결과로 갱신, #95).
 
 ### 5.5 릴리스 후 검증
 
@@ -716,7 +718,7 @@ sequenceDiagram
 
 ## 미해결 이슈
 
-1. **신규 ADR 발의.** 플랫폼 semver 증분 규칙·릴리스 종류·지원 창·동기/독립 결정은 바이블 §3.3에 슬롯이 없다(09-operations/08 미해결 이슈 1). `0039-platform-release-versioning-and-support-policy`(slug 제안)로 발의하고 바이블 §3.3 표 추가(minor)를 architecture 소유자에게 요청한다. ADR이 게시되면 §1.1·§1.2·§8의 `**결정:**` 링크를 그 ADR로 바꾼다.
+1. **신규 ADR 발의.** 플랫폼 semver 증분 규칙·릴리스 종류·지원 창·동기/독립 결정은 바이블 §3.3에 슬롯이 없다(09-operations/08 미해결 이슈 1). `0040-platform-release-versioning-and-support-policy`(slug 제안; ADR-0039는 바이블 1.3.0 가산 개정 묶음으로 이미 사용됨, 바이블 §3.3)로 발의하고 바이블 §3.3 표 추가(minor)를 architecture 소유자에게 요청한다. ADR이 게시되면 §1.1·§1.2·§8의 `**결정:**` 링크를 그 ADR로 바꾼다.
 2. **체인지로그 생성기·커밋 린터 선정.** git-cliff, release-please, commitlint 계열은 07-tech-landscape에 비교 조사가 없어 이 문서가 단정하지 않는다(확인 필요 as of 2026-09). 요구 조건은 §4.3 트레일러 파싱·모노레포 경로 필터(`sdk/`, `plugins/*`)·Keep a Changelog 절 매핑이며 [CI/CD](./05-ci-cd.md)에서 확정한다.
 3. **릴리스 트레일러 어휘(§4.3)의 지위.** 이 문서가 정의한 `Breaking-Kind`·`Reindex-Required`·`Contract-Change` 등은 도구 어휘다. 값 중 `from_stage`·워크플로우 변경 종류·`CompatLevel`은 바이블·14 정본을 참조하지만 `Breaking-Kind` 4값과 `Cache-Invalidation` 4값은 새 어휘이므로 CI/CD가 린트 규칙으로 확정하고 [기여 가이드](./07-contributing.md) PR 템플릿에 반영한다.
 4. **`release-manifest.json`·`compat-matrix.json`의 JSON Schema.** `schemas/release-manifest.schema.json`·`schemas/compat-matrix.schema.json`을 14 §5.1 도구 스키마 지위(인벤토리 밖, `GET /v1/schemas` 미노출)로 게시할지, 바이블 §5.1 인벤토리로 승격할지(09-operations/08 미해결 이슈 2)는 03-contracts/00 소유자와 확정한다. 이 문서는 인벤토리를 늘리지 않는다.

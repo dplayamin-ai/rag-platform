@@ -2,7 +2,7 @@
 title: ADR 인덱스
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../02-architecture/00-design-bible.md
@@ -12,11 +12,11 @@ depends_on:
 
 ## 목적
 
-`docs/06-adr/`에 있는 아키텍처 결정 기록(ADR, Architecture Decision Record) 38건의 **단일 목록**이다. 설계 바이블 §3.3이 배정한 번호·slug·우선순위·관련 결정을 파일 실측과 대조해 표로 싣고, 각 ADR의 `## 결정` 절을 한 줄로 요약한다. 아울러 이 저장소가 쓰는 MADR(Markdown Any Decision Records) 형식의 작성 규칙, 상태값 정의, 주제별 진입점, 새 ADR을 발의하는 절차를 한 곳에 정한다. 다른 문서가 이 인덱스에 위임한 두 가지 결정 — ADR 상태값 이름([설계 원칙](../00-vision/02-design-principles.md) 미해결 이슈 12, DP-07.R6)과 MADR 템플릿의 "계약 영향" 절([스키마 버전 관리](../03-contracts/14-schema-versioning-and-compatibility.md) §3.3) — 도 여기서 확정한다.
+`docs/06-adr/`에 있는 아키텍처 결정 기록(ADR, Architecture Decision Record) 39건의 **단일 목록**이다. 설계 바이블 §3.3이 배정한 번호·slug·우선순위·관련 결정을 파일 실측과 대조해 표로 싣고, 각 ADR의 `## 결정` 절을 한 줄로 요약한다. 아울러 이 저장소가 쓰는 MADR(Markdown Any Decision Records) 형식의 작성 규칙, 상태값 정의, 주제별 진입점, 새 ADR을 발의하는 절차를 한 곳에 정한다. 다른 문서가 이 인덱스에 위임한 두 가지 결정 — ADR 상태값 이름([설계 원칙](../00-vision/02-design-principles.md) 미해결 이슈 12, DP-07.R6)과 MADR 템플릿의 "계약 영향" 절([스키마 버전 관리](../03-contracts/14-schema-versioning-and-compatibility.md) §3.3) — 도 여기서 확정한다.
 
 ## 범위
 
-- 포함: ADR 목록(2026-09-23 실측 38건), MADR 형식과 바이블 §1.2 변경 절차의 관계, frontmatter·절 구성 규약, 상태 정의와 전이, 주제별 그룹, P0 우선 읽기 순서, 새 ADR 절차.
+- 포함: ADR 목록(2026-09-23 실측 39건, ADR-0039 신설 포함), MADR 형식과 바이블 §1.2 변경 절차의 관계, frontmatter·절 구성 규약, 상태 정의와 전이, 주제별 그룹, P0 우선 읽기 순서, 새 ADR 절차.
 - 제외: 각 결정의 근거·대안(각 ADR 본문), 결정의 정본 문구(바이블 §3~§14; ADR은 바이블 표를 바꾸지 못한다), RFC 이슈 운영 세부([기여 가이드](../10-development/07-contributing.md) §4).
 - 정본 관계: 번호·slug·우선순위·관련 결정은 **바이블 §3.3 표가 정본**이고 이 인덱스는 그 표와 파일 frontmatter에서 파생된 목록이다. 셋이 어긋나면 바이블을 기준으로 파일과 인덱스를 고친다.
 
@@ -59,7 +59,7 @@ ADR은 바이블 §1.2 변경 절차의 **발의 문서**다. 변경 종류에 �
 
 ### 1.4 절 구성(MADR 템플릿)
 
-38건 모두 아래 8개 절을 같은 이름·같은 순서로 갖는다(실측). 새 ADR도 같다.
+39건 모두 아래 8개 절을 같은 이름·같은 순서로 갖는다(실측, 1.3.0 신설 ADR-0039 포함). 새 ADR도 같다.
 
 | 순서 | 절 | 적는 것 |
 |------|----|---------|
@@ -118,9 +118,9 @@ stateDiagram-v2
 
 ---
 
-## 3. 전체 표(38건, 2026-09-23 실측)
+## 3. 전체 표(39건, 2026-09-23 실측)
 
-우선순위는 바이블 §3.3의 값이다. `P0`는 "다른 설계 문서가 전제로 삼는 것"(바이블 §3.3)이며, 이 인덱스는 나머지를 다음과 같이 읽는다 — `P1` 기본 프로파일의 구성요소·경로 선택, `P2` 정책·규약·운영 방식, `P3` 실측으로 조정될 세부값. 38건 모두 `status: accepted`, `date: 2026-09-22`다. 관련 결정 열은 각 ADR frontmatter `related`의 값이다(범례는 §1.3).
+우선순위는 바이블 §3.3의 값이다. `P0`는 "다른 설계 문서가 전제로 삼는 것"(바이블 §3.3)이며, 이 인덱스는 나머지를 다음과 같이 읽는다 — `P1` 기본 프로파일의 구성요소·경로 선택, `P2` 정책·규약·운영 방식, `P3` 실측으로 조정될 세부값. 38건은 `status: accepted`, `date: 2026-09-22`이고, 1.3.0에서 신설된 ADR-0039는 `status: accepted`, `date: 2026-09-23`다. 관련 결정 열은 각 ADR frontmatter `related`의 값이다(범례는 §1.3).
 
 | ID | 제목 | 상태 | 우선 | 관련 결정 | 요약 한 줄 | 링크 |
 |----|------|------|------|-----------|-----------|------|
@@ -129,12 +129,12 @@ stateDiagram-v2
 | ADR-0003 | 오케스트레이터 중립 파이프라인과 비내구 LocalRunner | accepted | P0 | D-17 | 파이프라인 정의는 `PipelineContext`에만 의존(`temporalio` 임포트 금지), Temporal 실행 + 비내구 `LocalRunner`(개발·CI·하네스), 경계 페이로드는 `ArtifactRef`만, 검색은 오케스트레이터 미경유 | [0003](0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md) |
 | ADR-0004 | 결정적 chunk_id·block_id 해시, 스코프·세대 합성 record_id/point_id와 D-06 ULID 예외 | accepted | P0 | D-06, E17 | 발급형 `*_id`는 ULID, 콘텐츠 파생 키는 BLAKE3 `H(label, …)`; `record_id = H("record", tenant, collection, document, generation, chunk_id)`, `point_id = uuid5(NAMESPACE_RAG_CHUNK, record_id)` | [0004](0004-deterministic-chunk-id-scoped-record-id-and-ulid-exception.md) |
 | ADR-0005 | doc_version은 콘텐츠 해시만; ACL·메타데이터는 payload 갱신 | accepted | P0 | D-09, 원칙 4 | `doc_version = content_hash`(콘텐츠만); ACL·메타 변경은 재임베딩 없이 `update_acl` payload 갱신 + `aclrev:` 회수 힌트 + `acl.document.updated` | [0005](0005-doc-version-content-hash-only-and-acl-payload-update.md) |
-| ADR-0006 | PDF 고속 텍스트 경로: PyMuPDF 제거, pypdfium2 + pdftext | accepted | P1 | D-18 | 디지털 PDF 고속 텍스트는 pypdfium2 + pdftext(`lite`), 레이아웃·표는 Docling(`standard`); PyMuPDF(AGPL)는 별도 저장소의 옵트인 사이드카만 | [0006](0006-pdf-fast-path-pypdfium2-pdftext-replaces-pymupdf.md) |
-| ADR-0007 | HWP 5.0 기본 경로: Apache-2.0 Java 사이드카, pyhwp 강등, H2Orestart GPL 격리 | accepted | P1 | D-18, O-07 | HWP 5.0은 Java 사이드카 → HWPX → 단일 OWPML 어댑터 1차, 폴백 unhwp → hwp-hwpx-parser → `lo-sidecar`(opt-in); pyhwp·H2Orestart는 GPL/AGPL 격리, `parser_chain[]` 기록 | [0007](0007-hwp5-java-sidecar-first-pyhwp-demoted.md) |
+| ADR-0006 | PDF 고속 텍스트 경로: PyMuPDF 제거, pypdfium2 + pdftext | accepted | P1 | D-18 | 디지털 PDF 고속 텍스트는 pypdfium2 + pdftext(`lite`), 레이아웃·표는 Docling(`standard`); PyMuPDF(AGPL, 인프로세스 대안·기각)는 별도 저장소의 옵트인 사이드카만 | [0006](0006-pdf-fast-path-pypdfium2-pdftext-replaces-pymupdf.md) |
+| ADR-0007 | HWP 5.0 기본 경로: Apache-2.0 Java 사이드카, pyhwp 강등, H2Orestart GPL 격리 | accepted | P1 | D-18, O-07 | HWP 5.0은 Java 사이드카 → HWPX → 단일 OWPML 어댑터 1차, 폴백 unhwp → hwp-hwpx-parser → `lo-sidecar`(opt-in); pyhwp·H2Orestart는 대안·기각(GPL/AGPL 격리), `parser_chain[]` 기록 | [0007](0007-hwp5-java-sidecar-first-pyhwp-demoted.md) |
 | ADR-0008 | OCR 기본값 RapidOCR PP-OCRv5 korean / GPU PaddleOCR / 폴백 Tesseract | accepted | P1 | D-18, O-08 | 기본 RapidOCR 3.9.x PP-OCRv5 korean mobile(ONNX), `premium` GPU PaddleOCR server(`ocr-gpu`), 폴백 Tesseract `kor+eng`; 페이지 단위 하트비트·`page_status[]`·`Block.confidence` | [0008](0008-ocr-default-rapidocr-ppocrv5-korean.md) |
 | ADR-0009 | 임베딩 서빙: vLLM pooling + TEI + 인프로세스, Infinity 제외 | accepted | P1 | D-16 | 서빙은 vLLM pooling(BGE-M3 3-in-1) + TEI(dense·리랭커) + 인프로세스(`lite`); Infinity 제외; 같은 `embedding_space_id` 안의 스택 교체는 코사인 ≥ 0.9999 동등성 게이트 | [0009](0009-embedding-serving-vllm-pooling-tei-inprocess.md) |
 | ADR-0010 | BGE-M3 유지 근거 재기술과 late_interaction 슬롯 분리 | accepted | P1 | D-16, O-04 | BGE-M3 dense+sparse 유지(3-in-1·생태계·드롭인 파인튠), 리랭커 bge-reranker-v2-m3; `late_interaction`은 별도 슬롯 기본 끔(KURE-v2를 M2 골든셋에서 채널 vs 리랭크 비교) | [0010](0010-bge-m3-rationale-and-late-interaction-slot.md) |
-| ADR-0011 | 저장소 기본 이미지: Valkey, RustFS 또는 SeaweedFS | accepted | P1 | D-14 | PostgreSQL + S3 호환(RustFS 또는 SeaweedFS, 실측 후 택1; MinIO 제외) + Valkey(Redis 대체); Valkey는 가속기만이고 멱등 판정·ACL·잡 상태 정본은 PostgreSQL | [0011](0011-kv-and-object-storage-valkey-rustfs-seaweedfs.md) |
+| ADR-0011 | 저장소 기본 이미지: Valkey, RustFS 또는 SeaweedFS | accepted | P1 | D-14 | PostgreSQL + S3 호환(RustFS 또는 SeaweedFS, 실측 후 택1; MinIO 대안·기각) + Valkey(Redis 호환 대체); Valkey는 가속기만이고 멱등 판정·ACL·잡 상태 정본은 PostgreSQL | [0011](0011-kv-and-object-storage-valkey-rustfs-seaweedfs.md) |
 | ADR-0012 | 경량 프로파일 Qdrant 단독 BM25 계약(sparse_bm25) | accepted | P1 | D-15 | `lite`는 Qdrant 단독: 플랫폼이 형태소 토큰화 + BM25 TF 포화값을 계산해 `sparse_bm25`(`modifier: idf`)로 적재; 백엔드는 `IndexBackend` + `capabilities()` 뒤에 둔다 | [0012](0012-lite-profile-qdrant-only-client-bm25.md) |
 | ADR-0013 | 융합 RRF k=60 → convex combination 2단계 전략, 다중 컬렉션 융합 규칙, 후처리 고정 순서와 pack 내부 순서 | accepted | P1 | O-01, D-07 | 플랫폼 `fuser` RRF(k=60, 1:1:1, 변형 0.5) → 골든셋 ≥ 200 qrels 시 `convex_minmax`; 다중 컬렉션은 RRF 그대로 투입; 후처리 순서와 `pack` 내부 `acl_recheck → budget_cut → reorder → citation_align` 고정 | [0013](0013-fusion-rrf-k60-then-convex-combination-and-postprocess-order.md) |
 | ADR-0014 | sparse 표현: BGE-M3 sparse 기본, lexical 레그 유지 | accepted | P2 | O-02 | learned sparse 기본 BGE-M3(`vocab_id=xlm-roberta-250k`), lexical 레그는 항상 제3 레그; `vocab_id` 불일치는 `embed.space_mismatch`; sparse 모델 교체는 blue/green | [0014](0014-sparse-representation-bge-m3-lexical-leg-kept.md) |
@@ -162,8 +162,9 @@ stateDiagram-v2
 | ADR-0036 | 명명·식별자·열거 타입명·이벤트·메트릭 규약 | accepted | P2 | D-03, D-06 | 문서 한국어·식별자 영문 snake_case; 열거 타입명은 고유 PascalCase; ULID(대문자) vs BLAKE3 hex(소문자) 키 구분; 이벤트 `domain.entity.action`, 메트릭·스팬·환경 변수·오브젝트 키·Valkey 키 규약 정본 | [0036](0036-naming-and-identifier-conventions.md) |
 | ADR-0037 | 산출물 캐시 스코프: stage_key에 tenant·collection·document 합성, fetch 캐시 제외 | accepted | P0 | K5, 원칙 4 | `stage_key = H("stage", stage_name, scope_key, input.blake3, fingerprint)`, `scope_key = tenant/collection/document`; 봉투 있는 산출물은 잡 스코프 안에서만 재사용, 봉투 없는 콘텐츠 캐시(원본·파생물·임베딩·LLM 보강)만 테넌트 내 공유; `fetch`는 캐시 없음 | [0037](0037-artifact-cache-scope-and-stage-key-composition.md) |
 | ADR-0038 | 아웃바운드 egress 정책(SSRF 방어)과 웹훅 HMAC 서명 | accepted | P1 | D-09, §7 보안 | `EgressPolicy`(스킴 허용 목록, 사설·루프백·메타데이터 CIDR 거부, DNS 해석 IP 고정, 리다이렉트마다 재검사)를 `fetch`·릴레이에 프로파일 AND 테넌트로 강제(E16); 웹훅 `RAG-Signature` HMAC-SHA256 + 5분 재생 창 | [0038](0038-outbound-egress-policy-and-webhook-signing.md) |
+| ADR-0039 | 바이블 1.3.0 가산 개정 묶음(선택 필드·열거값·이벤트·JobKind·§14 엔드포인트·해시 키, AM-26~AM-44) | accepted | P1 | §1.2 minor, FR-MGT-01 | 1.3.0 minor 가산 묶음 AM-26~AM-44를 ADR 한 건으로 기록; 가산만이라 §7.4 게이트 근거 해당 없음; 대안(major 동반 개정)은 기각(D4-3) | [0039](0039-bible-1-3-additive-amendment-bundle.md) |
 
-집계: P0 9건(0001·0002·0003·0004·0005·0026·0027·0030·0037), P1 13건, P2 14건, P3 2건(0019·0035). 파일 38건은 바이블 §3.3의 38행과 번호·slug가 글자 단위로 일치하며 누락·추가는 없다.
+집계: P0 9건(0001·0002·0003·0004·0005·0026·0027·0030·0037), P1 14건(0039 포함), P2 14건, P3 2건(0019·0035). 파일 39건은 바이블 §3.3의 39행과 번호·slug가 글자 단위로 일치하며 누락·추가는 없다(1.3.0에서 ADR-0039 신설).
 
 ---
 
@@ -175,13 +176,13 @@ stateDiagram-v2
 
 - [ADR-0001](0001-license-grade-table-and-d02-interpretation.md) 라이선스 등급표 A/B/C/D/X — 모든 기본값 선택의 판정 규칙(P0).
 - [ADR-0035](0035-python-version-and-toolchain-pins.md) Python 버전·툴체인 고정 — 인터프리터 범위, 정적 검사, import-linter 계약, 금지 임포트.
-- 참조: 0020(semchunk·tiktoken 잠금), 0021(kiwipiepy LGPL 정적 링크 거부), 0022(관측 스택 AGPL·ELv2 경계), 0011(Redis·MinIO 라이선스 전환), 0006·0007(AGPL·GPL 파서 격리).
+- 참조: 0020(semchunk·tiktoken 잠금), 0021(kiwipiepy LGPL 정적 링크 거부), 0022(관측 스택 AGPL·ELv2 경계), 0011(MinIO 대안·기각, Redis 호환 Valkey로 전환), 0006·0007(PyMuPDF·pyhwp 대안·기각, AGPL·GPL 파서 격리).
 
 ### 4.2 파싱·문서 모델
 
 - [ADR-0002](0002-provenance-element-path-and-nullable-page-bbox.md) ParsedDocument provenance — 좌표계의 원천 필드(P0).
 - [ADR-0006](0006-pdf-fast-path-pypdfium2-pdftext-replaces-pymupdf.md) PDF 고속 텍스트 경로 — pypdfium2 + pdftext, Docling, PyMuPDF 제외.
-- [ADR-0007](0007-hwp5-java-sidecar-first-pyhwp-demoted.md) HWP 5.0 기본 경로 — Java 사이드카 → HWPX, 폴백 체인, GPL 격리.
+- [ADR-0007](0007-hwp5-java-sidecar-first-pyhwp-demoted.md) HWP 5.0 기본 경로 — Java 사이드카 → HWPX, 폴백 체인, pyhwp 대안·기각(GPL 격리).
 - [ADR-0008](0008-ocr-default-rapidocr-ppocrv5-korean.md) OCR 기본값 — RapidOCR / PaddleOCR / Tesseract, 페이지 단위 상태.
 - [ADR-0033](0033-sidecar-convert-contract-and-isolation-ladder.md) 사이드카 convert 계약과 격리 사다리 — 파서·OCR 사이드카의 공통 계약과 격리 모드.
 - 참조: 0030(좌표계가 이 필드를 소비), 0037(파생물 캐시 키).
@@ -234,6 +235,7 @@ stateDiagram-v2
 - [ADR-0036](0036-naming-and-identifier-conventions.md) 명명·식별자·열거 타입명·이벤트·메트릭 규약 — 철자의 정본.
 - [ADR-0032](0032-plugin-sdk-stage-protocol-and-conformance-kit.md) 플러그인 SDK Stage 프로토콜과 적합성 키트 — 확장 지점의 계약.
 - [ADR-0031](0031-profile-schema-extends-and-quality-gates.md) 프로파일 스키마 extends와 품질 게이트 — 프로파일 계약과 `gate`.
+- [ADR-0039](0039-bible-1-3-additive-amendment-bundle.md) 바이블 1.3.0 가산 개정 묶음 — 계약 인벤토리 35종·공용 타입 승격·오류 코드 84종·`§14` 엔드포인트 등 가산 항목의 단일 기록.
 - 참조: 0002(좌표 필드), 0018(오류 모델 ↔ RFC 9457), 0033(`ConvertRequest`/`ConvertResponse`).
 
 ### 4.9 운영·관측·평가
@@ -271,15 +273,15 @@ P0 9건은 03-contracts·04-pipelines·02-architecture 문서가 전제로 삼�
 
 ## 6. 새 ADR 절차
 
-다음 번호는 **0039**다(바이블 §3.3의 마지막 행 0038; 기여 가이드 §4.3). 번호는 architecture 소유자가 채택 시 부여한다.
+다음 번호는 **0040**이다(바이블 §3.3의 마지막 행 0039; 기여 가이드 §4.3). 번호는 architecture 소유자가 채택 시 부여한다. 09-operations/08·10-development/08이 제안한 릴리스 버전 정책 ADR은 이 다음 빈 번호(0040~)로 발의한다(바이블 §3.3 결정).
 
 1. **변경 종류 판정**: 바이블 §1.2 표에서 행을 고른다(§1.2). patch면 ADR 없이 소유자가 고친다.
 2. **RFC 이슈**: 기여 가이드 §4.3의 `proposed → discussing` 단계. 브리프 D-xx 개정·major 변경은 토론 기간 14일.
-3. **초안 파일**: `docs/06-adr/0039-{slug}.md`를 §1.3 frontmatter(`status: proposed`, `date`는 비워두거나 초안일)와 §1.4 절 구성으로 작성. 정본 예는 ADR-0001. 60~200행.
+3. **초안 파일**: `docs/06-adr/0040-{slug}.md`를 §1.3 frontmatter(`status: proposed`, `date`는 비워두거나 초안일)와 §1.4 절 구성으로 작성. 정본 예는 ADR-0001. 60~200행.
 4. **첨부**: 품질 기본값이면 `EvalReport` 링크와 `gate` 정의, minor 이상 계약 변경이면 `## 계약 영향` 절, major면 영향 문서 목록, D-xx 개정이면 바이블 §3.1 행·브리프 §4 행 문안.
 5. **채택**: architecture 2인 승인(+ 품질 기본값은 `evaluation`). `status: accepted`, `date`를 결정일로 확정.
 6. **같은 PR에서**: 바이블 §3.3 표에 행 추가(번호·제목·slug·우선·관련 결정), 이 인덱스 §3 표에 행 추가와 §4 그룹 배치, 대체하는 ADR이 있으면 그 파일에 `status: superseded`·`superseded_by` 기록.
-7. **30일 내**: 바이블 표 갱신(+ 브리프 §4 행) PR 머지(기여 가이드 §4.3 `adopted`; 넘기면 `blocked`). 구현 PR은 `ADR: ADR-0039` 푸터로 참조.
+7. **30일 내**: 바이블 표 갱신(+ 브리프 §4 행) PR 머지(기여 가이드 §4.3 `adopted`; 넘기면 `blocked`). 구현 PR은 `ADR: ADR-0040` 푸터로 참조.
 8. **검증**: 문서 검증기(링크·frontmatter·행 수), 계약 변경 시 `node tools/validate-contracts.mjs --root <repo>` 0 오류, 열거 대조(바이블 §1.2 CI 게이트).
 
 ```mermaid
@@ -287,13 +289,13 @@ flowchart LR
     A["변경 필요 발견"] --> B{"바이블 §1.2 변경 종류"}
     B -->|patch| C["소유자 직접 수정<br/>ADR 없음"]
     B -->|minor / major / D-xx 개정| D["RFC 이슈<br/>proposed → discussing"]
-    D --> E["0039-slug.md 초안<br/>status: proposed"]
+    D --> E["0040-slug.md 초안<br/>status: proposed"]
     E --> F["첨부: 게이트 근거 · 계약 영향 절 ·<br/>영향 문서 목록 · 바이블/브리프 행 문안"]
     F --> G{"architecture 2인 승인<br/>(+ evaluation)"}
     G -->|거부| H["status: rejected<br/>파일 보존"]
     G -->|승인| I["status: accepted · date 확정<br/>같은 PR: 바이블 §3.3 행 + 인덱스 행 + superseded 표기"]
     I --> J["30일 내 바이블 표 갱신<br/>(+ 브리프 §4 행)"]
-    J --> K["구현 PR 푸터 ADR: ADR-0039"]
+    J --> K["구현 PR 푸터 ADR: ADR-0040"]
 ```
 
 체크리스트(PR 설명에 복사):

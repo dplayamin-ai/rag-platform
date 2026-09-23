@@ -2,7 +2,7 @@
 title: "파서: DOCX와 DOC"
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -85,7 +85,7 @@ flowchart TD
 
 | 단계 | 입력 | 출력 | 규칙 |
 |------|------|------|------|
-| (1) 정규화 | 원본 ZIP | 메모리 내 정규화 ZIP(저장 안 함; 결정적) | §2.2. 실패(ZIP 손상·필수 파트 부재·상한 초과) → `parse.corrupt_container` |
+| (1) 정규화 | 원본 ZIP | 메모리 내 정규화 ZIP(저장 안 함; 결정적) | §2.2. 실패(ZIP 손상·필수 파트 부재) → `parse.corrupt_container`; 상한 초과(엔트리·크기·팽창비) → `parse.container_limit_exceeded`(바이블 §5.7 1.3.0 등재 — AM-36) |
 | (2) Docling | 정규화 ZIP(`DocumentStream`) | `DoclingDocument` | `DocumentConverter(allowed_formats=[InputFormat.DOCX])`; 옵션 클래스명은 확인 필요(as of 2026-09). 예외 → `parse.conversion_failed`(폴백 체인; `docx` 체인은 단일 후보라 소진 = 실패) |
 | (3) 인덱스 | 정규화 ZIP | `IndexEntry[]`(내부 타입) | `w:body` 자식을 문서 순서로 순회: `w:p`(빈 문단 포함, 블록은 비어 있으면 생략), `w:tbl`, 문단 안 `w:txbxContent`, `w:sectPr`. 각 항목에 `element_path`(§2.12), 스타일 해소 결과(§2.3), numbering(§2.4), 필드 구간(§2.9), 각주 참조 오프셋(§2.7), 정규화 텍스트 키 |
 | (4) 정렬 | Docling 아이템 시퀀스, `IndexEntry[]` | 아이템 ↔ 항목 대응 | 두 시퀀스를 앞에서부터 짝짓되 키가 다르면 창 3 안에서 전방 탐색. 미대응 Docling 아이템은 합성 경로(§2.12)로, 미대응 인덱스 항목은 인덱스 텍스트로 블록을 만든다(손실 없음). 미대응이 하나라도 있으면 `quality=degraded`(§5) |
@@ -104,7 +104,7 @@ flowchart TD
 | Strict OOXML | 전 파트 | 네임스페이스 `http://purl.oclc.org/ooxml/…` → Transitional로 치환(Docling도 수행하나 인덱스가 같은 트리를 보아야 하므로 어댑터가 먼저 한다) |
 | 잡음 제거 | 본문 파트 | `w:proofErr`, `w:bookmarkStart/End`(HYPERLINK 앵커 해소에는 사용 후 제거), `w:permStart/End`, `w:smartTag`·`w:customXml` 언랩 |
 | 숨김 텍스트 | 본문 파트 | `w:vanish` 런은 제거(`hidden_text: drop` 기본; `keep` 옵션) |
-| 보안·상한 | ZIP 전체 | 엔트리 수 ≤ 10,000, 비압축 총합 ≤ 1 GiB, 팽창비 ≤ 100(초안 목표); 초과 → `parse.corrupt_container`. lxml은 `resolve_entities=False`·`no_network=True`·DTD 로드 금지. `word/vbaProject.bin` 존재는 `metadata`가 아닌 로그(`macro_present`)로만 남긴다 |
+| 보안·상한 | ZIP 전체 | 엔트리 수 ≤ 10,000, 비압축 총합 ≤ 1 GiB, 팽창비 ≤ 100(초안 목표); 초과 → `parse.container_limit_exceeded`(비재시도; 바이블 §5.7 1.3.0 등재 — AM-36). lxml은 `resolve_entities=False`·`no_network=True`·DTD 로드 금지. `word/vbaProject.bin` 존재는 `metadata`가 아닌 로그(`macro_present`)로만 남긴다 |
 | 암호화 OOXML | OLE `EncryptedPackage` | `container_flags.encrypted=true`(detect)면 §2.14 |
 
 ### 2.3 스타일 해소와 heading level
@@ -195,7 +195,7 @@ OOXML 격자 계산(0-based):
 |------|------|
 | 머리말·꼬리말(`w:sectPr/w:headerReference`·`w:footerReference`, `header*.xml`·`footer*.xml`) | 블록을 만들지 않고 `metadata.page_header_text[]`·`page_footer_text[]`에 구역 순서(`default` → `first` → `even`)로 중복 제거해 넣는다([03 계약](../03-contracts/03-parsed-document.md) §8.3; 정규화가 보일러플레이트 근거로 사용). `PAGE`·`NUMPAGES`·`SECTIONPAGES`·`DATE`·`TIME`·`SAVEDATE`·`PRINTDATE` 필드 결과는 제거(저장 시점 값이라 무의미), 그 외 필드 결과는 유지. 머리말 안 그림은 무시 |
 | 텍스트 상자(`wps:txbx/w:txbxContent`, `v:textbox/w:txbxContent`) | 내부 문단·표·그림을 `container=text_box` 블록으로, `parent_block_id` = 앵커 문단 블록, 앵커 직후 형제 순서. `element_path = /w:body/w:p[i]/w:txbxContent[j]/w:p[m]`. 앵커 문단이 비어 있어 블록이 없으면 텍스트 상자 블록은 앵커의 부모에 붙인다 |
-| 구역 경계(`w:p/w:pPr/w:sectPr`) | `type=page_break`, `page_break{page_no: null, section_index: k}`(k = 구역 순번 1..; 본문 마지막 `w:body/w:sectPr`는 경계가 아니라 생략), 루트 형제, `element_path = /w:body/w:p[i]/w:sectPr`, `text=""`. `Block.provenance.section_index`는 채우지 않는다(계약 §3.2 "다른 포맷은 생략"; 미해결 이슈 6) |
+| 구역 경계(`w:p/w:pPr/w:sectPr`) | `type=page_break`, `page_break{page_no: null, section_index: k}`(k = 구역 순번 1..; 본문 마지막 `w:body/w:sectPr`는 경계가 아니라 생략), 루트 형제, `element_path = /w:body/w:p[i]/w:sectPr`, `text=""`. `Block.provenance.section_index`도 같은 값 k로 채운다(바이블 §5.3 1.3.0 등재 — AM-29: "구역 인덱스: HWPX `secPr`, OOXML `w:sectPr`") |
 | 명시 페이지 나눔(`w:br[@w:type="page"]`, `w:pageBreakBefore`, `w:lastRenderedPageBreak`) | 블록 아님. 흐름 포맷의 `page_break`는 구역 경계에만 둔다(계약 §7). `w:lastRenderedPageBreak`는 §2.13의 힌트 원천으로만 |
 | 감춤 구역·워터마크(`v:shape` 텍스트 워터마크) | 머리말 안 텍스트 상자는 `page_header_text`에 포함하지 않는다 |
 
@@ -248,7 +248,7 @@ OOXML 격자 계산(0-based):
 
 ### 2.12 `element_path` 문법과 `block_id`
 
-**결정:** DOCX의 `element_path`는 Docling `self_ref`가 아니라 **정규화된 OOXML 패키지의 요소 경로**다. 근거: `self_ref`(`#/texts/n`)는 벤더 모델 배열 인덱스라 Docling 버전이 바뀌면 내용이 같아도 경로가 바뀌고, DOC→DOCX 변환본과 원본 DOCX를 같은 좌표계로 비교할 수 없다. [03 계약](../03-contracts/03-parsed-document.md) §3.1의 Docling 행은 "권고"이며 정본은 이 문서이므로 §3.1 표에 DOCX 행 분리를 제안한다(미해결 이슈 1). Docling `self_ref`는 `vendor_json` 파생물(`keep_vendor_json: true`일 때)에만 남긴다.
+**결정:** DOCX의 `element_path`는 Docling `self_ref`가 아니라 **정규화된 OOXML 패키지의 요소 경로**다. 근거: `self_ref`(`#/texts/n`)는 벤더 모델 배열 인덱스라 Docling 버전이 바뀌면 내용이 같아도 경로가 바뀌고, DOC→DOCX 변환본과 원본 DOCX를 같은 좌표계로 비교할 수 없다. [03 계약](../03-contracts/03-parsed-document.md) §3.1의 Docling 행은 "권고"이며 정본은 이 문서이므로 §3.1 표에 DOCX 행 분리를 제안한다(전파 지시 #33, 미해결 이슈 1). Docling `self_ref`는 `vendor_json` 파생물(`keep_vendor_json: true`일 때)에만 남긴다.
 
 | 대상 | 문법 | 예 |
 |------|------|----|
@@ -315,7 +315,7 @@ options:
 | `Producer.config_hash` | `H("config", canonical_json(위 설정))` |
 | `Producer.image_digest` / `model_ids` | `null` / `[]`(모델 없음) |
 | `fingerprint()` 필수 구성요소 | 위 + 래핑 라이브러리 잠금 버전(`docling`, `docx2python`, `lxml`; 01 §2.4 규칙) — 버전 범프는 재파싱을 유발해야 한다 |
-| `parser_fingerprint.parser_id` / `parser_version` / `profile_option` | `parser.docx_docling_docx2python` / `"{package}=={version}"`을 `;`로 연결한 문자열(형식 예: `"docling==2.129.0;docx2python==3.7.1"`; **값은 `uv.lock` 잠금 버전이 정본**이고 예시 값은 기술 지형 03·선정 매트릭스 미해결 이슈 8의 "Docling 2.129.x 마이너 고정, docx2python 3.7.1" 권고를 따른 것이다. 계약 §2.2 규약의 단일 패키지 전제와 다름 — 미해결 이슈 2) / `docx_standard` |
+| `parser_fingerprint.parser_id` / `parser_version` / `profile_option` | `parser.docx_docling_docx2python` / `"{package}=={version}"`을 패키지명 **오름차순** `;`로 연결한 문자열(바이블 §5.4 1.3.0 등재 — AM-09; 형식 예: `"docling==2.129.0;docx2python==3.7.1"` — `docling` < `docx2python` 사전순. **값은 `uv.lock` 잠금 버전이 정본**이고 예시 값은 기술 지형 03·선정 매트릭스 미해결 이슈 8의 "Docling 2.129.x 마이너 고정, docx2python 3.7.1" 권고를 따른 것이다) / `docx_standard` |
 | `parser_chain` | 원본 DOCX: `["parser.docx_docling_docx2python"]`; DOC 경로: §3.5 |
 
 ## 3. DOC 어댑터 `parser.office_lo_sidecar`와 `lo-sidecar`
@@ -546,7 +546,7 @@ stateDiagram-v2
 | 변경 추적·주석(삽입·삭제·이동·문단 병합·표 셀 삭제·회신 주석) | 8 | `accept_all` 텍스트, `annotations[]` 수·오프셋, 본문에 주석 텍스트 부재 |
 | 필드(TOC 필드·TOC sdt·HYPERLINK·FORMTEXT·체크박스·SEQ 캡션·PAGEREF·INCLUDEPICTURE) | 10 | `w:instrText` 부재, `links[]`·`fields[]`, 캡션 양방향 연결 |
 | 그림·차트·OLE·수식(인라인/앵커, EMF/WMF, 스페이서, DrawingML 차트, Excel OLE, 인라인·독립 OMML) | 10 | `figure.kind`, 파생물 바이트 해시, `formula.script`, 인라인 수식 오프셋 연속성 |
-| Strict OOXML, `.docm`(매크로), `.dotx`, 대형(1,000쪽·20만 문단 근접), ZIP 상한 초과, 손상 ZIP, 암호화 OOXML(비밀 있음/없음) | 12 | 정규화 동등성, `parse.corrupt_container`, `parse.document_encrypted`, 블록 한계 `contract.violation` |
+| Strict OOXML, `.docm`(매크로), `.dotx`, 대형(1,000쪽·20만 문단 근접), ZIP 상한 초과, 손상 ZIP, 암호화 OOXML(비밀 있음/없음) | 12 | 정규화 동등성, `parse.corrupt_container`, `parse.container_limit_exceeded`, `parse.document_encrypted`, 블록 한계 `parse.block_limit_exceeded`(바이블 §5.7 1.3.0, AM-36) |
 | LibreOffice·구글 문서·한컴오피스 내보내기 DOCX(비-Word 생성기) | 10 | 스타일명 변형(`Heading 1`, `Contents 1`, `Text body`) 해소 |
 | DOC: 공공기관 Word 97-2003(제목·목록·표·각주·머리말), 빠른 저장, Word 6/95, Word 2.0, 암호화(RC4·XOR), `.doc` 확장자의 RTF/HTML, 매크로 포함, OLE 다수, 100 MB 근접, 손상·절단 | 20 | 변환 성공률, §3.7 감지 항목, 오류 코드 매핑, 대응 원본 DOCX와 구조 유사도(heading·table·footnote 수 일치율 ≥ 0.95 초안) |
 | 사이드카 계약(6경로: 정상·`deadline_ms` 초과·손상 입력·부재 `input.uri`·잘못된 본문·미준비) + 행 걸림 시뮬레이션(무한 루프 스텁) + 크래시 재시도 + 슬롯 리셋 | 10 | ADR-0033 하네스, `killpg` 경로, `.lock` 제거, `conversion_report` 필드, 응답에 콘텐츠·비밀 부재 |
@@ -560,14 +560,16 @@ stateDiagram-v2
 | 상황 | 감지 위치 | 코드 | 재시도 | 결과 |
 |------|-----------|------|--------|------|
 | `doc`인데 `lo-sidecar` 미설치(`optIn` 꺼짐) 또는 `lite` | 라우터 | `parse.unsupported_format` | no | 잡 `failed` |
-| ZIP/OLE 손상, `[Content_Types].xml`·`word/document.xml` 부재, ZIP 상한 초과(엔트리·팽창비) | 정규화(§2.2) / detect / 사이드카 | `parse.corrupt_container` | no | 체인 중단 |
+| ZIP/OLE 손상, `[Content_Types].xml`·`word/document.xml` 부재 | 정규화(§2.2) / detect / 사이드카 | `parse.corrupt_container` | no | 체인 중단 |
+| ZIP 상한 초과(엔트리·크기·팽창비) | 정규화(§2.2) | `parse.container_limit_exceeded`(바이블 §5.7 1.3.0, AM-36) | no | 체인 중단 |
 | 암호화 DOCX·DOC이고 `credentials_ref` 없음, 비밀 불일치, IRM/RMS | 라우터(03 §4.6) / 사이드카(§3.6) | `parse.document_encrypted` | no | 체인 중단 |
 | Word 2.0, 미지원 암호 방식, OOXML이 아닌 `word/` 패키지(예: Works) | 사이드카 / 정규화 | `parse.unsupported_variant` | no | 체인 중단 |
 | Docling·docx2python·lxml 예외, 정렬 불가(구조 붕괴), LibreOffice exit≠0·출력 없음·타임아웃·크래시(내부 재시도 후) | DOCX 어댑터 / 사이드카(200 + `error`) | `parse.conversion_failed` | yes → 폴백 소진 시 no | `docx` 체인은 단일 후보라 즉시 최종; `doc`도 재투입 실패 시 최종 |
 | 사이드카 연결 실패·타임아웃·503(미준비, 대기열 초과) | `SidecarStage` | `parse.sidecar_unavailable` | yes(`max_attempts` 3, 백오프) | 소진 시 다음 후보; `doc`은 후보가 없어 최종 `parse.conversion_failed`(`retryable=false`, `cause` = 마지막 오류; 03 §6.1), `rag_parser_sidecar_unavailable_total` |
-| 블록 > 200,000, `Block.text` > 1MB 분할 실패, 출력 불변식 위반, `ConvertRequest` 본문 위반(400) | 셸 출력 검증 / 사이드카 400 | `contract.violation` | no | `failed`(결함) |
+| 블록 > 200,000 | 셸 출력 검증 | `parse.block_limit_exceeded`(바이블 §5.7 1.3.0, AM-36) | no | `failed`(결함) |
+| `Block.text` > 1MB 분할 실패, 출력 불변식 위반, `ConvertRequest` 본문 위반(400) | 셸 출력 검증 / 사이드카 400 | `contract.violation` | no | `failed`(결함) |
 | 원본 > `fetch.max_bytes` | `fetch` | `fetch.too_large` | no | 파서 미도달 |
-| 정렬 미대응 항목, 표 격자 폴백(`merged_cells_preserved=false`), 각주 앵커 부재 | DOCX 어댑터 | 경고 코드 없음(카탈로그 미등재) | — | `quality=degraded`(정렬·표) / 유지(각주); 전용 경고 코드 제안(미해결 이슈 3) |
+| 정렬 미대응 항목, 표 격자 폴백(`merged_cells_preserved=false`), 각주 앵커 부재 | DOCX 어댑터 | `parse.element_path_synthesized`(정렬 미대응) · `parse.table_structure_fallback`(표 격자 폴백) · `parse.footnote_unanchored`(각주 앵커 부재)(바이블 §5.7 1.3.0 등재 — AM-36) | — | `quality=degraded`(정렬·표) / 유지(각주) |
 | 변환 보고서 `stderr_line_count > 0`·OLE 다수 등 손실 가능 신호 | 라우터 | — | — | 로그·스팬 속성만; `quality`는 §3.5 규칙 |
 
 `StageError.detail`은 필드명·원인 유형만(콘텐츠·파일명·비밀·`source_uri` 금지, 13 §11). 폴백 체인은 마지막 실패를 `cause`로 감싼다(13 G4). 미분류 예외는 `StageFailure`로 만들지 않고 셸이 재시도 가능으로 취급한다(01 §10.2).
@@ -604,12 +606,12 @@ stateDiagram-v2
 
 | # | 이슈 | 제안 |
 |---|------|------|
-| 1 | [03 계약](../03-contracts/03-parsed-document.md) §3.1 표는 DOCX를 Docling `self_ref` 행에 묶는데 이 문서는 OOXML 요소 경로를 정본으로 정했다 | §3.1에 "DOCX(·DOC→DOCX): `/w:body/w:p[i]` … (04-pipelines/06)" 행 분리, Docling 행은 PDF·HTML 2차로 한정(patch) |
-| 2 | `parser_fingerprint.parser_version`의 `{package}=={version}` 규약(03 §2.2)이 단일 패키지 전제라 두 라이브러리를 `;`로 연결했다 | 03 §2.2·바이블 §5.4 행에 다중 패키지 연결 규약 명시(patch) |
-| 3 | 정렬 미대응·표 격자 폴백·각주 앵커 부재·스타일 미해소·ZIP 상한 초과의 전용 코드가 §5.7 카탈로그에 없다(현재 `quality=degraded`/`parse.corrupt_container`로 표현) | `parse.element_path_synthesized`(—), `parse.table_structure_fallback`(—), `parse.footnote_unanchored`(—), `parse.container_limit_exceeded`(no) 추가 ADR(minor; 13 §3.3·03 미해결 이슈 2와 공동) |
+| 1 | [03 계약](../03-contracts/03-parsed-document.md) §3.1 표는 DOCX를 Docling `self_ref` 행에 묶는데 이 문서는 OOXML 요소 경로를 정본으로 정했다 | §3.1에 "DOCX(·DOC→DOCX): `/w:body/w:p[i]` … (04-pipelines/06)" 행 분리, Docling 행은 PDF·HTML 2차로 한정(patch; 전파 지시 #33 — 03-contracts/03 담당) |
+| 2 | 해소(v1.3, AM-09): `parser_fingerprint.parser_version`의 다중 패키지 연결 규약(패키지명 오름차순 `;`)이 바이블 §5.4에 등재됐다(§2.15) | — |
+| 3 | 해소(v1.3, AM-36): 정렬 미대응(`parse.element_path_synthesized`)·표 격자 폴백(`parse.table_structure_fallback`)·각주 앵커 부재(`parse.footnote_unanchored`)·ZIP 상한 초과(`parse.container_limit_exceeded`)가 바이블 §5.7 카탈로그에 등재됐다(§9 실패 모드). 스타일 미해소는 여전히 전용 코드 없음(`quality=degraded`로만 표현) | — |
 | 4 | 변환 보고서를 `artifacts[]`에 넣을 `kind` 값이 없어 `vendor_json`으로 표기하고 저장 경로는 `derived/conversion_report/`(16 §9)다 | `ParsedDocument.artifacts.kind`에 `conversion_report`·`page_render` 추가(minor), 경로 `kind`와 열거값 일치 규칙 명시 |
 | 5 | `fields[]`(계약 "HWPX 필드")를 OOXML 양식 필드·콘텐츠 컨트롤에 확장 사용했다(`type` 값 `FORMTEXT`, `SDT_*`) | 03 §2.5 설명을 "HWPX·OOXML 필드"로 넓히고 `type` 값 규약 예시 추가(patch) |
-| 6 | `Provenance.section_index`를 DOCX 구역(`w:sectPr`)에도 쓰고 싶으나 03 §3.2가 "HWPX 전용, 다른 포맷 생략"이다 | 03 §3.2·바이블 §5.3 `section_index` 의미를 "구역 개념이 있는 흐름 포맷(HWPX `hp:sec`, OOXML `w:sectPr`)"으로 넓히는 minor 제안; 채택 전에는 `page_break.section_index`에만 기록 |
+| 6 | 해소(v1.3, AM-29): `Provenance.section_index` 의미가 바이블 §5.3에서 "구역 인덱스: HWPX `secPr`, OOXML `w:sectPr`"로 넓어져 `Block.provenance.section_index`에도 값을 채운다(§2.8) | — |
 | 7 | `page_map`(추정 페이지) 파생물의 소비 경로(`GET /v1/documents/{document_id}/content?view=parsed` 응답 포함 여부, MCP `get_document`) | 05-api/04·05-api/05에서 `artifacts[]` 노출 정책과 함께 확정; `Provenance`·`IndexRecord` 전파 금지는 이 문서로 확정 |
 | 8 | 목록 항목 사이의 들여쓰기 본문 문단을 `list_item`의 자식으로 둘 컨테이너가 계약에 없어 형제로 둔다 | 청커(04-pipelines/10)가 `list_group` 구성 시 인접 문단 흡수 규칙을 두는지 확인; 필요하면 `BlockContainer.list_body`(minor) 제안 |
 | 9 | 차트 데이터 표·OLE 임베딩 원 개체(Excel·HWP)·EMF/WMF 래스터화의 처리 깊이 | 차트 데이터 표 블록화와 HWP OLE 내부 파싱(04 문서 어댑터 재사용)은 M2 골든셋 후 결정; 임베딩 파트 저장 여부는 저장 비용 실측 후 |

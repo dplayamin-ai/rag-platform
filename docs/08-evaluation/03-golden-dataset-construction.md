@@ -2,7 +2,7 @@
 title: 골든 데이터셋 구축
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -32,7 +32,7 @@ depends_on:
 ## 범위
 
 - 포함: 골든셋 목록과 이름·크기 목표, 코퍼스 선정(공공기관 공개 HWPX/HWP/PDF/HTML, 기업 문서 유형 표본, 영어 혼합)과 수집·고정 절차, 합성 질의 생성(질의 유형·난이도·부정 예시 분류, 프롬프트 템플릿 전문, 모델·API 파라미터, 비용 추정), 품질 필터(역검색 검증·중복 제거·언어 자연성), 사람 라벨링(가이드라인, 등급 0~3 정의, 정답 구간 규칙, Cohen κ 목표, 도구, 처리량 추정), qrels 확장(풀링, UMBRELA형 자동 라벨), 스키마·저장 위치·버전 관리·라이선스, 프로덕션 질의 샘플링 → 라벨링 루프, 대화형 질의셋, 갱신 주기와 건강도 지표, 보안·프라이버시.
-- 제외: 메트릭 계산식·검정 이름·Holm 보정·`evaluator` 플러그인(02), 판정 프롬프트의 교정 프로토콜과 생성 품질 지표(04), 외부 셋 실행 절차·베이스라인 수치(05), 인터리빙·피드백 API 상세(06), 계약 스키마 전문(16), 관리 API 업로드 절차([관리 API](../05-api/04-management-api.md), 작성 예정), 파서·청커 자체의 정확도 평가(04-pipelines).
+- 제외: 메트릭 계산식·검정 이름·Holm 보정·`evaluator` 플러그인(02), 판정 프롬프트의 교정 프로토콜과 생성 품질 지표(04), 외부 셋 실행 절차·베이스라인 수치(05), 인터리빙·피드백 API 상세(06), 계약 스키마 전문(16), 관리 API 업로드 절차([관리 API](../05-api/04-management-api.md)), 파서·청커 자체의 정확도 평가(04-pipelines).
 
 ## 1. 원칙과 전체 흐름
 
@@ -40,7 +40,7 @@ depends_on:
 
 | # | 원칙 | 근거 | 이 문서의 장치 |
 |---|------|------|----------------|
-| G1 | **진실값은 문서 ID + 정답 구간** — qrels는 문서 단위(`QrelsRecord.doc_id = document_id`), 정답은 `AnswerSpanRecord{doc_version, element_path, char_start, char_end}`이며 `element_path`는 **블록 단위**다(표 셀은 표 블록 경로 + 선형화 `text` 구간, §6.2). 청크 판정은 저장하지 않는다 | D-12, 바이블 §2.1 K1, 16 §2.2, 03-계약 §6 | 라벨 도구는 블록(`element_path`) 위에서 구간을 고르고, 변환기가 원문 코드포인트로 사상한다(§6.4) |
+| G1 | **진실값은 문서 ID + 정답 구간** — qrels는 문서 단위(`QrelsRecord.doc_id = document_id`), 정답은 `AnswerSpanRecord{doc_version, element_path, char_start, char_end}`이며 `element_path`는 **블록 단위**다(표 셀은 표 블록 경로 + 선형화 `text` 구간, §6.2). `char_start`/`char_end`는 원문 `Block.text` 기준 0-based 유니코드 코드포인트, 끝 미포함이다(바이블 §6.3 1.3.0, CR-47). 청크 판정은 저장하지 않는다 | D-12, 바이블 §2.1 K1·§6.3, 16 §2.2, 03-계약 §6 | 라벨 도구는 블록(`element_path`) 위에서 구간을 고르고, 변환기가 원문 코드포인트로 사상한다(§6.4) |
 | G2 | **합성은 후보, 사람이 진실** — LLM이 만든 질의·자동 라벨은 후보이며 게이트 데이터셋은 `label_provenance=human`만이다 | ADR-0023 F6, 16 EF-6, 01 P4 | 합성·자동 라벨은 별도 `EvalDataset`(`synthetic`·`umbrela`)으로 등록하고 `human` 셋과 파일을 섞지 않는다(§2) |
 | G3 | **풀링으로 편향 완화** — 생성 원본 문서만 정답으로 두면 그 문서를 잘 찾는 시스템이 과대평가된다. 여러 프로파일·채널의 상위 결과를 합쳐 모두 판정한다 | 09 문서 §메트릭 정의 `Judged@k`, 바이블 §7.3 `judged@10` | §7 풀링 절차, `judged@10 < 0.7` 시 증분 풀링 |
 | G4 | **불변·콘텐츠 주소화** — 골든셋 바이트가 바뀌면 다른 `dataset_id`다(`content_hash`). 정정판은 같은 `name`의 새 행, 의미 변경은 새 `name` | 16 §2.3 EF-1·EF-2, 브리프 원칙 4 | §8.4 버전 규칙, `EvalRun.dataset_id` 고정 |
@@ -81,7 +81,7 @@ flowchart LR
 
 | `name` | `corpus_collection_id` | `label_provenance` / `judgment_level` | 용도 | 문서 / 질의(초안 목표) | 게이트 |
 |--------|------------------------|---------------------------------------|------|------------------------|--------|
-| `ko-public-v1` | 공공문서 코퍼스 컬렉션(HWPX·HWP·PDF·HTML·영어 혼합, 단일 컬렉션) | `human` / `graded`(`relevance_max=3`) | **프로파일 게이트**, 베이스라인, ADR 근거 | 2,000 / 1,000 | 기본(`eval.datasets[0]`) |
+| `ko-public-v1` | 공공문서 코퍼스 컬렉션(HWPX·HWP·PDF·HTML·영어 혼합, 단일 컬렉션) | `human` / `graded`(`relevance_max=3`, 바이블 §5.6 1.3.0 등재 AM-34) | **프로파일 게이트**, 베이스라인, ADR 근거 | 2,000 / 1,000 | 기본(`eval.datasets[0]`) |
 | `ko-public-hwpx-v1` · `ko-public-pdf-v1` · `ko-public-html-v1` | 동일 컬렉션 | `human` / `graded` | 포맷별 파서·청킹 회귀 진단(`TopicRecord.metadata.source_format ∈ {hwpx, hwp5}` / `{pdf}` / `{html}` 필터로 `ko-public-v1`에서 파생, 파일만 분리) | 1,000·500·300 / 500·250·120 | `gate.dataset` 지정(포맷 게이트) |
 | `ko-public-synth-v1` | 동일 컬렉션 | `synthetic` / `graded` | 자동 필터를 통과한 전 후보, 개발 스모크·새 프로파일 초기 베이스라인 | 2,000 / 약 2,500 | 불가(EF-6) |
 | `ko-public-umbrela-v1` | 동일 컬렉션 | `umbrela` / `graded` | 풀 확장 자동 라벨(§7.3), `judged@10` 보강 후보 | 2,000 / 1,000(판정 수 ≥ 30,000) | 불가(EF-6) |
@@ -395,7 +395,7 @@ qrels 표현: 무응답 질의는 풀 문서에 대해 `relevance=0` 행을 가�
 
 ### 6.1 등급 정의(0~3)
 
-**결정:** `judgment_level=graded`, `relevance_max=3`이며 등급 문구는 TREC RAG 2024·UMBRELA 척도에 맞춘다(09 문서 §벤치마크 프로그램). 이진화는 `rel ≥ 1`(nDCG 선형 이득은 등급 그대로, ADR-0023).
+**결정:** `judgment_level=graded`, `relevance_max=3`(바이블 §5.6 1.3.0 등재, AM-34)이며 등급 문구는 TREC RAG 2024·UMBRELA 척도에 맞춘다(09 문서 §벤치마크 프로그램). 이진화는 `rel ≥ 1`(nDCG 선형 이득은 등급 그대로, ADR-0023).
 
 | 등급 | 이름 | 정의 | `answer_spans` |
 |------|------|------|----------------|
@@ -441,7 +441,7 @@ qrels 표현: 무응답 질의는 풀 문서에 대해 `relevance=0` 행을 가�
 
 | 구성 | 내용 |
 |------|------|
-| 태스크 단위 | (질의, 풀 문서 1건). 화면: 질의(+선행 턴), 문서 `NormalizedDocument.display_text`를 블록 단위로 렌더(`element_path` 앵커 유지), 표 블록은 `table_cell_views[]`(04-계약 §2.9; `pii_policy ≠ keep`이면 필수)의 셀 `display_text`를 격자로 렌더, 풀에 든 청크의 블록을 하이라이트(사전 힌트; 라벨러는 다른 블록도 고를 수 있다) |
+| 태스크 단위 | (질의, 풀 문서 1건). 화면: 질의(+선행 턴), 문서 `NormalizedDocument.display_text`를 블록 단위로 렌더(`element_path` 앵커 유지), 표 블록은 `table_cell_views[]`(바이블 §5.4 1.3.0 등재, AM-31; 구조 정본 04-계약 §2.9 — `pii_report.policy_applied ≠ keep`이면 필수, `keep`이면 N)의 셀 `display_text`를 격자로 렌더, 풀에 든 청크의 블록을 하이라이트(사전 힌트; 라벨러는 다른 블록도 고를 수 있다) |
 | 라벨 | 등급 0~3(단일 선택), 구간(다중; 표는 셀 단위 선택), 플래그(`version_conflict`·`ocr_illegible`)와 메모 → `labeling_log.jsonl` `flags`·`note`(§8.1) |
 | 변환기 | 하네스 소유 `rag eval datasets import --from label-studio`(제안; 02 §5.4의 `rag eval datasets register`·`validate`와 같은 명령 그룹). (a) 텍스트 블록: Label Studio 문자 오프셋(표시 텍스트 기준) → `NormalizedBlock.offset_map`(`to_original`, 04-계약 §3.4)으로 원문 `Block.text` 코드포인트 → `AnswerSpanRecord{element_path = 블록 경로}`. (b) 표 셀: 셀 렌더 오프셋 → `table_cell_views[].offset_map`으로 셀 원문 `TableCell.text` 오프셋 → `TableCell.provenance.char_start`를 더해 표 블록 선형화 `text` 좌표(셀 provenance가 없으면 03-계약 §6 규칙을 `TableData.cells[].text`에 적용해 재계산 — 05-계약 §5 규칙 4 `table_original_range`와 같은 함수) → `AnswerSpanRecord{element_path = 표 블록 경로}`(§6.2). 등급 → `QrelsRecord`. 왕복 테스트: 변환된 구간의 텍스트가 `ParsedDocument` 원문(표는 선형화 `Block.text`) 부분 문자열과 일치해야 하며 표 셀에도 적용한다. 등록은 `rag eval datasets register`, 검증은 `rag eval datasets validate`(02 §4.5 V1~V7) |
 | 인증·접근 | 라벨러는 `group:eval-labelers` 주체; 문서는 `service:eval-harness`가 렌더한 사본만 도구에 적재(원본 스토리지 직접 접근 없음); 도구는 `tenants/{tenant_id}/…` 외부 네트워크 차단 |
@@ -520,7 +520,7 @@ qrels 표현: 무응답 질의는 풀 문서에 대해 `relevance=0` 행을 가�
 |------|--------|------|------|
 | `qrels.jsonl` | `QrelsRecord{query_id, iteration, doc_id, relevance}` | 바이블 §13.3, 16 §2.2 | `EvalDataset.qrels_ref` |
 | `answer_spans.jsonl` | `AnswerSpanRecord{query_id, doc_id, doc_version, element_path, char_start, char_end}` | 바이블 §13.3, 16 §2.2 | `EvalDataset.answer_spans_ref`(필수, 바이블 §5.6). 구간이 없는 셋(`kopub-vdr-v1`·재라벨 전 `allganize-ko`·`ko-canary-v1`)은 **0행** `answer_spans.jsonl`(0바이트, 유효한 빈 JSON Lines; `blake3`는 빈 바이트 해시 `af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262`)을 등록하며 02 §4.5 V3는 행이 없어 통과한다(16에 빈 파일 허용 명시 제안, 미해결 이슈 4) |
-| `topics.jsonl` | `TopicRecord{query_id, query, language, metadata}` | 16 §2.2(제안, 16 미해결 이슈 2) | `EvalDataset.topics_ref`; `metadata` 키는 §8.2 |
+| `topics.jsonl` | `TopicRecord{query_id, query, language, metadata}` | 16 §2.2(레코드 형식은 제안, 16 미해결 이슈 2; `EvalDataset.topics_ref`·`language` 필드는 바이블 §5.6 1.3.0 등재, AM-34) | `EvalDataset.topics_ref`; `metadata` 키는 §8.2 |
 | `conversations.jsonl` | `{conversation_id, turns: [{role, text}]}` | **제안**(§10) | `TopicRecord.metadata.conversation_id`로 연결; `turns[].role ∈ {user, assistant}`, `text` 1..4,000 코드포인트, 턴 ≤ 10(바이블 §5.5 `conversation` ≤ 10턴 + 09-계약 §2.2 `ConversationTurn.text`) |
 | `corpus_manifest.jsonl` | `{external_id, source_uri, blake3, document_id, doc_version, source_format, genre, license, kogl_type, table_text_missing?, collected_at}` — 앞 세 필드는 02 §4.4 `CorpusManifestRecord`, `blake3 = doc_version` | **제안**(§3.4) | 공개 배포 시 원본 URL·라이선스 목록; CI 재수집 입력; 섀도 컬렉션·외부 run `doc_id` 재매핑 키(`external_id`, §7.1); 본문 없음 |
 | `labeling_log.jsonl` | `{query_id, doc_id?, labeler_role, round, relevance?, adjudicated, reason_code, flags?, note?}` — `flags ⊆ {version_conflict, ocr_illegible}`, `note`는 해석 메모(PII 금지), `reason_code ∈ {adjudication, auto_reanchor, pool_unmapped, …}` | **제안**(§6.1~§6.3·§7.1) | 라벨러 식별자는 역할 코드만(개인 식별 없음); (질의, 문서) 쌍 단위 플래그·메모는 이 파일에만 둔다(질의 단위 `TopicRecord.metadata`에 두지 않는다) |
@@ -603,7 +603,7 @@ qrels 표현: 무응답 질의는 풀 문서에 대해 `relevance=0` 행을 가�
 
 첫 행은 격자 `(row=4, col=0)` 행 헤더 셀(14자), 둘째 행은 `(row=4, col=3)` 정답 셀(9자)이며 오프셋은 앵커 셀 행 우선·U+0009/U+000A 구분 선형화 문자열(03-계약 §6) 안의 위치다. 표 청크의 `block_refs[0]`은 같은 `element_path`와 데이터 행 4를 포함하는 `original_char_*` 구간을 갖므로(05-계약 §5 규칙 4) 02 §2.2 조건 3·4가 성립한다.
 
-`POST /v1/eval/datasets` 요청 본문(readOnly 필드 `dataset_id`·`tenant_id`·`content_hash`·`created_at` 없음, 16 §2.1). 아래 예시의 `relevance_max`·`topics_ref`·`language`는 바이블 §5.6 `EvalDataset` 필드 표(`dataset_id, name, content_hash, qrels_ref, answer_spans_ref, corpus_collection_id, judgment_level, label_provenance, license, created_at`)에 **없는** 선택(N) 필드로, 16 §2.1이 "미등재"로 제안한 것이다(16 미해결 이슈 1·2; 이 문서 미해결 이슈 4). 바이블 반영 전까지 하네스는 세 필드가 생략된 요청도 유효한 것으로 다룬다:
+`POST /v1/eval/datasets` 요청 본문(readOnly 필드 `dataset_id`·`tenant_id`·`content_hash`·`created_at` 없음, 16 §2.1). 아래 예시의 `relevance_max`·`topics_ref`·`language`는 바이블 §5.6 1.3.0이 등재한 `EvalDataset` 선택(N) 필드다(AM-34; 이전 16 §2.1 제안 — 16 미해결 이슈 1·2 해소). 세 필드는 여전히 선택(N)이므로 하네스는 생략된 요청도 유효한 것으로 다룬다:
 
 ```json
 {
@@ -754,7 +754,7 @@ stale 구간(`AnswerSpanRecord.doc_version ≠ documents.current_doc_version`, 0
 | 1 | `ko-sentence-v1`(문장 분리·형태소 표본)은 qrels가 없어 `EvalDataset`이 아니며 저장 위치·레코드 형식이 바이블에 없다 | `eval/samples/{name}/` 키(바이블 §13.3 patch)와 L0 표본 레코드 형식을 04-pipelines/09·02에서 확정 |
 | 2 | 기업 문서 유형은 공개 코퍼스가 없어 테넌트 실 문서(비공개)와 공개 기업형 문서 표본으로만 다뤘다. 합성 기업 문서(LLM 생성 사규 등)를 파서·청커 회귀용 `synthetic` 코퍼스로 둘지 미정(매트릭스 PDF 셋의 SynthDoG-ko 보강과 같은 성격, 01 미해결 이슈 8) | 게이트 셋과 분리된 별도 `EvalDataset`·별도 컬렉션으로만 허용하는 규칙을 05 문서가 확정; 채택 시 `metadata.origin=synthetic_corpus` 추가 |
 | 3 | 무응답 질의의 IR 평균 제외는 02 §2.1이 확정했으나, 무응답 질의를 분모로 하는 `sufficiency` 정확도·`relevance_gate` 오탐률 메트릭 키와 계산식이 없다. 또한 이 문서는 무응답 질의에 `relevance=0` 행을 남기고 02 V2는 topics-only도 허용하므로 두 표현이 공존한다 | 02·04에 `sufficiency_accuracy`, `gate_false_positive_rate`(제안) 정의 추가 후 바이블 §5.6 `metrics` 키 예시에 반영(minor); 무응답 표현은 "게이트 셋은 `relevance=0` 행 필수(judged@k 감사용)"로 02 V2 문구 보강(patch) |
-| 4 | `conversations.jsonl`·`corpus_manifest.jsonl`·`labeling_log.jsonl`·`README.md`·`LICENSE`와 `EvalDataset`의 참조 필드(`conversations_ref`·`corpus_manifest_ref`, N)가 바이블 §5.6·§13.3과 16에 없다. 이 문서가 §2·§6.1·§8.3에서 쓰는 `relevance_max`·`topics_ref`·`language`도 바이블 §5.6 `EvalDataset` 필드 표에 없는 16 §2.1 제안 필드(N, 미등재; 16 미해결 이슈 1·2)다. 정답 구간이 없는 셋(`binary` 외부 셋·캐너리)의 `answer_spans_ref`(필수)가 0행 파일을 가리켜도 되는지도 16이 명시하지 않는다 | 16 제안 필드 3개(`relevance_max`·`topics_ref`·`language`)의 바이블 §5.6 등재(minor)는 16 미해결 이슈 1·2를 따른다; 16에 선택 필드 2개 추가(minor) + "`answer_spans.jsonl`은 0행(0바이트) 허용, `blake3`는 빈 바이트 해시" 문구 추가(patch) + 바이블 §13.3 `eval/datasets/{dataset_id}/` 행에 파일명 추가(patch); 확정 전 하네스는 파일명 규약으로 찾는다 |
+| 4 | `conversations.jsonl`·`corpus_manifest.jsonl`·`labeling_log.jsonl`·`README.md`·`LICENSE`와 `EvalDataset`의 참조 필드(`conversations_ref`·`corpus_manifest_ref`, N)가 바이블 §5.6·§13.3과 16에 없다(`relevance_max`·`topics_ref`·`language`는 해소 — 바이블 1.3.0 §5.6 등재, AM-34; 16 미해결 이슈 1·2 종결). 정답 구간이 없는 셋(`binary` 외부 셋·캐너리)의 `answer_spans_ref`(필수)가 0행 파일을 가리켜도 되는지도 16이 명시하지 않는다 | 16에 선택 필드 2개(`conversations_ref`·`corpus_manifest_ref`) 추가(minor) + "`answer_spans.jsonl`은 0행(0바이트) 허용, `blake3`는 빈 바이트 해시" 문구 추가(patch) + 바이블 §13.3 `eval/datasets/{dataset_id}/` 행에 파일명 추가(patch); 확정 전 하네스는 파일명 규약으로 찾는다 |
 | 5 | 공개 셋 라이선스 표현 `CC-BY-4.0 AND LicenseRef-KOGL-1`은 이 문서의 결정이며 16 예시 1은 `LicenseRef-KOGL-1` 단독이다. 공공누리 `LicenseRef-*` 표기와 결합식의 법무 확인이 필요하다 | 법무 검토 후 16 예시 1 갱신(patch) 또는 이 문서 §8.5 수정; `LicenseRef-Proprietary`도 함께 확인(as of 2026-09) |
 | 6 | 공개 골든셋 배포 채널(코드 저장소 릴리스·Hugging Face 데이터셋)과 문서 본문 미포함 배포의 재현 절차(외부 사용자가 원본 URL로 재수집해 `doc_version` 일치 확인)가 확정되지 않았다 | 10-development/08(릴리스)와 05 문서에서 확정; 원본 URL 소멸 대비로 `corpus_manifest.jsonl`에 아카이브 URL 열 추가 검토 |
 | 7 | 프로덕션 질의 수집에 필요한 테넌트 정책 `eval_sampling_allowed`와 저장 표 `query_samples`(30일 보존)가 바이블 §13.1 `tenants.policies`·핵심 테이블에 없다. 콘텍스트 캡처 기본 끔(§6.5)과의 관계도 명시가 필요하다 | 바이블 §13.1 `tenants.policies`에 `eval_sampling_allowed`(기본 `false`) 추가 + `query_samples` 표 추가(minor); 02-architecture/07·09-operations/05와 공동 확정 |
@@ -787,4 +787,4 @@ stale 구간(`AnswerSpanRecord.doc_version ≠ documents.current_doc_version`, 0
 - [리트리벌 메트릭과 하네스](02-retrieval-metrics-and-harness.md) — §2.1 `R_q = ∅` 질의 제외, §2.4 접기, §4.2 `TopicRecord.metadata` 권장 키, §4.4 코퍼스 스냅숏·`CorpusManifestRecord`·`--doc-id-map`, §4.5 검증 V1~V7, §5.4 CLI, §7.6 표본 크기, 미해결 이슈 4·5·6·12
 - [LLM-judge와 생성 품질](04-llm-judge-and-generation-quality.md), [벤치마크 계획과 베이스라인](05-benchmark-plan-and-baselines.md), [온라인 피드백 루프](06-online-feedback-loop.md) — 위임 항목(판정 교정 프로토콜, 검정력 계산·외부 셋 절차, 피드백 귀속)의 확정 문서
 - ADR(바이블 §3.3): [0001](../06-adr/0001-license-grade-table-and-d02-interpretation.md), [0003](../06-adr/0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md), [0016](../06-adr/0016-llm-enrichment-default-off-and-budget-policy.md), [0021](../06-adr/0021-korean-analyzer-kiwi-promotion-and-interim-mecab-kss.md), [0023](../06-adr/0023-evaluation-qrels-answer-spans-and-linear-ndcg.md), [0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md), [0029](../06-adr/0029-three-text-rule-and-deterministic-context-prefix.md), [0030](../06-adr/0030-single-coordinate-system-and-score-ledger.md)
-- 설계·운영 문서(문서 맵 경로; 일부 작성 예정): [멀티테넌시·보안 아키텍처](../02-architecture/07-multi-tenancy-and-security-architecture.md), [관리 API](../05-api/04-management-api.md)(작성 예정), [정규화·클리닝](../04-pipelines/09-normalization-and-cleaning.md), [보안·컴플라이언스](../09-operations/05-security-and-compliance.md), [릴리스 프로세스](../10-development/08-release-process.md)(작성 예정)
+- 설계·운영 문서(문서 맵 경로): [멀티테넌시·보안 아키텍처](../02-architecture/07-multi-tenancy-and-security-architecture.md), [관리 API](../05-api/04-management-api.md), [정규화·클리닝](../04-pipelines/09-normalization-and-cleaning.md), [보안·컴플라이언스](../09-operations/05-security-and-compliance.md), [릴리스 프로세스](../10-development/08-release-process.md)

@@ -2,7 +2,7 @@
 title: 확장과 성능
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -89,14 +89,14 @@ flowchart LR
 
 | 축 | 확장 단위 | 스케일러 · 신호 | 범위(초안 목표) | 한계·주의 | 근거 |
 |----|-----------|-----------------|-----------------|-----------|------|
-| 수집 워커(큐별) | 큐당 Deployment 1개(`worker-io`, `worker-cpu`, `worker-gpu-ocr`, `worker-gpu-embed`, `worker-llm`, `worker-maintenance` — 08 §3.1; 큐 이름 `ingest-*`·`maintenance`와 구분), 파드 = 프로세스 × 슬롯(`max_concurrent_activities`) | KEDA `temporal`(`taskQueue`, `queueTypes: activity`, `targetQueueSize` 5) | `ingest-io` 1~4, `ingest-cpu` 1~32, `ingest-gpu-embed` 1~2, `ingest-llm` 1~N(예산 정책), `maintenance` 1~2; 모두 `minReplicaCount: 1` | 백로그 기반 0→1은 인플라이트를 세지 못한다(`minReplicaCount` 1 이상); CPU 바운드 스테이지는 GIL 때문에 슬롯이 아니라 **프로세스**를 늘린다(바이블 §4.4); `ingest-cpu` 파드는 Docling 모델 메모리(프로세스당 약 2GB 가정)로 노드 메모리가 먼저 찬다 | 바이블 §11.2, 06 §3.6·§9.3, 08 §6.4, 07-tech-landscape/08 |
+| 수집 워커(큐별) | 큐당 Deployment 1개(`worker-io`, `worker-cpu`, `worker-gpu-ocr`, `worker-gpu-embed`, `worker-llm`, `worker-maintenance` — 08 §3.1; 큐 이름 `ingest-*`·`maintenance`와 구분), 파드 = 프로세스 × 슬롯(`max_concurrent_activities`) | KEDA `temporal`(`taskQueue`, `queueTypes: activity`, `targetQueueSize` 5) | `ingest-io` 1~4, `ingest-cpu` 1~32, `ingest-gpu-embed` 1~2, `ingest-llm` 1~N(예산 정책), `maintenance` 1~2; 모두 `minReplicaCount: 1` | 백로그 기반 0→1은 인플라이트를 세지 못한다(`minReplicaCount` 1 이상); CPU 바운드 스테이지는 GIL 때문에 슬롯이 아니라 **프로세스**를 늘린다(바이블 §4.4); `ingest-cpu` 파드는 Docling 모델 메모리(프로세스당 약 2GB 가정)로 노드 메모리가 먼저 찬다 | 바이블 §11.2, 06 §3.6, §9.3, 08 §6.4, 07-tech-landscape/08 |
 | GPU 워커 | `ingest-gpu-ocr`(premium)·`ingest-gpu-embed` 워커 파드 — **GPU를 갖지 않는 HTTP 클라이언트** | KEDA `temporal`(같은 방식) | `ingest-gpu-embed` 1~2(슬롯 8, 액티비티당 배치 2 → 프로세스당 in-flight ≤ 16) | 워커를 늘려도 서빙이 병목이면 429/503 → 어댑터 백오프 → 백로그로 역류할 뿐이다; GPU 큐는 `cooldownPeriod` 300s로 진동을 막는다 | 08 §6.4, 12 §5 |
 | 모델 서빙 | 모델당 Deployment 1개(`embedding-server-<slug>`, `reranker-server-<slug>`, `sparse-encoder-server`, `ocr-gpu`) | KEDA `prometheus`(TEI·vLLM 큐 깊이·지연 메트릭; 메트릭 이름은 확인 필요 as of 2026-09) | 임베딩 1~2(standard) / 2~4(premium), 리랭커 1~2 / 2~4, `ocr-gpu` 1~N | 0→1 < 3분(NFR-PERF-17)은 모델 캐시 볼륨이 전제; 레플리카 추가 = GPU 1장 추가(MIG 인스턴스 또는 전용); 검색 리랭커와 수집 임베딩 서버는 **별도 Deployment·GPU**(NFR-PERF-19) | 08 §6.3~6.4, [ADR-0009](../06-adr/0009-embedding-serving-vllm-pooling-tei-inprocess.md) |
 | API | `api` 파드(1 vCPU / 2GB, uvicorn 워커 수는 values `api.uvicornWorkers`) | HPA CPU 60%; 선택 KEDA `prometheus` `rag_query_latency_seconds` p95 | 2~8(standard, 08 §7.3); 산정식은 §2.2 | 무상태(NFR-SCAL-04); SSE 연결(잡 이벤트·`answer`)은 테넌트당 100 상한으로 파드 메모리보다 연결 수가 먼저 제약; `api.querySplit`로 검색 전용 Deployment를 분리하면 수집 접수·SSE 폴링이 검색 p95를 흔들지 않는다 | 08 §4.2·§5.3·§6.4, 05-api/03 §8 |
 | Qdrant | 노드(3 → 6), `shard_number`(물리 컬렉션당 6 고정), `replication_factor`(2), `shard_key` 전용 샤드 | 수동(용량 모델 §2) + `tier.promotion.v1`(E15) | 노드 ≤ `shard_number`(6)까지 샤드 이동으로 확장; 그 이상은 새 물리 컬렉션(blue/green) | `replication_factor` 증가는 읽기 QPS·가용성을 늘리지만 RAM·디스크가 사본 수만큼 는다; 노드 추가 시 샤드 재배치 절차와 재샤딩 지원 범위는 확인 필요(as of 2026-09); `write_consistency_factor=1`은 플립 가시성 지연을 만든다(04 §4.6) | 04 §4.6, 13 §4.1, 07-tech-landscape/06 |
 | OpenSearch | 데이터 노드(3 → 6+), `number_of_shards`(물리 인덱스당 3, 생성 후 불변), `number_of_replicas`(1, 동적 변경), `index_per_tenant` 전용 인덱스 | 수동 + `tier.promotion.v1` | 한 물리 인덱스의 유효 노드 수 ≤ 샤드 × (레플리카 + 1) = 6; 샤드 10~30GB 초과 시 새 물리 인덱스(`mapping_version` 증가 → `lexical_profile_hash` 변경) + alias 교체 | JVM 힙 ≤ 32GB·노드 RAM 50%; `routing=tenant_id`는 테넌트 하나를 샤드 하나에 모으므로 대형 테넌트는 **핫 샤드**가 된다(§6) | 04 §5.6, 13 §5.1, 07-tech-landscape/06 |
-| PostgreSQL(원장) | 프라이머리 1(쓰기) + 동기 복제 1(HA) + 읽기 복제 0~2(제안, §1.4) | 수동; 신호는 `pg_stat_activity` 대기·트랜잭션 지연 | 쓰기는 수직 확장만(문서당 약 16 tx, 06 §9.4); Temporal DB는 별도 인스턴스 | 검색 핫패스는 PG를 읽지 않으므로 읽기 복제는 관리 API·잡 폴링·정합성 검사에만 효과가 있다 | 04 §2.5~2.6, 06 §9.4, [ADR-0034](../06-adr/0034-retrieval-hot-path-postgres-independence-and-hydrate.md) |
-| Valkey · Temporal · 오브젝트 스토리지 | Valkey 3노드(복제 + 페일오버); Temporal frontend 2 / history 2 / matching 1, `numHistoryShards` 512(생성 후 불변); 오브젝트 스토리지는 관리형 또는 RustFS/SeaweedFS 노드 | 수동 | Valkey `maxmemory` 2GB 권고(04 §8.2); Temporal은 omes 부하 테스트로 확정 | Valkey는 정확성에 관여하지 않아(캐시 미스 허용) 확장 압력이 낮다; Temporal 히스토리 샤드 수는 재생성 없이 못 바꾼다 | 04 §6.2·§8.2, 06 §9.4, 08 §7.3 |
+| PostgreSQL(원장) | 프라이머리 1(쓰기) + 동기 복제 1(HA) + 읽기 복제 0~2(제안, §1.4) | 수동; 신호는 `pg_stat_activity` 대기·트랜잭션 지연 | 쓰기는 수직 확장만(문서당 약 16 tx, §9.4); Temporal DB는 별도 인스턴스 | 검색 핫패스는 PG를 읽지 않으므로 읽기 복제는 관리 API·잡 폴링·정합성 검사에만 효과가 있다 | 04 §2.5~2.6, §9.4, [ADR-0034](../06-adr/0034-retrieval-hot-path-postgres-independence-and-hydrate.md) |
+| Valkey · Temporal · 오브젝트 스토리지 | Valkey 3노드(복제 + 페일오버); Temporal frontend 2 / history 2 / matching 1, `numHistoryShards` 512(생성 후 불변); 오브젝트 스토리지는 관리형 또는 RustFS/SeaweedFS 노드 | 수동 | Valkey `maxmemory` 2GB 권고(04 §8.2); Temporal은 omes 부하 테스트로 확정 | Valkey는 정확성에 관여하지 않아(캐시 미스 허용) 확장 압력이 낮다; Temporal 히스토리 샤드 수는 재생성 없이 못 바꾼다 | 04 §6.2·§8.2, §9.4, 08 §7.3 |
 
 ### 1.3 KEDA `temporal` ScaledObject(값은 Helm `workers.<queue>.keda` 키로 렌더)
 
@@ -122,7 +122,7 @@ spec:
         targetQueueSize: "5"
 ```
 
-파라미터 이름(`endpoint`, `namespace`, `taskQueue`, `queueTypes`, `targetQueueSize`)은 07-tech-landscape/08 §KEDA 스케일러 기술(KEDA v2.17+ `temporal` 스케일러)을 따르며, 그 밖의 파라미터(활성화 임계 등)는 확인 필요(as of 2026-09)다. 큐마다 `targetQueueSize`를 다르게 둘 이유는 없다 — 큐별 처리 시간 차이는 파드 형상(프로세스 × 슬롯)이 흡수한다(06 §9.3).
+파라미터 이름(`endpoint`, `namespace`, `taskQueue`, `queueTypes`, `targetQueueSize`)은 07-tech-landscape/08 §KEDA 스케일러 기술(KEDA v2.17+ `temporal` 스케일러)을 따르며, 그 밖의 파라미터(활성화 임계 등)는 확인 필요(as of 2026-09)다. 큐마다 `targetQueueSize`를 다르게 둘 이유는 없다 — 큐별 처리 시간 차이는 파드 형상(프로세스 × 슬롯)이 흡수한다(§9.3).
 
 ### 1.4 PostgreSQL 읽기 복제
 
@@ -147,8 +147,8 @@ spec:
 | 기호 | 의미 | 출처·기본(초안 가정) |
 |------|------|-----------------------|
 | `R` | 인덱스 레코드 수(리프 청크; 부모는 반환 단위만이라 레코드가 아님, D-19) | 컬렉션 `stats`, `rag_index_bytes_total{vector}` |
-| `N_docs`, `c` | 문서 수, 문서당 리프 청크 수(`R = N_docs × c`) | `c`는 NFR §3.5 160(평균 40페이지) / 06 §9.1·08 §7.1 60(평균 20페이지) — **두 앵커가 다르다**(미해결 이슈 1). 이 문서의 예시는 부하 프로파일 정의를 따르는 160을 쓴다 |
-| `λ` | 수집 도착률(docs/s, 피크) | 06 §9.1 피크 계수 3 |
+| `N_docs`, `c` | 문서 수, 문서당 리프 청크 수(`R = N_docs × c`) | `c`는 NFR §3.5 160(평균 40페이지) / §9.1·08 §7.1 60(평균 20페이지) — **두 앵커가 다르다**(미해결 이슈 1). 이 문서의 예시는 부하 프로파일 정의를 따르는 160을 쓴다 |
+| `λ` | 수집 도착률(docs/s, 피크) | §9.1 피크 계수 3 |
 | `QPS` | 검색 피크 질의율(`POST /v1/query` + MCP `search`) | NFR §3.4 부하 프로파일 |
 | `n_in` | 리랭커 입력 후보 수 `query.rerank.top_n_in` | 바이블 §7.2: lite 30 / standard 100 / premium 50 / korean-gov 100 |
 | `rf`, `nr` | Qdrant `replication_factor`, OpenSearch `number_of_replicas` | 04 §4.6·§5.6: 2 / 1 |
@@ -170,11 +170,11 @@ spec:
 | 임베딩 GPU(L4급) | `ceil(λ × c ÷ (200 청크/s × U))` = `ceil(λ × c ÷ 160)` | 200 청크/s(512 토큰, fp16; 06은 보수적으로 150) — 확인 필요(as of 2026-09) | NFR §3.5, 12 §14 |
 | 리랭커 GPU(L4급) | `ceil(QPS × n_in ÷ (200 쌍/s × U))` = `ceil(QPS × n_in ÷ 160)`; A100급은 ÷2.5, H100급은 ÷6.7 | 200 쌍/s(질의 40 + 청크 400 토큰); GPU 실효 60 / 150 / 400 TFLOPS 비 | NFR §3.5, 16 §11.2 |
 | `rr:` 캐시 보정 | 위 값 × (1 − 캐시 적중률); 에이전트 반복 검색·MCP `cursor`에서만 유의미 | 기본 0 | 16 §12 |
-| OCR GPU(premium) | `ceil(스캔 페이지/s × t_page ÷ U)`; `t_page`는 `ocr-gpu` 실측(브리프 §7 상한 3 s/page는 문서 단위 지연 목표이며 처리량 상수가 아님) | 실측 후 채움 | 06 §9.1, O-08 |
+| OCR GPU(premium) | `ceil(스캔 페이지/s × t_page ÷ U)`; `t_page`는 `ocr-gpu` 실측(브리프 §7 상한 3 s/page는 문서 단위 지연 목표이며 처리량 상수가 아님) | 실측 후 채움 | §9.1, O-08 |
 | api 레플리카 | `max(2, ceil(QPS × t_cpu ÷ (1,000 × vCPU_pod × 0.6)))` | `t_cpu` 80ms/질의(plan 형태소 분석 20 + fuse 5 + postprocess 30 + pack·토큰 카운트 20 + 직렬화 5; 초안 가정, 부하 테스트로 대체) | 이 문서(08 §7.3 위임) |
-| 워커 파드(큐 q) | `ceil(λ × ΣS_q × 1.3 ÷ (processes × slots))` | ΣS: `ingest-io` 4.8s, `ingest-cpu` 25.5s, `ingest-gpu-embed` 1.9s; 형상 io 1×16, cpu 4×1, gpu-embed 1×8 | 06 §9.2~9.3 |
-| 테넌트 처리량 상한 | `tenant_concurrent_jobs_max ÷ S_job`(S_job ≈ 32.3s) | standard 32 → 약 1 doc/s ≈ 86,000/일 | 06 §9.3 |
-| Temporal · PG 부하 | 이벤트/s ≈ `λ × 40`, 원장 tx/s ≈ `λ × 16` | | 06 §9.4 |
+| 워커 파드(큐 q) | `ceil(λ × ΣS_q × 1.3 ÷ (processes × slots))` | ΣS: `ingest-io` 4.8s, `ingest-cpu` 25.5s, `ingest-gpu-embed` 1.9s; 형상 io 1×16, cpu 4×1, gpu-embed 1×8 | §9.2~9.3 |
+| 테넌트 처리량 상한 | `tenant_concurrent_jobs_max ÷ S_job`(S_job ≈ 32.3s) | standard 32 → 약 1 doc/s ≈ 86,000/일 | §9.3 |
+| Temporal · PG 부하 | 이벤트/s ≈ `λ × 40`, 원장 tx/s ≈ `λ × 16` | | §9.4 |
 
 산정 입력과 결과를 기록하는 형식(부하 테스트 리포트에 첨부; `constants_draft`는 실측값으로 교체):
 
@@ -249,7 +249,7 @@ spec:
 - **리랭커가 GPU 비용을 지배한다.** LP-M에서 임베딩 GPU 1장 대 리랭커 13장(L4급)이다. 16 §11.2의 계산도 같은 방향이다 — `standard`의 250ms 예산은 L4/A10 1장에서 `top_n_in` 100 × 전형 길이(32+320 토큰)로 364ms가 되어 **성립하지 않고**, 50에서 182ms로 성립한다. 따라서 `standard`를 L4급에 배치하면 바이블 §8.3의 저하 규칙(100→50)이 상시 경로가 되며, 정본값 100을 지키려면 A100급(145ms) 이상이 필요하다. 이 선택은 프로파일 값(`query.rerank.top_n_in`) 변경이므로 골든셋 게이트(바이블 §7.4)를 거쳐야 하고, M1 벤치마크의 필수 측정이다(16 미해결 이슈 13; 이 문서 미해결 이슈 3).
 - **Qdrant는 용량이 아니라 payload 읽기가 병목이다.** 100만 청크는 3노드에 여유가 크고(RAM 1.5GB/사본), `hydrate` 100 × ~6KB 배치 읽기(04 §8.2 payload 평균 가정 6KB·상한 32KB; 바이블 §5.1·§8.3은 100 × ~10KB로 예산을 잡았고 04는 이를 하향 가정으로 명시)와 재점수용 원본 벡터 페이지 캐시가 지연을 결정한다(04 §8.3). 노드 RAM은 int8 상주분 + 원본 벡터 페이지 캐시(사본당 `R × 4KB`) + payload 인덱스로 잡는다.
 - **OpenSearch는 LP-L에서 샤드 재설계가 먼저다.** 물리 인덱스 샤드 3은 LP-M 기준이며 1,000만 레코드에서 샤드당 23~34GB로 상한에 닿는다. 규모가 예측되면 처음부터 `number_of_shards` 6으로 물리 인덱스를 만들고(04 §5.6 초안값의 프로파일 오버라이드), 이미 운영 중이면 `mapping_version` 증가로 새 물리 인덱스를 채워 alias를 교체한다.
-- **수집 처리량은 테넌트 상한이 먼저 걸린다.** standard 테넌트 하나는 약 1 doc/s(86,000/일)가 상한이므로 LP-L의 5 docs/s는 다중 테넌트 합계로만 달성된다. 단일 테넌트가 그 이상을 요구하면 `premium`(64) 또는 `korean-gov` 등급별 128이 답이고, 워커·GPU를 늘리는 것은 그 다음이다(06 §9.3).
+- **수집 처리량은 테넌트 상한이 먼저 걸린다.** standard 테넌트 하나는 약 1 doc/s(86,000/일)가 상한이므로 LP-L의 5 docs/s는 다중 테넌트 합계로만 달성된다. 단일 테넌트가 그 이상을 요구하면 `premium`(64) 또는 `korean-gov` 등급별 128이 답이고, 워커·GPU를 늘리는 것은 그 다음이다(§9.3).
 - **`c` 가정이 결과를 2.7배 흔든다.** 08 §7.2는 `c = 60`으로 1만/10만/100만 문서를 60만/600만/6,000만 레코드로 두는데, 이 문서의 LP 표는 `c = 160`이다. 레코드 수 기준(`R`) 산정은 두 가정에 무관하므로 운영 산정은 항상 `R`로 하고 문서 수는 참고로만 쓴다(미해결 이슈 1).
 
 ---
@@ -288,15 +288,15 @@ spec:
 | 스테이지 | 예산(s) | 근거·전제 | 초과 시 |
 |----------|--------:|-----------|---------|
 | 큐 대기(enqueue → 첫 액티비티) | ≤ 1 | NFR-PERF-18 p95 < 10s는 정상 부하, 유휴 워커 조건에서는 ≈ 0 | KEDA 파드 증설; `tenant_concurrent_jobs_max` 확인 |
-| fetch | 2 | 2MB 원본, 조건부 GET(06 §9.2) | 원천 지연은 플랫폼 밖 |
+| fetch | 2 | 2MB 원본, 조건부 GET(§9.2) | 원천 지연은 플랫폼 밖 |
 | parse(+detect) | 20 | 0.2 s/page. `pdf_fast_cpu`(pypdfium2 + pdftext)는 달성 가능(07-tech-landscape/00 매트릭스); `standard`의 `pdf_standard`(Docling heron + TableFormer, CPU 4 thread)는 M2 "Docling CPU §7 판정" 게이트 대상, GPU L4에서는 약 11 s/100p(07-tech-landscape/00 프로파일별 기본 조합 표) | 페이지 하트비트로 진행; 프로파일 `pdf_fast_cpu` 라우팅 |
-| normalize · chunk · enrich(결정적) | 3 | 06 §9.2 각 1s | — |
+| normalize · chunk · enrich(결정적) | 3 | §9.2 각 1s | — |
 | embed | 1.5 | 약 300 청크 / 200 청크/s + 대기(12 §14) | 서빙 레플리카·배치 토큰(§4.3) |
 | index(사가) | 3 | Qdrant upsert 1배치 ≤ 1.0 + OpenSearch bulk ≤ 1.0 + 플립 2회 ≤ 0.5 + 원장 전이 6회 ≤ 0.2(13 §11) | 배치 병렬도 4, 백엔드 타임아웃 30s |
-| publish · 상태 전이 | 0.5 | 로컬 액티비티, 원장 tx 16회(06 §9.4) | PG 지연 |
+| publish · 상태 전이 | 0.5 | 로컬 액티비티, 원장 tx 16회(§9.4) | PG 지연 |
 | 합계 | 31 | 30 이내가 되려면 큐 대기 0(유휴 워커) 또는 parse ≤ 19s(0.19 s/page)가 필요하다. parse가 2/3을 차지하므로 파서 경로가 곧 수집 지연 예산이다 | 파서 경로 선택이 1순위, 워커 증설은 큐 대기에만 효과 |
 
-스캔 PDF 100페이지 < 5min(NFR-PERF-09)은 `premium` `ocr-gpu`에서 페이지당 ≤ 3s(문서 단위 목표)이며, `standard` CPU RapidOCR(06 §9.1 가정 4 s/page)은 이 목표의 대상이 아니다.
+스캔 PDF 100페이지 < 5min(NFR-PERF-09)은 `premium` `ocr-gpu`에서 페이지당 ≤ 3s(문서 단위 목표)이며, `standard` CPU RapidOCR(§9.1 가정 4 s/page)은 이 목표의 대상이 아니다.
 
 ---
 
@@ -376,7 +376,7 @@ spec:
 | 대상 | 규약(초안 목표) | 근거 |
 |------|-----------------|------|
 | PostgreSQL(api) | 프로세스당 풀 10, 세션 모드; `statement_timeout` 5s(`SET LOCAL`); PgBouncer 사용 시 트랜잭션 모드 + `SET LOCAL` 프롤로그 재발행, 준비 문장 비활성 | 04 §2.5 |
-| PostgreSQL(워커) | 프로세스당 풀 = `max_concurrent_activities` × 2 + 2; `statement_timeout` 60s(정합성 10m) | 스테이지당 2 tx(06 §9.4) |
+| PostgreSQL(워커) | 프로세스당 풀 = `max_concurrent_activities` × 2 + 2; `statement_timeout` 60s(정합성 10m) | 스테이지당 2 tx(§9.4) |
 | Qdrant | `prefer_grpc=true`; api 프로세스당 `asyncio.Semaphore(64)` = 커넥션 상한; 워커 배치 병렬도 4 × 슬롯 ≤ 64 | 09 §5.2, 13 §11 |
 | OpenSearch | api 세마포어 64; 워커 bulk 병렬도 4 | 09 §5.2 |
 | 리랭커 서버 | api 세마포어 32(httpx 풀 상한과 일치) | 09 §5.2 |
@@ -405,7 +405,7 @@ spec:
 |------|------|---------------|------|
 | k6 | 검색 경로(`POST /v1/query`, `POST /v1/render`, MCP `search`) HTTP 부하; 오픈 루프 도착률(`constant-arrival-rate`·`ramping-arrival-rate`)로 꼬리 지연 왜곡(coordinated omission) 회피 | AGPL-3.0 — **개발 도구**로 허용(배포 산출물 미포함, NFR §14.2 규칙 3·§14.3) | NFR M1 측정 방법 |
 | Locust | 수집 경로(`POST /v1/ingest` + `Idempotency-Key` ULID 생성 + `GET /v1/jobs/{job_id}` 폴링·SSE) — Python이라 계약 모델(Pydantic)을 그대로 재사용 | MIT | NFR §14.3 |
-| Temporal omes + `benchmark-workers` | 오케스트레이터·PostgreSQL 한계(`throughput_stress`), `numHistoryShards`·커넥션 풀 확정 | MIT | 06 §9.5, 07-tech-landscape/08 미해결 이슈 1 |
+| Temporal omes + `benchmark-workers` | 오케스트레이터·PostgreSQL 한계(`throughput_stress`), `numHistoryShards`·커넥션 풀 확정 | MIT | §9.5, 07-tech-landscape/08 미해결 이슈 1 |
 | 평가 하네스(`eval.run.v1`) | 부하 중 품질 회귀(같은 골든셋 질의 사용) — 부하 도구가 아니라 동반 실행 | 코어 | D-12 |
 
 스크립트 위치는 `tests/load/`(제안; 저장소 구조 문서 소유, 미해결 이슈 8), 실행 주기는 NFR §1.3 M1(릴리스 후보마다 + 주 1회).
@@ -524,7 +524,7 @@ spec:
 | 단계 | 조치 | 효과 | 비용·주의 | 근거 |
 |------|------|------|-----------|------|
 | H1 | 레이트리밋 클래스 `query` 50 req/s(테넌트 1차, `api_key_id` 하위 50%) + `Retry-After` | 한 테넌트의 버스트가 리랭커 GPU를 독점하지 못함 | 값은 부하 테스트 후 `security.rate_limit`으로 확정 | 05-api/03 §8, 07 §10 |
-| H2 | `runtime.tenant_concurrent_jobs_max`(32) · 문서 체인 8 · `reindex_max_share` 0.75 | 수집 슬롯 공정성 | 대량 온보딩은 야간 창에 cap 임시 상향(06 §9.5) | 06 §8.2 |
+| H2 | `runtime.tenant_concurrent_jobs_max`(32) · 문서 체인 8 · `reindex_max_share` 0.75 | 수집 슬롯 공정성 | 대량 온보딩은 야간 창에 cap 임시 상향(§9.5) | 06 §8.2 |
 | H3 | 요청 측 `budget.max_latency_ms`·`retrieval_variant=fast` 안내 | 해당 테넌트 질의만 사전 저하 | 품질 소폭 하락(`degraded[]` 명시) | 바이블 §8.1 |
 | H4 | **E15 승격: `shard_key`**(Qdrant custom sharding, 테넌트 전용 샤드) | 공유 세그먼트·옵티마이저·필터 그래프에서 분리 → 노이지 네이버 제거 | `tier.promotion.v1` blue/green(하네스 게이트 → alias 교체 → `cleanup_delay`); 승격 단위는 테넌트 × 물리 컬렉션(07 §2.2) | [ADR-0028](../06-adr/0028-tenant-isolation-tiering-policy.md) |
 | H5 | **E15 승격: `index_per_tenant`**(`rag_vec_{hash12}_t_{tenant_id}`, `rag_lex_{hash12}_t_{tenant_id}`) | OpenSearch 핫 샤드 해소(전용 인덱스는 자체 샤드 수), Qdrant 전역 HNSW(`m 16`) 가능(§4.1 제안) | 물리 대상 수 상한 200(13 §12); `opt_in`(규제·대형만) | 04 §4.1·§5.6 |
@@ -619,7 +619,7 @@ flowchart TD
     D -->|rerank| G["TEI/vLLM: 큐 깊이·배치 크기·GPU 사용률; rag_rerank_fallback_total; top_n_in·토큰 길이"]
     D -->|hydrate / postprocess / pack| H["Valkey 적중률·커맨드 타임아웃(ptxt·tok·aclrev), 오브젝트 스토리지 지연, count_tokens API"]
     D -->|plan / 여유 구간| I["api: CPU·이벤트 루프 지연·세마포어 대기·uvicorn 워커 수; 질의 임베딩 서버 공유 간섭(NFR-PERF-19)"]
-    B -->|수집| J["1. 큐별 백로그·schedule-to-start(Temporal 메트릭), queued 체류·waiting_for 체인(원장 SQL), rag_ingest_stage_duration_seconds{stage} vs 06 §9.2"]
+    B -->|수집| J["1. 큐별 백로그·schedule-to-start(Temporal 메트릭), queued 체류·waiting_for 체인(원장 SQL), rag_ingest_stage_duration_seconds{stage} vs §9.2"]
     J --> K{"어디서 대기·지연"}
     K -->|큐 백로그| L["KEDA 상한 도달? 노드 부족(cpu-parse 메모리)? tenant cap 포화(정상)?"]
     K -->|embed 지연| M["임베딩 서버 429/503·서킷 open, 레플리카 수, batch_max_tokens ↔ 서버 상한"]
@@ -655,6 +655,74 @@ flowchart TD
 
 ---
 
+## 9. 워크플로우 처리량과 워커 사이징 상세
+
+이관(P2, #159, 2026-09-23): [오케스트레이션과 워크플로우](../02-architecture/06-orchestration-and-workflows.md) §9(900행 초과 대응)의 원문을 이 절로 옮겼다. 그 문서 §9에는 요약과 이 절의 링크만 남겼다. 모든 수치는 **초안 가정**이며 `temporalio/omes` + `benchmark-workers` 부하 테스트(07-tech-landscape/08 미해결 이슈 1)와 08-evaluation/05 벤치마크로 갱신한다. 방법은 Little의 법칙 `동시 실행 수 N = 도착률 λ × 서비스 시간 S`다. §2.2 산정식 표의 "§9.x" 근거 열은 이 절의 §9.x를 가리키는 자기참조로 정정되었다.
+
+### 9.1 가정
+
+| 항목 | 값 | 근거 |
+|------|----|------|
+| 일 문서 수(standard 설계점) | 100,000 | 07-tech-landscape/08 리소스 표 |
+| 평균 도착률 λ_avg | 1.16 docs/s | 100,000 / 86,400 |
+| 피크 계수 | 3 | 업무 시간 집중(가정) |
+| 설계 도착률 λ_peak | 3.5 docs/s | λ_avg × 3 |
+| 문서 구성 | 텍스트 70% / 스캔 PDF 20% / 소형 TXT·HTML 10% | 가정 |
+| 평균 페이지 | 20 | 가정 |
+| 평균 리프 청크 | 60 | 20p × 약 1,500 토큰 ÷ 512(가정) |
+| 텍스트 파싱 속도 | 0.3 s/page | 브리프 §7 "텍스트 PDF 100p < 30s" 목표에서 역산 |
+| CPU OCR 속도(standard) | 4 s/page | 가정(RapidOCR mobile CPU; 실측 필요). premium GPU는 3 s/page 이하 목표(브리프 §7) |
+| 임베딩 처리량 | 150 chunks/s/GPU | 가정(BGE-M3 fp16, 512 토큰; vLLM pooling 실측 필요) |
+
+### 9.2 스테이지 서비스 시간(초, 가정)
+
+| 스테이지 | 텍스트 | 스캔 | 소형 | 가중 평균 S | 큐 |
+|----------|-------:|-----:|-----:|------------:|----|
+| fetch | 2 | 2 | 1 | 1.9 | `ingest-io` |
+| parse(+detect) | 8 | 80 | 1 | 21.7 | `ingest-cpu` |
+| normalize | 1 | 1 | 0.5 | 0.95 | `ingest-cpu` |
+| chunk | 1 | 1 | 0.5 | 0.95 | `ingest-cpu` |
+| enrich(결정적) | 2 | 2 | 1 | 1.9 | `ingest-cpu` |
+| embed | 2 | 2 | 1 | 1.9 | `ingest-gpu-embed` |
+| index(사가) | 3 | 3 | 2 | 2.9 | `ingest-io` |
+| publish | 0.1 | 0.1 | 0.1 | 0.1 | 로컬 |
+| **문서당 합계** | 19.1 | 91.1 | 7.1 | **32.3** | |
+
+### 9.3 큐별 동시 실행 수와 워커 수(피크)
+
+`replicas = ceil(N × 1.3(여유) / (프로세스당 슬롯 × 파드당 프로세스))`.
+
+| 큐 | ΣS(초) | N = 3.5 × ΣS | 파드 구성(초안) | 피크 파드 | 평균 파드 | KEDA 범위 |
+|----|-------:|-------------:|------------------|----------:|----------:|-----------|
+| `ingest-io` | 4.8 | 16.8 | 1 프로세스 × 16 슬롯, 1 vCPU / 1GB | 2 | 1 | 1~4 |
+| `ingest-cpu` | 25.5 | 89.3 | 4 프로세스 × 1 슬롯, 4 vCPU / 12GB(Docling 모델 프로세스당 약 2GB 가정) | 30 | 10 | 1~32 |
+| `ingest-gpu-embed` | 1.9 | 6.7 | 1 프로세스 × 8 슬롯(HTTP), 1 vCPU / 1GB | 2 | 1 | 1~2 |
+| 임베딩 서버 | — | 210 chunks/s 필요 | vLLM pooling GPU 1장 = 150 chunks/s(가정) | 2 GPU | 1 GPU | Prometheus 스케일러 |
+| `ingest-llm` | 0(기본 끔) | 0 | 1 프로세스 × 4 슬롯 | 1 | 1 | 1~N(예산 정책) |
+| `maintenance` | 상수 | — | 1 프로세스 × 4 슬롯 | 1 | 1 | 1~2 |
+
+관찰: (1) 비용의 대부분은 `ingest-cpu`이며 스캔 문서 비율에 선형으로 민감하다(텍스트 70/스캔 20/소형 10 → 60/30/10이면 parse 가중 S가 21.7 → 28.9초, `ingest-cpu` ΣS가 25.5 → 32.7초로 파드 수 약 1.3배). premium은 OCR을 `ingest-gpu-ocr`로 분리해 CPU 파드를 줄인다. (2) **테넌트 상한이 처리량을 제한한다**: 잡 지속 시간이 약 32s이면 `tenant_concurrent_jobs_max=32`인 standard 테넌트의 최대 처리량은 32/32 ≈ 1 doc/s ≈ 86,000/일이다. 단일 테넌트가 100,000/일을 요구하면 cap을 올리거나(premium 64) 스캔 비율을 낮춰야 한다. 설계점 100,000/일은 다중 테넌트 합계로 해석한다. (3) 재색인 처리량은 `min(50, floor(32 × 0.75)) = 24` 동시 자식 × (1/32 s) ≈ 0.75 docs/s → 100만 문서 약 15일(전 스테이지 재실행) 또는 캐시 적중(임베더만 교체: fetch 조건부 GET 1s + 캐시 적중 4 × 0.5s + embed 2s + index 3s ≈ 8s) 시 3 docs/s → 약 4일. 대규모 재색인은 테넌트 cap 임시 상향 또는 `reindex_max_share` 조정으로 운영한다.
+
+### 9.4 Temporal·PostgreSQL 사이징(초안)
+
+| 구성 요소 | 추정 | 근거·비고 |
+|-----------|------|-----------|
+| 히스토리 이벤트 | 문서당 약 40(액티비티 8 × 3 + 워크플로우 2 + 로컬 액티비티 마커 + 재시도 여유) → 4M/일 ≈ 46/s 평균, 140/s 피크 | `numHistoryShards` 512 초안(07-tech-landscape/08), 생성 후 변경 불가이므로 여유 있게 |
+| Temporal 서버 | frontend 2, history 2, matching 1 파드(각 1~2 vCPU / 2~4GB) | 07-tech-landscape/08 리소스 표 |
+| Temporal PostgreSQL | 별도 DB(같은 인스턴스 가능), advanced visibility | ES·Cassandra 미도입(D-14) |
+| 원장 PostgreSQL | 문서당 약 16 tx(스테이지 8 × 2: 시작 기록 + 커밋; 06 §3.1), 행 약 60(스테이지당 `jobs` UPDATE 2 + `job_events` 1~2 + `outbox` 2 + `artifacts` 1 + `lineage` 1) → 1.6M tx/일, 6M 행/일 | `outbox` 7d·`jobs`/`job_events` 90d 초안 후 `maintenance.cleanup.v1` 정리; 파티셔닝은 04-storage 문서 |
+| 오브젝트 스토리지 | 문서당 산출물 6종(JSON) + 원본 + 파생물 | 콘텐츠 주소화로 재처리 시 증가 없음 |
+
+### 9.5 사이징 절차
+
+1. 프로파일별 `StagePolicy`·큐 맵을 확정하고 대표 코퍼스(한국어 골든셋 코퍼스, HWPX·PDF·스캔 혼합)로 스테이지별 S를 실측해 §9.2를 갱신한다.
+2. 테넌트별 예상 λ_peak와 문서 구성을 받아 §9.3 공식으로 큐별 N을 구하고 KEDA `maxReplicaCount`를 정한다. `minReplicaCount: 1`은 0→1 지연 회피용이다(07-tech-landscape/08 리스크).
+3. `tenant_concurrent_jobs_max`를 `λ_peak,tenant × S_job`보다 크게 잡되 클러스터 합계가 워커 용량을 넘지 않게 한다. 넘으면 `queued` 체류로 나타나며 정상 동작이다.
+4. omes `throughput_stress`로 Temporal·PG 한계를 측정하고 히스토리 샤드·PG 커넥션 풀을 확정한다.
+5. 재색인 전에는 `reindex_max_share`·cap을 운영 창(야간)에 맞춰 조정하고 `cleanup_delay` 동안 세대 2배 공존에 따른 저장량(바이블 미해결 이슈 17)을 확인한다.
+
+---
+
 ## 결정 사항 요약
 
 - **결정:** 확장 원칙 4개 — 검색 경로 무상태·PG 미의존([ADR-0034](../06-adr/0034-retrieval-hot-path-postgres-independence-and-hydrate.md)), 수집 확장 신호는 Temporal 큐 백로그 하나(KEDA `temporal`, `minReplicaCount` 1)이고 GPU 용량은 서빙·사이드카 계층에서 확장, 인덱스는 재샤딩이 아니라 blue/green 물리 대상 + alias 교체·티어 승격([ADR-0026](../06-adr/0026-index-commit-generation-saga-and-ledger.md), [ADR-0028](../06-adr/0028-tenant-isolation-tiering-policy.md)), 테넌트 상한이 처리량 상한을 규정(06 §8.2).
@@ -669,7 +737,7 @@ flowchart TD
 
 ## 미해결 이슈
 
-1. **문서당 청크 수 가정 불일치**: NFR §3.5는 160(40페이지), 06 §9.1·08 §7.1은 60(20페이지)이다. 이 문서는 LP 표에 160을 썼고 운영 산정은 레코드 수 `R` 기준으로 통일했다. M1 코퍼스 실측으로 하나의 값을 정하고 NFR·06·08·이 문서를 함께 갱신해야 한다.
+1. **문서당 청크 수 가정 불일치**: NFR §3.5는 160(40페이지), §9.1·08 §7.1은 60(20페이지)이다. 이 문서는 LP 표에 160을 썼고 운영 산정은 레코드 수 `R` 기준으로 통일했다. M1 코퍼스 실측으로 하나의 값을 정하고 NFR·06·08·이 문서를 함께 갱신해야 한다.
 2. **읽기 복제 DSN**: `RAG_PG__READ_DSN`(제안)은 바이블 §6.6 환경 변수 목록에 없다. 채택하면 바이블 patch + [설정 참조](./02-configuration-reference.md) 등재. 복제 지연 상한 1s·프라이머리 재조회 규칙(§1.4 (3))도 초안이다.
 3. **리랭커 GPU 등급과 `top_n_in`**: §2.4·16 §11.2 계산상 L4급에서 `standard` 100→20 @ 250ms가 성립하지 않는다. M1 벤치마크 필수 측정(16 미해결 이슈 13) 결과에 따라 (a) `standard`를 A100급 권장으로 명시하거나 (b) L4 배치용 프로파일 변형(`top_n_in` 50)을 게이트로 정식화해야 한다. `lite` CPU 30→10 @ 700ms도 동일(10~20건 × 256 토큰 현실치).
 4. **api 사이징 상수**: 질의당 CPU 80ms·목표 사용률 60%는 근거 없는 초안 가정이다. S1 부하 테스트에서 `api` CPU/QPS를 실측해 §2.2 식의 상수를 교체한다.
@@ -691,7 +759,7 @@ flowchart TD
 - [설계 브리프](../00-vision/00-design-brief.md) §7(품질 목표), §9(문서 규약)
 - [설계 바이블](../02-architecture/00-design-bible.md) §4.4(`StagePolicy`), §6.5(메트릭), §7.1~7.2(프로파일), §8.1·§8.3(검색 경로·지연 예산), §11.2(큐), §13.4(물리 명명·Valkey 키), §15(리스크)
 - [선정 매트릭스](../07-tech-landscape/00-summary-and-selection-matrix.md) — 운영·평가 공통 요구, 리스크 #8·#10
-- [오케스트레이션과 워크플로우](../02-architecture/06-orchestration-and-workflows.md) §8(백프레셔·디스패처), §9(처리량·사이징)
+- [오케스트레이션과 워크플로우](../02-architecture/06-orchestration-and-workflows.md) §8(백프레셔·디스패처) — §9(처리량·사이징 상세)는 2026-09-23 이 문서 §9로 이관했다
 - [실패 모드와 회복력](../02-architecture/09-failure-modes-and-resilience.md) §3(저하 사다리), §4(타임아웃), §5(서킷·벌크헤드·재시도 예산), §10(SLO)
 - [하이브리드 검색과 융합](../04-pipelines/15-hybrid-search-and-fusion.md) §4(필터 선택도), §7(후보 수), §9(캐시), §10(지연 예산), §11(`hydrate`)
 - [계약 개요](../03-contracts/00-contract-overview.md), [컬렉션·프로파일·정책 계약](../03-contracts/15-collection-profile-and-policy-contracts.md)

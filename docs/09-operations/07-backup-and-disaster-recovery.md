@@ -2,7 +2,7 @@
 title: 백업과 재해 복구
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -101,7 +101,7 @@ flowchart LR
 | 단위 | 방법 | 주기 | 보존(상한) | 저장 위치 | 복구 우선순위 | 검증 |
 |------|------|------|------------|-----------|---------------|------|
 | PostgreSQL `rag_ledger` | 물리 베이스 백업 + WAL 연속 아카이브(PITR) | 베이스 일 1회, WAL 연속(아카이브 지연 ≤ 5분, NFR-REL-15 전제) | **35일**(PITR 창; NFR §9 백업 상한과 동일) | 오브젝트 스토리지 별도 접두 `backups/postgres/rag_ledger/…`(제안, §2.2) — `korean-gov`는 교차 리전 복제 | 1 | 월 1회 복구용 인스턴스에 자동 복원 + 스키마·행 수 검사(§8) |
-| Object Storage 버킷(`tenants/`, `eval/`, `models/`) | 버킷 버저닝(비현행 버전 만료 35일) + `standard`는 야간 오프사이트 동기화, `korean-gov`는 교차 리전 복제 | 연속(버저닝) / 일 1회(동기화) | 비현행 버전 35일; 현행 객체는 원장 참조 GC가 결정(저장소 아키텍처 §3.3) | 동일 버킷(버전) + 보조 버킷(다른 리전 또는 다른 계정) | 2 | 정합성 검사 전체 회차의 `artifacts.blake3` 표본 대조(I6); 월 1회 보조 버킷 표본 읽기 |
+| Object Storage 버킷(`tenants/`, `eval/`, `models/`, `derived/`) | 버킷 버저닝(비현행 버전 만료 35일) + `standard`는 야간 오프사이트 동기화, `korean-gov`는 교차 리전 복제 | 연속(버저닝) / 일 1회(동기화) | 비현행 버전 35일; 현행 객체는 원장 참조 GC가 결정(저장소 아키텍처 §3.3) | 동일 버킷(버전) + 보조 버킷(다른 리전 또는 다른 계정) | 2 | 정합성 검사 전체 회차의 `artifacts.blake3` 표본 대조(I6); 월 1회 보조 버킷 표본 읽기 |
 | Qdrant 물리 컬렉션 | 컬렉션 스냅샷 → `snapshots/qdrant/{physical_name}/{timestamp}` | `runtime.snapshot.every`: `lite` 1d / `standard`·`premium` 6h / `korean-gov` 1h | `standard` 일 3 + 주 1; `korean-gov` 시간 24 + 일 7 + 주 4 | 오브젝트 스토리지(S3 호환 스냅샷 저장소 설정 확인 필요 as of 2026-09) | 3(시간 단축용) | 주 1회 소형 컬렉션 스냅샷 복원 스모크(§8) |
 | OpenSearch 물리 인덱스(`rag_lex_*`) | `repository-s3` 증분 스냅샷 → `snapshots/opensearch/{physical_name}/{timestamp}` | Qdrant와 동일 주기 | `standard` 일 7 + 주 4; `korean-gov` 시간 24 + 일 7 + 주 4 | 오브젝트 스토리지 | 3 | 동일 |
 | OpenSearch 감사 인덱스 `rag_audit-*`(`korean-gov`) | `repository-s3` 스냅샷 | 1d | **2년**(규제 보존; 삭제 의무보다 보존 의무가 우선하는 항목) | 오브젝트 스토리지 Object Lock(WORM) 접두 옵션 | 규제 | 해시 체인 검증(보안 아키텍처 §8.3) |
@@ -110,6 +110,8 @@ flowchart LR
 | 프로파일·사전·컬렉션 스펙 | 원장 포함(`profiles`, `user_dictionary_entries`, `collections`); 내장 프로파일 YAML·Helm values·Cedar 정책·OTel Collector 설정은 Git | 원장과 동일 / 커밋마다 | 원장과 동일 / Git 이력 | — | 1과 동일 | `rag profile validate`로 복원 후 재검증(바이블 §7.4) |
 | 모델 미러 `models/` + `models.lock` | 오브젝트 스토리지 버킷에 포함(위 행) | 버저닝 | 자동 삭제 없음(저장소 아키텍처 §3.3) | 동일 | 2 | `models.lock` sha256 검증(배포 가이드 §6.1) |
 | 키 자산 | §9 | §9 | §9 | 비밀 관리자(OpenBao / 클라우드 KMS) + 오프라인 보관 | 0(다른 모든 복구의 전제) | §9.2 |
+
+1.3.0에서 바이블 §13.3에 추가된 캐시 제외 스테이지(`fetch`·`index`) 산출물 경로(`tenants/{tenant_id}/artifacts/{schema_type_kebab}/{blake3[:2]}/{blake3}.json`)와 LLM 보강 캐시 `derived/llm_enrich/{key[:2]}/{key}.json`도 위 버킷 백업 범위에 포함된다(AM-19) — 콘텐츠 주소화라 버저닝·보존 정책은 동일하게 따르고, LLM 보강 캐시는 재생성에 LLM 호출 비용이 들어 원본 산출물과 같은 우선순위 2로 취급한다.
 
 **결정:** 백업 보존 상한은 감사 인덱스와 모델 미러를 제외하고 **35일**이다(초안 목표). 이 값은 NFR §9 "백업 ≤ 35일"의 삭제 의무에서 오며, 원장 PITR 창·오브젝트 비현행 버전 만료·스냅샷 최장 보존이 모두 이 상한 아래에 있어야 한다. 더 긴 보존이 필요한 증적은 백업이 아니라 원장 자체(`index_commits`·`audit_log`는 보존)에 있다([ADR-0026](../06-adr/0026-index-commit-generation-saga-and-ledger.md), [ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md)).
 
@@ -176,8 +178,8 @@ NFR-REL-15는 "메타 DB RPO ≤ 5분 / 전체 RTO ≤ 4시간(초안)"만 정�
 | 검색 경로 RTO(인덱스 손실) | ≤ 8h(수동 재적재) | ≤ 4h(재적재 또는 스냅샷 + 델타) | ≤ 4h | ≤ 1h(1h 스냅샷 + 델타 재적재) | §5 결정 기준 |
 | 수집 경로 RTO(원장·Temporal 손실) | ≤ 8h | ≤ 4h | ≤ 4h | ≤ 2h | 조정(reconcile)이 `queued`·`running` 잡을 재시작 |
 | 전체 RTO(컴포넌트 손실) | ≤ 8h | **≤ 4h** | ≤ 4h | ≤ 2h | NFR-REL-15 |
-| 리전 손실 RPO(원장 / 오브젝트) | 지원 안 함(오프사이트 사본이 있으면 24h) | ≤ 15min(WAL 아카이브 버킷 교차 리전 복제) / ≤ 24h(야간 동기화) | 동일 | ≤ 5min / ≤ 15min(비동기 교차 리전 복제) | 초안; `standard`의 오브젝트 24h는 재수집 폴백으로 보완(§4.2) |
-| 리전 손실 RTO | — | ≤ 24h(콜드 복원) | ≤ 24h | ≤ 8h(웜 스탠바이 데이터 계층) | 초안 |
+| 리전 손실 RPO(원장 / 오브젝트) | 지원 안 함(오프사이트 사본이 있으면 24h) | ≤ 15min(WAL 아카이브 버킷 교차 리전 복제) / ≤ 24h(야간 동기화) | 동일 | ≤ 5min / ≤ 15min(비동기 교차 리전 복제) | 운영 목표(제안, 요구사항 없음 — 미해결 이슈 3); `standard`의 오브젝트 24h는 재수집 폴백으로 보완(§4.2) |
+| 리전 손실 RTO | — | ≤ 24h(콜드 복원) | ≤ 24h | ≤ 8h(웜 스탠바이 데이터 계층) | 운영 목표(제안, 요구사항 없음 — 미해결 이슈 3) |
 | 논리 손상 복구(문서 1건 잘못된 삭제) | ≤ 1h | ≤ 1h | ≤ 1h | ≤ 1h | §4.3 — 재수집·재처리 잡 1건 |
 | 논리 손상 복구(컬렉션 잘못된 재색인) | 재색인 | ≤ 15min(alias 되돌림, 롤백 창 24h 안) | 동일 | 동일 | 갱신·삭제·재인덱싱 §5.2 단계 7 |
 
@@ -209,17 +211,17 @@ flowchart TD
 | PostgreSQL 프라이머리 | 노드 장애 | 수집 표면 503 + `Retry-After`, 검색 무영향(ADR-0034) | 동기 복제본 승격(자동) → 조정 틱이 `queued` 재시작. PITR은 복제본까지 잃었을 때만 | RB-01 | `/healthz` PG `up`, `jobs.state=running` 재개, `rag_outbox_lag_seconds` 정상화 |
 | PostgreSQL 전체(프라이머리 + 복제본) | 볼륨 손상·삭제 | 수집 중단, 검색 계속(캐시된 컬렉션 스펙으로), ACL 갱신 불가 | §6.3 PITR(`T_restore` = 마지막 아카이브 WAL) → §6.8 재적용 → Temporal 조정 | RB-01 | I1~I6 전체 모드 0 불일치 또는 전부 수리 |
 | Object Storage 객체 일부 | 실수 삭제·덮어쓰기 | 재처리·부모 확장(`ptxt:` 미스) 실패, 정합성 `artifact_missing` | 버저닝에서 비현행 버전 복원(35일 안); 없으면 `sources/` 원본으로 `reprocess from_stage=parse`; 원본도 없으면 `documents.source_uri` 재수집 | RB-03 | `artifacts.blake3` 대조 |
-| Object Storage 버킷 전체 | 계정·버킷 삭제 | 재처리·재적재 불가(검색은 계속) | 보조 버킷(야간 동기화·교차 리전 복제) 승격 → 원장 `artifacts.blake3` 전수 대조 → 누락은 재수집 | RB-05 준용 | 누락 객체 수 0 또는 재수집 잡 전량 종결 |
+| Object Storage 버킷 전체 | 계정·버킷 삭제 | 재처리·재적재 불가(검색은 계속) | 보조 버킷(야간 동기화·교차 리전 복제) 승격 → 원장 `artifacts.blake3` 전수 대조 → 누락은 재수집 | RB-05 준용(전용 RB 없음 — 06-runbooks §1.3 결정, #59); 승격·재수집 절차는 §6.4 소유 | 누락 객체 수 0 또는 재수집 잡 전량 종결 |
 | Qdrant 노드 1대 | 노드 장애(사본 2) | dense·sparse 지연 또는 `degraded{channel.dense}` | 자동 복제 회복 | RB-04 | `degraded` 비율 정상화 |
 | Qdrant 물리 컬렉션 | 컬렉션 삭제·클러스터 손실 | 503 `retrieve.unavailable`(hydrate 백엔드) — `lite`·`standard` 모두 검색 전면 중단 | §5 결정: 재적재 또는 최신 스냅샷 + 델타 재적재; alias `col_{collection_id}_vec` 재바인딩 | RB-04, RB-03 | I2·I3·I4·I5, alias 대상 = `collections.backends[].physical_name` |
-| OpenSearch 물리 인덱스 | 인덱스 삭제·클러스터 손실 | lexical 채널 제외 + `degraded{channel.lexical}`, 검색 계속(NFR-REL-13) | 동일(재적재 또는 `repository-s3` 스냅샷 + 델타); alias `col_{collection_id}_lex` 재바인딩 | RB-03 | 동일 + DLS 역할 매핑·JWT 인증 도메인 재등록 확인(E8) |
+| OpenSearch 물리 인덱스 | 인덱스 삭제·클러스터 손실 | lexical 채널 제외 + `degraded{channel.lexical}`, 검색 계속(NFR-REL-13) | 동일(재적재 또는 `repository-s3` 스냅샷 + 델타); alias `col_{collection_id}_lex` 재바인딩 | RB-16(클러스터·인덱스 장애 진단) + RB-03(정합성 재적재) | 동일 + DLS 역할 매핑·JWT 인증 도메인 재등록 확인(E8) |
 | OpenSearch 감사 인덱스(`korean-gov`) | 손실 | 감사 증적 조회 불가 | 스냅샷 복원(2년 보존); 손실 구간은 NATS 스트림(조건부)에서 재생 | — | 해시 체인 연속성 |
 | Temporal 서버·DB | 서비스 불가·DB 손실 | 새 잡 시작 불가(503), 진행 중 액티비티 재시도, 스케줄 지연; 검색 무영향 | §6.7 재생성 + 조정; DB 백업 복원은 선택 | RB-02 | `queued`·`running` 잡 전량 재시작, 스케줄 3종(`maintenance.*`, `eval.run.v1`) 존재 |
 | Valkey | 전면 손실 | 429 급증(fail-closed), p95 상승, `degraded{acl_recheck, unavailable}`; 진행 중 삭제·ACL 갱신은 재시도마다 `aclrev` 힌트를 다시 쓰므로 창이 닫힘 | 재기동(빈 상태). 완료된 삭제·ACL 갱신은 백엔드에 이미 반영되어 힌트가 필요 없다 | RB-11 | `rag_acl_recheck_denied_total` 회복, 골든 시나리오 "ACL 회수 → 미반환" |
 | 모델 서빙·사이드카 | 재기동 | 수집 재시도·폴백, 검색 `degraded` | 재기동; DR 대상 아님(무상태) | RB-06 | `/healthz` digest = 프로파일 `model_ids` |
 | 키 자산(KEK) | 비밀 관리자 손실 | SSE-KMS 객체·봉투 암호화 필드 복호 불가 → 사실상 데이터 손실 | §9.2 KEK 백업 복원이 유일한 경로 | — | 표본 객체 복호 성공 |
 
-런북 열의 ID RB-01~RB-12는 [장애 모드와 복원력](../02-architecture/09-failure-modes-and-resilience.md) §9의 런북 색인을 그대로 쓰며, 절차 본문은 [런북](06-runbooks.md)이 소유한다.
+런북 열의 ID RB-01~RB-12는 [장애 모드와 복원력](../02-architecture/09-failure-modes-and-resilience.md) §9의 런북 색인을 그대로 쓰고, RB-13 이상(예: RB-16)은 [런북](06-runbooks.md) §1.3이 추가·소유하는 ID다. 절차 본문은 모두 그 문서가 소유한다(#60).
 
 ### 4.2 리전 손실
 
@@ -245,7 +247,7 @@ flowchart TD
 | 손상 | 감지 | 손상 범위 확인 | 전진 수리 | 시한 |
 |------|------|----------------|-----------|------|
 | 문서 1건 잘못된 삭제(`DELETE /v1/documents/{document_id}`) | 사용자 신고, `audit.admin.action{action: delete_document}` | `GET /v1/documents/{document_id}/commits`에서 툼스톤 확인 | 하드 삭제 전(≤ 24h): 같은 `source_uri`로 `POST /v1/ingest` → 툼스톤에서 세대 N+2로 재활성화(갱신·삭제·재인덱싱 §4.4). `sources/` 원본은 30일 유예라 `fetch`가 바이트 저장을 생략하고, 산출물 GC(≤ 3h)가 지났으면 파이프라인이 재실행된다. 하드 삭제 후: 재수집은 새 `document_id`를 받으며 클라이언트에 ID 변경을 통지 | ≤ 1h |
-| 컬렉션·테넌트 대량 삭제 | `audit.admin.action{action: delete_collection}`(값 제안), 잡 목록 | 복구용 사이드 인스턴스에 원장 PITR(손상 직전 `T_side`) → `documents`·`index_commits` diff로 영향 `document_id`·`source_uri`·`acl`·`metadata` 목록 추출 | 목록을 `POST /v1/ingest/batch`(100건 단위)로 재수집. 오브젝트 버저닝 35일 안이면 삭제된 `sources/`·`artifacts/` 객체를 비현행 버전에서 먼저 복원해 `fetch`·`parse` 비용을 줄인다(캐시 적중은 `stage_key`가 원장 `artifacts` 행에 있어야 하므로, 행이 하드 삭제되었으면 재실행) | 규모 의존 |
+| 컬렉션·테넌트 대량 삭제 | `audit.admin.action{action: delete_collection}`(값 제안), 잡 목록 | 복구용 사이드 인스턴스에 원장 PITR(손상 직전 `T_side`) → `documents`·`index_commits` diff로 영향 `document_id`·`source_uri`·`acl`·`metadata` 목록 추출 | **정상 삭제 요청의 복구 창:** `collection.delete.v1`은 `collections.deleted_at`(논리 삭제, AM-37)을 먼저 찍고 자식 `delete.document.v1`을 비동기 팬아웃하므로, 하드 삭제·참조 GC 전에는 `deleted_at`을 `NULL`로 되돌리고 아직 하드 삭제되지 않은 문서 툼스톤을 위 "문서 1건 잘못된 삭제" 행과 동일하게 재활성화하면 된다(정확한 창 길이는 04-pipelines/19 미해결 이슈 17에서 확정 예정). **하드 삭제 후(실수로 삭제된 경우 포함):** 목록을 `POST /v1/ingest/batch`(100건 단위)로 재수집. 오브젝트 버저닝 35일 안이면 삭제된 `sources/`·`artifacts/` 객체를 비현행 버전에서 먼저 복원해 `fetch`·`parse` 비용을 줄인다(캐시 적중은 `stage_key`가 원장 `artifacts` 행에 있어야 하므로, 행이 하드 삭제되었으면 재실행) | 창 안 즉시 / 창 밖 규모 의존 |
 | 잘못된 ACL 변경 | `audit.acl.changed`, 사용자 신고 | 사이드 인스턴스의 `documents.acl` 이전 값 | `PATCH /v1/documents/{document_id}/acl`로 이전 값 재적용(`acl.update.v1`, 세대 없음) | ≤ `acl_propagation_slo` |
 | 잘못된 프로파일 재색인(품질 회귀) | 게이트 통과 후 온라인 회귀, 사용자 신고 | `collection.reindex.completed`, `EvalReport` | 롤백 창(24h 초안) 안: alias를 blue로 되돌림(벡터 → 렉시컬 역순) + `CollectionSpec.profile_hash` 복원(갱신·삭제·재인덱싱 §5.2 단계 7 (b)). 창 밖: 이전 프로파일로 재색인 | ≤ 15min / 재색인 |
 | 잘못된 원장 마이그레이션(업그레이드 결함) | `migrate` 훅 실패, 계약 테스트 | 마이그레이션 트랜잭션 로그 | 확장(expand) 단계는 되돌릴 수 있으므로 `helm rollback`; 수축(contract) 후 결함이면 사이드 인스턴스에서 영향 행을 추출해 수리 SQL을 리뷰 후 적용. 운영 원장 PITR은 **수집 동결 + 전 테넌트 합의**가 있을 때만(다른 테넌트의 쓰기를 함께 잃기 때문) | — |
@@ -602,7 +604,7 @@ NFR M4(장애 주입·복구 리허설 분기 1회 이상, 주요 릴리스 전)
 
 1. 원장·Temporal 백업의 오브젝트 키 `backups/{system}/{database}/{kind}/{timestamp}`는 제안이다. 바이블 §13.3 표에 `backups/` 행 추가(minor)를 제안하며, 확정 전에는 백업 도구 기본 레이아웃 + `backups/` 접두만 고정한다.
 2. `maintenance.snapshot.v1`(스냅샷 실행 워크플로우)은 바이블 §11.2에 없다. 프로파일 키 `runtime.snapshot`이 실행을 규정하려면 실행 주체가 필요하므로 §11.2 minor 개정을 제안한다. 채택 전에는 백엔드 스케줄러·CronJob이 같은 키 규약으로 실행한다.
-3. 리전 손실 RPO/RTO(§3.1)는 NFR에 없다. [비기능 요구사항](../01-requirements/02-non-functional-requirements.md) NFR-REL-15에 시나리오 구분(컴포넌트 / 리전)을 추가하거나 NFR-REL-17을 신설할지 요구사항 소유자와 합의한다.
+3. 리전 손실 RPO/RTO(§3.1)는 **요구사항 없음** — 이 문서의 **운영 목표(제안)**로만 둔다. [비기능 요구사항](../01-requirements/02-non-functional-requirements.md) NFR-REL-15 시나리오 구분(컴포넌트 / 리전) 추가 또는 NFR-REL-17 신설 여부는 요구사항 소유자 백로그로 넘긴다(완전성 검토 #9 (b), A7).
 4. DR 재적재 팬아웃의 주체·상한: 현재는 `maintenance.consistency.v1` 전체 모드의 `missing_records` 수리 경로를 재사용한다. 전용 `maintenance.replay.v1`(제안)과 한시적 `tenant_concurrent_jobs_max`·`reindex_max_share` 상향 방법은 [오케스트레이션과 워크플로우](../02-architecture/06-orchestration-and-workflows.md) §8과 [운영 설정 레퍼런스](02-configuration-reference.md)에서 확정한다.
 5. 수집 동결(freeze) 1급 수단이 없다. 현재는 워커 0 + api → Temporal 차단으로 바이블 §11.5의 503 경로를 이용한다. `RAG_RUNTIME__INGEST_FREEZE`(제안, 바이블 §6.6)와 `/readyz` 의존성 표시를 [배포 아키텍처](../02-architecture/08-deployment-architecture.md)·[관리 API](../05-api/04-management-api.md)와 합의한다.
 6. `audit.admin.action.action` 값 `dr_restore`·`dr_rehearsal`·`key_restore`는 제안이다. [잡·이벤트·상태](../03-contracts/12-jobs-events-and-status.md) §6.2의 어휘와 맞춘다(갱신·삭제·재인덱싱 미해결 이슈 19와 동일 묶음).

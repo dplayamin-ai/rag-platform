@@ -2,8 +2,8 @@
 title: 시스템 개요 (C4 Level 1-2)
 status: active
 owner: architecture
-version: 0.1.0
-last_updated: 2026-09-22
+version: 0.1.1
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - 00-design-bible.md
@@ -57,7 +57,7 @@ C4Context
     Rel(rag, connector, "원본 fetch (EgressPolicy 적용)", "s3 / gs / az / https / smb / file")
     Rel(llmapp, rag, "POST /v1/query, /v1/render, /v1/answer, /v1/feedback", "HTTPS")
     Rel(agent, rag, "MCP Streamable HTTP, RFC 9728 PRM 조회 (/.well-known/oauth-protected-resource)", "/mcp, Bearer")
-    Rel(operator, rag, "관리 API /v1/collections, /v1/profiles, /v1/tenants/tenant_id/policies|usage, /v1/subscriptions, /v1/eval", "HTTPS")
+    Rel(operator, rag, "관리 API /v1/collections, /v1/profiles, /v1/tenants(+tenant_id/policies|usage), /v1/api-keys, /v1/plugins, /v1/audit-events, /v1/subscriptions, /v1/eval", "HTTPS")
     Rel(rag, idp, "JWKS 조회·토큰 검증", "HTTPS")
     Rel(rag, llm, "count_tokens, 선택 LLM 보강·플래너·판정", "HTTPS")
     Rel(rag, extmodels, "embed / rerank (embedder·reranker 어댑터)", "HTTP")
@@ -72,7 +72,7 @@ C4Context
 | 문서 저장소 / 크롤러·커넥터 | 원천 시스템. 문서를 이미 수집해 두고 **위치(URI)와 메타데이터·ACL**을 제출한다(Pull 모델, 브리프 R1) | `POST /v1/ingest`·`POST /v1/ingest/batch`(`IngestRequest`, `Idempotency-Key` 필수), `202 {job_id, status_url, events_url}`, 웹훅·`GET /v1/events` SSE 수신. 플랫폼 `fetch` 스테이지가 `s3://`·`gs://`·`az://`·`http(s)://`·`file://`·`smb://`(플러그인)로 원본에 접근 | 크롤링·변경 감지·커넥터 운영(브리프 §6 비목표, FR-ING-16) |
 | LLM 애플리케이션 | 최종 답변을 생성하는 앱·챗봇·백엔드 | `POST /v1/query` → `ContextPack`, `POST /v1/render` → `RenderedContext`, 선택 `POST /v1/answer`(레퍼런스 구현), `POST /v1/feedback`(`FeedbackEvent`) | 답변 생성 UI(FR-API-13), 대화 상태 관리 |
 | AI 에이전트(MCP 클라이언트) | 에이전트 런타임이 플랫폼을 도구로 직접 호출 | `/mcp` Streamable HTTP(`mcp>=2,<3`), 도구 `search`·`get_document`·`list_collections`, `cursor`/`next_cursor` 페이지네이션(Valkey 핸들, 테넌트 바인딩), `structuredContent`(슬림 `ContextPack`, 20k 토큰 상한) | 에이전트 루프·도구 선택(클라이언트 책임). `search_batch`·`expand`는 v1.1 후보 |
-| 운영자 / 컬렉션 관리자 | 컬렉션·프로파일·사용자 사전·웹훅 구독·평가 운영, 테넌트 정책·사용량 관리 | 관리 API(`/v1/collections`, `/v1/profiles`, `/v1/profiles/validate`, `/v1/tenants/{tenant_id}/policies`, `/v1/tenants/{tenant_id}/usage`, `/v1/subscriptions`, `/v1/eval/*`; 바이블 §14), CLI `rag` | 사용자 계정·그룹 관리(IdP 책임). 테넌트 생성·목록 엔드포인트는 바이블 §14에 없다(미해결 이슈 12) |
+| 운영자 / 컬렉션 관리자 | 컬렉션·프로파일·사용자 사전·웹훅 구독·평가 운영, 테넌트 생성·정책·사용량 관리 | 관리 API(`/v1/collections`, `/v1/profiles`, `/v1/profiles/validate`, `/v1/tenants`, `/v1/tenants/{tenant_id}`, `/v1/tenants/{tenant_id}/policies`, `/v1/tenants/{tenant_id}/usage`, `/v1/api-keys`, `/v1/plugins`, `/v1/audit-events`, `/v1/subscriptions`, `/v1/eval/*`; 바이블 §14 1.3.0, AM-39), CLI `rag` | 사용자 계정·그룹 관리(IdP 책임) |
 | OIDC IdP | 인증 서버(레퍼런스 Keycloak, 경량 Dex) | `api`가 JWKS로 JWT 검증(E1), MCP용 RFC 9728 PRM 게시(`GET /.well-known/oauth-protected-resource`) | 플랫폼은 자체 사용자 저장소를 두지 않는다(FR-SEC-01). API 키는 `service:` 주체용 보조 수단이며 `api_keys` 표는 해시만 보관 |
 | LLM 공급자 | Anthropic · OpenAI 호환 · Gemini · 자체 vLLM | 렌더러 대상(`Renderer` 9종, 바이블 §5.7), 선택 `count_tokens`(정확 토큰 카운트), 선택 LLM 보강·`quality` 변형 플래너·판정·`answer` | 기본 프로파일은 LLM 호출 없이 동작한다(O-05 기본 끔, [ADR-0016](../06-adr/0016-llm-enrichment-default-off-and-budget-policy.md)) |
 | 외부 모델 서빙 엔드포인트(선택) | 조직이 이미 운영하는 임베딩·리랭커 서버 | `embedder`·`reranker` 어댑터가 HTTP로 연결(FR-EMB-04, FR-RNK-03). 같은 임베딩 공간 안의 서빙 교체는 코사인 ≥ 0.9999 동등성 게이트(D-16) | 기본은 플랫폼 번들 `embedding-server`·`reranker-server`(§3) |
@@ -88,7 +88,7 @@ C4Context
 
 ### 3.1 컨테이너 다이어그램(`standard` 프로파일)
 
-바이블 §2.2의 정본 다이어그램을 이 문서의 관점(논리 API 표면, 태스크 큐 단위, 관측성 팬아웃)으로 다시 그린 것이다. 컨테이너 이름과 관계는 바이블과 동일하되, `api` → Object Storage 읽기 간선 하나는 바이블 §13.2(`ChunkTextStore` 기본 구현 `artifact_store`)와 §14(`GET /v1/documents/{document_id}/content`)에서 도출해 추가했다(바이블 §2.2에는 빠져 있어 갱신을 요청한다, 미해결 이슈 11). 컨테이너별 `lite` 미포함 여부는 §3.2 표의 `lite 포함` 열을 따른다.
+바이블 §2.2의 정본 다이어그램을 이 문서의 관점(논리 API 표면, 태스크 큐 단위, 관측성 팬아웃)으로 다시 그린 것이다. 컨테이너 이름과 관계는 바이블과 동일하며, `api` → Object Storage 읽기 간선(바이블 §13.2 `ChunkTextStore` 기본 구현 `artifact_store`, §14 `GET /v1/documents/{document_id}/content`)은 바이블 §2.2 1.3.0에도 `Rel(api, s3, "산출물 읽기(GET …/content, 평가 셋)")`로 반영되었다(AM-04, 종결된 미해결 이슈 11). 컨테이너별 `lite` 미포함 여부는 §3.2 표의 `lite 포함` 열을 따른다.
 
 ```mermaid
 C4Container
@@ -162,7 +162,7 @@ C4Container
 
 | 번호 | 컨테이너 | 책임(소유) | 기술(매트릭스 1차 선택, 잠금 파일 정본) | 스케일 단위 | 상태 보유 | `lite` 포함 |
 |------|----------|-----------|------|------|------|------|
-| C-01 | `api` | 인증(OIDC JWT·API 키) → `PrincipalResolver` → `SecurityContext` 주입(E1), Cedar 인가(E2), 레이트리밋 fail-closed(E3), `Idempotency-Key` 판정, RFC 9457, SSE, MCP 마운트(E14), **질의 파이프라인 인프로세스 실행**(`plan`~`render`; `parent_expand`의 `ChunkTextStore` 부모 번들은 Valkey `ptxt:` 미스 시 Object Storage에서 읽음), 잡 읽기 모델 조회, `GET /v1/documents/{document_id}/content` 산출물 조회, 디스패처(문서 단위 직렬화·테넌트 동시성), `acl_recheck`·`audit` 이벤트 | FastAPI 0.141 + Pydantic 2.13 + uvicorn 0.53 + sse-starlette 3.4 + `mcp` 2.x + Authlib + cedarpy(Cedar 4.12) | 무상태 replica(HPA: RPS·CPU). 세션 친화성 없음(NFR-SCAL-04) | 없음(컬렉션 스펙·프로파일·현재 세대는 Valkey 또는 인메모리 캐시 사본, `collection.profile.changed`로 무효화) | 예 |
+| C-01 | `api` | 인증(OIDC JWT·API 키) → `PrincipalResolver` → `SecurityContext` 주입(E1), Cedar 인가(E2), 레이트리밋 fail-closed(E3), `Idempotency-Key` 판정, RFC 9457, SSE, MCP 마운트(E14), **질의 파이프라인 인프로세스 실행**(`plan`~`render`; `parent_expand`의 `ChunkTextStore` 부모 번들은 Valkey `ptxt:` 미스 시 Object Storage에서 읽음), 잡 읽기 모델 조회, `GET /v1/documents/{document_id}/content` 산출물 조회, 디스패처(문서 단위 직렬화·테넌트 동시성), `acl_recheck`·`audit` 이벤트, 관리 표면(테넌트 CRUD·API 키·플러그인 목록·감사 이벤트 조회, 바이블 §14 1.3.0, AM-39) | FastAPI 0.141 + Pydantic 2.13 + uvicorn 0.53 + sse-starlette 3.4 + `mcp` 2.x + Authlib + cedarpy(Cedar 4.12) | 무상태 replica(HPA: RPS·CPU). 세션 친화성 없음(NFR-SCAL-04) | 없음(컬렉션 스펙·프로파일·현재 세대는 Valkey 또는 인메모리 캐시 사본, `collection.profile.changed`로 무효화) | 예 |
 | C-02 | `worker` | `Stage[In, Out]` 제네릭 액티비티 래퍼: `ArtifactRef` 로드 → 실행 → 콘텐츠 주소화 저장 → 계보 기록, `stage_key` 캐시 판정, 하트비트·`Resumable`, 사이드카 호출, `index` 세대 사가 | `temporalio` 1.33 액티비티 러너, `pydantic_data_converter`, `TracingInterceptor`; 어댑터는 A 등급 순수 Python만 인프로세스 | **큐별 Deployment** + KEDA `temporal` 스케일러(`minReplicaCount: 1`): `ingest-io`, `ingest-cpu`, `ingest-gpu-embed`, `maintenance`(standard), + `ingest-gpu-ocr`, `ingest-llm`(premium). GIL은 프로세스 다중화 + `max_concurrent_activities` 고정 슬롯으로 대응 | 없음(산출물은 Object Storage, 원장은 PostgreSQL) | 예(`LocalRunner`는 `api`와 동일 프로세스, 운영 `--durable`은 Temporal 워커) |
 | C-03 | `relay` | 아웃박스 릴레이 순수 코어 3함수(`select_unpublished → publish → mark_published`), 웹훅 `RAG-Signature` HMAC-SHA256 서명(E16), 테넌트 스코프 구독 필터(E12), SSE 팬아웃 | Temporal 액티비티(standard) / Procrastinate 3.9(lite, PostgreSQL `LISTEN/NOTIFY` + `SKIP LOCKED`) | 프로세스, KEDA `postgresql` 스케일러(아웃박스 미발행 건수) | 없음(진행 커서는 `outbox.published_at`) | 예(Procrastinate) |
 | C-04 | `eval harness` | 골든셋(TREC qrels/run + `answer_spans` JSONL) 로딩, **프로덕션과 동일한 인프로세스 스테이지 실행**, ranx/ir_measures 메트릭(nDCG 선형 이득, Holm 보정), RAGAS/DeepEval 판정, 프로파일 `gate` 판정, `EvalReport` | `LocalRunner` + ranx 0.3.21 + ir_measures 0.4.3 + RAGAS 0.4.3 + DeepEval 4.2.3 | 잡 단위(`eval.run.v1`, `maintenance` 큐 또는 CI 프로세스) | 없음(결과는 PostgreSQL `eval_runs`·`eval_reports`, 데이터셋은 Object Storage `eval/datasets/`) | 예(소형 골든셋) |
@@ -389,7 +389,7 @@ sequenceDiagram
 
 ### 5.1 T-01 `lite`: 단일 노드
 
-GPU 0, 사이드카 0. 개발·소규모 팀·PoC용이며 `rag up --profile lite`로 기동한다(바이블 §11.6 "5분 기동"). 개발 모드는 `LocalRunner`(비내구), 운영은 `--durable`로 Temporal 단일 바이너리를 추가한다.
+GPU 0, 사이드카 0. 개발·소규모 팀·PoC용이며 `rag up --profile lite`로 기동한다(바이블 §11.6 "5분 기동"). 개발 모드는 `LocalRunner`(비내구), 운영은 `--durable`로 Temporal 단일 바이너리를 추가한다. 컨테이너 수는 바이블 §7.1 1.3.0 정본: **4(개발)**(app, PostgreSQL, Qdrant, Valkey) / **5~6(운영 `--durable`)**(+ Temporal 단일 바이너리, RustFS·SeaweedFS 동거 시 6)(AM-14, 종결된 미해결 이슈 3). 정확한 compose 구성은 [배포 아키텍처](08-deployment-architecture.md) §2.1이 정본이다.
 
 ```mermaid
 flowchart TB
@@ -606,7 +606,7 @@ flowchart TB
 
 1. **`api` 논리 표면의 물리 분리(제안)**: 바이블은 `api`를 단일 컨테이너로 두지만, 검색 p95 보호를 위해 수집·관리 트래픽과 검색 트래픽을 별도 Deployment(`rag serve api --surfaces query` 같은 필터)로 나눌 필요가 있을 수 있다. 같은 이미지·같은 코드이므로 컨테이너 뷰는 바뀌지 않고 배포 뷰만 바뀐다. [배포 아키텍처](08-deployment-architecture.md)에서 확정하고, 필요하면 CLI 옵션을 미해결 이슈로 등록한다.
 2. **`audit.query.executed` 기록의 응답 경로 분리 방식**: 바이블 §8.1 14단계는 검색 감사 이벤트를 아웃박스에 기록하고 §13.1은 검색 핫패스가 PostgreSQL을 읽지 않는다고 한다. 쓰기의 동기/비동기(응답 후 백그라운드 태스크·배치 큐) 여부와 실패 시 정책(감사 유실 허용 여부, `korean-gov`에서는 불허 가능성)을 [멀티테넌시·보안 아키텍처](07-multi-tenancy-and-security-architecture.md)에서 확정한다.
-3. **`lite` 컨테이너 수 정의**: 바이블 §7.1은 `lite`를 "컨테이너 5"로 적지만 오브젝트 스토리지가 `file://`이고 Temporal 단일 바이너리는 운영(`--durable`)에서만 추가된다. 개발 모드 4(app, PostgreSQL, Qdrant, Valkey) / 운영 모드 5 또는 6(+ Temporal, + RustFS/SeaweedFS)로 읽었으며 [배포 아키텍처](08-deployment-architecture.md)에서 정확한 compose 구성으로 확정한다.
+3. ~~`lite` 컨테이너 수 정의~~ — **종결(바이블 1.3.0 §7.1, AM-14)**: 4(개발: app, PostgreSQL, Qdrant, Valkey) / 5~6(운영 `--durable`: + Temporal 단일 바이너리, RustFS·SeaweedFS 동거 시 6). §5.1 표기를 맞췄다. 정확한 compose 구성은 [배포 아키텍처](08-deployment-architecture.md) §2.1이 정본이다.
 4. **OTel Collector 배치 형태**: 사이드카·DaemonSet·중앙 Deployment 중 어느 것을 기본으로 할지, `korean-gov`의 `NO_CONTENT` 잠금을 Collector 정책으로 강제하는 방법을 [관측성](../09-operations/03-observability.md)과 [배포 아키텍처](08-deployment-architecture.md)에서 확정한다.
 5. **오브젝트 스토리지 택1**: RustFS와 SeaweedFS는 ADR-0011 실측 후 택1이다. 본 문서는 두 이름을 병기했으며 확정 시 §3.2·§5·§7의 해당 셀만 갱신한다.
 6. **`eval harness` 실행 위치**: 바이블은 `LocalRunner` 재사용·인프로세스와 `eval.run.v1` 워크플로우(`maintenance` 큐)를 함께 언급한다. CI 프로세스, `maintenance` 워커, 별도 잡 Pod 중 운영 기본 실행 위치를 [오케스트레이션과 워크플로우](06-orchestration-and-workflows.md)에서 확정한다.
@@ -614,8 +614,8 @@ flowchart TB
 8. **Qdrant 서버 측 이중 방어**: `payload_filter`·`shard_key` 등급에서 Qdrant는 사전 필터 단일 방어다(리스크 #3). Qdrant JWT RBAC(`access[].collections[].payload = {tenant_id}`, 확인 필요 as of 2026-09)를 `standard`에도 기본 적용할 수 있는지 성능 실측 후 [멀티테넌시·보안 아키텍처](07-multi-tenancy-and-security-architecture.md)에서 결정한다.
 9. **외부 모델 서빙 엔드포인트의 컨텍스트 표기**: 본 문서는 조직이 운영하는 임베딩·리랭커 서버를 Level 1 외부 시스템(선택)으로 그렸다. 바이블 §2.2는 모델 서빙을 시스템 경계 안에 둔다. 두 표기는 충돌하지 않으나(번들 기본 + BYO 옵션), 프로파일 YAML에서 외부 엔드포인트를 선언하는 필드는 [프로파일·정책 계약](../03-contracts/15-collection-profile-and-policy-contracts.md)이 확정한다.
 10. **`premium` GPU 배치 단위**: MIG 분할 vs 전용 GPU, `embedding-server`·`reranker-server`·`ocr-gpu`·LLM 서빙의 GPU 공유 정책은 [확장과 성능](../09-operations/04-scaling-and-performance.md)에서 실측으로 정한다.
-11. **바이블 §2.2 C4 다이어그램 갱신 요청(`api` → Object Storage 간선)**: 바이블 §13.2는 `ChunkTextStore` 기본 구현 `artifact_store`가 `derived/parent_texts/{chunk_set_blake3}.json`을 읽고, §14는 `GET /v1/documents/{document_id}/content?view=parsed|normalized|chunks`가 산출물을 반환한다고 정하므로 `api`는 Object Storage를 직접 읽는다. 그러나 §2.2 다이어그램에는 `Rel(api, s3, …)`가 없다. 본 문서 §3.1·§3.4·§5.2는 이 간선을 소프트 의존성으로 추가했으며, 바이블 §1.2 변경 절차의 "설명 보강"(patch)으로 §2.2에 `Rel(api, s3, "ChunkTextStore get_many / documents content view")`를 추가하고 §2.3 `api` 행에 "부모 텍스트 번들·산출물 조회(Object Storage)"를 덧붙일 것을 요청한다. NetworkPolicy 설계([배포 아키텍처](08-deployment-architecture.md), [멀티테넌시·보안 아키텍처](07-multi-tenancy-and-security-architecture.md))는 `api` → Object Storage egress를 허용 목록에 포함해야 한다.
-12. **테넌트 생성·목록 API 부재**: 바이블 §14의 테넌트 경로는 `GET /v1/tenants/{tenant_id}/usage`·`PATCH /v1/tenants/{tenant_id}/policies` 둘뿐이며 테넌트 생성·목록·삭제(`/v1/tenants` CRUD)는 없다. 테넌트 프로비저닝을 관리 API로 노출할지, CLI `rag`·마이그레이션·IdP 연동(테넌트 = OIDC 클레임)으로만 처리할지 [관리 API](../05-api/04-management-api.md)에서 확정하고, 관리 API로 노출한다면 바이블 §14에 엔드포인트 추가(§1.2 minor 절차)를 요청한다. 본 문서의 운영자 역할·다이어그램은 §14 정본만 인용한다.
+11. ~~바이블 §2.2 C4 다이어그램 갱신 요청(`api` → Object Storage 간선)~~ — **종결(바이블 1.3.0 §2.2, AM-04)**: `Rel(api, s3, "산출물 읽기(GET …/content, 평가 셋)")`가 반영되었고 본문 C4(§3.1·§3.4)도 같은 간선을 갖는다. NetworkPolicy 설계([배포 아키텍처](08-deployment-architecture.md), [멀티테넌시·보안 아키텍처](07-multi-tenancy-and-security-architecture.md))는 `api` → Object Storage egress를 허용 목록에 포함해야 한다.
+12. ~~테넌트 생성·목록 API 부재~~ — **종결(바이블 1.3.0 §14, AM-39)**: `GET/POST /v1/tenants`, `GET/PATCH /v1/tenants/{tenant_id}`(`status`·`quotas`)가 추가되었다. 본 문서의 운영자 역할·다이어그램은 §14 정본을 인용한다.
 
 ## 참조
 

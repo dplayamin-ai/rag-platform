@@ -2,7 +2,7 @@
 title: 리트리벌 API
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.2.0
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -68,7 +68,7 @@ flowchart LR
 | 인가 | Cedar `authorize(principal, action=search, resource=collection)`을 `QueryRequest.collection_ids`마다 평가 → `SecurityContext.collection_ids = allowed ∩ 요청`. 액션 이름 `search`의 정본은 액션을 소유하는 [멀티테넌시·보안 아키텍처](../02-architecture/07-multi-tenancy-and-security-architecture.md) §4.1이다(09 §3은 `action=query`로 적었으나 상류 불일치 — 미해결 이슈 13). 빈 교집합은 403(존재 비노출). 부분 교집합은 허용 컬렉션만으로 진행하고 제외 사실을 응답에 드러내지 않는다(09 미해결 이슈 7) | 403 `plan.collection_forbidden` |
 | `as_of` | 서버 `now()`. `QueryRequest.requested_at`은 판정에 쓰지 않는다. embargo·expires 사전 필터와 `pack.acl_recheck`의 `items[].acl.checked_at`이 같은 값 | — |
 | `classification_max`·`visible_set` | 테넌트 정책 기본 `internal`, Cedar 역할·그룹 규칙으로만 상향; `visible_set` 기본 `[public, tenant]`, 서비스 전용 주체는 `[public]` | — |
-| 주입 | `QueryPlan.security_context`(읽기 전용)와 `filters.security`(제거·완화 불가) 생성(E6) → 모든 채널·백엔드 **사전 필터**(바이블 §10.2 (a); 리트리버 어댑터의 사전 필터 단일 강제·`security_context_hash` 서명은 E7) → `hydrate`·`ChunkTextStore` 동일 조건 재조회(E10) → `pack.acl_recheck`(E9) → 렌더러는 `tenant_id`·주체·`acl_*`·`record_id`를 공급자 페이로드에 넣지 않는다(바이블 §9.3 공통 규칙 (1); 11 §2.8·R-2; [ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md)) | `plan.security_context_missing`(400), `retrieve.security_context_missing`(계약 위반) |
+| 주입 | `QueryPlan.security_context`(읽기 전용)와 `filters.security`(제거·완화 불가) 생성(E6) → 모든 채널·백엔드 **사전 필터**(바이블 §10.2 (a); 리트리버 어댑터의 사전 필터 단일 강제·`security_context_hash` 서명은 E7) → `hydrate`·`ChunkTextStore` 동일 조건 재조회(E10) → `pack.acl_recheck`(E9) → 렌더러는 `tenant_id`·주체·`acl_*`·`record_id`를 공급자 페이로드에 넣지 않는다(바이블 §9.3 공통 규칙 (1); 11 §2.8·R-2; [ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md)) | `plan.security_context_missing`(400 — 클라이언트가 보는 정상 차단), `retrieve.security_context_missing`(500 — 리트리버 어댑터까지 `SecurityContext`가 없이 도달한 **서버 측 계약 위반**을 미분류 500이 아니라 이 카탈로그 코드로 실패시킨다; `plan.security_context_missing`이 먼저 막으므로 이 코드가 응답에 나타나면 미들웨어 결함이다. 바이블 §5.7·§10.3 E7 1.3.0, AM-25) |
 
 위임 모델은 [멀티테넌시·보안 아키텍처](../02-architecture/07-multi-tenancy-and-security-architecture.md) §3.4를 따른다: 기본 A(사용자 토큰 전달 — 에이전트·`answer` 호출자는 사용자의 OIDC 액세스 토큰을 그대로 제시), B(서비스 계정 단독 — `service:` 주체, `visible_set=[public]`), C(RFC 8693 토큰 교환 대행, **제안**). 플랫폼은 어떤 경로에서도 `X-On-Behalf-Of` 같은 사칭 헤더를 제공하지 않는다. `POST /v1/render {pack_id}`·`POST /v1/answer {pack_id}`는 저장된 팩을 **원 질의와 같은 보안 문맥의 주체**에게만 돌려준다 — 바이블 §6.2 `security_context_hash`에는 `as_of`(서버 `now()`)가 포함되어 후속 요청의 해시가 원 질의와 문자 그대로 같을 수 없으므로, 대조는 해시 문자열 동일성이 아니라 **`as_of`를 원 질의 값으로 고정한 재계산**으로 한다(§4.4 주체 바인딩 대조 규칙; 미해결 이슈 15).
 
@@ -109,7 +109,7 @@ flowchart LR
 | `response_format` | REST 기본 | `rendered` | 렌더러 해소 | 비고 |
 |-------------------|-----------|------------|-------------|------|
 | `detailed` | **예** | 포함 | `QueryRequest.renderer` → `target_model.provider` 유도(`anthropic → anthropic_search_result`, `openai → openai_messages`, `google → gemini_messages`, `local → xml_documents`) → 프로파일 `pack.renderer` | `mcp_tool_result` 렌더러면 슬림 팩 `items[].text` |
-| `concise` | MCP 기본 | 포함 | 동일 | `mcp_tool_result`에서만 의미가 있다(`items[].text_preview`, 11 §8.2). 다른 렌더러에서는 `detailed`와 동일(초안) |
+| `concise` | MCP 기본 | 포함 | 동일 | `mcp_tool_result`에서만 의미가 있다(`items[].text_preview = text[:200]`, 코드포인트 200개 상한 — 바이블 §5.4, `IndexRecord.text_preview`·10 `payload_slim.text_preview`와 같은 규약, CR-23으로 확인. 11 §8.2). 다른 렌더러에서는 `detailed`와 동일(초안) |
 | `pack_only` | — | **생략** | 렌더러를 실행하지 않는다(`render` 15ms 절약) | 클라이언트가 직접 렌더하거나 나중에 `POST /v1/render {pack_id}` |
 
 `response_format`은 `QueryPlan`에 없으므로(09 미해결 이슈 4) API 계층이 렌더러 `options.response_format`으로 전달한다. `explain=true`는 `QueryPlan` 전문과 점수 분해를 응답에 넣으므로 응답 크기가 커지고(≤ 32KB + 100 × ~1KB) 채널·백엔드·alias 같은 플랜 내부가 드러난다(`security_context.principals`는 `diagnostics.filters_applied.security.principals`와 같은 요청 주체 자신의 목록이라 `explain`으로 새로 노출되는 정보가 아니다) — `korean-gov` 프로파일은 `explain`을 역할 `reader` 이상으로 제한할 수 있다(09 §9, 운영 정책 초안). MCP `search`는 `explain`을 노출하지 않는다.
@@ -238,7 +238,7 @@ sequenceDiagram
 
 ### 3.7 응답 예시(`ContextPack` 전문)
 
-예시 2의 응답이다(`pack_only`이므로 `rendered`·`explain` 없음). K=2, 렌더 순서 `[r2, r1]`(`litm_alternating`, 바이블 §9.2). `d1`은 HWPX 「정보공개 업무 처리 규정」(흐름 포맷: `page`·`bbox` `null`, 단락 2개 → 세그먼트 2개), `d2`는 PDF 「정보공개 처리 실무 매뉴얼」 12쪽(텍스트 레이어). `omitted`에는 1차 `dedup`이 제외한 같은 문서의 중복 청크 1건이 있다. `diagnostics.filters_applied`는 `CandidateSet.filters_applied`의 사본이며(11 §2.8; 10 §3.6 `FiltersApplied`, 09 §5.1 `SecurityFilter`), `security.principals`는 **요청 주체 자신의 목록**이다 — 공급자 페이로드·MCP 슬림 팩에는 나가지 않지만 REST 응답에서는 계약 인스턴스 그대로 돌려준다(가이드라인 §8; 응답 투영은 미해결 이슈 16). `budget.k_max`는 요청 `top_k: 8`과 무관하게 프로파일 값 20이다(§3.1). hex64·hex32·ULID 값은 형식 규약(바이블 §6.1: ULID는 Crockford base32 대문자, `I`·`L`·`O`·`U` 없음)을 지키는 플레이스홀더이며 `content_hash`는 재계산하지 않았다.
+예시 2의 응답이다(`pack_only`이므로 `rendered`·`explain` 없음). K=2, 렌더 순서 `[r2, r1]`(`litm_alternating`, 바이블 §9.2). `d1`은 HWPX 「정보공개 업무 처리 규정」(흐름 포맷: `page`·`bbox` `null`, 단락 2개 → 세그먼트 2개), `d2`는 PDF 「정보공개 처리 실무 매뉴얼」 12쪽(텍스트 레이어). `omitted`에는 1차 `dedup`이 제외한 같은 문서의 중복 청크 1건이 있다. `diagnostics.filters_applied`는 `CandidateSet.filters_applied`의 사본이며(11 §2.8; 10 §3.6 `FiltersApplied`, 09 §5.1 `SecurityFilter`), `security.principals`는 **요청 주체 자신의 목록**이다 — 공급자 페이로드·MCP 슬림 팩에는 나가지 않지만 REST 응답에서는 계약 인스턴스 그대로 돌려준다(가이드라인 §8; 응답 투영은 미해결 이슈 16). `budget.k_max`는 요청 `top_k: 8`과 무관하게 프로파일 값 20이다(§3.1). hex64·hex32·ULID 값은 형식 규약(바이블 §6.1: ULID는 Crockford base32 대문자, `I`·`L`·`O`·`U` 없음)을 지키는 플레이스홀더이며 `content_hash`는 재계산하지 않았다 — 재계산한다면 `items[].acl.checked_at`(타임스탬프)을 제외한 해시 뷰가 입력이므로 `d1`·`d2`의 `checked_at`이 달라도 같은 `RankedSet`이면 값이 같다(CR-16; 정본은 [Context Pack 계약](../03-contracts/11-context-pack.md) §11). `items[]`는 `ChannelScore.variant_ids`(적중 질의 변형)를 승계하지 않는다(CR-20) — 위 예시 필드 집합에 없는 것이 그 확인이다.
 
 ```json
 {
@@ -363,7 +363,7 @@ sequenceDiagram
 
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|------|------|
-| `pack_id` | string(ulid) | 택1 | `POST /v1/query`가 돌려준 `context_pack.pack_id`. 서버가 Valkey `pack:{tenant}:{pack_id}`(TTL 10분, 초안; 바이블 §13.4 `{tenant}` 표기 — 11 §13은 `{tenant_id}`로 적은 같은 키)에서 조회한다. 만료·미존재·다른 테넌트·다른 주체(§4.4 주체 바인딩 대조 실패)는 모두 400 `contract.violation` + `detail="/pack_id: resource not found"`(`api.not_found` 채택 후 404; 존재 비노출) |
+| `pack_id` | string(ulid) | 택1 | `POST /v1/query`가 돌려준 `context_pack.pack_id`. 서버가 Valkey `pack:{tenant}:{pack_id}`(TTL 10분, 초안; 바이블 §13.4 `{tenant}` 표기 — 11 §13은 `{tenant_id}`로 적은 같은 키)에서 조회한다. 만료·미존재·다른 테넌트·다른 주체(§4.4 주체 바인딩 대조 실패)는 모두 404 `api.not_found` + `detail="/pack_id: resource not found"`(바이블 §5.7 1.3.0, AM-36; 존재 비노출) |
 | `context_pack` | `ContextPack` | 택1 | 클라이언트가 보관한 팩 전문(≤ 512KB). 서버는 스키마·불변식(`cite_id` 연속, `position` 순열, `items` ≤ 20)을 재검증하고, 봉투 `tenant_id`가 토큰 테넌트와 다르면 400 `contract.violation`(pointer `/context_pack/tenant_id`; `auth.tenant_mismatch` 채택 후 422). 인라인 팩은 **ACL을 재검증하지 않는다**(`items[].acl.checked_at`이 증적) — 회수 창을 닫으려면 `pack_id` 경로 또는 재질의를 쓴다 |
 | `renderer` | enum(Renderer) | Y | 9종(바이블 §5.7) |
 | `options` | `RenderOptions` | N | §4.2. 생략 시 모든 기본값 |
@@ -381,7 +381,7 @@ sequenceDiagram
 | `cache_control` | boolean | `true` | `anthropic_*` | 접두어 끝(`system` 마지막 블록)과 팩 끝(마지막 `search_result`)에 `{"type": "ephemeral"}` 부착. 질의 블록·`citations` 하위·빈 텍스트 블록에는 붙이지 않는다 |
 | `structured_output` | boolean | `false` | `anthropic_*`, `openai_messages`, `gemini_messages` | `true`면 호출자가 `output_config.format`(또는 동등 기능)을 병용할 것이므로 `citation_style=native`와 함께 오면 400 `render.citations_with_structured_output`. `bracket_id`와 병용만 허용. 병용 **의도 표지**이며 스키마 자체는 `AnswerRequest.output_schema`(object, §5.2)로 이름을 달리 둔다(바이블 §6.4) |
 | `empty_policy` | enum[placeholder, error] | `placeholder` | 전부 | K=0 팩: `placeholder`는 `{"type":"text","text":"No results found."}` 단일 블록(또는 렌더러별 빈 표현), `error`는 400 `render.empty_pack` |
-| `response_format` | enum(ResponseFormat) | `detailed` | `mcp_tool_result` | 슬림 팩 `text_preview`(`concise`) / `text`(`detailed`); `pack_only`는 이 엔드포인트에서 무효(400 `contract.violation`, pointer `/options/response_format`) |
+| `response_format` | enum(ResponseFormat) | `detailed` | `mcp_tool_result` | 슬림 팩 `text_preview`(`concise`, ≤ 200 코드포인트 — CR-23) / `text`(`detailed`); `pack_only`는 이 엔드포인트에서 무효(400 `contract.violation`, pointer `/options/response_format`) |
 | `max_result_tokens` | integer(1,000..20,000) | `20000` | `mcp_tool_result` | 초과 시 `truncated=true` + `next_cursor` |
 
 `citation_style`은 `options`가 아니라 팩의 `render_hints.citation_style`을 따른다. 인라인 `context_pack`으로 `render_hints`를 바꿔 보내면 그 값이 적용된다(팩 소유는 클라이언트). `options.structured_output=true`이면 서버가 `native → bracket_id`로 **자동 전환하지 않는다**(명시적 400) — 인용 신뢰도의 하향은 클라이언트가 선택해야 한다.
@@ -445,7 +445,7 @@ sequenceDiagram
 | 항목 | 규칙 |
 |------|------|
 | 저장 | `POST /v1/query`가 팩을 만들면 Valkey `pack:{tenant}:{pack_id}`에 canonical JSON으로 저장(TTL 10분, 초안; 바이블 §13.4 미등재 — 11 미해결 이슈 7, 11 §13은 `{tenant_id}` 표기). 값 `{context_pack, security_context_hash}` — 원 질의의 `security_context_hash`(바이블 §6.2)를 함께 저장한다(주체 바인딩). 원 `as_of`는 팩 자체(`diagnostics.filters_applied.security.as_of` = `items[].acl.checked_at`)에 있으므로 별도 저장하지 않는다 |
-| 조회(주체 바인딩 대조) | **결정:** 같은 테넌트의 요청이 `pack_id`를 제시하면 서버는 (1) 현재 자격 증명으로 `Principal` → 주체 문자열·`classification_max`·`visible_set`을 도출하고(§2), (2) Cedar `search`를 **저장된 팩의 `collection_ids`** 각각에 평가해 `collection_ids' = allowed ∩ pack.collection_ids`를 얻은 뒤, (3) `as_of`만 팩의 `diagnostics.filters_applied.security.as_of`로 고정해 `H("sec", tenant_id, ",".join(sorted(principals)), ",".join(sorted(collection_ids')), 저장 as_of, classification_max, ",".join(visible_set))`(바이블 §6.2 식 그대로)를 재계산한다. 저장 해시와 **같을 때만 적중**한다 — 주체·그룹·역할·허용 컬렉션·등급 상한 중 하나라도 달라졌으면 존재 비노출(400 → `api.not_found` 채택 후 404). 해시 문자열 자체를 새로 비교하면 `as_of`(서버 `now()`) 때문에 항상 다르므로 이 규칙이 필요하다. 바이블 §6.2에 없는 대조 규칙이며 07 §3.4 MCP 커서 바인딩과 공동 해결 대상이다(미해결 이슈 15) |
+| 조회(주체 바인딩 대조) | **결정:** 같은 테넌트의 요청이 `pack_id`를 제시하면 서버는 (1) 현재 자격 증명으로 `Principal` → 주체 문자열·`classification_max`·`visible_set`을 도출하고(§2), (2) Cedar `search`를 **저장된 팩의 `collection_ids`** 각각에 평가해 `collection_ids' = allowed ∩ pack.collection_ids`를 얻은 뒤, (3) `as_of`만 팩의 `diagnostics.filters_applied.security.as_of`로 고정해 `H("sec", tenant_id, ",".join(sorted(principals)), ",".join(sorted(collection_ids')), 저장 as_of, classification_max, ",".join(visible_set))`(바이블 §6.2 식 그대로)를 재계산한다. 저장 해시와 **같을 때만 적중**한다 — 주체·그룹·역할·허용 컬렉션·등급 상한 중 하나라도 달라졌으면 존재 비노출(404 `api.not_found`, 바이블 §5.7 1.3.0 AM-36). 해시 문자열 자체를 새로 비교하면 `as_of`(서버 `now()`) 때문에 항상 다르므로 이 규칙이 필요하다. 바이블 §6.2에 없는 대조 규칙이며 07 §3.4 MCP 커서 바인딩과 공동 해결 대상이다(미해결 이슈 15) |
 | ACL 시점성 | 저장된 팩은 `items[].acl.checked_at`(= 원 질의 `as_of`) 시점의 판정이다. `pack_id` 경로의 `render`는 재패킹이 아니므로 ACL을 다시 검증하지 않는다 — 회수 창(`acl_propagation_slo`, `standard` 5분)보다 긴 재사용은 금지하며 TTL 10분은 그 상한이다(11 §13 "재사용 금지, 조회만") |
 | 렌더 캐시 | `render_key = H("render", content_hash, renderer, options_hash)`; Valkey 키 규약은 바이블 §13.4에 없어 v1은 인프로세스 계산만 하고 캐시하지 않는다(15ms 예산 안). 도입 시 `rndr:{tenant}:{render_key}` 제안(미해결 이슈 4) |
 | Anthropic 정확 카운트 | `count_tokens` 호출은 Valkey `tok:{tokenizer_id}:{H(text)}`(7일)로 최소화한다. 실패 시 `approximate` + `calibration_ratio` + `warnings`(바이블 §4.3 `pack`) |
@@ -458,7 +458,7 @@ sequenceDiagram
 
 | 항목 | 값 |
 |------|----|
-| 기본 상태 | **비활성**. 비활성이면 라우트를 등록하지 않으므로 요청은 404 규칙을 따른다(`api.not_found` 채택 전 400 `contract.violation`, `detail="not found: /v1/answer (answer module disabled)"`); OpenAPI에서도 연산이 제외된다 |
+| 기본 상태 | **비활성**. 비활성이면 라우트를 등록하지 않으므로 요청은 404 `api.not_found`(바이블 §5.7 1.3.0, AM-36; `detail="not found: /v1/answer (answer module disabled)"`); OpenAPI에서도 연산이 제외된다 |
 | 활성화 | `RAG_ANSWER__ENABLED=true`(제안, 바이블 §6.6 규약; [구성 참조](../09-operations/02-configuration-reference.md) §2.20이 `RAG_ANSWER__*` 5키(`BASE_URL` 추가)를 "제안(05-api/03)"으로 등재했다 — 미해결 이슈 10) |
 | 모델 | `RAG_ANSWER__MODEL`(기본 예시 `claude-opus-5`; 모델 식별자는 프로파일·설정 값이며 계약 상수가 아니다) |
 | 자격 증명 | `RAG_ANSWER__API_KEY_REF` — `RAG_SECRETS__PROVIDER` 경유 간접 참조(바이블 §6.6). 평문 키를 설정 파일·로그에 두지 않는다 |
@@ -663,7 +663,7 @@ data: {"schema_version":"1.0.0","schema_type":"AnswerResponse","answer_id":"01JA
 
 | 캐시 | 키 | TTL | 무효화 |
 |------|----|-----|--------|
-| 플랜 템플릿 | `plan:{tenant}:{profile_hash}:{H("plan", …)}` | 5분 | `profile_hash` 변경으로 키 자체가 바뀜 |
+| 플랜 템플릿 | `plan:{tenant}:{profile_hash}:{H("plan", …, H("opts", canonical_json(플랜에 영향 주는 QueryRequest 옵션)))}`(1.3.0: `H("plan", …)`에 `opts` 항 추가 — 바이블 §6.2, AM-40) | 5분 | `profile_hash` 변경 또는 `opts` 변경으로 키 자체가 바뀜 |
 | 질의 임베딩 | `qemb:{embedding_space_id}:{blake3(임베딩 입력)}` | 24h | 공간 ID가 키에 포함 |
 | 토큰 카운트 | `tok:{tokenizer_id}:{H(text)}` | 7일 | 콘텐츠 해시 키 |
 | 리랭크 점수(선택) | `rr:{model_id}:{H(query, chunk_id)}` | 60s | |
@@ -678,17 +678,19 @@ data: {"schema_version":"1.0.0","schema_type":"AnswerResponse","answer_id":"01JA
 
 | 상태 | `code` | 발생 조건 | 엔드포인트 |
 |------|--------|-----------|------------|
-| 400 | `contract.violation` | 스키마 위반(`errors[]` 1..16, `location.pointer`), `query_id`·보안 필드 존재(바이블 §5.5·가이드라인 §3.2는 422이나 카탈로그 제약(13 §7.1)으로 400 임시 적용, `auth.tenant_mismatch` 채택 후 422 — §3.1·미해결 이슈 14), `schema_version` minor 앞섬, 불허 `retrieval_variant`, `cursor` 만료·변조(`api.cursor_invalid` 채택 전), `collection_ids` 조합의 플랜 크기 초과(pointer `/collection_ids`), `pack_id` 미존재·만료·주체 불일치(`api.not_found` 채택 전, `detail="/pack_id: resource not found"`), `answer` 비활성(`api.not_found` 채택 전), 본문 16KB/512KB 초과(`api.payload_too_large` 채택 전), `Content-Type` 불일치(`api.unsupported_media_type` 채택 전) | 전부 |
+| 400 | `contract.violation` | 스키마 위반(`errors[]` 1..16, `location.pointer`), `query_id`·보안 필드 존재(바이블 §5.5·가이드라인 §3.2는 422이나 카탈로그 제약(13 §7.1)으로 400 임시 적용, `auth.tenant_mismatch` 채택 후 422 — §3.1·미해결 이슈 14), `schema_version` minor 앞섬, 불허 `retrieval_variant`, `cursor` 만료·변조(`api.cursor_invalid` 채택 전), `collection_ids` 조합의 플랜 크기 초과(pointer `/collection_ids`), 본문 16KB/512KB 초과(`api.payload_too_large` 채택 전), `Content-Type` 불일치(`api.unsupported_media_type` 채택 전) | 전부 |
 | 400 | `plan.security_context_missing` | `SecurityContext` 주입 실패(계약 위반, 미들웨어 결함) | `query`, `answer` |
 | 400 | `render.mixed_blocks`, `render.citations_with_structured_output`, `render.empty_pack` | 렌더 사전 검증(§4.2·§5.2) | `query`(rendered), `render`, `answer` |
 | 401 | `auth.unauthenticated` | 토큰 부재·무효·스킴 불일치; `WWW-Authenticate: Bearer` | 전부 |
 | 403 | `auth.forbidden` | Cedar `search` 거부(역할 `ingestor`·`pii_officer` 등), 테넌트 `llm_answer_allowed` 미옵트인 | 전부 / `answer` |
 | 403 | `plan.collection_forbidden` | `collection_ids ∩ allowed_collections = ∅`(존재 비노출) | `query`, `answer` |
-| 422 | `plan.filter_field_forbidden` | 금지 필드(`tenant_id`, `acl_*`, `is_current`, `level`, `record_id` …) 또는 필드별 불허 `op` | `query`, `answer` |
+| 404 | `api.not_found`(바이블 §5.7 1.3.0, AM-36 — 더는 채택 대기가 아니다) | `pack_id` 미존재·만료·주체 불일치(`detail="/pack_id: resource not found"`, 존재 비노출), `answer` 비활성(`detail="not found: /v1/answer (answer module disabled)"`) | `query`, `render`, `answer` |
+| 422 | `plan.filter_field_forbidden` | 보안 필드가 섞인 사용자 필터의 거부(금지 필드 `tenant_id`, `acl_*`, `is_current`, `level`, `record_id` …) 또는 필드별 불허 `op` — 400이 아니라 422다(#28 확인) | `query`, `answer` |
 | 422 | `auth.too_many_principals` | 확장 주체 > 1,024 | 전부 |
 | 422 | `pack.tokenizer_mismatch` | `target_model.provider`·프로파일 카운터 불일치, `answer`에 비-`anthropic` 팩 | `query`, `answer` |
 | 429 | `api.rate_limited` | 클래스 `query` 한도 초과, Valkey 불가(fail-closed); `RateLimit`·`RateLimit-Policy`·`Retry-After` | 전부 |
 | 500 | `contract.violation` | 산출물 계약 위반(`QueryPlan` 32KB 초과 등 플래너 결함), 공급자 컨텍스트 초과, 미분류 예외(`api.internal_error` 채택 전) | 전부 |
+| 500 | `retrieve.security_context_missing` | 리트리버 어댑터에 `SecurityContext`가 없이 도달(E7; 서버 측 계약 위반 — 정상 요청에서는 `plan.security_context_missing`(400, E6)이 먼저 차단한다). 바이블 §5.7 1.3.0, AM-25 | `query`, `answer` |
 | 500 | `fuse.k_missing`, `rerank.schema_mismatch` | 프로파일 로딩이 막아야 할 구성 결함(초안 상태) | `query`, `answer` |
 | 503 | `retrieve.unavailable` | 전 채널 실패, `hydrate.backend_error` 재시도 소진, 하드 타임아웃 10s; `Retry-After: 5`, `errors[]`에 채널별 오류 | `query`, `answer` |
 | 503 | `api.dependency_unavailable`(제안) | LLM 공급자 불가(§5.7) | `answer` |
@@ -773,11 +775,11 @@ data: {"schema_version":"1.0.0","schema_type":"AnswerResponse","answer_id":"01JA
 | 10 | `answer` 설정 키 `RAG_ANSWER__ENABLED`·`MODEL`·`API_KEY_REF`·`EFFORT`와 테넌트 정책 `llm_answer_allowed`는 이 문서의 제안이다. [구성 참조](../09-operations/02-configuration-reference.md) §2.20은 네 키를 "제안(05-api/03)"으로 등재하고 `RAG_ANSWER__BASE_URL`(프록시·리전 엔드포인트)을 추가했다 — §5.1 아웃바운드 행의 "프록시·리전 엔드포인트도 같은 규칙"이 그 키에 대응한다. 공급자 사고(thinking)·effort 파라미터의 이름·허용값, `refusal` 종료 사유의 부속 필드 형태, `count_tokens` RPM 한도, `search_result` 블록 수 상한, 모델별 최소 캐시 길이는 확인 필요(as of 2026-09) | [구성 참조](../09-operations/02-configuration-reference.md)에서 키 확정(ADR-0036 minor), 테넌트 정책은 [관리 API](04-management-api.md); 공급자 사실은 [LLM 컨텍스트 최적화와 MCP](../07-tech-landscape/10-llm-context-optimization-and-mcp.md) 갱신 시 반영 |
 | 11 | `pack_id` 경로의 `answer`·`render`는 ACL을 재검증하지 않고 `items[].acl.checked_at` 증적에 의존한다. 조회 창 10분이 `standard` 회수 SLO 5분보다 길어 최대 5분의 회수 반영 지연 창이 생긴다 | (a) 조회 창을 `acl_propagation_slo`로 줄이거나 (b) `pack_id` 경로에서 `aclrev:` 힌트만 재조회해 `deleted`·`acl_hash` 변경 항목을 제외하는 경량 재검증을 두는 안을 [후처리와 컨텍스트 패킹](../04-pipelines/17-post-processing-and-context-packing.md)·[멀티테넌시·보안 아키텍처](../02-architecture/07-multi-tenancy-and-security-architecture.md) E9와 함께 결정 |
 | 12 | `answer` SSE 프레임 이름 `answer.progress`·`answer.pack`·`answer.delta`·`answer.citation`·`answer.done`·`answer.error`는 바이블 §5.7 이벤트 카탈로그에 없는 **API 계층 SSE 프레임 이름의 제안**이다(CloudEvents `type`이 아니므로 §6.5 `domain.entity.action` 과거형 규약을 그대로 적용하지 않았다; 잡 SSE는 CloudEvents `type`을 `event:`로 쓴다, 12 §9). 검색 단계 진행 프레임은 가이드라인 §10.2 "잡 이벤트·테넌트 이벤트·`answer` 토큰에 한정"을 넘는 확장이다. 그 밖에 `concise`가 REST의 비-MCP 렌더러에서 `detailed`와 같다는 해석, `answer.progress` 4단계의 `data` 형태, `answer.pack`의 원자 전달(`include_pack=true`·`stream=true`), SSE `id` 정수 규칙, `stop_reason=max_tokens`의 경고 없음, 공급자 429 `Retry-After` 기본 30s는 이 문서의 초안이다 | (1) 가이드라인 §10.2 문구를 "`answer` 토큰 + 본문 없는 진행 알림(+ `include_pack` 팩 전문 1프레임)"으로 개정(patch)하고 §10 프레임 규약에 "API 계층 SSE 프레임 이름은 `answer.{noun}` 형식, 카탈로그 외"를 명시; (2) 이름 확정은 바이블 §5.7에 "API SSE 프레임" 구분을 두거나(minor) 현재 이름을 가이드라인 부속 표로 고정; (3) 나머지는 SDK([클라이언트 SDK](06-client-sdks.md)) 구현과 E2E 테스트 후 확정 |
-| 13 | depends_on·하류 문서 대조 상태. **미게시**: [MCP 서버](05-mcp-server.md)·[관리 API](04-management-api.md)(문서 맵 경로로만 링크; 게시 후 §1·§12의 `operationId`·한도 클래스·Cedar 액션과 대조). **대조 완료**: [클라이언트 SDK](06-client-sdks.md) §5.1은 `operationId` `query`·`render_context_pack`·`answer`, 와이어 타입명 `QueryResponse`·`RenderRequest`·`RenderOptions`(9키)·`AnswerRequest`·`AnswerResponse`, 한도 클래스 `query`(동시성 힌트 16), 자동 재시도 규칙(`retryable=true`·429 + 멱등 요청; `query`·`render`·`answer` 포함)이 이 문서 §1·§3.1·§4.2·§12와 일치한다. 불일치 2건: (a) 06 §6.4는 `answer` 스트림을 "`id:`가 없고 재접속·재생 없음"으로 적었으나 이 문서 §5.5는 정수 `id`를 보낸다(재생 불가는 같음); (b) 06 §5.1은 `AnswerRequest` 필드를 나열하지 않아 `output_schema` 개명 영향이 없으나 06 §5.4 `to_anthropic_messages(structured_output=…)` 단축 인자는 `RenderOptions.structured_output`(유지)에 대응함을 확인했다. [구성 참조](../09-operations/02-configuration-reference.md) §2.20·[관측성](../09-operations/03-observability.md)은 이 문서의 `RAG_ANSWER__*`·`rag_answer_*`를 제안으로 등재했다(이슈 9·10). **상류 불일치**: 09 §3 Cedar 액션 `action=query`는 07 §4.1 정본 `search`와 다르다 | 06 §6.4 `id:` 문구 정정(patch) 요청; 09 §3 `action=query` → `search` 정정(patch) 요청; 바이블 미해결 이슈 11(링크 검사 경고) |
+| 13 | depends_on·하류 문서 대조 상태. [MCP 서버](05-mcp-server.md)·[관리 API](04-management-api.md)는 모두 게시되었다(문서 맵 경로, 브리프 §8); §1·§12의 `operationId`·한도 클래스·Cedar 액션 대조는 남은 작업이다. **대조 완료**: [클라이언트 SDK](06-client-sdks.md) §5.1은 `operationId` `query`·`render_context_pack`·`answer`, 와이어 타입명 `QueryResponse`·`RenderRequest`·`RenderOptions`(9키)·`AnswerRequest`·`AnswerResponse`, 한도 클래스 `query`(동시성 힌트 16), 자동 재시도 규칙(`retryable=true`·429 + 멱등 요청; `query`·`render`·`answer` 포함)이 이 문서 §1·§3.1·§4.2·§12와 일치한다. 불일치 2건: (a) 06 §6.4는 `answer` 스트림을 "`id:`가 없고 재접속·재생 없음"으로 적었으나 이 문서 §5.5는 정수 `id`를 보낸다(재생 불가는 같음); (b) 06 §5.1은 `AnswerRequest` 필드를 나열하지 않아 `output_schema` 개명 영향이 없으나 06 §5.4 `to_anthropic_messages(structured_output=…)` 단축 인자는 `RenderOptions.structured_output`(유지)에 대응함을 확인했다. [구성 참조](../09-operations/02-configuration-reference.md) §2.20·[관측성](../09-operations/03-observability.md)은 이 문서의 `RAG_ANSWER__*`·`rag_answer_*`를 제안으로 등재했다(이슈 9·10). **상류 불일치**: 09 §3 Cedar 액션 `action=query`는 07 §4.1 정본 `search`와 다르다 | 06 §6.4 `id:` 문구 정정(patch) 요청; 09 §3 `action=query` → `search` 정정(patch) 요청; 바이블 미해결 이슈 11(링크 검사 경고) |
 | 14 | 본문 보안 필드(`tenant_id`·`as_of`·`security_context`·`principals`·`visible_set`·`classification_max`) 거부의 상태 코드가 앵커와 다르다: 바이블 §5.5 `QueryRequest`·§10.3 E1·가이드라인 §3.2는 **422**, 이 문서는 09 §2.3·Q-2를 따라 **400 `contract.violation`**(13 §7.1은 `contract.violation`을 400/500만 허용). 가이드라인 §3.2의 "422 `contract.violation`"은 13 카탈로그와 충돌한다 | 13 §3.3 `auth.tenant_mismatch`(422) 채택 ADR(minor)에 `QueryRequest`·`RenderRequest.context_pack.tenant_id`를 포함(09 미해결 이슈 6과 공동); 채택 전 400 유지, 가이드라인 §3.2 문구를 "채택 전 400 `contract.violation`"으로 정정(patch) |
 | 15 | 저장 팩(`pack:{tenant}:{pack_id}`)·MCP 커서(`cursor:{tenant}:{ulid}`)의 주체 바인딩은 "발급 시점 `security_context_hash` 저장 → 후속 요청과 대조"인데, 바이블 §6.2 식에 `as_of`(서버 `now()`)가 들어 있어 문자 그대로 비교하면 항상 불일치한다. 이 문서 §4.4는 `as_of`를 저장 팩의 값으로 고정하고 Cedar를 팩 `collection_ids`에 재평가해 재계산·대조하는 규칙을 두었다 — 바이블 §6.2에 없는 결정이며 07 §3.4·07 미해결 이슈 4(커서 값 `{query_id, offset, security_context_hash}`)도 같은 표현을 쓴다 | 바이블 §6.2에 "주체 바인딩 키" 행 추가(patch): (a) 이 문서의 `as_of` 고정 재계산 또는 (b) `as_of` 제외 소유자 키 `H("owner", tenant_id, ",".join(sorted(principals)), ",".join(sorted(collection_ids)), classification_max, ",".join(visible_set))` 중 택1; 07 §3.4·[MCP 서버](05-mcp-server.md) 커서 저장소와 공동 해결 |
 | 16 | `context_pack.diagnostics.filters_applied.security.principals`(요청 주체 자신의 사용자·그룹 목록)는 계약 인스턴스 그대로 REST 응답에 포함된다(11 §2.8·미해결 이슈 3, 가이드라인 §8). 그룹 목록 노출을 줄이려는 테넌트(`korean-gov`)가 있을 수 있으나, 이전 초안의 `principals_count` 축약은 11이 동명 이형으로 철회했고 이 문서 예시도 그에 맞췄다 | 필요 시 **API 계층 응답 투영**(예: `group:` 주체를 제거하고 `user:`·`tenant:*`만 남기는 부분집합 — `SecurityFilter`의 `minItems 1`·`additionalProperties: false`를 지키되 계약 인스턴스가 아님을 응답 문서에 명시)을 테넌트 정책 옵션으로 제안; 또는 바이블 §5.5 `diagnostics` patch(11 미해결 이슈 3)로 결정. 채택 전에는 투영하지 않는다 |
-| 17 | `QueryRequest.top_k`는 수용만 되고 `pack.k_max = 프로파일 query.pack.k_max`다(09 §2.1·미해결 이슈 1). 클라이언트가 "항목 8개만"을 원할 때 서버가 20개를 돌려주므로 REST 사용자 기대와 어긋날 수 있다 | 바이블 §5.5 `top_k` 행에 "`pack.k_max = min(top_k, 프로파일 k_max)`" 결합 규칙 patch를 09 미해결 이슈 1과 공동 제안; 채택 시 이 문서 §3.1·§3.7 예시(`k_max`)를 함께 갱신 |
+| 17 | **종결(CR-14 정본 유지).** `QueryRequest.top_k`는 수용만 되고 `pack.k_max = 프로파일 query.pack.k_max`(standard 20, 상한 20)다(09 §2.1). 계약 감사 정본 결정 CR-14·CR-15가 `pack.k_max = min(top_k, 프로파일 k_max)` 결합을 채택하지 않기로 확정했으므로 클라이언트가 "항목 8개만"을 원해도 서버는 프로파일 값을 그대로 쓴다 — 이 문서 §3.1·§3.7의 서술과 예시가 그 결론이다 | 결합 규칙 도입 없음(CR-14 유지). 재발의는 새 CR 없이는 하지 않는다 |
 
 ## 참조
 
@@ -795,5 +797,5 @@ data: {"schema_version":"1.0.0","schema_type":"AnswerResponse","answer_id":"01JA
 - [후처리와 컨텍스트 패킹](../04-pipelines/17-post-processing-and-context-packing.md) — §4.3~4.6 렌더러·`answer` 래핑·역매핑, §4.8 스트리밍
 - [기능 요구사항](../01-requirements/01-functional-requirements.md) — FR-API-08(스트리밍), FR-API-11(레퍼런스 `answer`)
 - ADR(바이블 §3.3): [ADR-0013 융합·후처리·pack 순서](../06-adr/0013-fusion-rrf-k60-then-convex-combination-and-postprocess-order.md), [ADR-0018 API 규약](../06-adr/0018-api-rest-sse-mcp-no-grpc-rfc9457.md), [ADR-0022 관측성 규약](../06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md), [ADR-0024 Context Pack 순서·Anthropic 렌더러](../06-adr/0024-context-pack-ordering-and-anthropic-search-result-renderer.md), [ADR-0025 MCP 커서](../06-adr/0025-mcp-cursor-pagination-and-tool-set.md), [ADR-0027 SecurityContext·ACL 강제 지점](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md), [ADR-0030 단일 좌표계·점수 원장](../06-adr/0030-single-coordinate-system-and-score-ledger.md), [ADR-0034 검색 핫패스·hydrate](../06-adr/0034-retrieval-hot-path-postgres-independence-and-hydrate.md)
-- 이 문서를 전제로 하는 문서(문서 맵): [MCP 서버](05-mcp-server.md), [관리 API](04-management-api.md)(미게시); 게시본과 대조한 하류 문서(미해결 이슈 13): [클라이언트 SDK](06-client-sdks.md) — §3.2 재시도·한도 클래스, §5.1 `operationId`·와이어 타입, §5.4 렌더 헬퍼, §6.4 `answer` 스트림 파서; [구성 참조](../09-operations/02-configuration-reference.md) — §2.20 `RAG_ANSWER__*`; [관측성](../09-operations/03-observability.md) — `rag.answer` 스팬·`rag_answer_*` 메트릭(제안)
+- 이 문서를 전제로 하는 문서(문서 맵): [MCP 서버](05-mcp-server.md), [관리 API](04-management-api.md)(게시됨, 대조는 미해결 이슈 13); 게시본과 대조한 하류 문서(미해결 이슈 13): [클라이언트 SDK](06-client-sdks.md) — §3.2 재시도·한도 클래스, §5.1 `operationId`·와이어 타입, §5.4 렌더 헬퍼, §6.4 `answer` 스트림 파서; [구성 참조](../09-operations/02-configuration-reference.md) — §2.20 `RAG_ANSWER__*`; [관측성](../09-operations/03-observability.md) — `rag.answer` 스팬·`rag_answer_*` 메트릭(제안)
 - 표준: RFC 9457(Problem Details), RFC 6750(Bearer), RFC 8693(Token Exchange), draft-ietf-httpapi-ratelimit-headers-11, W3C Trace Context, HTML Living Standard(Server-Sent Events)

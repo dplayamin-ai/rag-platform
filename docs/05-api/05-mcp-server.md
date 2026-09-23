@@ -2,7 +2,7 @@
 title: MCP 서버
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -554,9 +554,9 @@ sequenceDiagram
 | Cedar 거부(역할) | 실행 오류 | `auth.forbidden` | no | "이 계정은 검색 권한이 없습니다" |
 | `collection_ids ∩ allowed = ∅` | 실행 오류 | `plan.collection_forbidden` | no | "list_collections로 접근 가능한 컬렉션을 확인하십시오" |
 | 확장 주체 > 1,024 | 실행 오류 | `auth.too_many_principals` | no | 관리자 문의 |
-| 인자 스키마 위반, 보안 필드 존재, 허용 컬렉션 > 20이면서 `collection_ids` 생략, `document_id` 미존재·ACL 거부(존재 비노출), `cursor` 만료·변조·불일치 | 실행 오류 | `contract.violation`(`detail` 첫 토큰 = JSON pointer `/query`, `/filters`, `/collection_ids`, `/document_id`, `/cursor`; `api.not_found`·`api.cursor_invalid` 채택 후 각 코드) | no | 포인터별 수정 방법(예: "/cursor: expired — re-run search without cursor") |
+| 인자 스키마 위반, 보안 필드 존재, 허용 컬렉션 > 20이면서 `collection_ids` 생략, `document_id` 미존재·ACL 거부(존재 비노출), `cursor` 만료·변조·불일치 | 실행 오류 | `contract.violation`(`detail` 첫 토큰 = JSON pointer `/query`, `/filters`, `/collection_ids`, `/document_id`, `/cursor`; `document_id` 쪽은 `api.not_found`(바이블 §5.7 1.3.0 등재, AM-36) 전환 채택 대상, `cursor` 쪽은 `api.cursor_invalid`([오류 모델](../03-contracts/13-error-model.md) §3.3 제안, 미채택) 전환 채택 대상 — 채택 전까지는 둘 다 `contract.violation`) | no | 포인터별 수정 방법(예: "/cursor: expired — re-run search without cursor") |
 | 금지·미허용 필터 필드 | 실행 오류 | `plan.filter_field_forbidden` | no | "허용 필드: doc_date, doc_type, department, tags, lang, …" |
-| 레이트 리밋(운영 fail-closed 포함) | 실행 오류 | `api.rate_limited` + `structuredContent.retry_after`(초) | no(대기 후 재시도 허용) | "N초 후 다시 시도하십시오" |
+| 레이트 리밋(운영 fail-closed 포함) | 실행 오류 | `api.rate_limited` + `structuredContent.retry_after`(초; `ProblemDetails.retry_after` 선택 필드, 바이블 §5.3 1.3.0 AM-28 등재) | no(대기 후 재시도 허용) | "N초 후 다시 시도하십시오" |
 | 전 채널 실패·`hydrate` 재시도 소진·10s 하드 타임아웃 | 실행 오류 | `retrieve.unavailable` + `retry_after: 5` | yes | "잠시 후 같은 요청을 재시도하십시오" |
 | 렌더 사전 검증 실패 · `SecurityContext` 주입 실패(서버 결함) | 실행 오류 | `render.*` / `plan.security_context_missing` | no | — |
 
@@ -576,7 +576,7 @@ sequenceDiagram
 }
 ```
 
-`ProblemDetails.instance`는 `/mcp`, `status`는 REST 대응 상태 코드(정보용; HTTP 응답은 200)다. 텍스트에는 콘텐츠·주체·`tenant_id`를 넣지 않는다.
+`ProblemDetails.instance`(uri-reference, 바이블 §5.3 1.3.0 AM-28 등재)는 `/mcp`, `status`는 REST 대응 상태 코드(정보용; HTTP 응답은 200)다. 텍스트에는 콘텐츠·주체·`tenant_id`를 넣지 않는다.
 
 ## 9. 에이전트 사용 지침 텍스트(정본 문구)
 
@@ -843,7 +843,7 @@ You are an assistant that answers only from retrieved document evidence. Rules:
 | 2 | 커서 주체 바인딩 대조(§6.3)는 바이블 §6.2에 없는 규칙이며 [리트리벌 API](03-retrieval-api.md) §4.4·미해결 이슈 15와 같은 "`as_of` 고정 재계산"을 채택했다 | 바이블 §6.2에 "주체 바인딩 키" 행 추가(patch): (a) `as_of` 고정 재계산 또는 (b) `as_of` 제외 소유자 키 `H("owner", …)` 택1 — 03·07·이 문서 공동 |
 | 3 | Valkey 불가 시 폴백을 ADR-0025 "부정" 절(`truncated=true`·`next_cursor=null`)이 아니라 `truncated=false`·`next_cursor=null` + 안내 문구로 확정했다(11 P-14·`context-pack.schema.json` `if/then` 준수). 에이전트는 구조화 필드만으로는 "더 있음"을 알 수 없다 | 슬림 팩에 `omitted_count`(integer, N; `omitted.reason=budget_exceeded` 개수) 추가를 11 §8.2·바이블 §9.3 `mcp_tool_result` 행에 제안(minor); ADR-0025 "부정" 절 문구 정정(patch) |
 | 4 | `stop_signal`(`ContextPack`, N)은 슬림 팩 열거(바이블 §9.3, 11 §8.2)에 없어 노출하지 않았으나 [고급 검색](../04-pipelines/18-advanced-retrieval-graph-raptor-agentic.md) §6은 "MCP 에이전트는 `cursor`·`stop_signal`·`sufficiency`"로 적었다 | 슬림 팩에 `stop_signal`(N) 추가 제안(바이블 §9.3 minor) 또는 18 §6 문구를 `sufficiency`로 정정(patch); 채택 전에는 `sufficiency`가 종료 신호 |
-| 5 | `get_document`의 MCP 기본 `view=normalized`(읽기용)와 결과 형태(`McpDocumentResult`: `blocks[]`/`chunks[]` 투영, Markdown 텍스트 규칙)는 이 문서의 초안이다. REST `GET /v1/documents/{document_id}/content`의 기본 `view`·응답 형태는 [관리 API](04-management-api.md)(미게시)가 정하며 `page_map`·`artifacts[]` 노출 정책([DOC/DOCX 파서](../04-pipelines/06-parser-doc-and-docx.md) 미해결 이슈 7)도 같은 문서 소관이다 | 관리 API 게시 후 두 표면의 기본 `view`·블록 투영 필드를 대조하고 차이가 있으면 이 문서를 REST에 맞춘다(patch) |
+| 5 | `get_document`의 MCP 기본 `view=normalized`(읽기용)와 결과 형태(`McpDocumentResult`: `blocks[]`/`chunks[]` 투영, Markdown 텍스트 규칙)는 이 문서의 초안이다. REST `GET /v1/documents/{document_id}/content`는 [수집 API](02-ingestion-api.md) §7.2가 정의하며 `view`는 필수 파라미터라 기본값이 없다(이 문서의 MCP 기본값 `normalized`와 다른 지점 — 표면마다 별개 결정으로 확정, patch 불필요). `page_map`·`artifacts[]` 노출 정책([DOC/DOCX 파서](../04-pipelines/06-parser-doc-and-docx.md) 미해결 이슈 7)은 여전히 미정이다 | [수집 API](02-ingestion-api.md)·[관리 API](04-management-api.md)와 `page_map`·`artifacts[]` 노출 정책을 확정한 뒤 이 문서 `outputSchema` 반영 여부를 정한다(patch) |
 | 6 | `list_collections` 결과에 컬렉션 설명(`description`)이 없다 — `CollectionSpec`(바이블 §5.6)에 해당 필드가 없어 넣지 않았다. 에이전트가 컬렉션을 고르는 데 이름만으로는 부족할 수 있다. 상한 1,000건도 초안 | `CollectionSpec.description`(string, N) 추가를 [컬렉션·프로파일·정책 계약](../03-contracts/15-collection-profile-and-policy-contracts.md)에 제안(minor); 채택 시 `outputSchema`에 `description`(N) 추가 |
 | 7 | 20k 상한의 토큰 계산은 팩 `budget.tokenizer`(프로파일 대상 모델)로 근사한다. MCP 호스트의 실제 모델·상한(Claude Code 25k 등)은 요청에 없고, `content` + `structuredContent` 합산 여부는 호스트별로 다르다 | 호스트별 관행 실측 후 `RAG_MCP__MAX_RESULT_TOKENS` 기본값과 합산 규칙 확정(§7.2 파라미터 개정, ADR-0025 재검토 조건); 필요 시 `search`에 `max_result_tokens?` 선택 인자 제안(v1.1) |
 | 8 | 실행 오류의 `structuredContent = ProblemDetails`는 성공 `outputSchema`와 다른 형태다. 2026-07-28이 `structuredContent`에 임의 JSON을 허용하지만 `outputSchema` 부합 요구가 `isError` 결과에도 적용되는지는 스펙 문구 확인 필요(as of 2026-09) | 확인 후 (a) 유지, 또는 (b) 오류는 `content[1]` 텍스트(canonical JSON)로 이동하고 `structuredContent` 생략 — [오류 모델](../03-contracts/13-error-model.md) 미해결 이슈 11과 공동 |
@@ -853,7 +853,7 @@ You are an assistant that answers only from retrieved document evidence. Rules:
 | 12 | 스코프 `rag.search`·`rag.read_document`(§3.1)를 확정했으나 인가 서버(Keycloak/Dex 등)의 클라이언트 스코프 설정과 Anthropic MCP 커넥터의 스코프 요청 방식은 확인 필요(as of 2026-09). `lite` API 키 모드는 OAuth 전용 호스트와 호환되지 않는다 | [보안·컴플라이언스](../09-operations/05-security-and-compliance.md) §3.4 예시 확정 반영(patch); 커넥터 호환은 OIDC AS 배포 안내로 [배포 가이드](../09-operations/01-deployment-guide.md) 미해결 이슈 10 종결 |
 | 13 | `@modelcontextprotocol/conformance`의 인증·SSE 취소·`server/discover`·`CacheableResult` 시나리오 커버리지, MCP Inspector의 2026-07-28 무상태 라이프사이클 지원, `mcp` 2.x `MCPServer`의 토큰 검증 클래스 이름은 확인 필요(as of 2026-09) | 10 문서 미해결 이슈 4·13 갱신 시 반영; 커버리지 공백은 `mcp` 1.x 클라이언트 보조 고정으로 메운다 |
 | 14 | 에이전트가 여러 페이지·여러 질의를 한 답변에 인용할 때 `cite_id`가 팩마다 `d1..dM`로 겹친다(§7). 안내 문구로만 완화했다 | v1.1 `search` 선택 인자 `session_id` 노출(ADR-0025 개정, 18 §10 M4)과 함께 "세션 내 `cite_id` 연속 부여"를 바이블 §9.4 멀티턴 규약에 제안 |
-| 15 | depends_on 대조 상태: [관리 API](04-management-api.md)는 미게시(문서 맵 경로로만 링크; `get_document`·`list_collections`의 REST 대응 연산·한도 클래스·기본 `view`를 게시 후 대조). [클라이언트 SDK](06-client-sdks.md) §8.5·[리트리벌 API](03-retrieval-api.md) §3.1·§8·§10·[09 §7.4](../03-contracts/09-query-request-and-query-plan.md)·[11 §8.2](../03-contracts/11-context-pack.md)·[07 §3.4·§4](../02-architecture/07-multi-tenancy-and-security-architecture.md)·[08 §3.2·§5.3](../02-architecture/08-deployment-architecture.md)·[구성 참조 §2.17](../09-operations/02-configuration-reference.md)·[테스트 전략 S-01/S-08](../10-development/04-testing-strategy.md)과는 대조를 마쳤고 불일치는 이슈 1·3·4에 적었다 | 관리 API 게시 후 §1 표·§4.3·§4.4 대조(patch) |
+| 15 | depends_on 대조 상태: [관리 API](04-management-api.md)·[수집 API](02-ingestion-api.md)가 게시되어 대조 가능해졌다 — `list_collections` ↔ `GET /v1/collections`(관리 API §3.1, `allowed_collections` 필터 동일)는 일치 확인, `get_document` ↔ `GET /v1/documents/{document_id}/content`(수집 API §7.2)는 기본 `view` 차이를 이슈 5로 남겼다. 한도 클래스 전체 대조(§1 표)는 남은 항목이다. [클라이언트 SDK](06-client-sdks.md) §8.5·[리트리벌 API](03-retrieval-api.md) §3.1·§8·§10·[09 §7.4](../03-contracts/09-query-request-and-query-plan.md)·[11 §8.2](../03-contracts/11-context-pack.md)·[07 §3.4·§4](../02-architecture/07-multi-tenancy-and-security-architecture.md)·[08 §3.2·§5.3](../02-architecture/08-deployment-architecture.md)·[구성 참조 §2.17](../09-operations/02-configuration-reference.md)·[테스트 전략 S-01/S-08](../10-development/04-testing-strategy.md)과는 대조를 마쳤고 불일치는 이슈 1·3·4에 적었다 | §1 표의 한도 클래스 열을 관리 API·수집 API 원문과 대조해 근거 각주를 붙인다(patch) |
 | 16 | FR-MCP-03(Must, D-20: `search` 결과를 JSON 또는 Markdown 중 호출자 선택 형식으로 반환)은 바이블 §9.3 `mcp_tool_result` 행(`structuredContent` 슬림 팩 + `content[0].text` = `xml_documents` 고정)·D-13("결과는 `structuredContent`")과 충돌한다. 이 문서는 바이블을 따라 형식을 고정했고 `response_format`은 `concise|detailed`(분량)만 둔다(§4.1·§5) | [기능 요구사항](../01-requirements/01-functional-requirements.md) FR-MCP-03 문구를 "`search` 결과는 `structuredContent`(표준 JSON 슬림 팩) + 공급자 중립 XML 텍스트로 반환하며, Markdown 등 다른 렌더는 REST `POST /v1/render {renderer}`로 얻는다"로 갱신 제안(patch; 기능 요구사항 미해결 이슈 3·4와 함께, [시스템 개요](../02-architecture/01-system-overview.md) 미해결 이슈 7에 FR-MCP-03 추가). `content[0].text`에 `markdown` 렌더를 선택하는 `text_format?` 인자는 바이블 §14 v1 시그니처에 없어 v1.1 후보로만 남긴다(ADR-0025 개정 필요) |
 
 ## 참조

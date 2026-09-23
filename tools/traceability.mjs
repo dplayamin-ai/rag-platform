@@ -9,19 +9,32 @@ const opt = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] :
 const ROOT = opt('--root', 'C:\\Workspaces\\rag-platform')
 const DATE = opt('--date', new Date().toISOString().slice(0, 10))
 const DOCS = path.join(ROOT, 'docs')
+const TARGET = path.join(DOCS, '12-appendix', '06-traceability-matrix.md')
+// version: patch-bump from whatever is currently on disk (propagation directives §1: version patch + last_updated on every edit)
+let VERSION = opt('--version', null)
+if (!VERSION) {
+  VERSION = '1.0.0'
+  try {
+    const vm = /^version:\s*(\d+)\.(\d+)\.(\d+)/m.exec(fs.readFileSync(TARGET, 'utf8'))
+    if (vm) VERSION = `${vm[1]}.${vm[2]}.${Number(vm[3]) + 1}`
+  } catch { /* first generation */ }
+}
 function walk(d, out = []) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p, out); else if (p.endsWith('.md')) out.push(p) } return out }
 const rel = (p) => path.relative(DOCS, p).split(path.sep).join('/')
 const files = walk(DOCS).filter((p) => !rel(p).startsWith('12-appendix/'))
 const ID_RE = /\b(FR|NFR)-[A-Z]{2,4}-\d{2,3}\b|\bUC-\d{2}\b|\bUS-[A-Z]{2,4}-\d{2,3}\b/g
+// A1: titles are sourced from 01-requirements/*.md; a same-directory link (`./foo.md`) there is only
+// valid relative to 01-requirements/. Rewrite it so the copied title stays correct from 12-appendix/.
+const fixTitleLinks = (s) => s.replace(/\]\(\.\//g, '](../01-requirements/')
 // definitions: first column of a table row in 01-requirements docs, or heading
 const defs = {} // id -> {file, title}
 for (const p of files.filter((p) => rel(p).startsWith('01-requirements/'))) {
   const t = fs.readFileSync(p, 'utf8')
   for (const line of t.split('\n')) {
     const m = /^\|\s*(\*\*)?((?:FR|NFR)-[A-Z]{2,4}-\d{2,3}|UC-\d{2}|US-[A-Z]{2,4}-\d{2,3})(\*\*)?\s*\|\s*([^|]*)\|/.exec(line)
-    if (m && !defs[m[2]]) defs[m[2]] = { file: rel(p), title: m[4].trim().replace(/\*\*/g, '').slice(0, 80) }
+    if (m && !defs[m[2]]) defs[m[2]] = { file: rel(p), title: fixTitleLinks(m[4].trim().replace(/\*\*/g, '')).slice(0, 80) }
     const h = /^#{2,4}\s+((?:FR|NFR)-[A-Z]{2,4}-\d{2,3}|UC-\d{2}|US-[A-Z]{2,4}-\d{2,3})\b[:\s]*(.*)$/.exec(line)
-    if (h && !defs[h[1]]) defs[h[1]] = { file: rel(p), title: h[2].trim().slice(0, 80) }
+    if (h && !defs[h[1]]) defs[h[1]] = { file: rel(p), title: fixTitleLinks(h[2].trim()).slice(0, 80) }
   }
 }
 // citations in design docs
@@ -48,7 +61,7 @@ let md = `---
 title: 요구사항 추적 매트릭스 (Traceability Matrix)
 status: active
 owner: architecture
-version: 1.0.0
+version: ${VERSION}
 last_updated: ${DATE}
 depends_on: ["../01-requirements/01-functional-requirements.md", "../01-requirements/02-non-functional-requirements.md", "../11-roadmap/02-epics-and-backlog.md"]
 generated_by: tools/traceability.mjs
@@ -84,5 +97,5 @@ for (const [k, ids] of Object.entries(groups)) {
   }
 }
 md += `\n## 결정 사항 요약\n\n- **결정:** 추적성의 정본은 이 매트릭스다. 설계 문서는 관련 요구사항을 자연스럽게 인용하되, 인용률을 올리기 위한 형식적 인용은 금지한다.\n\n## 미해결 이슈\n\n- 미인용 요구사항은 (a) 실제로 어느 설계 문서도 다루지 않는 갭인지, (b) 다루지만 ID를 쓰지 않은 것인지 4단계 P1에서 표본 판정한다.\n\n## 참조\n\n- [기능 요구사항](../01-requirements/01-functional-requirements.md) · [비기능 요구사항](../01-requirements/02-non-functional-requirements.md) · [에픽과 백로그](../11-roadmap/02-epics-and-backlog.md) · [3단계 완전성 검토](01-phase3-completeness-review.md)\n`
-fs.writeFileSync(path.join(DOCS, '12-appendix', '06-traceability-matrix.md'), md)
+fs.writeFileSync(TARGET, md)
 console.log(JSON.stringify({ defs: Object.keys(defs).length, stats: Object.fromEntries(Object.entries(groups).map(([k, ids]) => [k, stat(ids)])), undefinedRefs: Object.keys(undefinedRefs) }))

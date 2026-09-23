@@ -2,7 +2,7 @@
 title: "파서: PDF (디지털·스캔·레이아웃·OCR)"
 status: active
 owner: architecture
-version: 0.1.2
+version: 0.1.3
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -75,9 +75,9 @@ ingest:
 | `parser.pdf_docling_standard` + `ocr.plugin: paddleocr` | `pdf_scanned_gpu` | `in_process` 레이아웃 + `sidecar`(`ocr-gpu`, `POST /v1/convert`) | A | Docling + PaddleOCR 3.7 PP-OCRv5 server det + korean mobile rec + 방향/왜곡 전처리 | `premium` `scanned`·`mixed` 스캔 페이지 |
 | `parser.pdf_docling_standard` + `ocr.plugin: tesseract` | `pdf_airgapped`(폐쇄망 전용; `korean-gov` 세로쓰기 페이지 재OCR은 `pdf_standard` 지문을 유지하고 `model_ids`에만 Tesseract 모델을 더한다, §6.6) | `in_process`(CLI 서브프로세스) | A | Docling + Tesseract 5.5 `kor+eng`(+`kor_vert`), 모델 번들 | `korean-gov` 폐쇄망·세로쓰기 |
 | (미정) | `pdf_vlm_gpu` | `sidecar`(vLLM) | A(PaddleOCR-VL·MonkeyOCRv2-B-Parsing 모두 Apache-2.0) | 골든셋 비교 후 1순위 확정 | `premium` 옵션(기본 끔) |
-| `rag-plugin-pymupdf-sidecar`가 선언 | 플러그인 선언 | `sidecar` | C(옵트인, 별도 저장소) | PyMuPDF. Helm `optIn.*`, `sidecar_image_digest` 필수 | 모든 프로파일 옵트인 |
+| `rag-plugin-pymupdf-sidecar`가 선언 | 플러그인 선언 | `sidecar` | C(옵트인, 별도 저장소) | PyMuPDF(AGPL-3.0/Artifex 상용 듀얼 — 인프로세스 기각, ADR-0006). Helm `optIn.*`, `sidecar_image_digest` 필수 | 모든 프로파일 옵트인 |
 
-`profile_option`은 `ProfileTier`가 아니라 파서 지문의 문자열이며(ADR-0006 중립 2), `H("parser", parser_id, parser_version, model_ids, sidecar_image_digest, profile_option)`(바이블 §6.2)에 들어가 경로가 바뀌면 `stage_key`가 바뀌고 재파싱된다. `ocr.plugin` 값(`rapidocr, paddleocr, tesseract, surya`)은 PDF 파서 플러그인의 내부 옵션이며 entry point가 아니다([03-contracts/15](../03-contracts/15-collection-profile-and-policy-contracts.md) `$defs/OcrOptions`).
+`profile_option`은 `ProfileTier`가 아니라 파서 지문의 문자열이며(ADR-0006 중립 2), `H("parser", parser_id, parser_version, model_ids, sidecar_image_digest, profile_option)`(바이블 §6.2)에 들어가 경로가 바뀌면 `stage_key`가 바뀌고 재파싱된다. 값 집합(`pdf_fast_cpu`, `pdf_standard`, `pdf_scanned_gpu`, `pdf_airgapped`, 골든셋 후 `pdf_vlm_gpu`)은 `{format}_{variant}` snake_case 형식(AM-09)이며 [04-pipelines/03](03-parsing-router-and-format-detection.md) 정본 목록과 일치한다. `ocr.plugin` 값(`rapidocr, paddleocr, tesseract, surya`)은 PDF 파서 플러그인의 내부 옵션이며 entry point가 아니다([03-contracts/15](../03-contracts/15-collection-profile-and-policy-contracts.md) `$defs/OcrOptions`).
 
 ### 1.3 입력·출력·정책
 
@@ -92,7 +92,7 @@ ingest:
 | 부분 성공 | `quality=degraded` + `warnings[]` + `page_status[]`(바이블 §4.1). 전 페이지 `≠ ok`만 `parse.conversion_failed`([13 §5.1 C4](../03-contracts/13-error-model.md), 초안 규칙 — §11 참조) |
 | 순수성 | 파서는 `ctx.artifacts.put_derived`로만 쓰고, `ctx.heartbeat`·`ctx.now()`·`ctx.remaining_ms()`·`ctx.cancelled`만 부수효과로 본다([01 §3.1](01-pipeline-framework.md)). 네트워크는 사이드카 `POST /v1/convert`(`SidecarStage`)만 |
 
-**결정:** PDF 경로의 플러그인·격리·엔진 구성은 브리프 D-18(개정 v1.1)과 바이블 §7.1 "PDF 디지털"·"PDF 스캔" 행을 그대로 따른다([ADR-0006](../06-adr/0006-pdf-fast-path-pypdfium2-pdftext-replaces-pymupdf.md), [ADR-0008](../06-adr/0008-ocr-default-rapidocr-ppocrv5-korean.md)). PyMuPDF·Poppler는 코어에 없으며(`import fitz`·`pdftotext` 서브프로세스 금지 린트), Docling `OcrAutoOptions`는 사용 금지다.
+**결정:** PDF 경로의 플러그인·격리·엔진 구성은 브리프 D-18(개정 v1.1)과 바이블 §7.1 "PDF 디지털"·"PDF 스캔" 행을 그대로 따른다([ADR-0006](../06-adr/0006-pdf-fast-path-pypdfium2-pdftext-replaces-pymupdf.md), [ADR-0008](../06-adr/0008-ocr-default-rapidocr-ppocrv5-korean.md)). PyMuPDF(AGPL-3.0, 대안·기각 — ADR-0006)·Poppler는 코어에 없으며(`import fitz`·`pdftotext` 서브프로세스 금지 린트), Docling `OcrAutoOptions`는 사용 금지다.
 
 ## 2. 처리 흐름
 
@@ -692,7 +692,7 @@ shard 경계는 페이지 클래스 시퀀스와 `shard_pages` 값으로 결정�
 
 | 항목 | 한계(바이블 §5.1) | 파서 조치 |
 |------|--------------------|-----------|
-| 블록 수 | 200,000 | 조립 전 shard 블록 수 합이 한계를 넘으면 즉시 실패(`contract.violation`; 전용 코드 `parse.block_limit_exceeded`는 [03 미해결 이슈 2](../03-contracts/03-parsed-document.md) 제안과 공동). 페이지 범위 분할 수집은 `SplitHint` 확장 제안(미해결 이슈 11) |
+| 블록 수 | 200,000 | 조립 전 shard 블록 수 합이 한계를 넘으면 즉시 `parse.block_limit_exceeded`(비재시도; 바이블 §5.7 1.3.0 등재 — AM-36)로 실패. 페이지 범위 분할 수집은 `SplitHint` 확장 제안(미해결 이슈 11) |
 | 산출물 JSON | 256MB | 이미지·HTML·벤더 JSON은 파생물 참조만. 텍스트만으로 256MB를 넘는 문서(약 1억 코드포인트)는 v1 범위 밖 |
 | `Block.text` | 1MB | 표 선형화·거대 단락은 `/part[n]` 분할 |
 | 원본 | 200MB(`fetch.max_bytes`) | `fetch`가 거부 |
@@ -711,7 +711,7 @@ shard 경계는 페이지 클래스 시퀀스와 `shard_pages` 값으로 결정�
 | 전면 OCR GPU(`ocr-gpu`, PP-OCRv5 server det) | 2 vCPU + T4/L4 | 약 0.6~1.1s(전처리 포함) | **< 5min**(브리프 §7) | PP-OCRv5 문서(V100 0.62 s/img, 전처리 켬 1.09s) |
 | `pdf_airgapped`(Tesseract) | 4 vCPU | 미측정 | 목표 없음(품질 하향 감수) | — |
 
-측정 항목(D-12 하네스 M2): 경로별 페이지당 p50/p95, 100페이지 벽시계, 워커 메모리 피크, `page_status=timeout` 비율, OCR 페이지 평균 `ocr_confidence`. 지표는 바이블 §6.5 정본 메트릭 `rag_ingest_stage_duration_seconds{stage="parse"}`로 계량하고 경로별 세분 메트릭은 제안(§13).
+측정 항목(D-12 하네스 M2): 경로별 페이지당 p50/p95, 100페이지 실제 경과 시간, 워커 메모리 피크, `page_status=timeout` 비율, OCR 페이지 평균 `ocr_confidence`. 지표는 바이블 §6.5 정본 메트릭 `rag_ingest_stage_duration_seconds{stage="parse"}`로 계량하고 경로별 세분 메트릭은 제안(§13).
 
 ## 11. 품질 게이트
 
@@ -721,7 +721,7 @@ shard 경계는 페이지 클래스 시퀀스와 `shard_pages` 값으로 결정�
 | 깨진 문자(OCR 후) | OCR 결과의 비문자·대체 문자(U+FFFD) 비율 | `> 0.1` | 저해상도·이진화 재시도 1회 → 여전하면 블록 유지 + 낮은 `confidence` | `Block.confidence`, `page_status.ocr_confidence` |
 | 빈 페이지 | `class=empty` | — | `page_status=ok`(콘텐츠 없음), `page_break`만 | `page_status[]`(항목 생략 가능) |
 | 빈 문서 | 모든 페이지 `empty` 또는 OCR 결과 텍스트 0 | — | `quality=full`, `blocks`는 `page_break`만(빈 문서는 실패가 아니라 결과) — 초안 규칙([13 §5.1 C4](../03-contracts/13-error-model.md) 미해결 이슈 9의 답으로 제안, 미해결 이슈 4) | `text_length=0` |
-| 페이지 실패 | `timeout`·`ocr_failed`·`skipped` | — | `quality=degraded`, `warnings[parse.page_timeout]`(timeout만; `ocr_failed`·`skipped` 전용 코드는 03 제안) | `page_status[]` |
+| 페이지 실패 | `timeout`·`ocr_failed`·`skipped` | — | `quality=degraded`, `warnings[]`: `timeout`은 `parse.page_timeout`, `ocr_failed`는 `parse.page_ocr_failed`, `skipped`는 `parse.page_skipped`(바이블 §5.7 1.3.0 등재 — AM-36) | `page_status[]` |
 | 전 페이지 실패 | `ok` 페이지 0(단, 빈 페이지는 `ok`) | — | `parse.conversion_failed`(비재시도, 폴백 소진) | `StageError` |
 | OCR 저신뢰 페이지 | `ocr_confidence` | `< 0.5` | 유지 + `visual-pages` 보완 후보(전용 경고 코드 제안, 미해결 이슈 3) | `page_status.ocr_confidence` |
 | heading 과다 | 페이지 heading 비율 / 문서 heading 비율 | `> 0.4` / `> 0.25` | 폰트 기반 추론 폐기(§7.2 6) | `heading_inferred` |
@@ -741,7 +741,7 @@ shard 경계는 페이지 클래스 시퀀스와 `shard_pages` 값으로 결정�
 | 손상 PDF(부분) | Docling 백엔드 예외 | — (폴백) | `THREADED_DOCLING_PARSE → PYPDFIUM2` 폴백, `quality=degraded`; 둘 다 실패 → `parse.conversion_failed`(no) |
 | 미지원 변형(인증서 암호화, XFA 전용, PDF 포트폴리오만) | 프로브 | `parse.unsupported_variant` · no | XFA·포트폴리오는 본문이 있으면 계속(필드·첨부만 생략) |
 | 페이지 타임아웃(p95 꼬리) | shard·페이지 `document_timeout`/`page_timeout` | `parse.page_timeout` · yes(→ `page_status`) | 이분 재시도 → 1페이지 `timeout`, 계속 |
-| OCR 엔진 예외(페이지) | 예외 | — | 저해상도 재시도 1회 → `page_status=ocr_failed`(전용 코드 제안) |
+| OCR 엔진 예외(페이지) | 예외 | `parse.page_ocr_failed`(바이블 §5.7 1.3.0, AM-36) | 저해상도 재시도 1회 → `page_status=ocr_failed` + `warnings[parse.page_ocr_failed]` |
 | `ocr-gpu` 사이드카 불가 | 연결 실패·503·`/healthz` | `parse.sidecar_unavailable` · yes | 재시도 소진 후 RapidOCR CPU → Tesseract 폴백, `quality=degraded`, `warnings` |
 | 사이드카 변환 실패 | `ConvertResponse.output=null` | `error.code` 그대로 | 해당 페이지 `ocr_failed` |
 | 모델 파일 부재(에어갭) | 워커 기동 헬스체크 | 기동 실패 | 모델 번들 이미지; 조기 노출 |
@@ -751,17 +751,18 @@ shard 경계는 페이지 클래스 시퀀스와 `shard_pages` 값으로 결정�
 | 표 구조 실패 | 셀 검증 | — | 폴백 사다리(§7.4), `quality=degraded` |
 | 2단 읽기 순서 오류 | 컬럼 역전 통계 | — | 재정렬(§7.3) |
 | VLM 환각(`pdf_vlm_gpu`) | 디지털 페이지 텍스트 레이어와 편집 거리 | — | 디지털 페이지에는 VLM 텍스트 금지, 구조만 차용; `source=vlm` + `confidence` |
-| 블록 수·크기 초과 | 조립 전 카운트 | `contract.violation` · no | §9.5 |
+| 블록 수 초과 | 조립 전 카운트 | `parse.block_limit_exceeded`(바이블 §5.7 1.3.0, AM-36) · no | §9.5 |
+| 텍스트·산출물 크기 초과(`Block.text`·JSON) | 조립 전 크기 | `contract.violation` · no | §9.5 |
 | 취소 | `ctx.cancelled` | — | shard 경계에서 마무리 후 반환; 부분 산출물 폐기(참조 GC) |
 
 ## 13. 재현성·지문·캐시·관측성
 
 | 항목 | 규약 |
 |------|------|
-| `parser_fingerprint` | `parser_id`(§1.2), `parser_version = "docling==2.129.0"` / `"pdftext==0.7.1"`(`{package}=={version}`, [03 §2.2](../03-contracts/03-parsed-document.md)), `model_ids`(레이아웃·표·OCR 모델 `{model_id}@{revision}`; 실제 사용한 엔진만), `sidecar_image_digest`(`ocr-gpu`·PyMuPDF 사이드카 경로만 non-null), `profile_option` |
+| `parser_fingerprint` | `parser_id`(§1.2), `parser_version = "docling==2.129.0"` / `"pdftext==0.7.1"`(`{package}=={version}`, [03 §2.2](../03-contracts/03-parsed-document.md)), `model_ids`(레이아웃·표·OCR 모델 `{model_id}@{revision}`; 실제 사용한 엔진만), `sidecar_image_digest`(`ocr-gpu`·PyMuPDF(AGPL) 옵트인 사이드카 경로만 non-null), `profile_option` |
 | `Producer.config_hash` | `H("config", canonical_json(config))`; config에는 이 문서의 `config_schema` 필드(임계값·shard 크기·`render_scale`·`pre_ocr_policy`·`merge_cross_page_tables`·`column_reorder` 등)와 프로파일 `options.pdf`·`options.ocr`·`page_timeout`이 모두 포함된다. 값 하나가 바뀌면 지문·`stage_key`가 바뀌어 재파싱된다 |
 | `stage_key` | `H("stage", "parse", scope_key, content_hash, fingerprint)`(바이블 §4.2, ADR-0037). 조건부 GET 304로 봉투가 새로 발급돼도 `content_hash`가 같으면 적중 |
-| 파생물 재사용 | 페이지 이미지·크롭·표 HTML은 바이트 콘텐츠 주소화로 중복 저장이 없다. `H("derived", content_hash, sidecar_image_digest)` 키는 옵션이 없는 변환(HWP→HWPX)용이며 OCR 결과처럼 옵션 의존 파생물에는 쓰지 않는다(옵션 해시 추가 제안, 미해결 이슈 14) |
+| 파생물 재사용 | 페이지 이미지·크롭·표 HTML은 바이트 콘텐츠 주소화로 중복 저장이 없다. `H("derived", content_hash, sidecar_image_digest or "", options_hash or "")`(바이블 §6.2 1.3.0, AM-40)로 옵션 없는 변환(HWP→HWPX)과 옵션 의존 파생물(OCR 결과 등)을 함께 캐시한다. PDF의 `options_hash = H("options", canonical_json({dpi, ocr.lang, ocr.version, ocr.model}))`(제안; DPI·OCR 언어 변경 시 재사용 안 함) |
 | 결정성 | 같은 바이트·같은 지문 → 같은 `ParsedDocument` 정규화 해시. 비결정 요소(스레드 순서, 부동소수)는 좌표 반올림·블록 정렬 규칙으로 제거한다. ONNX Runtime·GPU 추론의 미세 비결정성은 `confidence` 반올림(소수 둘째 자리)으로 흡수하되, 텍스트 인식 결과가 달라지는 경우는 지문 동일 조건 위반이 아니라 모델 특성으로 보고 적합성 키트에서 `golden_hash` 비교를 텍스트 정규화 후로 완화한다(미해결 이슈 15) |
 | 스팬 | `rag.ingest.parse`(자식 `rag.ingest.detect`), 저카디널리티 속성 `rag.parse.profile_option`, `rag.parse.source_kind`, `rag.parse.page_count_bucket`(제안; `rag.*` 자체 속성, 바이블 §6.5) |
 | 메트릭 | 정본만: `rag_ingest_stage_duration_seconds{stage="parse"}`, `rag_parser_sidecar_unavailable_total`. 제안(바이블 §6.5 목록 추가 필요): `rag_parse_pages_total{route, outcome}`, `rag_parse_page_duration_seconds{route}`, `rag_parse_ocr_confidence_ratio` |
@@ -780,7 +781,7 @@ shard 경계는 페이지 클래스 시퀀스와 `shard_pages` 값으로 결정�
 
 ## 결정 사항 요약
 
-- **결정:** PDF 파서 구성은 브리프 D-18(개정 v1.1)·바이블 §7.1 그대로 — `lite` 디지털 `parser.pdf_fast_pdftext`(`pdf_fast_cpu`, pypdfium2 + pdftext), `standard` 이상 `parser.pdf_docling_standard`(`pdf_standard`, heron + TableFormer ACCURATE), 스캔은 RapidOCR PP-OCRv5 korean mobile CPU 기본, `premium` `pdf_scanned_gpu`(`ocr-gpu` PaddleOCR server 사이드카), 폴백 Tesseract(`kor_vert`·`pdf_airgapped`), PyMuPDF는 C 등급 옵트인 사이드카만([ADR-0006](../06-adr/0006-pdf-fast-path-pypdfium2-pdftext-replaces-pymupdf.md), [ADR-0008](../06-adr/0008-ocr-default-rapidocr-ppocrv5-korean.md), [ADR-0001](../06-adr/0001-license-grade-table-and-d02-interpretation.md)).
+- **결정:** PDF 파서 구성은 브리프 D-18(개정 v1.1)·바이블 §7.1 그대로 — `lite` 디지털 `parser.pdf_fast_pdftext`(`pdf_fast_cpu`, pypdfium2 + pdftext), `standard` 이상 `parser.pdf_docling_standard`(`pdf_standard`, heron + TableFormer ACCURATE), 스캔은 RapidOCR PP-OCRv5 korean mobile CPU 기본, `premium` `pdf_scanned_gpu`(`ocr-gpu` PaddleOCR server 사이드카), 폴백 Tesseract(`kor_vert`·`pdf_airgapped`), PyMuPDF(AGPL-3.0)는 대안·기각 — C 등급 옵트인 사이드카만 허용([ADR-0006](../06-adr/0006-pdf-fast-path-pypdfium2-pdftext-replaces-pymupdf.md), [ADR-0008](../06-adr/0008-ocr-default-rapidocr-ppocrv5-korean.md), [ADR-0001](../06-adr/0001-license-grade-table-and-d02-interpretation.md)).
 - **결정:** 경로 선택은 렌더 없는 페이지 프로브(`chars`·`image_area_ratio`·`invisible_ratio`·`pua_ratio` 등) → 페이지 클래스(`digital, scanned, pre_ocr, garbled, empty`) → 문서 `source_kind`(비율 0.8/0.2) → 프로파일 `PdfRoute`·`ProfileTier`·`profile_overrides["parse.pdf.route"]` 순으로 결정하며, `mixed`는 `page_route`로 페이지 단위 분기한다(바이블 §7.3, [ADR-0008](../06-adr/0008-ocr-default-rapidocr-ppocrv5-korean.md)).
 - **결정:** 벤더 라벨 → `BlockType` 매핑은 §5.2·§7.1 표를 따르고(`TITLE`→`heading` 0, `SECTION_HEADER`→`heading`, `TABLE`→`table`+`TableData`, `PICTURE`/`CHART`→`figure`, `CAPTION`→`caption`, `FOOTNOTE`→`footnote`, `PAGE_HEADER/FOOTER`→`page_header/page_footer`(`furniture=true`), `DOCUMENT_INDEX`→`toc`, `KEY_VALUE_REGION/FORM/CHECKBOX_*`→`form_field`), heading 레벨은 outline > 라벨 > 번호 패턴 > 폰트 클러스터 순(번호 패턴과 폰트 클러스터가 다르면 패턴 우선, §7.2 규칙 4)으로 추론하며 휴리스틱 결과는 `heading_inferred=true`다(바이블 §5.7, [ADR-0002](../06-adr/0002-provenance-element-path-and-nullable-page-bbox.md)).
 - **결정:** `Provenance.bbox`는 표시 페이지(CropBox, `/Rotate` 적용) 프레임의 좌상단 원점·PDF 포인트이며 OCR 전처리 변환은 역변환해 기록한다. `element_path`는 Docling `#/texts/n`(shard 전역 번호), pdftext `/page[p]/block[b]`, 사이드카 OCR `/page[p]/ocr/block[b]`, 분할 `/part[n]`이다(바이블 §5.3, [ADR-0002](../06-adr/0002-provenance-element-path-and-nullable-page-bbox.md), [ADR-0030](../06-adr/0030-single-coordinate-system-and-score-ledger.md)).
@@ -795,9 +796,9 @@ shard 경계는 페이지 클래스 시퀀스와 `shard_pages` 값으로 결정�
 |---|------|------|
 | 1 | bbox 좌표 프레임: 이 문서는 표시 페이지 프레임(전처리 역변환)을, [03 §3.2](../03-contracts/03-parsed-document.md)는 "보정 후 좌표"를 적는다 | 03 §3.2 행을 "표시 페이지 프레임으로 역변환, 보정 각도는 `vendor_json`"으로 정정(patch). 인용 하이라이트가 변환 각도를 알 필요가 없어야 한다(K1) |
 | 2 | `ParsedDocument.fields[]` 설명이 "HWPX 필드"로 한정돼 있어 PDF AcroForm 사용이 문구상 확장이다 | 바이블 §5.4 `fields` 행과 03 `FormFieldEntry` 설명을 "HWPX 필드·PDF AcroForm 필드"로 확장(patch; 필드 구조 변경 없음) |
-| 3 | 전용 경고 코드 부재: OCR 엔진 폴백(사이드카 → CPU), 저신뢰 OCR 페이지, `ocr_failed`·`skipped` 페이지 | `parse.ocr_engine_fallback`(—), `parse.low_ocr_confidence`(—), `parse.page_ocr_failed`(—), `parse.page_skipped`(—) 카탈로그 추가 ADR(minor; 03 미해결 이슈 2·13 §3.3과 공동). 그때까지 `parse.sidecar_unavailable`을 경고 코드로 재사용 |
+| 3 | 전용 경고 코드 부재(잔여): OCR 엔진 폴백(사이드카 → CPU), 저신뢰 OCR 페이지 | `parse.page_ocr_failed`·`parse.page_skipped`는 해소(v1.3, AM-36). `parse.ocr_engine_fallback`(—)·`parse.low_ocr_confidence`(—)는 여전히 미등재로 카탈로그 추가 ADR(minor; 03 미해결 이슈 2·13 §3.3과 공동) 대상이며 그때까지 `parse.sidecar_unavailable`을 경고 코드로 재사용 |
 | 4 | 빈 문서(전 페이지 `empty` 또는 OCR 텍스트 0)를 `quality=full`·`page_break`만인 결과로 둘지, `parse.conversion_failed`로 실패시킬지([13 §5.1 C4](../03-contracts/13-error-model.md) 미해결 이슈 9) | 이 문서 초안: 빈 페이지는 `ok`이므로 빈 문서는 실패가 아니다. 13 문서와 합의 후 바이블 §4.1 부분 성공 행에 반영 |
-| 5 | `lite` `born_digital` 문서의 소수 스캔 페이지(≤ 0.2)가 `pdf_fast_cpu`에서 OCR 없이 남는다(`page_status=ok`, 블록 없음) | (a) `lite`도 `page_route`로 소수 스캔 페이지를 RapidOCR로 보낸다(기본 제안), (b) `skipped`로 표시. (a) 채택 시 바이블 §7.1 `lite` 행 주석 보강 |
+| 5 | `lite` `born_digital` 문서의 소수 스캔 페이지(≤ 0.2)가 `pdf_fast_cpu`에서 OCR 없이 남는다(`page_status=ok`, 블록 없음) | AM-52 보류(적대적 코퍼스 측정 근거 대기): 현행대로 `lite`에 `page_route`를 적용하지 않고 (a) `lite`도 `page_route`로 소수 스캔 페이지를 RapidOCR로 보낸다(기본 제안), (b) `skipped`로 표시하는 두 안을 유지한다. 측정 완료 시 minor로 재검토(바이블 §7.1 `lite` 행 주석 보강) |
 | 6 | `page_route`에서 두 파서가 함께 산출한 경우 `parser_chain`·`producer.plugin_id`·`parser_fingerprint.parser_id`의 의미(03 P-1은 "마지막 원소 = 산출 파서", 폴백 순서 전제) | 조립 파서를 산출 파서로 두고(`parser.pdf_docling_standard`), 기여 파서를 `parser_chain` 앞에 나열하는 규약을 03·04-pipelines/03과 합의; 또는 `parser_chain[]` 항목에 `role: fallback\|contributor`를 두는 minor 확장 |
 | 7 | outline(북마크)을 보존할 계약 필드가 없다(`vendor_json`에만) | `ParsedDocument.metadata.outline: array<{title, level, page}>`(N) 추가 제안(minor); `get_document`·평가 하네스가 heading 품질 대조에 사용 |
 | 8 | 표 셀 단위 OCR 신뢰도를 담을 필드가 없다(`TableCell`에 `confidence` 없음) | `TableCell.confidence: number \| null`(N) 추가 제안(minor); 그때까지 표 블록 `confidence`만 |
@@ -805,8 +806,8 @@ shard 경계는 페이지 클래스 시퀀스와 `shard_pages` 값으로 결정�
 | 10 | 소유자 비밀번호로 "복사 금지" 권한이 설정된 PDF의 텍스트 추출 정책 | 법무 확인 항목. 초안: 추출하되 프로브 보고서에 권한 비트를 기록하고 테넌트 정책 키(`respect_pdf_permissions`) 제안 |
 | 11 | 수천 페이지 문서의 블록 200,000 한계와 PDF 첨부 파일 분할 수집 | `SplitHint`에 `pdf_page_ranges`·`pdf_attachments` 추가 제안(바이블 §5.7 `SplitHint` minor); 대안으로 문서 단위 자식 액티비티 팬아웃(1,000페이지 초과) |
 | 12 | 태그 PDF 구조 트리(`/StructTreeRoot`)를 heading·읽기 순서·`/Alt` 신호로 쓸지 | pypdfium2 구조 트리 API 확인(as of 2026-09) 후 `pdf.use_struct_tree` 옵션으로 골든셋 비교 |
-| 13 | PDFium(ctypes) 네이티브 크래시가 워커 프로세스를 죽인다. 바이블 §4.2는 pdftext·Docling을 `in_process`로 둔다 | 적대적 PDF 코퍼스로 크래시율 측정 후 프로브·빠른 경로에 `helper_process` 격리 옵션(`Capabilities.isolation_modes` 확장) 제안 |
-| 14 | 바이블 §6.2 `derived` 키 `H("derived", content_hash, sidecar_image_digest)`에 옵션 해시가 없어 OCR 결과(DPI·언어 의존)를 파생물 캐시로 재사용할 수 없다 | `H("derived", content_hash, sidecar_image_digest, options_hash)`로 확장 제안(바이블 §6.2 minor); 그때까지 `stage_key` 캐시만 |
+| 13 | PDFium(ctypes) 네이티브 크래시가 워커 프로세스를 죽인다. 바이블 §4.2는 pdftext·Docling을 `in_process`로 둔다 | AM-52 보류(근거 대기): 현행 `in_process` 값을 유지한다. 적대적 PDF 코퍼스로 크래시율 측정 후 프로브·빠른 경로에 `helper_process` 격리 옵션(`Capabilities.isolation_modes` 확장) 제안, 측정 완료 시 minor |
+| 14 | 해소(v1.3, AM-40): `derived` 키에 `options_hash`가 추가돼 OCR 결과(DPI·언어 의존) 파생물도 캐시 재사용이 가능하다(§13) | — |
 | 15 | GPU·ONNX 추론의 미세 비결정성으로 동일 지문에서 OCR 텍스트가 달라질 수 있어 "동일 해시" 멱등성 검사가 실패할 수 있다 | 적합성 키트 `idempotency`에 OCR 경로용 완화 모드(텍스트 정규화 후 편집 거리 ≤ 0.5%) 제안(ADR-0032 재검토) |
 | 16 | 외부 API 확인 항목(as of 2026-09): Docling `convert(page_range)`, `document_timeout`, `RapidOcrOptions` 모델 경로 필드, `OcrOptions.mode`·`bitmap_area_threshold`, `ProvenanceItem.coord_origin`, `DocItemLabel` 값(`CHART`, `HANDWRITTEN_TEXT` 등), pypdfium2 `get_toc`/폼/이미지 추출 API, pdftext `dictionary_output`, `/Rotate` 페이지의 좌표 프레임 | 구현 착수 시 소스 확인 후 이 문서 patch; 어댑터는 옵션 이름을 한 모듈(`adapters/parse/pdf_docling_standard/options.py`)에 격리 |
 | 17 | `pdf_vlm_gpu` 1순위(PaddleOCR-VL vs MonkeyOCRv2-B-Parsing)와 VLM 출력의 `ParsedDocument` 매핑(라벨 집합·bbox 유무) | 골든셋 비교 후 별도 절 추가(ADR-0008 재검토 조건 5) |

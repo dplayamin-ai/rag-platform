@@ -2,8 +2,8 @@
 title: 웹훅과 이벤트
 status: active
 owner: architecture
-version: 0.1.0
-last_updated: 2026-09-22
+version: 0.1.1
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - ../02-architecture/00-design-bible.md
@@ -44,7 +44,7 @@ depends_on:
 
 - 포함: `GET/POST/DELETE /v1/subscriptions`, `/v1/subscriptions/{subscription_id}`, `GET /v1/jobs/{job_id}/events`, `GET /v1/events`(바이블 §14), 웹훅 전달 요청·응답 규약, 소비자 지침. 바이블 §14에 없는 보조 엔드포인트(수정·시크릿 회전·테스트·재발행·전달 목록)는 **제안**으로 표시하고 `## 미해결 이슈`에 등재한다.
 - 제외: 이벤트 `data` 필드 정의와 JSON Schema([03-contracts/12](../03-contracts/12-jobs-events-and-status.md)), 아웃박스 기록 주체·트랜잭션([02-architecture/06 §6](../02-architecture/06-orchestration-and-workflows.md)), `EgressPolicy` 합성 규칙([03-contracts/15 §8](../03-contracts/15-collection-profile-and-policy-contracts.md)), 릴레이 배포·NetworkPolicy([배포 아키텍처](../02-architecture/08-deployment-architecture.md) §5.2, [보안·컴플라이언스 운영](../09-operations/05-security-and-compliance.md) §5), 런북 RB-08 절차([런북](../09-operations/06-runbooks.md) RB-08).
-- 정본 관계: 이벤트 이름 24종·오류 코드·메트릭 이름·헤더 `RAG-Signature`·서명식은 바이블 §5.7·§6.2·§6.5·§10.3 E12·E16이 정본이다. 이 문서의 수치(재시도 횟수·타임아웃·보존 기간·연결 상한)는 모두 **초안 목표**이며 부하 테스트 후 프로파일 키로 확정한다.
+- 정본 관계: 이벤트 이름 25종(바이블 §5.7 1.3.0 AM-38 `tenant.policies.changed` 가산)·오류 코드·메트릭 이름·헤더 `RAG-Signature`·서명식은 바이블 §5.7·§6.2·§6.5·§10.3 E12·E16이 정본이다. 이 문서의 수치(재시도 횟수·타임아웃·보존 기간·연결 상한)는 모두 **초안 목표**이며 부하 테스트 후 프로파일 키로 확정한다.
 - 용어: 아웃박스 행을 읽어 웹훅·SSE로 내보내는 구성요소는 바이블 §2.3의 명칭 **릴레이(relay)** 로 부른다. "디스패처(dispatcher)"는 바이블 §11.2에서 잡 승인(문서 단위 직렬화·테넌트 동시성) 구성요소를 가리키는 이름이므로 이 문서에서는 이벤트 전달에 쓰지 않는다.
 
 ---
@@ -96,7 +96,7 @@ flowchart LR
 
 ## 2. 이벤트 카탈로그
 
-바이블 §5.7의 24종이 전부이며 이름 추가는 ADR(minor) + 바이블 §5.7 개정 + `common-types` `EventType` 갱신이 같은 PR이어야 한다(바이블 §1.2). `data` 타입은 [12 §6](../03-contracts/12-jobs-events-and-status.md)의 `$defs`이고 이 문서는 소비자 관점의 열(볼륨·샘플링 가능 여부·권장 용도)만 더한다. 볼륨 등급은 초안 추정이다: 저 = 문서(잡)당 1건 이하, 중 = 문서당 수 건, 고 = 질의당 1건(`standard` 50 req/s 한도 기준 최대 50건/s).
+바이블 §5.7의 25종(1.3.0 AM-38 `tenant.policies.changed` 가산)이 전부이며 이름 추가는 ADR(minor) + 바이블 §5.7 개정 + `common-types` `EventType` 갱신이 같은 PR이어야 한다(바이블 §1.2). `data` 타입은 [12 §6](../03-contracts/12-jobs-events-and-status.md)의 `$defs`이고 이 문서는 소비자 관점의 열(볼륨·샘플링 가능 여부·권장 용도)만 더한다. 볼륨 등급은 초안 추정이다: 저 = 문서(잡)당 1건 이하, 중 = 문서당 수 건, 고 = 질의당 1건(`standard` 50 req/s 한도 기준 최대 50건/s).
 
 | `type` | 도메인 | `subject` entity | `source`(`urn:rag:{…}` 생략) | `data` 타입([12](../03-contracts/12-jobs-events-and-status.md)) | 발생 시점 | 볼륨 | 샘플링 | 권장 용도 |
 |--------|--------|------------------|----------|------|-----------|------|--------|-----------|
@@ -117,6 +117,7 @@ flowchart LR
 | `acl.document.updated` | ACL·컬렉션 | `document` | `worker` | `AclDocumentUpdatedData` | `acl.update.v1` 종결 | 저 | 불가 | 권한 전파 완료 확인(§8 예시 4) |
 | `collection.profile.changed` | ACL·컬렉션 | `collection` | `api` / `worker` | `CollectionProfileChangedData` | 컬렉션 변경 커밋·alias 교체 | 희 | 불가 | 클라이언트 캐시 무효화 |
 | `collection.reindex.completed` | ACL·컬렉션 | `collection` | `worker` | `CollectionReindexCompletedData` | `reindex.collection.v1` 종결 | 희 | 불가 | 재색인 결과·게이트 통과 여부 |
+| `tenant.policies.changed`(1.3.0 AM-38) | 테넌트 | `tenant` | `api` | `TenantPoliciesChangedData` | `PATCH /v1/tenants/{tenant_id}/policies` 커밋 | 희 | 불가 | 테넌트 정책·할당량·상태 변경 통지, 캐시 무효화 트리거(감사 이벤트와 별개, 바이블 §14 1.3.0) |
 | `audit.query.executed` | 감사 | `query` | `api` | `AuditQueryExecutedData` | `render` 뒤(MCP `search` 포함) | **고** | **가능** | 사용 분석, 감사 미러(§8 예시 5, §11) |
 | `audit.document.accessed` | 감사 | `document` | `api` | `AuditDocumentAccessedData` | 문서 조회·MCP `get_document` | 중~고 | 가능 | 접근 감사 |
 | `audit.acl.changed` | 감사 | `document` | `api` | `AuditAclChangedData` | ACL 갱신 접수 | 저 | 불가 | 권한 변경 감사 |
@@ -127,7 +128,9 @@ flowchart LR
 
 "내용 지시"에 언급된 `retrieval.query.completed`는 바이블 §5.7 카탈로그에 없다. 검색 경로의 유일한 도메인 이벤트는 `audit.query.executed`이며 이 문서는 그 이름만 쓴다(미해결 이슈 8).
 
-봉투 필드 요약(바이블 §5.3, 정의는 [12 §5](../03-contracts/12-jobs-events-and-status.md)): `specversion="1.0"`, `id`(ULID `event_id`, 멱등 키), `source=urn:rag:{api|worker}`, `type`, `time`(아웃박스 기록 시각), `subject=tenant/{tenant_id}/{entity}/{id}`, `datacontenttype="application/json"`, `dataschema`(N, 24종 모두 생략), 확장 속성 `tenantid`, `data`(ID·해시·상태·계수만, 콘텍스트 본문 금지, 봉투 64KB).
+**컬렉션 삭제(1.3.0 AM-37):** `DELETE /v1/collections/{collection_id}`(`JobKind.delete_collection`, 워크플로우 `collection.delete.v1`)는 전용 이벤트를 새로 만들지 않는다 — 논리 삭제 시점에 `collection.profile.changed`(구독자 캐시 무효화), 자식 `delete.document.v1` 팬아웃마다 `ingest.document.deleted`, 관리 행위 감사로 `audit.admin.action`을 재사용한다(바이블 §11.2 1.3.0). 구독 표에 별도 행은 없다.
+
+봉투 필드 요약(바이블 §5.3, 정의는 [12 §5](../03-contracts/12-jobs-events-and-status.md)): `specversion="1.0"`, `id`(ULID `event_id`, 멱등 키), `source=urn:rag:{api|worker}`(생산자 컴포넌트 값은 `api`·`worker` 둘뿐 — 바이블 §6.5 1.3.0 결정, AM-13), `type`, `time`(아웃박스 기록 시각), `subject=tenant/{tenant_id}/{entity}/{id}`, `datacontenttype="application/json"`, `dataschema`(N, 25종 모두 생략 — `data`가 완전한 인스턴스일 때만 채우는 필드이고 카탈로그 어느 이벤트도 그 조건을 쓰지 않는다, CR-43), 확장 속성 `tenantid`, `data`(ID·해시·상태·계수만, 콘텍스트 본문 금지, 봉투 64KB).
 
 ---
 
@@ -142,7 +145,7 @@ flowchart LR
 | `subscription_id` | string(ulid) | Y | 서버 발급 | `"01JAB5G0H1J2K3M4N5P6Q7R8S9"` |
 | `tenant_id` | string(ulid) | Y | 토큰에서 도출(요청 본문에 오면 422, [01 §3.2](01-api-design-guidelines.md)) | `"01J9ZQ4K7X2M8N3P5R6S7T8V9W"` |
 | `webhook_url` | string(uri) | Y | `https` 기본, `http`는 테넌트 옵트인(`EgressPolicy.allowed_schemes`). userinfo·프래그먼트 금지, ≤ 2,048자. 등록·전송 시 `EgressPolicy` 통과 | `"https://hooks.example.go.kr/rag/events"` |
-| `events` | array<enum(EventType)> | Y | 바이블 §5.7 24종의 부분집합, 1..24, 중복 없음 | `["job.state.changed", "ingest.document.indexed"]` |
+| `events` | array<enum(EventType)> | Y | 바이블 §5.7 25종의 부분집합, 1..25, 중복 없음 | `["job.state.changed", "ingest.document.indexed"]` |
 | `secret_ref` | string | Y | 서명 키의 간접 참조(`RAG_SECRETS__PROVIDER`, 바이블 §6.6). 값은 어디에도 기록되지 않는다 | `"subscriptions/01JAB5G0H1J2K3M4N5P6Q7R8S9/k1"` |
 | `active` | boolean | N(기본 `true`) | `false`면 팬아웃 대상에서 제외(전달 레코드 미생성). `410 Gone` 수신 시 서버가 `false`로 내린다(§4.3) | `true` |
 | `collection_ids` | array<string(ulid)> | N | 컬렉션 필터(FR-API-14). 생략 = 테넌트의 모든 컬렉션(구독은 `manage_subscriptions`를 가진 관리 역할만 만들 수 있으므로 컬렉션 인가 우회가 아니다, S4). `data.collection_id`(또는 `collection_ids[]`) 교집합이 비면 미전달. 컬렉션 없는 이벤트(`audit.admin.action`)는 필터가 있으면 미전달. 항목은 Cedar `allowed_collections` 안이어야 한다(403) | `["01J9ZQ5A1B2C3D4E5F6G7H8J9K"]` |
@@ -174,10 +177,10 @@ flowchart LR
 |---|------|---------|
 | S1 | `webhook_url` 절대 URL, 스킴 `https`(또는 옵트인 `http`), userinfo·프래그먼트 없음, ≤ 2,048자 | 400 `contract.violation`(pointer `/webhook_url`) |
 | S2 | `EgressPolicy` 판정(프로파일 AND 테넌트 합성, [15 §8](../03-contracts/15-collection-profile-and-policy-contracts.md)): 스킴 → `allowed_hosts` → `allowed_ports` → DNS 해석 IP 전부 × `deny_cidrs`. 등록 시점 판정은 **필요조건**이며 전송 시점마다 재판정한다(DNS 변경 대비) | 422 `outbox.egress_denied`(초안 상태 매핑; `errors[0].location.pointer = /webhook_url`, [13 §3.3](../03-contracts/13-error-model.md) 규칙에 따라 새 코드 없음) + `rag_egress_denied_total{component="api"}` |
-| S3 | `events` 1..24, 모두 `EventType`, 중복 없음 | 400 `contract.violation`(pointer `/events/{i}`) |
+| S3 | `events` 1..25, 모두 `EventType`, 중복 없음 | 400 `contract.violation`(pointer `/events/{i}`) |
 | S4 | `collection_ids`가 명시되면 Cedar `allowed_collections`의 부분집합이어야 한다. 생략은 테넌트 전체를 뜻하며 `manage_subscriptions`를 가진 관리 역할(`tenant_admin`·`platform_admin`, [07 §4.1](../02-architecture/07-multi-tenancy-and-security-architecture.md))만 이 엔드포인트에 도달하므로 컬렉션 인가를 우회하지 않는다(07의 `unmask_pii` 행 "지정 시 C / 미지정 시 테넌트 전체"와 같은 규칙) | 403 `auth.forbidden` |
 | S5 | `sampling` 키는 §2 표 "샘플링 가능" 이벤트만, 값 `0 < r ≤ 1`; 키가 `events`에 있어야 함 | 400 `contract.violation`(pointer `/sampling/{type}`) |
-| S6 | 테넌트당 구독 수 ≤ 32(초안 목표) | 400 `contract.violation`(`detail="subscription quota exceeded"`). 요청 한도 초과인 429 `api.rate_limited`(바이블 §5.7)와 구분되는 자원 할당량 초과이므로 전용 코드 채택 전까지 이 매핑을 쓴다(미해결 이슈 9) |
+| S6 | 테넌트당 구독 수 ≤ 32(초안 목표) | 400 `contract.violation`(`detail="subscription quota exceeded"`). 요청 한도 초과인 429 `api.rate_limited`(바이블 §5.7)와 구분되는 자원 할당량 초과다. 전용 코드 `api.quota_exceeded`는 바이블 §5.7 1.3.0(AM-36)에 이미 등재됐으나 HTTP 상태(403 vs 429)가 05-api/01 §9·02-architecture/07 §10 확정 전이라([08 전파 지시서](../12-appendix/08-propagation-directives.md) 미해결 이슈 1과 동일 사안) 이 문서는 상태 확정·계약 카탈로그 반영 전까지 위 400 매핑을 잠정 유지한다(미해결 이슈 9) |
 | S7 | 같은 `webhook_url` + 같은 `events` 집합의 활성 구독이 이미 있으면 중복 생성 거부 | 409 `api.idempotency_conflict` 오용 금지 → 400 `contract.violation`(`detail="duplicate subscription: {subscription_id}"`; 미해결 이슈 9) |
 
 ### 3.4 시크릿 발급·회전
@@ -670,7 +673,7 @@ data: {"replay_from": "01JAB3C2A3B4C5D6E7F8G9H0J1", "reason": "last_event_id_out
 
 - 잡 스트림은 종결 `job.state.changed(to_state ∈ {succeeded, partial, failed, cancelled})`를 전달하고 그 잡의 미발행 행이 없을 때 서버가 닫는다(첫 접속 시 이미 종결된 잡은 §9.3 규칙으로 종결 이벤트까지 재생한 뒤 닫는다). 종결 트랜잭션의 결과 이벤트(`ingest.document.indexed | failed | deleted`)는 종결 `job.state.changed`보다 작은 `event_id`로 발급되어 같은 배치에서 먼저 도달한다([12 I-19](../03-contracts/12-jobs-events-and-status.md)). `retry`로 재개된 잡은 새 접속이 필요하다.
 - 테넌트 스트림은 클라이언트가 닫을 때까지 유지된다.
-- 진행률은 `job.state.changed.data.progress`의 **스테이지 경계 단위**만 이벤트로 나간다. 페이지·청크 단위 세분 진행률(하트비트 30s)은 `GET /v1/jobs/{job_id}` 폴링(≥ 2s) 전용이다([12 §4.1·I-20·미해결 이슈 15](../03-contracts/12-jobs-events-and-status.md)).
+- 진행률은 `job.state.changed.data.progress`의 **스테이지 경계 단위**만 이벤트로 나간다. 페이지·청크 단위 세분 진행률(하트비트 30s)은 `GET /v1/jobs/{job_id}` 폴링(≥ 2s) 전용이다 — `GET /v1/jobs/{job_id}/events`의 진행률 범위는 바이블 §14 1.3.0 AM-20 결정 그대로다([12 §4.1·I-20·미해결 이슈 15](../03-contracts/12-jobs-events-and-status.md)).
 - SSE 전달은 릴레이의 `mark_published` 뒤에 일어나므로 SSE 지연 = 아웃박스 지연(`rag_outbox_lag_seconds`, SLO `lite` 30s / `standard` 5s / `korean-gov` 2s)이다. 웹훅 구독이 하나도 없는 테넌트의 이벤트도 릴레이가 처리(팬아웃 0건)하고 `published_at`을 부여하므로 SSE에 도달한다.
 - 수천 브라우저 클라이언트 규모의 팬아웃은 앱 내 SSE의 범위 밖이며 Centrifugo 발행 API를 릴레이 목적지로 추가하는 경로가 예약되어 있다([ADR-0017 재검토 조건](../06-adr/0017-event-delivery-outbox-cloudevents-no-broker.md)).
 
@@ -731,7 +734,7 @@ data: {"replay_from": "01JAB3C2A3B4C5D6E7F8G9H0J1", "reason": "last_event_id_out
 | `rag_webhook_delivery_total` | counter | `outcome ∈ {delivered, retried, exhausted, egress_denied}` | 구독 단위 전달 결과 | **제안** |
 | `rag_webhook_delivery_latency_seconds` | histogram | `outcome` | 전송 → 응답 | **제안** |
 | `rag_webhook_pending_count` | gauge | — | `status ∈ {pending, retry_scheduled}` 행 수(적체) | **제안** |
-| `rag_webhook_sampled_out_total` | counter | `type`(카탈로그 24값, 저카디널리티) | 샘플링으로 미전달 | **제안**(라벨 `type`은 §6.5 허용 집합 밖 → 개정 요청) |
+| `rag_webhook_sampled_out_total` | counter | `type`(카탈로그 25값, 저카디널리티) | 샘플링으로 미전달 | **제안**(라벨 `type`은 §6.5 허용 집합 밖 → 개정 요청) |
 | `rag_api_sse_connections_count` | gauge | `route` | 현재 SSE 연결 수 | [01 §21.1](01-api-design-guidelines.md) 제안 |
 
 알림 규칙의 배포 정본은 [09-operations/03 §8](../09-operations/03-observability.md)(`RagOutboxLagSlo`·`RagWebhookExhausted`·`RagWebhookBacklog`, 모두 RB-08로 연결)이며 아래는 그 요지다.
@@ -768,7 +771,7 @@ data: {"replay_from": "01JAB3C2A3B4C5D6E7F8G9H0J1", "reason": "last_event_id_out
 
 ## 결정 사항 요약
 
-- **결정:** v1은 브로커 없는 아웃박스 + 릴레이(웹훅·SSE)이며 봉투는 CloudEvents 1.0.2 `CloudEventEnvelope`, 이벤트 이름은 바이블 §5.7 24종만이다. `retrieval.query.completed`는 카탈로그에 없으므로 쓰지 않고 검색 경로 이벤트는 `audit.query.executed`다(O-06, D-08; [ADR-0017](../06-adr/0017-event-delivery-outbox-cloudevents-no-broker.md)).
+- **결정:** v1은 브로커 없는 아웃박스 + 릴레이(웹훅·SSE)이며 봉투는 CloudEvents 1.0.2 `CloudEventEnvelope`, 이벤트 이름은 바이블 §5.7 25종만이다(1.3.0 AM-38 `tenant.policies.changed` 가산). `retrieval.query.completed`는 카탈로그에 없으므로 쓰지 않고 검색 경로 이벤트는 `audit.query.executed`다(O-06, D-08; [ADR-0017](../06-adr/0017-event-delivery-outbox-cloudevents-no-broker.md)).
 - **결정:** 웹훅 본문은 CloudEvents HTTP **구조화 모드** JSON 1건(`application/cloudevents+json`), 배치 없음, 헤더는 `Content-Type`·`RAG-Signature`·`User-Agent`·`traceparent`([ADR-0038](../06-adr/0038-outbound-egress-policy-and-webhook-signing.md) 위임 항목 확정).
 - **결정:** 서명은 바이블 §6.2 `RAG-Signature: t={ts},v1=HMAC-SHA256(secret, "{ts}.{body}")`, 타임스탬프 창 ±300s(재생 공격 방지), 원문 바이트 검증, 상수 시간 비교. 비밀은 서버 생성(`rag_whs_` + base64url 43자, HMAC 키는 표기 문자열의 UTF-8 바이트)·`secret_ref` 간접 참조·1회 노출, 회전은 24h 이중 서명 유예(FR-SEC-11).
 - **결정:** 전달은 at-least-once·순서 비보장·`id` 멱등. 구독 안 동시성 1·구독 단위 FIFO — 재시도 중인 이벤트는 같은 구독의 후속을 막고 소진 시에만 건너뛴다([12 §7](../03-contracts/12-jobs-events-and-status.md)·[09 F-37](../02-architecture/09-failure-modes-and-resilience.md)과 동일). 재시도는 `{1s, 5m, 2.0}` 지수 백오프 최대 12회(약 18.5분) 뒤 소진, 3xx·4xx(408·429 제외)는 즉시 소진, 410은 구독 비활성, `EgressPolicy` 위반은 비재시도(`outbox.egress_denied`).
@@ -789,14 +792,14 @@ data: {"replay_from": "01JAB3C2A3B4C5D6E7F8G9H0J1", "reason": "last_event_id_out
 | 6 | 샘플링 판정식의 해시 라벨 `H("sample", subscription_id, id)`는 바이블 §6.2 표 미등재다 | §6.2 해시 표 등재 patch; 확정 전 구현은 이 문서 식을 따른다 |
 | 7 | 웹훅 TLS의 사설 CA 신뢰 추가·mTLS 클라이언트 인증서(수신자가 요구하는 경우)는 정하지 않았다 | 09-operations/05에서 운영자 설정(`RAG_RELAY__CA_BUNDLE` 제안)으로 확정; mTLS는 구독 필드 `client_cert_ref`(N) 제안 후 ADR |
 | 8 | "내용 지시"의 `retrieval.query.completed`는 카탈로그에 없다. 검색 완료를 감사 이벤트(`audit.query.executed`)와 분리한 비감사 이벤트로 둘지 여부 | 현행 유지(감사 이벤트 1개). 분리 요구가 생기면 §5.7 추가 ADR |
-| 9 | 구독 할당량 초과(S6)·중복 구독(S7)·구독 상태 충돌의 전용 오류 코드가 없어 400 `contract.violation` + `detail`로 응답한다 | [13 §3.3](../03-contracts/13-error-model.md) 제안 표에 `api.quota_exceeded`(422)·`api.duplicate_resource`(409) 공동 제안 |
+| 9 | 구독 할당량 초과(S6)는 바이블 §5.7 1.3.0에 `api.quota_exceeded`(AM-36)가 이미 등재됐으나 HTTP 상태 미확정([08 전파 지시서](../12-appendix/08-propagation-directives.md) 미해결 이슈 1)과 [에러 모델](../03-contracts/13-error-model.md) 계약 카탈로그 미반영으로 아직 400 `contract.violation` + `detail`을 쓴다. 중복 구독(S7)·구독 상태 충돌은 전용 코드가 없어 같은 방식으로 응답한다 | 상태 확정 후 `api.quota_exceeded` 채택 반영(patch); 중복 구독은 [13 §3.3](../03-contracts/13-error-model.md) 제안 표에 `api.duplicate_resource`(409) 신규 제안 |
 | 10 | 바이블 §14 미등재 엔드포인트: `PATCH /v1/subscriptions/{subscription_id}`, `POST …/rotate-secret`, `POST …/test`, `GET …/deliveries`, `POST …/redeliver`(모두 §3.2 제안). FR-API-14 "수정"·FR-API-15 "실패 목록"·FR-SEC-11 "키 회전"이 요구하므로 조기 채택이 필요하다 | 바이블 §14 표 갱신 ADR(minor, [ADR-0018](../06-adr/0018-api-rest-sse-mcp-no-grpc-rfc9457.md) 개정); 채택 전까지 `rag` CLI 운영 명령으로만 제공. 05-api/04·openapi.yaml 게시 후 `operationId` 대조는 미해결 이슈 16 |
 | 11 | 초안 수치: 재시도 12회·응답 대기 10s·연결 5s·지터 10%·회전 유예 24h·보존 7일·재생 10,000행·연결 상한 100·구독 상한 32·샘플링 권고 `r ≤ 0.2`·응답 읽기 64KB | 부하 테스트([09-operations/04](../09-operations/04-scaling-and-performance.md)) 후 `Profile.runtime.relay{…}`·`security.webhook{…}` 키로 확정([12 미해결 이슈 9](../03-contracts/12-jobs-events-and-status.md)와 공동). 회전 유예는 이 문서 24h와 [09-operations/05 §4.1](../09-operations/05-security-and-compliance.md) 7일이 불일치하므로 05 문서와 합의해 하나로 고정 |
 | 12 | 메트릭 `rag_webhook_*`·스팬 `rag.outbox.publish`·라벨 `type`은 바이블 §6.5 정본 목록·허용 라벨 밖이다 | §6.5 minor 개정(09-operations/03과 합의, [01 미해결 이슈 6](01-api-design-guidelines.md)과 공동) |
 | 13 | 구독 안 동시성 1 + 구독 단위 FIFO(§6.4)는 순서를 약하게나마 유지하지만 처리량 상한(약 10건/s)을 만들고, 수신자 장애 1건이 그 구독을 최대 약 18.5분 지연시킨다. 대안 (a) `subject` 단위 키 순서(같은 문서·잡은 순차, 다른 주제는 병렬, 구독당 동시성 상한 8), (b) 재시도 중에도 후속을 계속 보내는 비차단(대기는 `next_attempt_at`만으로 표현; [12 §7 순서 행](../03-contracts/12-jobs-events-and-status.md)·[09 F-37](../02-architecture/09-failure-modes-and-resilience.md) 정정 필요) | 부하 테스트 후 결정; 채택 시 §6.2·§6.4 갱신 + 12 §7·06 §6.4·09 F-37 정합 요청 |
 | 14 | 등록 응답의 `advisories[]`(§11)는 계약 인스턴스 응답 규약([01 §8](01-api-design-guidelines.md) "응답은 계약 인스턴스 그대로")과 충돌할 수 있다 | `Subscription`에 N 필드로 두거나 `Link` 헤더 안내로 대체; 03-contracts/12·15와 합의 |
 | 15 | 웹훅 `traceparent`(§4.2·§12)의 원천이 없다: `outbox`(바이블 §13.1)에 트레이스 컨텍스트 컬럼이 없고 봉투에도 `traceparent` 확장 속성이 없어([12 §5·미해결 이슈 7](../03-contracts/12-jobs-events-and-status.md), [00 U-6](../03-contracts/00-contract-overview.md), [09-operations/03 §3.4·미해결 이슈 8](../09-operations/03-observability.md)) 릴레이는 새 트레이스만 전파한다 | (a) `outbox.traceparent`(nullable) 컬럼 추가(바이블 §13.1 patch, 04-storage 합의) 또는 (b) 봉투 선택(N) 확장 속성 `traceparent`·`tracestate`(12 이슈 7 ADR minor) 중 택1; 채택 전까지 "릴레이 새 트레이스 + `data.trace_id`·`event_id` 상관" 유지 |
-| 16 | 미게시 문서 링크(문서 맵 경로) 2건: [02 수집 API](02-ingestion-api.md), [04 관리 API](04-management-api.md). 브리프 §8 문서 맵 경로로만 링크했고 [01 미해결 이슈 12](01-api-design-guidelines.md) 관행(링크 검사 CI 경고)을 따른다. [09-operations/03](../09-operations/03-observability.md)·[05](../09-operations/05-security-and-compliance.md)·[06](../09-operations/06-runbooks.md)은 이 개정 중 게시(`review`)되어 절 번호를 대조했다(03 §3.1 `rag.outbox.publish`·§4.2 `rag_webhook_*`·§8 알림, 05 §4.1 키 회전·§5.1 relay 행, 06 RB-08) | 게시 후 대조: 구독 객체·`deliveries`·`redeliver`의 `operationId`(04·openapi.yaml), 잡 단위 콜백 `callback.subscription_id`(02) — 절 번호 확정 뒤 이 문서 링크에 절 표기 추가 |
+| 16 | [02 수집 API](02-ingestion-api.md)·[04 관리 API](04-management-api.md)가 게시되어 대조를 마쳤다: 구독 객체(`Subscription`)·`deliveries`·`redeliver`·`test`·`rotate-secret`의 `operationId`(각 `list_subscription_deliveries`·`redeliver_subscription_events`·`test_subscription`·`rotate_subscription_secret`, 04 §1.2)는 이 문서 §3·§6.4~6.5·§10과 일치한다. 잡 단위 콜백은 `callback.subscription_id`가 아니라 `callback.webhook_url`이 활성 구독의 `webhook_url`과 문자열 일치해야 하는 방식이다(02 §4.6) — 이 문서 §1·§3.5 서술과 일치하므로 patch 불필요. [09-operations/03](../09-operations/03-observability.md)·[05](../09-operations/05-security-and-compliance.md)·[06](../09-operations/06-runbooks.md)도 대조 완료(03 §3.1 `rag.outbox.publish`·§4.2 `rag_webhook_*`·§8 알림, 05 §4.1 키 회전·§5.1 relay 행, 06 RB-08) | 남은 것은 절 번호 표기 보강뿐이다 — 이 문서 링크에 02·04의 구체 절 번호를 추가한다(patch) |
 | 17 | 02-architecture·09-operations 정합 묶음: (a) [08 §5.2](../02-architecture/08-deployment-architecture.md)·[09-operations/05 §5.1](../09-operations/05-security-and-compliance.md) `relay` 행에 KeyProvider(OpenBao/KMS)와 `korean-gov` OpenSearch 감사 인덱스(§1.3) 목적지가 없다 — 감사 적재 주체를 릴레이로 둘지 별도 감사 싱크로 둘지도 07 문서 §8과 합의 필요, (b) [07 §4.1](../02-architecture/07-multi-tenancy-and-security-architecture.md) Cedar 액션은 `manage_subscriptions` 하나로 구독 CRUD·테스트·재발행·`GET /v1/events`를 모두 덮는다. 읽기 전용 구독 조회(`collection_admin`·모니터링 `service:` 주체)가 요구되면 세분 액션(예: `read_subscriptions`)이 필요하다 | (a) 08 §5.2·09-operations/05 §5.1 relay 행 patch 요청(KeyProvider·OpenSearch 9200 조건부 허용), (b) 요구 발생 시 07 Cedar 액션 표·매트릭스 갱신 ADR(minor); 그 전까지 `manage_subscriptions` 단일 액션 |
 | 18 | `eval.run.completed`의 `data`(`EvalRunCompletedData`, [12 §6.5](../03-contracts/12-jobs-events-and-status.md))에 `job_id`가 없어 `evaluate` 잡의 SSE 잡 스트림(§9.1)으로 관측할 수 없다 | 12 정합 요청: `EvalRunCompletedData.job_id`(N, `string(ulid)`) 추가(minor, 가산) — 채택 전까지 `GET /v1/eval/runs/{run_id}` 폴링 또는 테넌트 스트림 `types=eval.run.completed` |
 
@@ -807,7 +810,7 @@ data: {"replay_from": "01JAB3C2A3B4C5D6E7F8G9H0J1", "reason": "last_event_id_out
 - [기술 지형 종합: 선정 매트릭스](../07-tech-landscape/00-summary-and-selection-matrix.md) — `event_bus`·`task_queue_light`·`api_framework` 행, O-06 권고; [오케스트레이션·메시징·API 프레임워크](../07-tech-landscape/08-orchestration-messaging-and-api-frameworks.md) — CloudEvents 1.0.2·SDK 2.x HTTP 바인딩, 트랜잭셔널 아웃박스·폴링 발행자, sse-starlette 3.4.x(확인일 2026-09)
 - 계약: [00 계약 개요](../03-contracts/00-contract-overview.md) §4.12·§4.23·예시 8·I-16·I-17·U-6, [01 IngestRequest](../03-contracts/01-ingest-request.md) §2.4 `callback`, [12 잡·이벤트·상태](../03-contracts/12-jobs-events-and-status.md) §5~§9·I-12~I-20·미해결 이슈 9·11·15·16, [13 오류 모델](../03-contracts/13-error-model.md) `outbox.*`·§3.3, [14 스키마 버전 관리](../03-contracts/14-schema-versioning-and-compatibility.md) §2.2, [15 컬렉션·프로파일·정책](../03-contracts/15-collection-profile-and-policy-contracts.md) §8 `EgressPolicy` 합성
 - 아키텍처: [06 오케스트레이션과 워크플로우](../02-architecture/06-orchestration-and-workflows.md) §1.2·§6·§10·미해결 이슈 3, [09 실패 모드와 복원력](../02-architecture/09-failure-modes-and-resilience.md) F-18·F-19·F-37·C-14·RB-08, [07 멀티테넌시·보안](../02-architecture/07-multi-tenancy-and-security-architecture.md) §4.1 Cedar 매트릭스(`manage_subscriptions`·`manage_jobs`), [08 배포 아키텍처](../02-architecture/08-deployment-architecture.md) §5.2 NetworkPolicy(`rag-platform/relay` 행)
-- API: [01 API 설계 가이드라인](01-api-design-guidelines.md) §3·§5·§7·§9·§10·§11·§14·§21·미해결 이슈 12, [02 수집 API](02-ingestion-api.md)(문서 맵, 미게시), [04 관리 API](04-management-api.md)(문서 맵, 미게시), [06 클라이언트 SDK](06-client-sdks.md)
+- API: [01 API 설계 가이드라인](01-api-design-guidelines.md) §3·§5·§7·§9·§10·§11·§14·§21·미해결 이슈 12, [02 수집 API](02-ingestion-api.md) §4.6 `callback`, [04 관리 API](04-management-api.md) §1.2 구독 표면, [06 클라이언트 SDK](06-client-sdks.md)
 - 요구사항: [기능 요구사항](../01-requirements/01-functional-requirements.md) FR-ING-14·FR-API-14·FR-API-15·FR-SEC-11
 - ADR: [0017 이벤트 전달](../06-adr/0017-event-delivery-outbox-cloudevents-no-broker.md), [0038 egress 정책·웹훅 서명](../06-adr/0038-outbound-egress-policy-and-webhook-signing.md), [0018 API 규약](../06-adr/0018-api-rest-sse-mcp-no-grpc-rfc9457.md), [0026 세대 사가](../06-adr/0026-index-commit-generation-saga-and-ledger.md), [0027 강제 지점](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md), [0036 명명 규약](../06-adr/0036-naming-and-identifier-conventions.md)
 - 운영: [관측성](../09-operations/03-observability.md) §3.1 `rag.outbox.publish`·§3.4 트레이스 상관·§4.2 `rag_webhook_*`·§8 알림 규칙·미해결 이슈 8, [보안과 컴플라이언스 운영](../09-operations/05-security-and-compliance.md) §4.1 키 회전·§5 네트워크 정책·미해결 이슈 15, [런북](../09-operations/06-runbooks.md) RB-08 아웃박스 재발행·RB-09 시계 왜곡, [배포 가이드](../09-operations/01-deployment-guide.md), [확장성과 성능](../09-operations/04-scaling-and-performance.md)(부하 테스트)

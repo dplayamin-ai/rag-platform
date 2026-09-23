@@ -2,8 +2,8 @@
 title: 배포 아키텍처
 status: active
 owner: architecture
-version: 0.1.2
-last_updated: 2026-09-22
+version: 0.1.3
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - ./00-design-bible.md
@@ -34,7 +34,7 @@ depends_on:
 - **포함**: 배포 프로파일 3종(+`korean-gov` 변형) 상세, 컨테이너 이미지 목록과 빌드 전략(멀티스테이지, CUDA 베이스, 모델 캐시 볼륨, 공급망), Helm 차트 구조와 values 주요 키, compose 구성, 네트워크 토폴로지·네임스페이스·NetworkPolicy·인그레스·서비스 메시 결정, GPU 스케줄링과 모델 서빙 배치, 사이징 표, 환경별(개발·스테이징·운영) 차이, 에어갭 설치, 업그레이드·롤백 전략.
 - **제외**: 설치 명령 순서와 런북 → [배포 가이드](../09-operations/01-deployment-guide.md), [런북](../09-operations/06-runbooks.md); 환경 변수 전체 목록 → [설정 레퍼런스](../09-operations/02-configuration-reference.md); 관측 백엔드 구성 → [관측성](../09-operations/03-observability.md); 부하 실측·튠 → [확장과 성능](../09-operations/04-scaling-and-performance.md); 백업·복구 → [백업과 재해 복구](../09-operations/07-backup-and-disaster-recovery.md); 업그레이드 절차 세부 → [업그레이드와 마이그레이션](../09-operations/08-upgrade-and-migration.md); CI 파이프라인 → [CI/CD](../10-development/05-ci-cd.md).
 - **수치**: 실측 전 값은 모두 "초안 목표"다(바이블 §범위). 외부 이미지 태그·버전은 선정 매트릭스 확인일(2026-09-18~22) 기준이며 Helm values의 digest 고정값이 정본이다.
-- **전방 참조**: 위 `→` 표기 문서(09-operations/01~08, 10-development/05·08)와 §참조의 03-contracts/15·16은 브리프 §8 문서 맵 경로이며 작성 예정이다(`depends_on` 아님; 작성 전까지 바이블 해당 절이 정본). 파일명이 문서 맵과 달라지면 이 문서의 링크를 일괄 갱신한다.
+- 위 `→` 표기 문서(09-operations/01~08, 10-development/05·08)와 §참조의 03-contracts/15·16은 브리프 §8 문서 맵 경로로 링크한다(`depends_on` 아님; 모두 게시됨, v1.2.2). 파일명이 문서 맵과 달라지면 이 문서의 링크를 일괄 갱신한다.
 
 ---
 
@@ -56,7 +56,7 @@ depends_on:
 
 ### 2.1 `lite` — 단일 노드 docker compose
 
-**결정:** `lite`는 docker compose 단일 노드로 배포하며 두 모드를 가진다. 개발 모드(`rag up --profile lite`)는 `LocalRunner`(비내구)로 `api`·`worker`·`relay`를 한 프로세스에서 실행하고 컨테이너 4개다. 운영 모드(`rag up --profile lite --durable`)는 Temporal 단일 바이너리를 추가해 컨테이너 5개(오브젝트 스토리지를 `file://`로 둘 때) 또는 6개(RustFS 또는 SeaweedFS를 띄울 때)다. 이로써 [시스템 개요](01-system-overview.md) 미해결 이슈 3(바이블 §7.1 "컨테이너 5"의 해석)을 "운영 모드·`file://` 기준 5"로 확정하되, 바이블 §7.1 열 머리 문구 자체는 무조건 "5"이므로 "4(개발) / 5~6(운영 `--durable`)"로 정밀화하는 patch를 요청한다(미해결 이슈 14). `lite`의 배포 경로는 compose 하나다 — Helm 차트의 `global.tier` 열거에 `lite`는 없고(§4.2), GPU 없는 개발 클러스터(kind/k3d)는 `standard` 형상을 축소해 쓴다(§8). (근거: 바이블 §11.1 `temporal-lite`·§11.6, [ADR-0003](../06-adr/0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md), [ADR-0012](../06-adr/0012-lite-profile-qdrant-only-client-bm25.md))
+**결정:** `lite`는 docker compose 단일 노드로 배포하며 두 모드를 가진다. 개발 모드(`rag up --profile lite`)는 `LocalRunner`(비내구)로 `api`·`worker`·`relay`를 한 프로세스에서 실행하고 컨테이너 4개다. 운영 모드(`rag up --profile lite --durable`)는 Temporal 단일 바이너리를 추가해 컨테이너 5개(오브젝트 스토리지를 `file://`로 둘 때) 또는 6개(RustFS 또는 SeaweedFS를 띄울 때)다. 이로써 [시스템 개요](01-system-overview.md) 미해결 이슈 3(바이블 §7.1 "컨테이너 5"의 해석)을 "운영 모드·`file://` 기준 5"로 확정한다. 바이블 §7.1 열 머리 문구는 1.3.0에서 "컨테이너 4(개발) / 5~6(운영 `--durable`: + Temporal 단일 바이너리, RustFS·SeaweedFS 동거 시 6)"로 정밀화되었다(AM-14; 종결: 바이블 §7.1 1.3.0). `lite`의 배포 경로는 compose 하나다 — Helm 차트의 `global.tier` 열거에 `lite`는 없고(§4.2), GPU 없는 개발 클러스터(kind/k3d)는 `standard` 형상을 축소해 쓴다(§8). (근거: 바이블 §11.1 `temporal-lite`·§11.6, [ADR-0003](../06-adr/0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md), [ADR-0012](../06-adr/0012-lite-profile-qdrant-only-client-bm25.md))
 
 | compose 서비스 | 이미지 | 개발 | 운영(`--durable`) | 비고 |
 |----------------|--------|:----:|:----:|------|
@@ -113,7 +113,7 @@ GPU 노드풀을 셋으로 나누는 이유는 스케일 신호 분리다: OCR�
 
 ### 2.4 `korean-gov` 변형
 
-`korean-gov extends standard`이며 배포에서 달라지는 것만 적는다: 서비스 메시(mTLS `STRICT`, §5.4), OpenBao Transit(테넌트 DEK), OpenSearch 감사 인덱스(2년), NATS JetStream(감사 스트림 손실 불가 조건에서만, O-06), Temporal 네임스페이스를 테넌트 등급별로 분리(`gov-tier-a`·`gov-tier-b`…, Kubernetes 네임스페이스가 아니라 Temporal 네임스페이스), OTel Collector `NO_CONTENT` 잠금, `pdf_airgapped` 프로파일과 모델·이미지 미러 필수(§9), Tika `HwpV5Parser` 배포용 텍스트(테넌트 옵트인).
+`korean-gov extends standard`이며 배포에서 달라지는 것만 적는다: 서비스 메시(mTLS `STRICT`, §5.4), OpenBao Transit(테넌트 DEK), OpenSearch 감사 인덱스(2년), NATS JetStream(감사 스트림 손실 불가 조건에서만, O-06), Temporal 네임스페이스를 테넌트 등급별로 분리(`gov-tier-a`·`gov-tier-b`…, Kubernetes 네임스페이스가 아니라 Temporal 네임스페이스), OTel Collector `NO_CONTENT` 잠금, `pdf_airgapped` 프로파일과 모델·이미지 미러 필수(§9). Tika `HwpV5Parser` 배포용 텍스트(테넌트 옵트인)는 `standard`부터 이미 적용된다(§2.5).
 
 ### 2.5 비교
 
@@ -121,7 +121,7 @@ GPU 노드풀을 셋으로 나누는 이유는 스케일 신호 분리다: OCR�
 |------|--------|------------|-----------|--------------|
 | 플랫폼 | docker compose 단일 노드 | Kubernetes | Kubernetes(GPU 다중) | Kubernetes(규제) |
 | 코어 배포 단위 | `app` 1 | `api`, 워커 4, `relay` | + `worker-gpu-ocr`, `worker-llm` | standard |
-| 사이드카 | 0 | `parser-workers`, `lo-sidecar`(opt-in) | + `ocr-gpu` | standard + hwpxlib 암호화 HWPX(`parser-workers` 내), Tika `HwpV5Parser` 배포용 텍스트(테넌트 옵트인), unoserver 풀 옵션(바이블 §7.1 `korean-gov` 열) |
+| 사이드카 | 0 | `parser-workers`(배포용 문서는 테넌트 옵트인 `allow_distribution_documents` 시 Tika `HwpV5Parser` 텍스트 `quality=degraded`, 옵트인 없으면 `parse.distribution_document`; 바이블 §7.1 1.3.0 AM-14, O-07·ADR-0007), `lo-sidecar`(opt-in) | + `ocr-gpu` | standard + hwpxlib 암호화 HWPX(`parser-workers` 내), unoserver 풀 옵션(바이블 §7.1 `korean-gov` 열) |
 | 서빙 | 인프로세스 ONNX int8(+ TEI CPU 리랭커 선택) | vLLM pooling + TEI GPU | + LLM 서빙, 교체 옵션(`sparse-encoder-server` 포함) | standard(가중치 자체 미러 필수) |
 | GPU | 0 | 1(공유) 또는 2(전용) | 노드풀 3~4종 | standard |
 | 인덱스 | Qdrant 단독 | Qdrant + OpenSearch | + multivector | + `shard_key`/`index_per_tenant`, 감사 인덱스 |
@@ -145,7 +145,7 @@ AGPL 파서 사이드카(`rag-plugin-pyhwp-sidecar`, `rag-plugin-pymupdf-sidecar
 | `ocr-gpu` | 본 저장소 `sidecars/ocr-gpu` | PaddlePaddle CUDA 이미지(태그·CUDA 버전은 노드 드라이버와 함께 09-operations/01에서 고정) | PaddleOCR 3.7 PP-OCRv5 server det + `korean_PP-OCRv5_mobile_rec` + 전처리, FastAPI `POST /v1/convert` | A | 필수 | 예 |
 | `sparse-encoder-server`(선택) | 본 저장소 `sidecars/sparse-encoder`(제안) | `python:3.13-slim` + sentence-transformers(CPU) 또는 CUDA 변형 | `ko-quality` learned sparse(PIXIE-Splade-v1.5·splade-ko-v1) `SparseEncoder.encode_query/encode_document`를 HTTP로 노출(응답 스키마는 03-contracts/07 `SparseVector`; 엔드포인트 이름은 미해결 이슈 17) | A | 선택(149M 파라미터·약 0.3GB, CPU 가능; 07-tech-landscape/05) | 예 |
 | `lo-sidecar` | **별도 저장소** `rag-platform-gpl-sidecars` | Debian + LibreOffice headless + H2Orestart | DOC/RTF/ODT → DOCX, HWP 렌더 최후 폴백; tini, 프로세스 그룹 KILL, 프로파일 락, 네트워크 차단 | C(GPL-3.0) | 없음 | 예 |
-| `rag-plugin-pyhwp-sidecar`, `rag-plugin-pymupdf-sidecar` | 별도 저장소 `rag-platform-gpl-sidecars` | Python slim | AGPL 파서 사이드카(선택 플러그인) | C(AGPL) | 없음 | 예 |
+| `rag-plugin-pyhwp-sidecar`(정본 경로 대안·기각 후 최후 폴백, ADR-0007), `rag-plugin-pymupdf-sidecar`(대안·기각, D-18) | 별도 저장소 `rag-platform-gpl-sidecars` | Python slim | AGPL 파서 사이드카(선택 플러그인, 기본 끔) | C(AGPL) | 없음 | 예 |
 | `embedding-server` | 업스트림 vLLM 이미지(태그 확인 필요 as of 2026-09; 0.29 계열) | CUDA | `vllm serve BAAI/bge-m3 --runner pooling`(BGE-M3 dense + sparse), `POST /pooling` | A(MIT/Apache) | 필수 | 예(`embedder_fingerprint`) |
 | `reranker-server` | 업스트림 TEI `ghcr.io/huggingface/text-embeddings-inference:{cpu,86,89,hopper}-1.9` | CUDA / CPU | `bge-reranker-v2-m3`(GPU) 또는 gte-multilingual-reranker-base(CPU, lite), `POST /rerank` | A | 선택 | 예 |
 | `otel-collector` | 업스트림 OpenTelemetry Collector | — | redaction·transform·팬아웃 | A | 없음 | 아니오 |
@@ -163,7 +163,7 @@ Grafana·Tempo·Loki(AGPL)·Langfuse·Phoenix(ELv2)는 플랫폼 이미지 목�
 | `worker-cpu` | 이미지 `rag-platform`, Deployment `worker-cpu`(큐 `ingest-cpu`) + `worker-io`(`ingest-io`) + `worker-maintenance` | 같은 이미지, `--queue` 인자만 다름 |
 | `worker-gpu` | 이미지 `rag-platform`, Deployment `worker-gpu-embed`(`ingest-gpu-embed`), `worker-gpu-ocr`(`ingest-gpu-ocr`, premium) | GPU는 서빙·사이드카에 있으므로 워커 이미지에 CUDA 없음 |
 | `sidecar-libreoffice` | 이미지 `lo-sidecar`(별도 저장소, `optIn.loSidecar`) | GPL-3.0 C 등급 |
-| `sidecar-agpl-parsers` | 이미지 `rag-plugin-pyhwp-sidecar`, `rag-plugin-pymupdf-sidecar`(별도 저장소, `optIn.*`) | AGPL C 등급; 바이블은 하나로 묶지 않고 플러그인별 이미지 |
+| `sidecar-agpl-parsers` | 이미지 `rag-plugin-pyhwp-sidecar`(정본 경로 대안·기각 후 옵트인 최후 폴백, ADR-0007), `rag-plugin-pymupdf-sidecar`(대안·기각, D-18)(별도 저장소, `optIn.*`) | AGPL C 등급; 바이블은 하나로 묶지 않고 플러그인별 이미지 |
 | `mcp` | 이미지 `rag-platform`, `api`의 `/mcp` 마운트(별도 Deployment 불필요; 필요 시 `api-query`로 분리, §5.3) | D-13 FastAPI `/mcp` 마운트 |
 | `eval-runner` | 이미지 `rag-platform`, `rag eval run`(CI Job) 또는 `eval.run.v1` 워크플로우(`worker-maintenance` 큐) | `[eval]` extra 포함 빌드 |
 | (지시에 없음) | `parser-workers`, `ocr-gpu`, `embedding-server`, `reranker-server` | 바이블 §2.2 컨테이너 |
@@ -179,7 +179,7 @@ Grafana·Tempo·Loki(AGPL)·Langfuse·Phoenix(ELv2)는 플랫폼 이미지 목�
 | | `runtime` | `deps`의 가상환경만 복사, `HF_HOME=/models/hf`, `RAG_*` 기본값 없음(모두 values에서 주입), `ENTRYPOINT ["rag"]`. 모델 가중치·사전은 이미지에 굽지 않고 볼륨(§3.4)으로 공급 |
 | `parser-workers` | `build` → `runtime` | `maven:3-eclipse-temurin-21`에서 fat jar 빌드 → `eclipse-temurin:21-jre`, 비루트, JVM 힙 상한을 컨테이너 메모리 한도에서 계산(`-XX:MaxRAMPercentage=75`) |
 | `ocr-gpu` | `base`(PaddlePaddle CUDA) → `deps`(paddleocr, FastAPI) → `runtime` | CUDA 마이너 버전은 GPU 노드 드라이버 호환 매트릭스에 맞춰 values에서 이미지 digest로 선택. PP-OCRv5 server det + `korean_PP-OCRv5_mobile_rec` + 방향·왜곡 전처리(UVDoc·textline orientation) 모델은 볼륨(§3.4)에서 로드, 에어갭은 번들 변형 이미지 `ocr-gpu:<ver>-bundled` |
-| `lo-sidecar`(별도 저장소) | 단일 | LibreOffice headless + H2Orestart 확장, tini PID 1, `--norestore`, 요청별 임시 프로파일 디렉터리, seccomp 기본, `NET_RAW` 등 능력 제거, 네트워크 정책으로 egress 0 |
+| `lo-sidecar`(별도 저장소) | 단일 | LibreOffice headless + H2Orestart 확장, tini PID 1, `--norestore`, 프로파일 재사용 방식은 콜드스타트 실측 후 정정 예정(#47; 04-pipelines/06 §슬롯 모델은 슬롯 고정 프로파일 재사용을 채택 — 이 문서의 "요청별 임시 프로파일"과 불일치, 실측 뒤 이 행을 슬롯 고정 재사용으로 맞춘다), seccomp 기본, `NET_RAW` 등 능력 제거, 네트워크 정책으로 egress 0 |
 
 이미지 크기 상한(초안 목표): `rag-platform` 1.5GB 이하(Docling·ONNX Runtime 포함), `parser-workers` 400MB 이하, `ocr-gpu`는 CUDA 베이스로 수 GB(상한 미설정). 크기 회귀는 CI 경고.
 
@@ -334,7 +334,7 @@ deploy/
 | `sidecars.parserWorkers.{enabled, replicas, resources, autoscaling}` | boolean `true`(standard+) | Java 사이드카 | 워커 `RAG_SIDECAR__PARSER_WORKERS_URL`(제안 필드) |
 | `sidecars.ocrGpu.{enabled, replicas, gpu{resourceName, count}, nodeSelector, tolerations}` | boolean `false`(premium `true`) | GPU OCR 사이드카 | `RAG_SIDECAR__OCR_GPU_URL` |
 | `optIn.loSidecar.{enabled, image, digest, acknowledgeLicense}` | boolean `false` | GPL 사이드카. `acknowledgeLicense: true` 없이 `enabled`면 렌더 실패(D-02 고지) | `RAG_SIDECAR__LO_SIDECAR_URL`; 프로파일 `parse.router.doc` 사용 가능 |
-| `optIn.pyhwpSidecar`, `optIn.pymupdfSidecar` | 동일 구조 | AGPL 플러그인 사이드카 | 플러그인 `sidecar_image` |
+| `optIn.pyhwpSidecar`(대안·기각 후 옵트인, ADR-0007), `optIn.pymupdfSidecar`(대안·기각, D-18) | 동일 구조 | AGPL 플러그인 사이드카(기본 끔) | 플러그인 `sidecar_image` |
 | `serving.embedding.{enabled, engine, model{id, revision}, image, digest, replicas, gpu{resourceName, count, memoryUtilization}, externalUrl, keda}` | engine enum `vllm_pooling\|tei\|external`, `vllm_pooling` | 임베딩 서빙. `external`이면 배포하지 않고 URL만 | `RAG_SIDECAR__EMBEDDING_SERVER_URL` |
 | `serving.reranker.{…, engine}` | engine enum `tei_gpu\|tei_cpu\|vllm\|sglang\|external\|none` | 리랭커 서빙. `none`은 lite 생략 | `RAG_SIDECAR__RERANKER_SERVER_URL` |
 | `serving.sparse.{enabled, engine, model{id, revision}, image, digest, replicas, gpu, externalUrl}` | engine enum `sparse_encoder\|tei\|external`, `enabled: false` | `ko-quality` learned sparse 서빙 `sparse-encoder-server`(§6.3). `tei`는 `/embed_sparse` ModernBERT 지원 확인 후에만 | `RAG_SIDECAR__SPARSE_ENCODER_SERVER_URL`(제안 필드) |
@@ -509,7 +509,7 @@ flowchart LR
 | `rag-platform/worker-llm`(premium) | 스크레이프만 | `rag-data`(PG, Temporal, Object Storage, **Valkey 6379** — 테넌트 토큰 버킷, 06 §3.6·바이블 §3.2 O-05 비용 정책), `otel`, Egress Gateway → LLM 공급자 443(테넌트 옵트인) 또는 `rag-serving/llm-server` | 문서 원천 |
 | `rag-platform/worker-maintenance` | 스크레이프만 | `rag-data` 전체(Valkey 포함 — `maintenance.cleanup.v1`이 만료 커서·멱등 키 캐시·`aclrev` 힌트 정리, 바이블 §11.2), `rag-serving`(평가 시 임베딩·리랭크), `otel` | 외부 |
 | `rag-platform/relay` | 스크레이프만 | `rag-data`(PG 5432 — 아웃박스 읽기·`mark_published` + `NOTIFY outbox_published`(SSE 팬아웃은 이 경로만, 06 §6.4), **Temporal 7233** — 큐 `relay` 폴링, §2.2), `otel`, **Egress Gateway → 웹훅 443** | 클러스터 내부 CIDR(웹훅 SSRF; `rag-platform/api`로의 직접 경로도 없음), `rag-serving` |
-| `rag-platform/parser-workers` | `worker-cpu` → 8080 | `otel` | 그 외 전부(JVM은 외부 접속 없음) |
+| `rag-platform/parser-workers` | `worker-cpu` → 8080 | `rag-data/Object Storage`(사이드카가 `ConvertRequest.input.uri`를 자기 자격 증명으로 직접 읽고 `output`·`derived[]`를 직접 저장, [ADR-0033](../06-adr/0033-sidecar-convert-contract-and-isolation-ladder.md) 계약·시퀀스, #86), `otel` | 그 외 전부(JVM은 외부 접속 없음) |
 | `rag-serving/*` | `api`·`api-query`(emb·rr·sparse), `worker-gpu-embed`(emb·sparse), `worker-gpu-ocr`(ocr), `worker-llm`(llm-server), `worker-maintenance`(평가: emb·rr) → 서빙 포트 | `rag-data/Object Storage`(모델 sync), `otel` | 외부(HF 다운로드 차단) |
 | `rag-optin/lo-sidecar` | `worker-cpu` → 8080 | **0**(관측은 워커 측 스팬만; `otel` 단일 예외 허용 여부는 미해결 이슈 12) | **모든 외부·내부 egress**(LibreOffice 매크로·링크 추적 차단) |
 | `rag-data/*` | `rag-platform`·`rag-serving`·`rag-observability`(스크레이프)에서만 | 복제 트래픽(자기 네임스페이스), 백업 대상 | 외부 |
@@ -767,7 +767,7 @@ flowchart LR
 
 ## 결정 사항 요약
 
-- **결정:** 코어는 단일 Python 이미지 `rag-platform`이며 `api`·`worker`·`relay`·`eval harness`·MCP는 CLI 플래그로 갈린다. 작업 지시의 `worker-cpu`·`worker-gpu`·`mcp`·`eval-runner`는 이미지가 아니라 Deployment·Job이고, `sidecar-libreoffice`·`sidecar-agpl-parsers`는 별도 저장소의 `lo-sidecar`·`rag-plugin-{pyhwp,pymupdf}-sidecar`다. GPU는 서빙·`ocr-gpu`에만 있고 워커 이미지에 CUDA가 없다. `ocr-gpu`는 PP-OCRv5 server det + `korean_PP-OCRv5_mobile_rec`(server rec은 한국어 미지원)이다. ([ADR-0003](../06-adr/0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md), [ADR-0008](../06-adr/0008-ocr-default-rapidocr-ppocrv5-korean.md), [ADR-0009](../06-adr/0009-embedding-serving-vllm-pooling-tei-inprocess.md), [ADR-0033](../06-adr/0033-sidecar-convert-contract-and-isolation-ladder.md))
+- **결정:** 코어는 단일 Python 이미지 `rag-platform`이며 `api`·`worker`·`relay`·`eval harness`·MCP는 CLI 플래그로 갈린다. 작업 지시의 `worker-cpu`·`worker-gpu`·`mcp`·`eval-runner`는 이미지가 아니라 Deployment·Job이고, `sidecar-libreoffice`·`sidecar-agpl-parsers`는 별도 저장소 `rag-platform-gpl-sidecars`의 `lo-sidecar`·`rag-plugin-{pyhwp,pymupdf}-sidecar`다(둘 다 정본 경로에서 대안·기각된 AGPL 선택 플러그인, ADR-0007·D-18; 기본 끔, `optIn.*`로만 켠다). GPU는 서빙·`ocr-gpu`에만 있고 워커 이미지에 CUDA가 없다. `ocr-gpu`는 PP-OCRv5 server det + `korean_PP-OCRv5_mobile_rec`(server rec은 한국어 미지원)이다. ([ADR-0003](../06-adr/0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md), [ADR-0008](../06-adr/0008-ocr-default-rapidocr-ppocrv5-korean.md), [ADR-0009](../06-adr/0009-embedding-serving-vllm-pooling-tei-inprocess.md), [ADR-0033](../06-adr/0033-sidecar-convert-contract-and-isolation-ladder.md))
 - **결정:** `lite`는 compose 전용(개발 4컨테이너 / 운영 `--durable` 5(+1) 컨테이너; Helm `global.tier`에 없음), `standard`는 Kubernetes 큐별 워커 4 + `relay`(Temporal 액티비티 워커, 큐 `relay`) + 사이드카 + GPU 서빙 2, `premium`은 GPU 노드풀 3종 + 선택 `gpu-llm`·`worker-gpu-ocr`/`ocr-gpu`·`ingest-llm`·HA. `korean-gov`는 standard 변형(mTLS·OpenBao·감사 인덱스·에어갭·hwpxlib 암호화 HWPX·Tika 배포용 텍스트). ([ADR-0012](../06-adr/0012-lite-profile-qdrant-only-client-bm25.md), [ADR-0031](../06-adr/0031-profile-schema-extends-and-quality-gates.md))
 - **결정:** 빌드는 uv 멀티스테이지, 기본 extras `temporal,opensearch,eval`(02 §7.2의 역할별 분리를 단일 digest 원칙으로 통합, patch 요청), `[gpu]`는 코어 제외. 모델·사전은 이미지에 굽지 않고 오브젝트 스토리지 미러 `models/` + `models.lock`에서 **파드별 init 컨테이너만** 볼륨에 sync하며(Helm 훅은 검증만), 운영은 `HF_HUB_OFFLINE=1`. 모든 이미지는 digest 고정이고 사이드카 digest는 values → `IMAGE_DIGEST` → `/healthz` → `Producer.image_digest`로 전파된다. ([ADR-0001](../06-adr/0001-license-grade-table-and-d02-interpretation.md), [ADR-0035](../06-adr/0035-python-version-and-toolchain-pins.md))
 - **결정:** Helm 차트는 운영 `rag-platform`과 개발·스테이징 번들 `rag-platform-data` 둘이며, 데이터 계층은 운영 차트의 의존성이 아니다. GPL/AGPL은 `optIn.*` + `acknowledgeLicense` + 네임스페이스 `rag-optin`(egress 0)으로만 켜진다. 훅 순서는 `pre-install,pre-upgrade` 공통으로 models-verify(-30) → migrate(확장, -20) → profile-validate(-10) → 릴리스 → schedules-apply. ([ADR-0011](../06-adr/0011-kv-and-object-storage-valkey-rustfs-seaweedfs.md))
@@ -792,7 +792,7 @@ flowchart LR
 11. **사이징 가정의 실측 교체.** 문서당 오브젝트 3.5MB, 원장 20KB, sparse 10%, OpenSearch 0.6~1.4배, `_source` 3KB/레코드는 모두 가정이다. 특히 한국어 코퍼스의 UTF-8 바이트 계수(리프 512 토큰 ≈ 한글 600~900자 ≈ 2~3KB)와 Nori `mixed` 팽창률은 골든셋 코퍼스 색인 후 실측해 §7.2 OpenSearch 열을 갱신하고, `late_interaction` 활성 시 저장량 열을 추가한다.
 12. **`lo-sidecar` 네임스페이스 분리와 메시 제외.** `rag-optin` 네임스페이스 egress 0 정책(§5.2 표 확정값)이 OTLP 전송까지 막으므로 사이드카 관측은 워커 측 스팬으로만 남는다. 사이드카 자체 메트릭이 필요하면 `otel-collector`로의 단일 egress 예외를 허용할지 [관측성](../09-operations/03-observability.md)에서 결정(허용 시 §5.2 행 개정).
 13. **오브젝트 스토리지 택1**(RustFS vs SeaweedFS, ADR-0011 실측)과 **S3 클라이언트 라이브러리** 확정 후 `rag-platform-data` 서브차트 의존과 `externals.objectStore` 키를 고정한다.
-14. **바이블 §7.1 `lite` 열 머리 "컨테이너 5" 정밀화(patch).** §2.1의 확정(개발 4 / 운영 `--durable` 5, RustFS·SeaweedFS 동거 시 6)에 맞춰 "컨테이너 4(개발) / 5~6(운영 `--durable`)"로 문구 보강을 요청한다(바이블 §1.2 오탈자·설명 보강 = patch).
+14. **종결: 바이블 §7.1 1.3.0(AM-14).** `lite` 열 머리 문구가 §2.1의 확정(개발 4 / 운영 `--durable` 5, RustFS·SeaweedFS 동거 시 6)에 맞춰 "컨테이너 4(개발) / 5~6(운영 `--durable`: + Temporal 단일 바이너리, RustFS·SeaweedFS 동거 시 6)"으로 정밀화되었다.
 15. **02 §7.2 extras 분리의 통합(patch).** [컴포넌트 아키텍처](02-component-architecture.md) §7.2는 `api`·`worker` `[temporal,opensearch]` / `eval-harness` `[temporal,opensearch,eval]`로 나누지만 §3.3은 단일 digest를 위해 코어 기본 빌드를 `[temporal,opensearch,eval]`로 통합했다. 02 §7.2 행 갱신을 요청하며, 만약 `[eval]` 의존 크기·취약점 표면이 문제로 실측되면 대안은 `rag-platform:<ver>-eval` 명시 빌드로 되돌리는 것이다.
 16. **`extends` 상속 원본 범위.** 운영자 프로파일(`profile.inline`)의 `extends`가 builtin만 가리킬 수 있는지, 같은 ConfigMap의 다른 운영자 프로파일(체인)도 허용하는지는 바이블 §7이 정하지 않았다(단일 상속·깊은 병합만 확정). [프로파일·정책 계약](../03-contracts/15-collection-profile-and-policy-contracts.md)에서 확정하기 전까지 차트는 제한을 두지 않고 `profile-validate`의 "미존재 부모 거부"(ADR-0031 검증 2)에만 의존한다.
 17. **`sparse-encoder-server`의 엔진·계약.** `ko-quality` learned sparse(PIXIE-Splade-v1.5) 서빙을 sentence-transformers `SparseEncoder` 래퍼 Deployment로 두었으나, TEI `/embed_sparse`의 ModernBERT 지원(07-tech-landscape/05 미해결 이슈 2)이 확인되면 TEI로 대체한다. 래퍼의 HTTP 엔드포인트 이름·응답 스키마(`SparseVector`, `vocab_id=ax-encoder-50k`)·`Producer.image_digest` 전파는 [평가·피드백·사이드카 계약](../03-contracts/16-eval-feedback-and-sidecar-contracts.md)과 04-pipelines/12에서 확정. 이미지 경로 `sidecars/sparse-encoder`는 바이블 §12 `sidecars/` 목록에 없으므로 patch 요청 대상이다.

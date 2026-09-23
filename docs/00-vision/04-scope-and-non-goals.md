@@ -2,8 +2,8 @@
 title: 범위와 비범위 (Scope and Non-goals)
 status: active
 owner: architecture
-version: 0.1.0
-last_updated: 2026-09-18
+version: 0.1.1
+last_updated: 2026-09-23
 depends_on:
   - ./00-design-brief.md
   - ./02-design-principles.md
@@ -52,7 +52,7 @@ RAG Platform이 **무엇을 만들고 무엇을 만들지 않는지**를 기능 
 | 구분 | 대상 | 범위 함의 |
 |------|------|-----------|
 | **소유** | 스테이지 계약(JSON Schema + Pydantic), 표준 문서 모델 `ParsedDocument`, 오케스트레이션 워크플로우 정의, 플러그인 레지스트리·SDK, 평가 하네스, 수집·리트리벌·관리 API, MCP 서버, Context Pack 및 렌더러 | 플랫폼이 직접 설계·구현·유지한다. 코어의 대부분이 여기에 속한다. |
-| **채택** | 파서(Docling, python-hwpx 등), 청커, 임베딩·리랭커 모델과 서빙 엔진(TEI, Infinity), 인덱스 백엔드(Qdrant, OpenSearch), 워크플로우 엔진(Temporal), 저장소(PostgreSQL, S3 호환, Redis — 라이선스 확인 필요, I-13) | 어댑터로 감싸서 계약에 맞춘다. 채택 대상의 내부 개선(파서 정확도 향상, 모델 학습)은 **비범위**다. 어댑터와 기본값 선택만 범위다. |
+| **채택** | 파서(Docling, python-hwpx 등), 청커, 임베딩·리랭커 모델과 서빙 엔진 TEI·vLLM pooling(Infinity는 제외, D-16 v1.1), 인덱스 백엔드(Qdrant, OpenSearch), 워크플로우 엔진(Temporal), 저장소(PostgreSQL, S3 호환, Redis — 라이선스 확인 필요, I-13) | 어댑터로 감싸서 계약에 맞춘다. 채택 대상의 내부 개선(파서 정확도 향상, 모델 학습)은 **비범위**다. 어댑터와 기본값 선택만 범위다. |
 
 ### 1.2 네 가지 제공 수준
 
@@ -106,7 +106,7 @@ flowchart LR
     subgraph PLATFORM["RAG Platform (범위)"]
         INGEST["수집 API<br/>IngestRequest"]
         PIPE["수집 파이프라인<br/>fetch → parse → normalize →<br/>chunk → enrich → embed → index"]
-        STORE["저장소<br/>PostgreSQL / S3 호환 / Redis /<br/>Qdrant / OpenSearch"]
+        STORE["저장소<br/>PostgreSQL / S3 호환 / Valkey(Redis 호환) /<br/>Qdrant / OpenSearch"]
         RETR["리트리벌 API<br/>QueryRequest → ContextPack"]
         MCP["MCP 서버"]
         MGMT["관리 API / 평가 하네스 / 관측성"]
@@ -164,7 +164,7 @@ flowchart LR
 |------|------|------|------|
 | 수집 API | `IngestRequest` 접수(단건. 배치 제출의 계약 형태는 I-15), `job_id`와 상태 URL 반환, 잡 상태 조회, 취소, 재시도 | 코어 | R1, D-08 |
 | 수집 이벤트 | 잡 상태 전이 이벤트, 웹훅 전달, 이벤트 스트림(`domain.entity.action` 명명) | 코어 | D-08, 브리프 §9.9 |
-| 페처(fetcher): 오브젝트 스토리지 | `s3://`(MinIO 포함), `gs://`, `az://` 단일 객체 읽기 | 코어 | R1 |
+| 페처(fetcher): 오브젝트 스토리지 | `s3://`(S3 호환: RustFS·SeaweedFS 등, ADR-0011), `gs://`, `az://` 단일 객체 읽기 | 코어 | R1 |
 | 페처: 로컬 파일 | `file://` 워커 마운트 볼륨 한정 읽기 | 코어 | R1 |
 | 페처: HTTP | `http(s)://` 단일 URI GET(정적 응답). robots.txt 준수 책임은 I-14 | 코어 | R1, 본 문서 B-01 |
 | 페처: 파일 공유 | `smb://`. 코어 팀 유지 기여 패키지 제공 여부는 I-11 | 플러그인 | R1 명시 |
@@ -213,7 +213,7 @@ flowchart LR
 
 | 영역 | 포함 | 수준 | 근거 |
 |------|------|------|------|
-| dense + sparse 임베딩 | BGE-M3 dense·sparse, TEI 또는 Infinity 서빙 어댑터 | 코어 | D-16 |
+| dense + sparse 임베딩 | BGE-M3 dense·sparse, TEI·vLLM pooling 서빙 어댑터(Infinity는 sparse 미지원으로 제외 — D-16 v1.1, ADR-0009) | 코어 | D-16 |
 | 임베딩 모델 교체 | multilingual-e5, Qwen3-Embedding, jina, KURE 등 설정으로 교체 | 코어 | D-16 |
 | Late interaction(ColBERT/ColPali) | 멀티벡터 인덱싱 또는 리랭킹. 배치 위치는 O-04 | 옵션 모듈 | O-04 |
 | 벡터 인덱스 | Qdrant named vectors(dense + sparse), payload 필터 | 코어 | D-15 |
@@ -247,7 +247,7 @@ flowchart LR
 |------|------|------|------|
 | 수집 API(REST) | OpenAPI 명세, 비동기 잡 모델 | 코어 | D-08, [수집 API](../05-api/02-ingestion-api.md) |
 | 리트리벌 API(REST) | `search`(ContextPack 반환), 후보 디버그 조회 | 코어 | R3, [리트리벌 API](../05-api/03-retrieval-api.md) |
-| 관리 API(REST) | tenant, collection, profile, job, plugin 레지스트리 조회 | 코어 | 브리프 §6 "관리 API", [관리 API](../05-api/04-management-api.md) |
+| 관리 API(REST) | tenant(생성·조회·비활성화·할당량, `/v1/tenants` 계열), collection, profile, job, plugin 레지스트리 조회 | 코어 | 브리프 §6 "관리 API", 바이블 §14(1.3.0), FR-MGT-01, [관리 API](../05-api/04-management-api.md) |
 | gRPC | REST와 동일 기능의 gRPC 서비스 | **미정(O-10)** | O-10 |
 | MCP 서버 | `search`, `get_document`, `list_collections` 도구 | 코어 | D-13, [MCP 서버](../05-api/05-mcp-server.md) |
 | 웹훅·이벤트 | 잡 이벤트 웹훅, 표준 이벤트 스키마 | 코어 | D-08, [웹훅과 이벤트](../05-api/07-webhooks-and-events.md) |
@@ -412,7 +412,7 @@ flowchart LR
 | B-26 | 검색 결과의 "왜 뽑혔는가" 설명 | **포함** | 원칙 8 점수 분해(dense/sparse/lexical/rerank) |
 | B-27 | 웹 검색 결과를 내부 문서 검색과 융합 | **플러그인** | `retriever` 확장 지점이 `CandidateSet`을 반환하면 융합 참여 |
 | B-28 | 사용자별 개인화 랭킹(클릭 이력 학습) | **비범위** | 학습 파이프라인(§4.3). 피드백 수집·export는 포함 |
-| B-29 | 리트리벌 결과 캐싱(동일 질의) | **포함** | D-14 Redis 캐시(구현체 라이선스는 I-13). 캐시 키에 테넌트·ACL 포함 필수(D-09) |
+| B-29 | 리트리벌 결과 캐싱(동일 질의) | **포함** | D-14 Valkey(Redis 호환) 캐시(ADR-0011; 잔여 라이선스 확인 범위는 I-13). 캐시 키에 테넌트·ACL 포함 필수(D-09) |
 | B-30 | 에이전트가 MCP로 검색 → 문서 원문 조회 | **포함** | D-13 `search`, `get_document` |
 
 ### 5.4 URI 판정 흐름
@@ -461,11 +461,11 @@ flowchart TD
 | 포맷 | 확장자·MIME(대표) | 등급 | 기본 파서(D-18) | 비고 |
 |------|-------------------|------|-----------------|------|
 | HWPX | `.hwpx`, `application/hwp+zip` | **1급** | python-hwpx + 자체 OWPML 어댑터 | 한국 공공·기업 문서의 핵심. 표·각주·머리말·개체 보존이 골든셋 필수 항목. [HWPX·HWP 파서](../04-pipelines/04-parser-hwpx-and-hwp.md) |
-| HWP 5.0 | `.hwp`, `application/x-hwp` | **1급** | pyhwp/hwp5 + LibreOffice(H2Orestart) 폴백 | pyhwp는 AGPL(확인 필요) → D-02에 따라 사이드카로 격리(§6.4). 지원 범위·LibreOffice 의존 여부는 O-07. 사이드카 부재 배포에서는 비활성(§6.4) |
+| HWP 5.0 | `.hwp`, `application/x-hwp` | **1급** | Apache-2.0 Java 사이드카(hwplib+hwp2hwpx+hwpxlib) → HWPX → 동일 OWPML 어댑터(1차, ADR-0007), 폴백 unhwp → hwp-hwpx-parser → LibreOffice(H2Orestart, GPLv3 격리, opt-in) | pyhwp는 AGPL 선택 플러그인(기본 경로 아님, 기각·대체 — ADR-0007). 배포용 문서는 테넌트 옵트인 시 Tika `HwpV5Parser` 텍스트 전용(`quality=degraded`). 암호화 문서는 `credentials_ref` 없으면 `parse.document_encrypted`(D-18 v1.1). 지원 범위는 O-07. 사이드카 부재 배포에서는 비활성(§6.4) |
 | HWP 3.0 이하 | `.hwp`(구버전) | 비지원 | 없음 | 포맷 판정으로 구버전 감지 시 거절. LibreOffice 변환 가능 여부는 확인 필요 |
-| PDF(텍스트) | `.pdf`, `application/pdf` | **1급** | Docling(레이아웃·표) + PyMuPDF(고속 텍스트) | PyMuPDF는 AGPL(확인 필요) → 사이드카 격리 또는 Docling 자체 백엔드 대체 검토(I-09). [PDF 파서](../04-pipelines/05-parser-pdf.md) |
+| PDF(텍스트) | `.pdf`, `application/pdf` | **1급** | Docling(레이아웃·표) + pypdfium2 + pdftext(고속 텍스트, D-18 v1.1) | PyMuPDF(AGPL)는 인프로세스 제외, 기각·대체(ADR-0006) — 필요 시 옵트인 사이드카만. [PDF 파서](../04-pipelines/05-parser-pdf.md) |
 | PDF(스캔) | 동일 | **1급** | 스캔 감지 후 OCR(PaddleOCR / Tesseract-kor / RapidOCR) | OCR 엔진 기본값은 O-08(한국어 정확도·라이선스·GPU). GPU 없으면 브리프 §7 처리량 목표 미달 가능 |
-| PDF(암호화) | 동일 | 비지원 | 없음 | I-08 확정 전 거절. 비밀번호 전달 방식은 I-17에 종속 |
+| PDF(암호화) | 동일 | 비지원 | 없음 | `credentials_ref` 없으면 `parse.document_encrypted`로 거절(D-18 v1.1). I-08 확정 전에는 보호 문서 전반을 거절. 비밀번호 전달 방식은 I-17에 종속 |
 | DOCX | `.docx`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | **1급** | Docling / python-docx | 변경 추적·주석 처리 정책은 파서 문서에서 정의. [DOC·DOCX 파서](../04-pipelines/06-parser-doc-and-docx.md) |
 | DOC | `.doc`, `application/msword` | **2급** | LibreOffice headless → DOCX → DOCX 파서 | 변환 경로. 변환 손실(개체 위치·일부 서식) 허용. LibreOffice 사이드카 필수(§6.4). 1급 승격 계획 없음 |
 | HTML | `.html`, `.htm`, `text/html` | **1급** | Trafilatura(본문 추출) + Docling(구조) | 정적 HTML만. JS 렌더링은 B-06. 본문 추출 실패 시 전체 DOM 폴백 규칙은 [HTML 파서](../04-pipelines/07-parser-html.md) |
@@ -516,8 +516,8 @@ D-02에 따라 코어 프로세스에 링크할 수 없는 의존성은 사이�
 | 의존성 | 용도 | 라이선스(확인 필요, as of 2026-09) | 실행 방식 |
 |--------|------|-------------------------------------|-----------|
 | LibreOffice(+H2Orestart) | DOC/HWP/RTF/ODT 변환 | MPL-2.0(LibreOffice), H2Orestart 확인 필요 | 사이드카(변환 서비스) |
-| pyhwp/hwp5 | HWP 5.0 파싱 | AGPL-3.0(확인 필요) | 사이드카 |
-| PyMuPDF | PDF 고속 텍스트 | AGPL-3.0(확인 필요) | 사이드카 또는 대체(I-09) |
+| pyhwp/hwp5 | HWP 5.0 파싱(선택 플러그인 — ADR-0007, 기본 경로는 Java 사이드카) | AGPL-3.0(확인 필요) | 사이드카 |
+| PyMuPDF | PDF 고속 텍스트(기본 경로 아님 — ADR-0006, D-18 v1.1이 pypdfium2 + pdftext로 대체) | AGPL-3.0(확인 필요) | 인프로세스 제외, 필요 시 옵트인 사이드카만 |
 | python-hwpx | HWPX 파싱 | 확인 필요 | 확인 결과에 따라 인프로세스 또는 사이드카 |
 | Docling | PDF/DOCX/HTML/PPTX/XLSX | MIT | 인프로세스 |
 | Trafilatura | HTML 본문 추출 | Apache-2.0(확인 필요, 과거 GPL에서 변경) | 인프로세스 |
@@ -564,7 +564,7 @@ D-02에 따라 코어 프로세스에 링크할 수 없는 의존성은 사이�
 
 | 환경 | 등급 | 오케스트레이션 | 인덱스 구성 | 모델 서빙 | 용도 | 비고 |
 |------|------|----------------|-------------|-----------|------|------|
-| 단일 노드 Docker Compose(개발) | **1급** | 인프로세스 러너(D-17) | 경량 프로파일: Qdrant 단독 | TEI/Infinity CPU 또는 인프로세스 sentence-transformers | 로컬 개발, 데모, CI 통합 테스트 | 사이드카(LibreOffice, HWP)는 선택 프로파일로 포함 |
+| 단일 노드 Docker Compose(개발) | **1급** | 인프로세스 러너(D-17) | 경량 프로파일: Qdrant 단독 | TEI·vLLM pooling CPU 또는 인프로세스 sentence-transformers(Infinity 제외 — D-16 v1.1) | 로컬 개발, 데모, CI 통합 테스트 | 사이드카(LibreOffice, HWP)는 선택 프로파일로 포함 |
 | 단일 노드 Docker Compose(경량 운영) | **1급** | Temporal(단일 인스턴스) 또는 인프로세스 러너 | 경량 또는 전체(Qdrant + OpenSearch) | TEI CPU/GPU | 소규모 팀, 파일럿 | 가용성 목표(브리프 §7 99.9%)는 보장 대상 아님 |
 | Kubernetes(자체 관리) | **1급** | Temporal 클러스터 | 전체: Qdrant + OpenSearch(Nori) | TEI GPU(권장) | 프로덕션 | 매니페스트 형식(Helm/Kustomize)은 [배포 아키텍처](../02-architecture/08-deployment-architecture.md)에서 확정 |
 | Kubernetes(매니지드: EKS/GKE/AKS) | **2급** | 동일 | 동일. 매니지드 OpenSearch/PostgreSQL/오브젝트 스토리지 대체 가능 | 동일 | 프로덕션 | 매니지드 서비스별 검증은 로드맵. 계약상 `IndexBackend` 뒤에 있으므로 동작은 동일 |
@@ -665,11 +665,11 @@ GPU는 필수가 아니다. 다만 브리프 §7 품질 목표의 일부는 GPU�
 | I-06 | 아카이브(ZIP 등) URI의 1단계 전개 허용 여부 | 허용하되 중첩 아카이브는 거절, 전개 결과는 부모 잡 아래 자식 `SourceDocument`로 기록하는 안. I-15(카디널리티)와 함께 확정 | [IngestRequest 계약](../03-contracts/01-ingest-request.md), [페칭과 원천 해석](../04-pipelines/02-fetching-and-source-resolution.md) |
 | I-07 | URI 없이 텍스트를 인라인 제출(또는 `data:` URI) 허용 여부 | 크기 상한 내에서 허용하고 플랫폼이 콘텐츠 해시 기반 내부 URI를 부여하는 안. R1 "주소" 전제와의 정합성은 ADR로 | ADR |
 | I-08 | 비밀번호 보호 PDF·HWP의 비밀번호 전달 방식 | 별도 메커니즘을 만들지 않고 I-17에서 확정되는 자격증명 전달 방식에 종속시키는 안. I-17 확정 전에는 보호 문서 거절(§6.2) | [IngestRequest 계약](../03-contracts/01-ingest-request.md), I-17 |
-| I-09 | PyMuPDF(AGPL 추정)의 사이드카 격리 vs Docling 자체 PDF 백엔드로 대체 | 라이선스 확인 후 결정. 대체 시 D-18 "고속 텍스트" 역할의 성능 목표 재검증 필요 | [기술 조사 요약](../07-tech-landscape/00-summary-and-selection-matrix.md), O-08과 함께 ADR |
+| I-09 | 해소(ADR-0006): PyMuPDF(AGPL 추정)의 사이드카 격리 vs Docling 자체 PDF 백엔드로 대체 | PDF 고속 텍스트 경로는 pypdfium2(Apache-2.0) + pdftext로 대체 확정(D-18 v1.1). PyMuPDF는 인프로세스 제외, 필요 시 옵트인 사이드카만 | [기술 조사 요약](../07-tech-landscape/00-summary-and-selection-matrix.md), ADR-0006 |
 | I-10 | GPL 계열 OCR 엔진(Surya 등)을 네트워크 분리 사이드카로 쓰는 것이 D-02 "GPL 라이브러리 링크 금지"에 저촉되는지 해석 | 사이드카는 링크가 아니므로 허용 가능하다는 해석을 제안하되 법무 확인 필요 | ADR(O-08) |
 | I-11 | `smb://`·`sftp://` 페처를 코어 팀 유지 기여 패키지(예: `contrib`)로 제공할지, 완전 외부 플러그인으로 둘지 | 한국 기업 환경의 NAS 사용 빈도를 고려해 `smb://`는 기여 패키지 제공 검토(제공 시 §7.1 2급으로 승격). 패키지 명명·배치는 리포지토리 구조 문서 | 로드맵, [리포지토리 구조](../10-development/01-repository-structure.md) |
 | I-12 | 자막 포맷(SRT/VTT)을 TXT 파서의 변형으로 실험 지원할지(§6.2 비디오 행) | 수요 확인 후 결정 | [TXT·MD 파서](../04-pipelines/08-parser-txt-md-and-others.md) |
-| I-13 | Redis 라이선스 변경(RSAL/SSPL, 이후 AGPL 옵션) 대응 | D-02상 네트워크 분리 서비스로 실행하는 Redis 서버 자체는 위반이 아니다. 확인 범위를 (a) 배포 매니페스트에 이미지를 포함해 재배포하는 시나리오, (b) 클라우드 서비스 제공 시나리오, (c) 클라이언트 라이브러리 라이선스로 좁히고, 필요 시 Valkey 등 RESP 호환 구현을 D-14 기본값에 병기([비기능 요구사항](../01-requirements/02-non-functional-requirements.md) NFR-I-02와 정합) | [기술 조사 요약](../07-tech-landscape/00-summary-and-selection-matrix.md) |
+| I-13 | Redis 라이선스 변경(RSAL/SSPL, 이후 AGPL 옵션) 대응 | D-02상 네트워크 분리 서비스로 실행하는 Redis 서버 자체는 위반이 아니다. D-14 기본값은 이미 Valkey(BSD-3, Redis 호환)로 확정되었다(ADR-0011). 잔여 확인 범위는 (a) 배포 매니페스트에 Redis 이미지를 포함해 재배포하는 시나리오, (b) 클라우드 서비스 제공 시나리오, (c) 클라이언트 라이브러리 라이선스로 좁힌다([비기능 요구사항](../01-requirements/02-non-functional-requirements.md) ISS-NFR-02와 정합) | [기술 조사 요약](../07-tech-landscape/00-summary-and-selection-matrix.md) |
 | I-14 | 단일 HTTP fetch에서 robots.txt 준수 책임(플랫폼 vs 호출자)(B-01, §7.2 http 행) | 호출자 책임으로 두고 플랫폼은 User-Agent 식별만 제공하는 안 | [페칭과 원천 해석](../04-pipelines/02-fetching-and-source-resolution.md) |
 | I-15 | `IngestRequest` 카디널리티: 요청 1건 = URI 1개(D-05 `IngestRequest → SourceDocument` 단수 표기) vs 요청 1건에 URI 배열 vs API 호출 1건에 `IngestRequest` 배열 엔벨로프(B-11, B-03, §3.1, §4.1 훅 (1)) | 계약은 1 요청 = 1 URI를 유지하고 배치는 수집 API 수준의 엔벨로프(`IngestRequest` 배열)로 받는 안. 아카이브 전개(I-06)의 자식 `SourceDocument` 모델과 함께 확정 | [IngestRequest 계약](../03-contracts/01-ingest-request.md), [수집 API](../05-api/02-ingestion-api.md) |
 | I-16 | 질의 이해가 참조할 대화 맥락 입력을 `QueryRequest`에 둘지(B-24) | 선택 필드로 두되 플랫폼은 저장하지 않고(무상태) 규칙 기반 질의 이해·LLM 질의 재작성(옵션 모듈)의 입력으로만 쓰는 안 | [QueryRequest 계약](../03-contracts/09-query-request-and-query-plan.md) |

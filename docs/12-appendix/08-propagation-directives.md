@@ -66,28 +66,28 @@ depends_on: ["07-bible-amendment-triage-decisions.md", "01-phase3-completeness-r
 
 ### 00-vision/01-vision-and-goals.md
 
-- [ ] patch 개정(v0.1.1)만 한다(완전성 #2, 트리아지 §4 #2). 목표 ID·지표 문장의 의미는 바꾸지 않는다.
-- [ ] 브리프 v1.2 개정 요지 반영: 수집 셸 "인프로세스 러너"류 표현은 비내구 `LocalRunner`(D-17 v1.1), 저장소 표기는 Valkey·RustFS/SeaweedFS(D-14 v1.1), PDF 고속 경로는 pypdfium2 + pdftext(D-18 v1.1)로 정정한다.
-- [ ] 목표·지표 표에서 재현성·격리를 말하는 행은 `record_id` 세대 합성(D-06 v1.2)과 `stage_key` 잡 스코프(ADR-0037)를 한 줄로 인용한다(새 목표 추가 아님, 근거 링크만).
-- [ ] A3 L353 Redis(`likely_ok=true`)는 "Redis 호환" 문맥인지만 재확인한다.
-- [ ] `depends_on`에 바이블을 넣고 참조 절의 브리프·바이블 버전 표기를 v1.2.2·1.3.0으로 맞춘다.
+- [x] patch 개정(v0.1.1)만 한다(완전성 #2, 트리아지 §4 #2). 목표 ID·지표 문장의 의미는 바꾸지 않는다.
+- [x] 브리프 v1.2 개정 요지 반영: 수집 셸 "인프로세스 러너"류 표현은 비내구 `LocalRunner`(D-17 v1.1), 저장소 표기는 Valkey·RustFS/SeaweedFS(D-14 v1.1), PDF 고속 경로는 pypdfium2 + pdftext(D-18 v1.1)로 정정한다.
+- [x] 목표·지표 표에서 재현성·격리를 말하는 행은 `record_id` 세대 합성(D-06 v1.2)과 `stage_key` 잡 스코프(ADR-0037)를 한 줄로 인용한다(새 목표 추가 아님, 근거 링크만).
+- [x] A3 L353 Redis(`likely_ok=true`)는 "Redis 호환" 문맥인지만 재확인한다.
+- [x] `depends_on`에 바이블을 넣고 참조 절의 브리프·바이블 버전 표기를 v1.2.2·1.3.0으로 맞춘다.
 
 ### 00-vision/02-design-principles.md
 
-- [ ] patch 개정(v0.1.1)(완전성 #2).
-- [ ] DP-03.R6 "Temporal 워커와 인프로세스 러너" → "Temporal 워커와 비내구 `LocalRunner`"(D-17 v1.1, 바이블 §11.1).
-- [ ] DP-01·DP-02 "관련 결정" 줄에 개정 행 표기를 붙인다: D-01·D-02·D-04는 v1.1, D-06·D-07은 v1.2(브리프 §4). 결정 요지를 풀어 쓴 문장이 있으면 개정 문구와 대조한다(예: D-04 `page`/`bbox` nullable).
-- [ ] 멀티테넌시 원칙(원칙 9) 설명에 강제 지점 17개(E16 egress, E17 키 스코프, 바이블 §10.3)를 인용한다.
-- [ ] 멱등성 원칙 설명에 `stage_key = H("stage", stage_name, scope_key, input_hash, fingerprint)`(바이블 §4.1 1.3.0 표기)를 인용한다.
+- [x] patch 개정(v0.1.1)(완전성 #2).
+- [x] DP-03.R6 "Temporal 워커와 인프로세스 러너" → "Temporal 워커와 비내구 `LocalRunner`"(D-17 v1.1, 바이블 §11.1).
+- [x] DP-01·DP-02 "관련 결정" 줄에 개정 행 표기를 붙인다: D-01·D-02·D-04는 v1.1, D-06·D-07은 v1.2(브리프 §4). 결정 요지를 풀어 쓴 문장이 있으면 개정 문구와 대조한다(예: D-04 `page`/`bbox` nullable).
+- [x] 멀티테넌시 원칙(원칙 9) 설명에 강제 지점 17개(E16 egress, E17 키 스코프, 바이블 §10.3)를 인용한다.
+- [x] 멱등성 원칙 설명에 `stage_key = H("stage", stage_name, scope_key, input_hash, fingerprint)`(바이블 §4.1 1.3.0 표기)를 인용한다.
 
 ### 00-vision/04-scope-and-non-goals.md
 
-- [ ] patch 개정(v0.1.1)(완전성 #2).
-- [ ] §6.2 HWP 5.0·PDF·암호화 문구를 D-18 v1.1·ADR-0006·ADR-0007로 갱신한다(#114): HWP 5.0 1차 = Java 사이드카, pyhwp = AGPL 선택 플러그인, 배포용 = 테넌트 옵트인 Tika 텍스트(`quality=degraded`), 암호화 = `credentials_ref` 없으면 `parse.document_encrypted`.
-- [ ] I-13의 `NFR-I-02` → `ISS-NFR-02`(Redis 라이선스, 비기능 요구사항 미해결 표)로 정정한다(완전성 #9 (a), A7 계열).
-- [ ] L55 "서빙 엔진(TEI, Infinity)" → "TEI·vLLM pooling(Infinity는 제외, D-16 v1.1)", L109 저장소 "Redis" → "Valkey(Redis 호환)", L167 "`s3://`(MinIO 포함)" → "S3 호환(RustFS·SeaweedFS 등)"으로 정정한다(A3).
-- [ ] A3 나머지 행 문맥 검토: L466·L520·L668 PyMuPDF, L464·L519 pyhwp, L415·L672 Redis, L216·L567 Infinity. 기각 서술이면 유지하고 "기각(ADR-xxxx)"을 병기한다.
-- [ ] 관리 API 범위 행에 테넌트 관리 API(`/v1/tenants` 계열, 바이블 §14 1.3.0, FR-MGT-01)가 v1 범위임을 반영한다(AM-39).
+- [x] patch 개정(v0.1.1)(완전성 #2).
+- [x] §6.2 HWP 5.0·PDF·암호화 문구를 D-18 v1.1·ADR-0006·ADR-0007로 갱신한다(#114): HWP 5.0 1차 = Java 사이드카, pyhwp = AGPL 선택 플러그인, 배포용 = 테넌트 옵트인 Tika 텍스트(`quality=degraded`), 암호화 = `credentials_ref` 없으면 `parse.document_encrypted`.
+- [x] I-13의 `NFR-I-02` → `ISS-NFR-02`(Redis 라이선스, 비기능 요구사항 미해결 표)로 정정한다(완전성 #9 (a), A7 계열).
+- [x] L55 "서빙 엔진(TEI, Infinity)" → "TEI·vLLM pooling(Infinity는 제외, D-16 v1.1)", L109 저장소 "Redis" → "Valkey(Redis 호환)", L167 "`s3://`(MinIO 포함)" → "S3 호환(RustFS·SeaweedFS 등)"으로 정정한다(A3).
+- [x] A3 나머지 행 문맥 검토: L466·L520·L668 PyMuPDF, L464·L519 pyhwp, L415·L672 Redis, L216·L567 Infinity. 기각 서술이면 유지하고 "기각(ADR-xxxx)"을 병기한다.
+- [x] 관리 API 범위 행에 테넌트 관리 API(`/v1/tenants` 계열, 바이블 §14 1.3.0, FR-MGT-01)가 v1 범위임을 반영한다(AM-39).
 
 ### 01-requirements/01-functional-requirements.md
 
@@ -120,39 +120,39 @@ depends_on: ["07-bible-amendment-triage-decisions.md", "01-phase3-completeness-r
 
 ### 02-architecture/01-system-overview.md
 
-- [ ] 미해결 3(`lite` 컨테이너 수)을 "종결: 바이블 §7.1 1.3.0 — 4(개발) / 5~6(운영 `--durable`)"로 닫고 §5.1 표기를 맞춘다(AM-14).
-- [ ] 미해결 11(C4 `api` → Object Storage 간선)을 "종결: 바이블 §2.2 1.3.0"으로 닫고 본문 C4에도 같은 간선을 둔다(AM-04).
-- [ ] 미해결 12(테넌트 생성·목록 API 부재)를 "종결: 바이블 §14 `/v1/tenants` 계열(AM-39)"로 닫는다(트리아지 §4 #3).
-- [ ] A3 문맥 검토: L185·L580 PyMuPDF, L185·L231·L579 pyhwp, L573 Redis.
-- [ ] 컨테이너 책임 서술에 `api`의 새 관리 표면(테넌트·API 키·플러그인·감사 이벤트 조회)을 한 줄 추가한다(바이블 §14).
+- [x] 미해결 3(`lite` 컨테이너 수)을 "종결: 바이블 §7.1 1.3.0 — 4(개발) / 5~6(운영 `--durable`)"로 닫고 §5.1 표기를 맞춘다(AM-14).
+- [x] 미해결 11(C4 `api` → Object Storage 간선)을 "종결: 바이블 §2.2 1.3.0"으로 닫고 본문 C4에도 같은 간선을 둔다(AM-04).
+- [x] 미해결 12(테넌트 생성·목록 API 부재)를 "종결: 바이블 §14 `/v1/tenants` 계열(AM-39)"로 닫는다(트리아지 §4 #3).
+- [x] A3 문맥 검토: L185·L580 PyMuPDF, L185·L231·L579 pyhwp, L573 Redis.
+- [x] 컨테이너 책임 서술에 `api`의 새 관리 표면(테넌트·API 키·플러그인·감사 이벤트 조회)을 한 줄 추가한다(바이블 §14).
 
 ### 02-architecture/02-component-architecture.md
 
-- [ ] §2.3 플러그인 레지스트리: `build_stage()`와 `build_port()`를 분리해 기술한다(#14).
-- [ ] §2.4 `ContextRenderer`에 `plugin_id` 멤버를 추가한다(#18). 합성 생산자의 `plugin_id`는 `{extension_point}.pipeline`(바이블 §6.1 1.3.0, AM-11).
-- [ ] 스테이지 셸 서술에 `StageContext.plan: QueryPlan | None`·`artifacts: DerivedArtifacts`(바이블 §4.1, AM-27)와 `requires_lineage` 범위 확대(`chunk` = `ParsedDocument`, `enrich` LLM = `ChunkSet`, AM-26)를 반영한다.
-- [ ] 모듈 표에 `adapters/parse/router.py`(`ParseRouterStage`), `adapters/parse/hwpx_hwpxlib_sidecar.py`, 최상위 `settings/`(pydantic-settings, `security`·`profiles`와 같은 층)를 추가하고 import-linter 계층 식을 바이블 §12 1.3.0과 맞춘다(AM-22).
-- [ ] `rag reprocess` 등 CLI 명령 서술은 "명령 정본: 10-development/02 §CLI" 인용으로 바꾼다(완전성 #10).
-- [ ] L944 PyMuPDF·pyhwp 문맥 검토(A3).
-- [ ] 설정 모델 절은 09-operations/02로 이관 대상임을 표시한다(#169, P2 — 이관 자체는 P2).
+- [x] §2.3 플러그인 레지스트리: `build_stage()`와 `build_port()`를 분리해 기술한다(#14).
+- [x] §2.4 `ContextRenderer`에 `plugin_id` 멤버를 추가한다(#18). 합성 생산자의 `plugin_id`는 `{extension_point}.pipeline`(바이블 §6.1 1.3.0, AM-11).
+- [x] 스테이지 셸 서술에 `StageContext.plan: QueryPlan | None`·`artifacts: DerivedArtifacts`(바이블 §4.1, AM-27)와 `requires_lineage` 범위 확대(`chunk` = `ParsedDocument`, `enrich` LLM = `ChunkSet`, AM-26)를 반영한다.
+- [x] 모듈 표에 `adapters/parse/router.py`(`ParseRouterStage`), `adapters/parse/hwpx_hwpxlib_sidecar.py`, 최상위 `settings/`(pydantic-settings, `security`·`profiles`와 같은 층)를 추가하고 import-linter 계층 식을 바이블 §12 1.3.0과 맞춘다(AM-22).
+- [x] `rag reprocess` 등 CLI 명령 서술은 "명령 정본: 10-development/02 §CLI" 인용으로 바꾼다(완전성 #10).
+- [x] L944 PyMuPDF·pyhwp 문맥 검토(A3).
+- [x] 설정 모델 절은 09-operations/02로 이관 대상임을 표시한다(#169, P2 — 이관 자체는 P2). 문서가 998행(900행 초과)이 되어 범위 절에 P2 이관 한 줄을 추가했다.
 
 ### 02-architecture/03-data-flow-and-document-lifecycle.md
 
-- [ ] 미해결 11 "미정(O-xx 미배정, green 물리 이름 규칙)" → `**미정(O-11):**`(바이블 §3.2 1.3.0, AM-21).
-- [ ] 미해결 20 "미정(O-xx 미배정, blue/green 채움 중 `documents` 원장 처리)" → `**미정(O-12):**`(AM-21).
-- [ ] 두 항목에 잠정 규칙을 한 줄 덧붙인다: `profile_hash`만 바뀐 재색인은 자동 실행 불가(부모 잡 `failed`) + 운영자 대안(04-pipelines/19), 해결은 ADR-0039 이후 ADR-0026 개정(AM-45 보류).
-- [ ] 컬렉션 수명주기 서술에 컬렉션 삭제 `collection.delete.v1`(`collections.deleted_at` 논리 삭제 → 자식 `delete.document.v1` 팬아웃, 새 이벤트 없음)을 추가한다(바이블 §11.2 1.3.0, AM-37).
-- [ ] `detect` 단계 설명에 fetch 잠정값(`format = unknown`, `format_confidence = 0.0`, `container_flags` 자리표)은 미판정이라는 규약을 인용한다(AM-06).
+- [x] 미해결 11 "미정(O-xx 미배정, green 물리 이름 규칙)" → `**미정(O-11):**`(바이블 §3.2 1.3.0, AM-21).
+- [x] 미해결 20 "미정(O-xx 미배정, blue/green 채움 중 `documents` 원장 처리)" → `**미정(O-12):**`(AM-21).
+- [x] 두 항목에 잠정 규칙을 한 줄 덧붙인다: `profile_hash`만 바뀐 재색인은 자동 실행 불가(부모 잡 `failed`) + 운영자 대안(04-pipelines/19), 해결은 ADR-0039 이후 ADR-0026 개정(AM-45 보류).
+- [x] 컬렉션 수명주기 서술에 컬렉션 삭제 `collection.delete.v1`(`collections.deleted_at` 논리 삭제 → 자식 `delete.document.v1` 팬아웃, 새 이벤트 없음)을 추가한다(바이블 §11.2 1.3.0, AM-37).
+- [x] `detect` 단계 설명에 fetch 잠정값(`format = unknown`, `format_confidence = 0.0`, `container_flags` 자리표)은 미판정이라는 규약을 인용한다(AM-06).
 
 ### 02-architecture/04-storage-architecture.md
 
-- [ ] §2.4 역할 표에 `GRANT rag_owner TO rag_platform_admin`을 등재한다(#16).
-- [ ] §4.4 `DatetimeIndexParams`의 "확인 필요(as of 2026-09)" 표기를 유지한다(#75).
-- [ ] §5.2 BM25 필드 `index_text.bigram` → `cjk_bigram`(바이블 §13.4 필드명; 분석기 `rag_hangul_bigram` 정의는 유지)(#83·#192).
-- [ ] 원장 표 DDL·서술에 1.3.0 컬럼을 추가한다: `tenants.status`(`TenantStatus`)·`quotas jsonb`·`disabled_at`(AM-39), `collections.deleted_at`(AM-37), `idempotency_keys.job_ids text[]`와 배치 자식 잡 `jobs.idempotency_key` NULL 허용(AM-44).
-- [ ] 오브젝트 키 표에 캐시 제외 스테이지 산출물 `tenants/{tenant_id}/artifacts/{schema_type_kebab}/{blake3[:2]}/{blake3}.json`, LLM 보강 캐시 `derived/llm_enrich/{key[:2]}/{key}.json`, "점유된 `stage_key` 경로 비덮어쓰기" 규칙을 추가한다(바이블 §13.3, AM-19).
-- [ ] `derived` 파생물 키를 `H("derived", content_hash, sidecar_image_digest or "", options_hash or "")`로 갱신한다(바이블 §6.2, AM-40).
-- [ ] `index_generation` 할당 서술을 `max(index_commits.index_generation) + 1`, 세대 번호 비재사용으로 맞춘다(AM-18, CR-31).
+- [x] §2.4 역할 표에 `GRANT rag_owner TO rag_platform_admin`을 등재한다(#16).
+- [x] §4.4 `DatetimeIndexParams`의 "확인 필요(as of 2026-09)" 표기를 유지한다(#75).
+- [x] §5.2 BM25 필드 `index_text.bigram` → `cjk_bigram`(바이블 §13.4 필드명; 분석기 `rag_hangul_bigram` 정의는 유지)(#83·#192).
+- [x] 원장 표 DDL·서술에 1.3.0 컬럼을 추가한다: `tenants.status`(`TenantStatus`)·`quotas jsonb`·`disabled_at`(AM-39), `collections.deleted_at`(AM-37), `idempotency_keys.job_ids text[]`와 배치 자식 잡 `jobs.idempotency_key` NULL 허용(AM-44).
+- [x] 오브젝트 키 표에 캐시 제외 스테이지 산출물 `tenants/{tenant_id}/artifacts/{schema_type_kebab}/{blake3[:2]}/{blake3}.json`, LLM 보강 캐시 `derived/llm_enrich/{key[:2]}/{key}.json`, "점유된 `stage_key` 경로 비덮어쓰기" 규칙을 추가한다(바이블 §13.3, AM-19).
+- [x] `derived` 파생물 키를 `H("derived", content_hash, sidecar_image_digest or "", options_hash or "")`로 갱신한다(바이블 §6.2, AM-40).
+- [x] `index_generation` 할당 서술을 `max(index_commits.index_generation) + 1`, 세대 번호 비재사용으로 맞춘다(AM-18, CR-31).
 
 ### 02-architecture/05-plugin-architecture.md
 
@@ -471,41 +471,42 @@ depends_on: ["07-bible-amendment-triage-decisions.md", "01-phase3-completeness-r
 
 ### 04-pipelines/13-indexing.md
 
-- [ ] §4.1 `hnsw_config {m: 0, payload_m: 0}`를 반영하고 Qdrant 동작 "확인 필요"를 유지한다(#65).
-- [ ] `values = 1.0` 규칙을 04-pipelines/15 `tf_q`로 위임한다(#186).
-- [ ] 미해결 13(두 해시 불변 프로파일 변경)을 `**미정(O-11):**`로 표기하고 잠정 규칙(자동 재색인 불가)을 인용한다(AM-21·AM-45).
-- [ ] `index_generation` 할당 = `max + 1` 비재사용(바이블 §11.4 (6) 1.3.0)을 사가 절에 인용한다(AM-18).
-- [ ] `index` 산출물(`IndexCommit`) 저장 키 = 캐시 제외 스테이지 바이트 해시 키(바이블 §13.3 1.3.0)를 반영한다(AM-19).
-- [ ] payload 선택 필드 `token_count_primary`·`ordinal`·`text_truncated`·`pii_policy_applied`가 `hydrate` 대상임을 매핑 표에 적는다(AM-33).
-- [ ] Nori stoptags·필터 순서 변경 제안은 AM-51 보류(M2 골든셋 A/B 통과 시 minor) — 바이블 §13.4 현행(`J*`·`E*`·`S*`)과 §5.1 한계 명시를 유지한다.
-- [ ] `mapping_version` 위치는 03-contracts/15 확정 대기로 표기한다(CR-44).
-- [ ] "(작성 예정)" 4곳(L38·L91·L576·L699) 제거.
+- [x] §4.1 `hnsw_config {m: 0, payload_m: 0}`를 반영하고 Qdrant 동작 "확인 필요"를 유지한다(#65). 값은 이미 `m:0, payload_m:16`으로 바이블 §13.4·§10.4와 일치했다 — 확인 문구·확인 필요 태그만 §4.1 결정문에 추가.
+- [x] `values = 1.0` 규칙을 04-pipelines/15 `tf_q`로 위임한다(#186).
+- [x] 미해결 13(두 해시 불변 프로파일 변경)을 `**미정(O-11):**`로 표기하고 잠정 규칙(자동 재색인 불가)을 인용한다(AM-21·AM-45).
+- [x] `index_generation` 할당 = `max + 1` 비재사용(바이블 §11.4 (6) 1.3.0)을 사가 절에 인용한다(AM-18).
+- [x] `index` 산출물(`IndexCommit`) 저장 키 = 캐시 제외 스테이지 바이트 해시 키(바이블 §13.3 1.3.0)를 반영한다(AM-19).
+- [x] payload 선택 필드 `token_count_primary`·`ordinal`·`text_truncated`·`pii_policy_applied`가 `hydrate` 대상임을 매핑 표에 적는다(AM-33).
+- [x] Nori stoptags·필터 순서 변경 제안은 AM-51 보류(M2 골든셋 A/B 통과 시 minor) — 바이블 §13.4 현행(`J*`·`E*`·`S*`)과 §5.1 한계 명시를 유지한다.
+- [x] `mapping_version` 위치는 03-contracts/15 확정 대기로 표기한다(CR-44).
+- [x] "(작성 예정)" 4곳(L38·L91·L576·L699) 제거 — 09-operations/04·07이 작성 완료되어 실제 링크로 교체.
+- 미해결 이슈 17(바이블 §11.4 mermaid 세미콜론)은 바이블 1.3.0 AM-24로 해소되어 "해소" 표기.
 
 ### 04-pipelines/14-query-understanding.md
 
-- [ ] `QueryPlan.filters.effective_hash` = 계획 필터 트리 해시(`as_of` 바인드 이름)로 바이블 §6.2 1.3.0 채택 사실을 인용한다(AM-12, CR-17).
-- [ ] 플랜 캐시 키에 `H("opts", canonical_json(플랜에 영향 주는 QueryRequest 옵션))` 항을 추가한다(L43·L478, AM-40).
-- [ ] 합성 생산자 `plugin_id = query_transformer.pipeline`(L46·L701 부근)을 반영한다(AM-11).
-- [ ] 질의 측 스테이지가 `ctx.plan`으로 `QueryPlan`을 읽는 경로(바이블 §4.1 1.3.0)를 반영한다(AM-27).
-- [ ] 제외 항목·`exclude_ids` 동일성 키 `(collection_id, chunk_id)`를 확인한다(CR-22; L429~L484).
-- [ ] `query_hash`(감사·로그 상관 키)를 감사 이벤트 절에 인용한다(AM-40).
-- [ ] "(작성 예정)" 2곳(L33·L862) 제거.
+- [x] `QueryPlan.filters.effective_hash` = 계획 필터 트리 해시(`as_of` 바인드 이름)로 바이블 §6.2 1.3.0 채택 사실을 인용한다(AM-12, CR-17).
+- [x] 플랜 캐시 키에 `H("opts", canonical_json(플랜에 영향 주는 QueryRequest 옵션))` 항을 추가한다(L43·L478, AM-40) — 이미 있던 값을 "09가 더한 잠정 part"에서 "바이블 1.3.0이 채택"으로 지위 격상, 미해결 이슈 19 해소.
+- [x] 합성 생산자 `plugin_id = query_transformer.pipeline`(L46·L701 부근)을 반영한다(AM-11).
+- [x] 질의 측 스테이지가 `ctx.plan`으로 `QueryPlan`을 읽는 경로(바이블 §4.1 1.3.0)를 반영한다(AM-27).
+- [x] 제외 항목·`exclude_ids` 동일성 키 `(collection_id, chunk_id)`를 확인한다(CR-22; L429~L484) — `exclude_ids`는 의도적으로 `chunk_id` 단일 키(컬렉션·세대 무관)이며 CR-22 후보 동일성과는 별개 식별 공간임을 확인·주석.
+- [x] `query_hash`(감사·로그 상관 키)를 감사 이벤트 절에 인용한다(AM-40).
+- [x] "(작성 예정)" 2곳(L33·L862) 제거 — 05-api/05-mcp-server·09-operations/02가 작성 완료되어 실제 링크로 교체.
 
 ### 04-pipelines/15-hybrid-search-and-fusion.md
 
-- [ ] `hydrate` `with_payload` 목록을 바이블 §4.3·§8.1 1.3.0(조건 필수 18필드 + 선택 4종)과 일치시킨다(AM-08·AM-33, CR-19; L57·L89·L217·L222).
-- [ ] L173 `min(top_k …)` 서술을 `pack.k_max = 프로파일 query.pack.k_max`(`top_k`와 별개)로 정합한다(CR-14).
-- [ ] 후보 동일성 `(collection_id, chunk_id)`·`record_id` 타이브레이크를 확인한다(CR-22).
-- [ ] `retrieve.security_context_missing` = HTTP 500 카탈로그 코드(L158·L170·L211)를 바이블 §5.7·§10.3 E7 1.3.0으로 맞춘다(AM-25).
-- [ ] `retriever.pipeline` 예약 구현명(다중 채널 합성 생산자)을 반영한다(AM-11).
-- [ ] A3 문맥 검토: L227·L649(기각 기술 행).
+- [x] `hydrate` `with_payload` 목록을 바이블 §4.3·§8.1 1.3.0(조건 필수 18필드 + 선택 4종)과 일치시킨다(AM-08·AM-33, CR-19; L57·L89·L217·L222).
+- [x] L173 `min(top_k …)` 서술을 `pack.k_max = 프로파일 query.pack.k_max`(`top_k`와 별개)로 정합한다(CR-14).
+- [x] 후보 동일성 `(collection_id, chunk_id)`·`record_id` 타이브레이크를 확인한다(CR-22) — RRF 누적기·정렬 키가 이미 `record_id`(collection_id 합성) 기준이라 일치 확인, 변경 불필요.
+- [x] `retrieve.security_context_missing` = HTTP 500 카탈로그 코드(L158·L170·L211)를 바이블 §5.7·§10.3 E7 1.3.0으로 맞춘다(AM-25).
+- [x] `retriever.pipeline` 예약 구현명(다중 채널 합성 생산자)을 반영한다(AM-11).
+- [x] A3 문맥 검토: L227·L649(기각 기술 행) — 이미 ADR-0014 인용과 함께 기각 문맥 명확, 변경 불필요.
 
 ### 04-pipelines/16-reranking.md
 
-- [ ] 09-operations/04 링크의 "작성 예정" 표기를 제거한다(#147; L603·L755).
-- [ ] 리랭커 API 모델 `model_id` 표기(`{provider}:{model}`, 자체 호스팅 `{repo}@{revision}`)를 바이블 §6.1 1.3.0과 맞춘다(AM-11).
-- [ ] 게이트 표기(`candidate`, `min_delta_pt`)가 바이블 §5.6 게이트 값 행과 일치하는지 확인한다(CR-37).
-- [ ] A3 L751 Infinity 문맥 검토(제외, D-16 v1.1).
+- [x] 09-operations/04 링크의 "작성 예정" 표기를 제거한다(#147; L603·L755).
+- [x] 리랭커 API 모델 `model_id` 표기(`{provider}:{model}`, 자체 호스팅 `{repo}@{revision}`)를 바이블 §6.1 1.3.0과 맞춘다(AM-11) — 이 문서의 6개 백엔드는 모두 자체 호스팅이라 `{repo}@{revision}`만 해당함을 명시.
+- [x] 게이트 표기(`candidate`, `min_delta_pt`)가 바이블 §5.6 게이트 값 행과 일치하는지 확인한다(CR-37) — 바이블 §7.3 예시와 완전히 일치 확인, 인용만 추가.
+- [x] A3 L751 Infinity 문맥 검토(제외, D-16 v1.1).
 
 ### 04-pipelines/17-post-processing-and-context-packing.md
 
@@ -581,39 +582,39 @@ depends_on: ["07-bible-amendment-triage-decisions.md", "01-phase3-completeness-r
 
 ### 05-api/05-mcp-server.md
 
-- [ ] `top_k`(1..50)는 수용만, `pack.k_max`는 프로파일 값(standard 20, 상한 20)임을 CR-14·CR-15로 확인한다(L152·L442·L537).
-- [ ] `concise` 응답의 `text_preview` ≤ 200자를 확인한다(CR-23; L229·L236·L428).
-- [ ] 슬림 `structuredContent` 항목이 `ContextItem` 승계 규칙(`variant_ids` 비승계)을 따르는지 대조한다(CR-20; L243·L254·L747·L758).
-- [ ] 제외 항목·`exclude_ids` 동일성 키 `(collection_id, chunk_id)`를 확인한다(CR-22).
-- [ ] 오류 매핑에 `api.not_found`(404)를 "바이블 §5.7 1.3.0 등재"로 표기하고 `ProblemDetails` 선택 필드를 인용한다(AM-28·AM-36).
+- [x] `top_k`(1..50)는 수용만, `pack.k_max`는 프로파일 값(standard 20, 상한 20)임을 CR-14·CR-15로 확인한다(L152·L442·L537). — 확인 완료, 기존 서술이 이미 정본과 일치(수정 불필요).
+- [x] `concise` 응답의 `text_preview` ≤ 200자를 확인한다(CR-23; L229·L236·L428). — 확인 완료, 일치.
+- [x] 슬림 `structuredContent` 항목이 `ContextItem` 승계 규칙(`variant_ids` 비승계)을 따르는지 대조한다(CR-20; L243·L254·L747·L758). — 확인 완료, `SlimItem`에 `variant_ids`·`channels_hit`·`block_refs` 없음(일치).
+- [x] 제외 항목·`exclude_ids` 동일성 키 `(collection_id, chunk_id)`를 확인한다(CR-22). — 확인 완료. `seen_chunk_ids`는 03-contracts/09가 정의한 대로 콘텐츠 주소(`chunk_id`) 단독 스코프-무관 키를 그대로 쓰며 이 문서 서술과 일치(CR-22는 candidate·result 동일성 키 — 10 RS-11 대상이며 exclude_ids와는 별개 사안).
+- [x] 오류 매핑에 `api.not_found`(404)를 "바이블 §5.7 1.3.0 등재"로 표기하고 `ProblemDetails` 선택 필드를 인용한다(AM-28·AM-36). — §8 오류 표(`api.not_found` 행), 레이트 리밋 `retry_after`, `ProblemDetails.instance` 설명에 반영(AM-28·AM-36 인용).
 
 ### 05-api/06-client-sdks.md
 
-- [ ] SDK 오류 클래스 매핑에 AM-36 신규 코드(`api.not_found`, `api.quota_exceeded`, `contract.schema_type_mismatch`, `contract.upcast_failed`)를 추가한다.
-- [ ] 관리 클라이언트 메서드에 `/v1/tenants`·API 키·플러그인·`GET /v1/schemas`·`GET /v1/version`·감사 이벤트를 추가하거나 "OpenAPI 코드젠 범위"로 명시한다(AM-39).
-- [ ] 컬렉션 삭제가 잡(`JobKind.delete_collection`, 202)을 반환함을 반영한다(AM-37; L151).
-- [ ] `ProblemDetails.retry_after` 처리(재시도 대기)를 SDK 재시도 절에 인용한다(AM-28).
-- [ ] `contracts_compat` 문법을 03-contracts/14 §4.3으로 인용한다(CR-38).
+- [x] SDK 오류 클래스 매핑에 AM-36 신규 코드(`api.not_found`, `api.quota_exceeded`, `contract.schema_type_mismatch`, `contract.upcast_failed`)를 추가한다. — §4 표에 `QuotaExceededError` 신설, `NotFoundError`·`ContractViolationError` 행 갱신.
+- [x] 관리 클라이언트 메서드에 `/v1/tenants`·API 키·플러그인·`GET /v1/schemas`·`GET /v1/version`·감사 이벤트를 추가하거나 "OpenAPI 코드젠 범위"로 명시한다(AM-39). — §5.1 표에 `client.api_keys`·`client.plugins`·`client.audit` 신설, `client.tenants`·`client.schemas`·`client.system` 확장(`/v1/tenants` 목록·생성은 04 미게시로 각주만).
+- [x] 컬렉션 삭제가 잡(`JobKind.delete_collection`, 202)을 반환함을 반영한다(AM-37; L151). — §3.3 멱등 키 표 뒤에 명시 각주 추가.
+- [x] `ProblemDetails.retry_after` 처리(재시도 대기)를 SDK 재시도 절에 인용한다(AM-28). — §3.2에 `retry_after` 본문 사본 경로와 AM-28 인용 추가.
+- [x] `contracts_compat` 문법을 03-contracts/14 §4.3으로 인용한다(CR-38). — 이미 §3.7에 인용되어 있어 수정 불필요(확인만).
 
 ### 05-api/07-webhooks-and-events.md
 
-- [ ] 이벤트 카탈로그 24 → 25종: `tenant.policies.changed`를 구독 가능 목록·표에 추가하고 L47·L99·L145의 "24종"·`1..24`를 25로 고친다(AM-38, CR-32).
-- [ ] `source` 값 `urn:rag:api`·`urn:rag:worker`를 "바이블 §6.5 1.3.0 결정"으로 표기한다(AM-13, CR-42).
-- [ ] `dataschema`는 `data`가 완전한 인스턴스일 때만(24종 → 25종 모두 생략)을 확인한다(CR-43; L130).
-- [ ] 컬렉션 삭제는 새 이벤트 없이 `collection.profile.changed`·`ingest.document.deleted`·`audit.admin.action`을 재사용함을 이벤트 표 비고에 적는다(AM-37).
-- [ ] SSE 진행률 범위(스테이지 경계, 세부는 폴링)를 바이블 §14 1.3.0으로 인용한다(AM-20).
-- [ ] L792 `api.quota_exceeded` 인용을 등재 코드로 표기 전환한다(AM-36).
+- [x] 이벤트 카탈로그 24 → 25종: `tenant.policies.changed`를 구독 가능 목록·표에 추가하고 L47·L99·L145의 "24종"·`1..24`를 25로 고친다(AM-38, CR-32). — 카탈로그 표에 `tenant.policies.changed` 행 추가, 개수 표기 전부 25로 정정(§9.1 결정 사항 요약·메트릭 라벨 카디널리티 포함).
+- [x] `source` 값 `urn:rag:api`·`urn:rag:worker`를 "바이블 §6.5 1.3.0 결정"으로 표기한다(AM-13, CR-42). — 봉투 필드 요약에 인용 추가.
+- [x] `dataschema`는 `data`가 완전한 인스턴스일 때만(24종 → 25종 모두 생략)을 확인한다(CR-43; L130). — 확인 및 표기 갱신.
+- [x] 컬렉션 삭제는 새 이벤트 없이 `collection.profile.changed`·`ingest.document.deleted`·`audit.admin.action`을 재사용함을 이벤트 표 비고에 적는다(AM-37). — §2 카탈로그 표 뒤에 전용 문단 추가.
+- [x] SSE 진행률 범위(스테이지 경계, 세부는 폴링)를 바이블 §14 1.3.0으로 인용한다(AM-20). — §9.4에 인용 추가.
+- [x] L792 `api.quota_exceeded` 인용을 등재 코드로 표기 전환한다(AM-36). — S6 행·미해결 이슈 9를 "바이블 §5.7 1.3.0 AM-36 등재, HTTP 상태 미확정"으로 갱신.
 
 ### 05-api/openapi.yaml
 
-- [ ] A10(바이블 §14 ↔ openapi) 대조에서 바이블에만 있는 1.3.0 경로를 `paths`에 추가한다: `GET/POST /v1/tenants`, `GET/PATCH /v1/tenants/{tenant_id}`, `GET /v1/tenants/{tenant_id}/policies`, `GET/POST /v1/api-keys`, `DELETE /v1/api-keys/{api_key_id}`, `POST /v1/api-keys/{api_key_id}/rotate`, `GET /v1/plugins`, `GET /v1/plugins/{plugin_id}`, `GET /v1/audit-events`, `GET /v1/schemas`, `GET /v1/version`, `POST /v1/profiles`, `POST /v1/collections/{collection_id}/consistency-check`, `POST /v1/documents/{document_id}/unmask`(AM-39). 이미 05-api/04가 "제안"으로 정의한 연산은 제안 표기만 지운다.
-- [ ] A10 기존 차이(`DELETE /v1/subscriptions`, `POST /v1/subscriptions/{}`, `POST /v1/eval/runs/{}`, `POST /v1/eval/runs/{}/report`)는 바이블 §14 행의 `GET/POST/DELETE` 결합 표기를 감사기가 경로마다 곱해서 생긴 것인지 확인하고, 실제 누락이면 추가, 표기 문제면 5단계 A10 파서 수정으로 넘긴다. `POST /mcp`는 §14 `/mcp` 행과 같은 연산임을 주석으로 둔다.
-- [ ] `DELETE /v1/collections/{collection_id}` 응답 설명(L3464·L3525·L3605 부근)의 "`delete_collection` 채택 전 — 첫 자식 `delete_document` 잡" 문구를 `JobStatus(kind=delete_collection)` 202로 바꾼다(AM-37).
-- [ ] `ProfileValidationResult.warnings[].code`의 "`profile.gate_pending` 등재 대기"(L4319 부근)를 등재 사실로 바꾼다(AM-36).
-- [ ] 테넌트 응답 뷰(`Tenant`·`TenantPolicies`·`TenantUsage`)에 `status`(`TenantStatus` — common-types `$ref`, T3 등재 후)·`quotas`·`tier`(readOnly)를 반영한다(AM-38·AM-39). API 전용 뷰는 `components`에만 두고 계약 타입은 `schemas/` `$ref`로 잇는 파일 머리 주석 규칙을 유지한다(AM-02).
-- [ ] `ProblemDetails`는 `schemas/problem-details.schema.json` `$ref`만 두므로 T3 반영(선택 필드·`instance` uri-reference, AM-28) 뒤 예시 응답만 대조한다.
-- [ ] `GET /v1/jobs/{job_id}/events` 설명을 "스테이지 경계 진행률, 세부 진행률은 `GET /v1/jobs/{job_id}` 폴링"으로 맞춘다(AM-20).
-- [ ] 파일 머리 주석의 정본 표기와 `info.description`의 바이블 인용을 1.3.0으로 갱신하고, YAML 파싱 검증(`node -e`로 js-yaml 또는 동등 파서)과 validate-contracts를 실행한다.
+- [x] A10(바이블 §14 ↔ openapi) 대조에서 바이블에만 있는 1.3.0 경로를 `paths`에 추가한다: `GET/POST /v1/tenants`, `GET/PATCH /v1/tenants/{tenant_id}`, `GET /v1/tenants/{tenant_id}/policies`, `GET/POST /v1/api-keys`, `DELETE /v1/api-keys/{api_key_id}`, `POST /v1/api-keys/{api_key_id}/rotate`, `GET /v1/plugins`, `GET /v1/plugins/{plugin_id}`, `GET /v1/audit-events`, `GET /v1/schemas`, `GET /v1/version`, `POST /v1/profiles`, `POST /v1/collections/{collection_id}/consistency-check`, `POST /v1/documents/{document_id}/unmask`(AM-39). 14개 경로 전부 추가(신규 컴포넌트 스키마 `Tenant`·`TenantCreateRequest`·`TenantPatch`·`TenantList`·`TenantStatus`·`TenantQuotas`·`ApiKey`·`ApiKeyCreateRequest`·`ApiKeyList`·`PluginMeta`·`PluginMetaList`·`AuditEventList`·`SchemaDescriptor`·`SchemaDescriptorList`·`VersionInfo`·`UnmaskRequest`·`UnmaskResult` 포함). `/v1/tenants` 목록·생성은 04-management-api.md가 아직 operationId를 정의하지 않아 이 문서가 잠정 확정하고 04 갱신 대상으로 표시.
+- [x] A10 기존 차이(`DELETE /v1/subscriptions`, `POST /v1/subscriptions/{}`, `POST /v1/eval/runs/{}`, `POST /v1/eval/runs/{}/report`)는 바이블 §14 행의 `GET/POST/DELETE` 결합 표기를 감사기가 경로마다 곱해서 생긴 것인지 확인하고, 실제 누락이면 추가, 표기 문제면 5단계 A10 파서 수정으로 넘긴다. `POST /mcp`는 §14 `/mcp` 행과 같은 연산임을 주석으로 둔다. — 확인 결과 실제 누락 아님(각 경로는 이미 의미 있는 조합만 구현), info.description에 근거와 5단계 이관 메모 추가. `POST /mcp` 주석 추가.
+- [x] `DELETE /v1/collections/{collection_id}` 응답 설명(L3464·L3525·L3605 부근)의 "`delete_collection` 채택 전 — 첫 자식 `delete_document` 잡" 문구를 `JobStatus(kind=delete_collection)` 202로 바꾼다(AM-37). — description·200/202 예시 모두 `kind: delete_collection`·`progress.unit=document`로 교체, x-rag-pending 제거.
+- [x] `ProfileValidationResult.warnings[].code`의 "`profile.gate_pending` 등재 대기"(L4319 부근)를 등재 사실로 바꾼다(AM-36). — 스키마 설명·연산 `x-rag-pending` 모두 갱신.
+- [x] 테넌트 응답 뷰(`Tenant`·`TenantPolicies`·`TenantUsage`)에 `status`(`TenantStatus` — common-types `$ref`, T3 등재 후)·`quotas`·`tier`(readOnly)를 반영한다(AM-38·AM-39). API 전용 뷰는 `components`에만 두고 계약 타입은 `schemas/` `$ref`로 잇는 파일 머리 주석 규칙을 유지한다(AM-02). — 신규 `Tenant`(status·quotas·tier 모두 포함) + `TenantQuotas`·`TenantStatus`($ref) 추가, `TenantPolicies`는 기존 `tier` 유지. T3가 `common-types.schema.json`에 `TenantStatus`를 이미 등재해 확인 완료.
+- [x] `ProblemDetails`는 `schemas/problem-details.schema.json` `$ref`만 두므로 T3 반영(선택 필드·`instance` uri-reference, AM-28) 뒤 예시 응답만 대조한다. — T3가 `common-types.schema.json`에 `retry_after`·`request_id`·`instance`(uri-reference) 반영 완료 확인, 기존 예시(rate-limited 등)가 이미 부합해 수정 불필요.
+- [x] `GET /v1/jobs/{job_id}/events` 설명을 "스테이지 경계 진행률, 세부 진행률은 `GET /v1/jobs/{job_id}` 폴링"으로 맞춘다(AM-20). — description 갱신, AM-20 인용 추가.
+- [x] 파일 머리 주석의 정본 표기와 `info.description`의 바이블 인용을 1.3.0으로 갱신하고, YAML 파싱 검증(`node -e`로 js-yaml 또는 동등 파서)과 validate-contracts를 실행한다. — 파일 머리 주석·`info.version`(0.1.1)·`info.description` 갱신. Node에 js-yaml 미설치라 `.venv`(PyYAML 6.0.3)로 동등 파싱 검증 통과, `node tools/validate-contracts.mjs --root .` ERROR 0 확인(스키마·03-contracts 미변경이라 베이스라인 그대로).
 
 ### 06-adr/README.md
 
@@ -654,15 +655,15 @@ depends_on: ["07-bible-amendment-triage-decisions.md", "01-phase3-completeness-r
 
 ### 06-adr/0033-sidecar-convert-contract-and-isolation-ladder.md
 
-- [ ] "비재시도 `parse.*`는 폴백 없이 전파" 문구를 바이블 §4.2 실패 정책(`sidecar_unavailable` 재시도 후 폴백, `conversion_failed` 폴백 체인)과 정합시킨다(CR-45, patch).
-- [ ] `derived` 파생물 키의 `options_hash`(바이블 §6.2 1.3.0)를 변환본 재사용 조건에 인용한다(AM-40).
-- [ ] 바이블 1.3.0 인용으로 갱신한다(`accepted` 유지).
+- [x] "비재시도 `parse.*`는 폴백 없이 전파" 문구를 바이블 §4.2 실패 정책(`sidecar_unavailable` 재시도 후 폴백, `conversion_failed` 폴백 체인)과 정합시킨다(CR-45, patch). 해소(v1.3, CR-45): 배정 기준 표 `in_process` 행에 비재시도 코드는 체인을 끊고 `parse.conversion_failed`만 폴백 체인이 진행됨을 명시.
+- [x] `derived` 파생물 키의 `options_hash`(바이블 §6.2 1.3.0)를 변환본 재사용 조건에 인용한다(AM-40). 해소(v1.3, AM-40): 결정 절·시퀀스 다이어그램·결과 절 세 곳의 `H("derived", …)` 식에 `options_hash` 인자 추가.
+- [x] 바이블 1.3.0 인용으로 갱신한다(`accepted` 유지). 해소(v1.3): 위 두 항목 인용에 "바이블 §4.2/§6.2 1.3.0" 명시, `status: accepted` 불변.
 
 ### 06-adr/0037-artifact-cache-scope-and-stage-key-composition.md
 
-- [ ] `stage_key` 입력 해시 규약(`detect`·`parse` = 원본 `content_hash`, 그 외 `input_ref.blake3`)을 결정 절에 반영한다(AM-05, patch).
-- [ ] 캐시 제외 스테이지(`fetch`·`index`) 산출물 키와 점유 `stage_key` 경로 비덮어쓰기 규칙(바이블 §13.3 1.3.0)을 결과 절에 추가한다(AM-19).
-- [ ] `derived` 키 `options_hash`와 `llm-enrich` 키 입력(AM-12·AM-40)을 콘텐츠 전용 캐시 목록에 반영한다.
+- [x] `stage_key` 입력 해시 규약(`detect`·`parse` = 원본 `content_hash`, 그 외 `input_ref.blake3`)을 결정 절에 반영한다(AM-05, patch). 해소(v1.3, AM-05): 결정 절 일반식을 `input_hash`로 바꾸고 `detect`·`parse` = `content_hash`, 그 외 = `input_ref.blake3` qualifier와 다이어그램을 함께 갱신.
+- [x] 캐시 제외 스테이지(`fetch`·`index`) 산출물 키와 점유 `stage_key` 경로 비덮어쓰기 규칙(바이블 §13.3 1.3.0)을 결과 절에 추가한다(AM-19). 해소(v1.3, AM-19): 결과·중립 절에 바이트 해시 키 경로·`derived/llm_enrich/` 경로·비덮어쓰기 규칙 불릿 추가.
+- [x] `derived` 키 `options_hash`와 `llm-enrich` 키 입력(AM-12·AM-40)을 콘텐츠 전용 캐시 목록에 반영한다. 해소(v1.3, AM-12·AM-40): 결정 절 문장과 캐시 부류 표의 파생물·LLM 보강 행에 `options_hash`·`embed_text`(생성 결과 제외) 정의 반영.
 
 ### 08-evaluation/01-evaluation-strategy.md
 

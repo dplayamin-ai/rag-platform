@@ -2,7 +2,7 @@
 title: 파이프라인 프레임워크 (Stage 추상화)
 status: active
 owner: architecture
-version: 0.1.2
+version: 0.1.3
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -33,8 +33,6 @@ depends_on:
 - 포함: `Stage[In, Out]` 5멤버 프로토콜과 입출력 타입의 결정 방식(스테이지 표), `config_schema`·`config_hash`·`fingerprint()`·`capabilities()`의 프레임워크 관점 규칙, `StageContext`의 멤버와 채움 규칙, `PipelineContext`·`QueryContext`, 프로파일 YAML → 파이프라인 정의 해소와 위상(선형 + 스테이지 내부 팬아웃), 셸의 실행 순서(계약 검증 미들웨어·격리 모드·산출물 저장·계보), 캐싱과 멱등성, 결정성 등급과 비결정 스테이지의 캐시 키, 관측성 자동 계측, 오류 분류와 재시도 힌트, 부분 결과와 재개(`heartbeat_details` 스키마), 테스트 유틸리티(적합성 키트·골든 회귀), 로컬 CLI.
 - 제외: 각 스테이지의 알고리즘(04-pipelines/02~19), 계약 필드 전문(03-contracts), 워크플로우 타입·시그널·사가·디스패처(06), 플러그인 패키징·레지스트리·라이선스 게이트([플러그인 아키텍처](../02-architecture/05-plugin-architecture.md), 이하 "05"), 저장소 스키마([저장소 아키텍처](../02-architecture/04-storage-architecture.md)), 배포.
 - 정본 규칙: 타입명·필드명·열거값·오류 코드·이벤트명·메트릭명은 바이블 §5·§5.7·§6을 그대로 쓴다. 이 문서가 새로 붙이는 이름(`StageSpec`, `STAGE_TABLE`, `ResumeCursor`, `StageFailure`, `GoldenCase`, `rag run-stage` 등)은 본문에 "제안" 또는 "내부(계약 아님)"로 표시하고 `## 미해결 이슈`에 바이블 반영 여부를 남긴다. 수치는 모두 "초안 목표"다.
-
----
 
 ## 1. 프레임워크 개관: 하나의 커널, 두 개의 셸
 
@@ -83,8 +81,6 @@ flowchart TB
 | 스테이지 순서·조건 분기 | — | — | 소유(`STAGES`, `recount` 조건) | 시그널·자식 워크플로우·`continue_as_new` | `recount` 유무 |
 | 관측(스팬·메트릭·로그) | 외부 호출 자식 스팬만(데코레이터) | 소유(§9) | — | `TracingInterceptor` | — |
 | 오류 표현 | `StageFailure(StageError)` 하나 | `contract.violation` 감싸기, Temporal 변환 | — | 재시도 판정(카탈로그 `retryable`) | `non_retryable_error_codes` |
-
----
 
 ## 2. `Stage[In, Out]` 프로토콜
 
@@ -185,6 +181,8 @@ STAGE_TABLE: Mapping[str, StageSpec] = {s.name: s for s in (*INGEST_STAGES, *QUE
 | 실행 정책 분리 | 격리·큐·재시도·타임아웃 필드를 `config_schema`에 두지 않는다(그것은 `StagePolicy`) | 코드 리뷰·린트 |
 | 기본값 | 기본값은 바이블 §7.2 `standard` 열과 같다 | 적합성 키트 |
 
+**결정(#44, 04-pipelines/09 미해결 이슈 21 합의):** 인스턴스 재사용 단위는 원칙상 `profile_hash`당 1회이지만, `model_ids()`가 컬렉션별 상태(예: `normalizer.chain`의 `dict:{dictionary_hash}`)에 의존하는 플러그인은 `PluginRegistry.build`가 그 상태를 **생성자 인자로 고정하지 않고** 매 `fingerprint()` 호출 시 `RuntimeServices`에서 다시 읽어 반영한다 — 즉 인스턴스는 `profile_hash`당 재사용하되 `model_ids()`는 결정 불변이 아니라 호출 시점의 컬렉션 사전을 반영하는 함수로 둔다. `dictionary_hash`를 인스턴스 재사용 키에 넣지 않는 이유는 컬렉션 수만큼 인스턴스가 늘어나는 것을 막기 위함이다.
+
 ### 2.4 `fingerprint()`와 필수 구성요소
 
 **결정:** 지문은 SDK `hash_of`(`H`)가 단일 식 `H("producer", plugin_id, plugin_version, config_hash, image_digest or "", ",".join(model_ids))`로 구성하며(바이블 §4.1·§6.2), 확장 지점·격리 모드별 필수 구성요소의 포함을 레지스트리 로딩 시 검증한다. 누락은 로딩 거부다(바이블 리스크 #8, [ADR-0032](../06-adr/0032-plugin-sdk-stage-protocol-and-conformance-kit.md)).
@@ -245,8 +243,6 @@ class StageBase(Generic[In, Out]):                       # 제안. 상속 선택
 - `StageLifecycle(init/warmup/health/close)`(05 §2.3 제안): 프로세스 단위 훅. 셸은 `isinstance` 검사로 구현 여부를 판별한다. 5멤버 수를 바꾸지 않는다.
 - `SidecarStage`(02 §3.1, [ADR-0033](../06-adr/0033-sidecar-convert-contract-and-isolation-ladder.md)): `isolation=sidecar` 어댑터의 기반 클래스. `ConvertRequest`/`ConvertResponse`로 `POST /v1/convert`를 감싸고 대기 중 `ctx.heartbeat()`를 호출한다.
 
----
-
 ## 3. `StageContext`
 
 ### 3.1 멤버
@@ -305,8 +301,6 @@ class StageContext(Protocol):
 | `cancellation` | `cancelled`(제안) | 취소 감지는 의무가 아니다(02 §4.2 규칙 3). `Resumable` 스테이지가 단위(페이지·배치) 경계에서 폴링하면 현재 단위를 마무리하고 종료할 수 있다(06 §3.3) |
 | `logger`, `metrics` | 없음. 셸이 실행 전에 알 수 있는 문맥 필드 `tenant_id_hash`, `job_id`, `trace_id`, `stage`를 `structlog.contextvars.bind_contextvars(...)`로 바인딩하고(05 §9 규칙 4) 스팬·메트릭을 자동 계측한다(§9). 바이블 §6.5 로그 필드 중 `event`·`level`은 로그 호출마다, `code`는 오류 발생 시점에 채워지는 호출 시 필드다 | 플러그인은 `structlog.get_logger()`만 쓴다. 메트릭 이름은 바이블 §6.5 정본 목록만 유효하므로 스테이지가 임의 메트릭을 만들 수 없다 |
 
----
-
 ## 4. 파이프라인 정의: 프로파일에서 스테이지 그래프로
 
 ### 4.1 `PipelineContext`와 `QueryContext`
@@ -354,65 +348,13 @@ class PipelineProfile:                                     # 내부(계약 아�
     def stage_policy(self, name: str) -> StagePolicy: return self.policies[name]
 ```
 
-`standard` 프로파일(바이블 §7.3)의 `ingest.parse`·`ingest.embed` 발췌와 그로부터의 투영을 나란히 둔다. 예약 키(`plugin`, `policy`, `isolation`, `image`, `then`, `fallback`)는 셸·레지스트리가 소비하고 나머지 키(`router`, `options`, `model_id`, `dim`, …)는 해당 플러그인의 `config_schema`로 간다. `parse` 위치에는 항상 플랫폼 합성 스테이지 `parser.router`가 바인딩되고 `router`·`options` 전체가 그 설정이다.
-
-```yaml
-# profiles/builtin/standard.yaml 발췌(바이블 §7.3 그대로; 주석은 이 문서)
-ingest:
-  parse:                                  # plugin 키 없음 → plugin_ids["parse"] = "parser.router"(플랫폼)
-    router:
-      hwpx: [parser.hwpx_python_hwpx]
-      hwp5: [{plugin: parser.hwp5_java_sidecar, isolation: sidecar, image: parser-workers},   # isolation·image는 예약 키
-             {plugin: parser.hwp5_unhwp, isolation: helper_process},
-             parser.hwp5_hwp_hwpx_parser]
-    options:
-      ocr: {plugin: rapidocr, lang: [korean], version: PPOCRV5, model: MOBILE}
-      page_timeout: {cpu: 60s, gpu: 20s}
-  embed:
-    dense:  {plugin: embedder.vllm_pooling_bge_m3, model_id: BAAI/bge-m3, revision: "<sha>", dim: 1024, normalized: true, dtype: fp16}
-    sparse: {plugin: embedder.vllm_pooling_bge_m3, vocab_id: xlm-roberta-250k}
-    late_interaction: {enabled: false}
-```
-
-```python
-# 위 발췌의 PipelineProfile 투영(값은 예시; profile_hash는 해소 결과 전체의 H("profile", …))
-PipelineProfile(
-    profile_hash="9f3a6c1e2b7d4a8f0c5e9b3d7a1f6e2c4b8d0a9f3e7c1b5d2a6f8e0c4b9d3a7f",
-    stages=("fetch", "parse", "normalize", "chunk", "enrich", "embed", "index"),     # ingest.recount 없음 → 생략
-    plugin_ids={"fetch": "fetcher.fsspec_httpx", "parse": "parser.router", "normalize": "normalizer.mecab_ko",
-                "chunk": "chunker.structure_aware", "enrich": "enricher.composite", "embed": "embedder.vllm_pooling_bge_m3",
-                "index": "index_backend.composite"},                                 # enrich·index의 합성 스테이지 이름은 04-pipelines/11·13이 확정
-    policies={"parse": StagePolicy(task_queue="ingest-cpu", start_to_close="15m", heartbeat="60s", max_attempts=3,
-                                   non_retryable_error_codes=["parse.document_encrypted", "parse.distribution_document",
-                                                              "parse.unsupported_variant", "parse.corrupt_container", "contract.violation"],
-                                   resumable=True, isolation=None),                   # 바이블 §4.4 parse(텍스트) 행; 체인 멤버별 isolation은 router 설정 안
-              "embed": StagePolicy(task_queue="ingest-gpu-embed", start_to_close="20m", heartbeat="60s", max_attempts=5,
-                                   backoff={"initial": "1s", "max": "5m", "coefficient": 2.0},
-                                   non_retryable_error_codes=["embed.space_mismatch", "embed.tokenizer_missing"],
-                                   resumable=True, isolation="in_process")},
-)
-```
+예약 키(`plugin`, `policy`, `isolation`, `image`, `then`, `fallback`)는 셸·레지스트리가 소비하고 나머지 키(`router`, `options`, `model_id`, `dim`, …)는 해당 플러그인의 `config_schema`로 간다. `parse` 위치에는 항상 플랫폼 합성 스테이지 `parser.router`가 바인딩되고 `router`·`options` 전체가 그 설정이다. `standard` 프로파일의 `ingest.parse`(HWPX·HWP5 라우터 체인, OCR 옵션)·`ingest.embed`(dense·sparse 공간) 구체 값은 바이블 §7.3이 정본이며, 그로부터의 `PipelineProfile` 투영은 위 데이터클래스 필드를 그대로 채운 값이다(예: `plugin_ids["parse"] = "parser.router"`, `policies["parse"].task_queue = "ingest-cpu"`).
 
 ### 4.3 위상: 선형 체인 + 스테이지 내부 팬아웃
 
 **결정:** 오케스트레이터 경계의 위상은 **선형 체인**이며 코드 상수 `STAGES`로 고정된다. 프로파일은 위상을 바꾸지 못하고 `recount` 포함 여부, 플러그인, 정책만 고른다. "팬아웃"은 계약 경계 밖에서 일어나지 않는다 — 다중 임베딩 모델(dense·sparse·`late_interaction`), 다중 enricher, 파서 라우터 체인, 다중 인덱스 백엔드는 모두 **한 액티비티 안**에서 실행되어 하나의 출력 계약으로 합성된다. 범용 DAG 엔진은 도입하지 않는다(브리프 §2 R2 "Not-Invented-Here 금지"·§3 원칙 2 Adapters over Forks의 취지는 검증된 오픈소스를 어댑터로 감싸는 것이며 범용 엔진 자작이 아니다; 경계 계약이 D-05로 고정되어 있고 경계 페이로드가 `ArtifactRef` 1개이므로 병렬 노드를 늘리면 히스토리·저장만 늘고 재현성 단위는 얻지 못한다). 질의 측 팬아웃(채널 × 컬렉션 × 변형)은 `api` 프로세스 안의 `asyncio.gather`다(바이블 §8.1 7단계).
 
-```mermaid
-flowchart LR
-    IR[IngestRequest] --> F[fetch] --> P[parse] --> N[normalize] --> C[chunk] --> RC{{recount?}} --> E[enrich] --> EM[embed] --> IX[index] --> PB[publish]
-    subgraph parse_inner["parse 액티비티 내부"]
-        D1["detect(stage_key 별도)"] --> CH["SourceFormat별 체인 순차 폴백 → parser_chain[]"]
-    end
-    subgraph embed_inner["embed 액티비티 내부(팬아웃)"]
-        S1["dense 공간"] & S2["sparse_learned 공간"] & S3["late_interaction 공간(옵션)"] --> VB["VectorBundle 합성 · embedding_profile_hash"]
-    end
-    subgraph index_inner["index 사가 내부"]
-        B1["vector 백엔드 upsert"] --> B2["lexical 백엔드 bulk"] --> FL["플립 lexical → vector"]
-    end
-    P -.-> parse_inner
-    EM -.-> embed_inner
-    IX -.-> index_inner
-```
+선형 체인 `fetch → parse(내부: detect → SourceFormat별 체인 순차 폴백 → parser_chain[]) → normalize → chunk → recount? → enrich → embed(내부 팬아웃: dense·sparse_learned·late_interaction 공간 → VectorBundle 합성) → index(내부 사가: vector upsert → lexical bulk → 플립) → publish`는 §4.4의 `STAGES` 상수 그대로다. 팬아웃 지점별 세부는 다음과 같다.
 
 | 팬아웃 지점 | 위치 | 병렬 단위 | 결합 | 경계 페이로드 변화 |
 |-------------|------|-----------|------|--------------------|
@@ -456,45 +398,11 @@ async def run(ctx: QueryContext, req: QueryRequest, security: SecurityContext, p
 
 반환 타입은 바이블 §11.1의 `-> IndexCommit`이 아니라 06 §1.1의 `ArtifactRef(schema_type=IndexCommit)`를 따른다 — 워크플로우 코드는 I/O를 할 수 없어 `IndexCommit` 인스턴스를 로드할 수 없고, 경계 페이로드는 `ArtifactRef` 하나여야 하기 때문이다(바이블 §4.1). 바이블이 우선하므로 이 차이는 바이블 §11.1 시그니처 patch 제안으로 이 문서의 미해결 이슈 17에 등재한다(06 미해결 이슈 13과 공동).
 
----
-
 ## 5. 셸: 실행 미들웨어
 
 ### 5.1 실행 순서
 
-**결정:** 수집 스테이지는 제네릭 액티비티 `stage.{name}` 하나로 실행되고 본문은 `StageShell.execute`(= `run_stage`) 하나다. 셸은 순서대로 (1) 잡 상태 전이 기록, (2) `stage_key` 계산·캐시 조회 — `key_input=content_hash`인 `parse`는 입력 `SourceDocument`(≤ 32KB)를 먼저 로드·검증해 `content_hash`를 읽고, 그 외는 `input_ref.blake3`로 로드 없이 계산한다 — , (3) 입력 로드 + 계약 검증((2)에서 로드했으면 생략), (4) `requires_lineage` 로드, (5) `StageContext` 구성, (6) 격리 모드별 `run`, (7) 봉투 완성 + 출력 계약 검증, (8) 콘텐츠 주소화 저장, (9) `artifacts`·`lineage`·`jobs`·`outbox` 동일 트랜잭션 기록을 수행한다(바이블 §4.1·§4.2; 02 §4.1; 06 §3.1). 스테이지는 (6)만 본다. `parse` 안의 서브스테이지 `detect`는 §5.6이 같은 순서를 액티비티 안에서 반복한다.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant W as PipelineContext.run
-    participant S as StageShell.execute (run_stage)
-    participant R as PluginRegistry
-    participant L as ledger (artifacts · lineage · jobs · outbox)
-    participant O as ArtifactStore
-    participant St as Stage.run (격리 모드별)
-    W->>S: StageActivityInput{stage, job, input_ref, event_ids, commit_id?, force, reindex?}
-    S->>R: resolve(stage, job.profile_hash) → Stage(fingerprint 확정)
-    S->>L: mark_stage_started 또는 record_retry [tx]
-    alt cacheable
-        opt key_input = content_hash (parse)
-            S->>O: get(input_ref, SourceDocument) [지점 2 선행] → content_hash
-        end
-        S->>S: stage_key = H("stage", name, scope_key, content_hash 또는 input_ref.blake3, fingerprint)
-        opt force=false
-            S->>L: artifacts.lookup(tenant_id, stage_key)
-            L-->>S: hit → commit_stage(cache_hit=true) → ArtifactRef 반환
-        end
-    end
-    S->>O: get(input_ref, In) — schema_type · schema_version · blake3 · size_bytes 대조 + 스키마 검증 [지점 2; 선행 로드했으면 생략]
-    S->>O: lineage_refs[requires_lineage] 로드 → ctx.lineage
-    S->>St: run(inp, ctx) — in_process 스레드 / helper_process / sidecar
-    St-->>S: Out 또는 StageFailure(StageError)
-    S->>S: complete_envelope(lineage_refs) → validate_out(스키마 · 불변식 · 봉투 스코프) [지점 3] → 실패 시 contract.violation
-    S->>O: put_artifact(out, tenant_id, stage_key) → ArtifactRef{blake3, size_bytes, stage_key} [§7.2 덮어쓰기 금지]
-    S->>L: artifacts + lineage + jobs.progress + outbox(ingest.document.*) [동일 tx]
-    S-->>W: ArtifactRef
-```
+**결정:** 수집 스테이지는 제네릭 액티비티 `stage.{name}` 하나로 실행되고 본문은 `StageShell.execute`(= `run_stage`) 하나다. 셸은 순서대로 (1) 잡 상태 전이 기록, (2) `stage_key` 계산·캐시 조회 — `key_input=content_hash`인 `parse`는 입력 `SourceDocument`(≤ 32KB)를 먼저 로드·검증해 `content_hash`를 읽고, 그 외는 `input_ref.blake3`로 로드 없이 계산한다 — , (3) 입력 로드 + 계약 검증((2)에서 로드했으면 생략), (4) `requires_lineage` 로드, (5) `StageContext` 구성, (6) 격리 모드별 `run`, (7) 봉투 완성 + 출력 계약 검증, (8) 콘텐츠 주소화 저장, (9) `artifacts`·`lineage`·`jobs`·`outbox` 동일 트랜잭션 기록을 수행한다(바이블 §4.1·§4.2; 02 §4.1; 06 §3.1). 스테이지는 (6)만 본다. `parse` 안의 서브스테이지 `detect`는 §5.6이 같은 순서를 액티비티 안에서 반복한다. 참여자별 호출 순서(`PipelineContext.run` → `StageShell.execute` → `PluginRegistry`·`ArtifactStore`·`Stage.run`·원장)의 정확한 형태는 §5.2 `run_stage` 정본 스케치가 코드로 고정한다(중복 다이어그램을 두지 않는다).
 
 ### 5.2 정본 스케치 `run_stage`
 
@@ -607,7 +515,7 @@ class SubstageRunner:
         spec, shell, inp = STAGE_TABLE[name], self.shell, self.inp
         if spec.substage_of != inp.stage:                                     # detect는 parse 안에서만
             raise StageFailure(stage_error("contract.violation", stage=inp.stage, plugin_id="parser.router"))
-        sub = shell.registry.resolve(name, inp.job.profile_hash)              # role=format_detector 플러그인(프로파일 parse.detect 또는 기본)
+        sub = shell.registry.resolve(name, inp.job.profile_hash)              # role=format_detector 플러그인, 프로파일 키 parse.detect(정본 04-pipelines/03, #7 해소)
         policy = shell.profiles.stage_policy(inp.job.profile_hash, name)      # detect: start_to_close 1m, heartbeat 없음(바이블 §4.4)
         with shell.tracer.start_as_current_span(f"rag.ingest.{name}") as span:   # 부모 rag.ingest.parse의 자식(§9.1)
             key = hash_of("stage", name, inp.job.scope_key, sub_inp.content_hash, sub.fingerprint())   # key_input=content_hash
@@ -625,12 +533,10 @@ class SubstageRunner:
 | 항목 | 규칙 |
 |------|------|
 | 계보 | `lineage(child=detect_ref, parent=inp.input_ref, stage_key)` 행만 기록한다. `jobs.stage`는 `parse`로 유지되고 스테이지 이벤트(`ingest.document.*ed`)는 내지 않는다(바이블 §5.7 이벤트 카탈로그에 `detect` 이벤트가 없다) |
-| 봉투 | `SourceDocument → SourceDocument`이므로 `complete_envelope`의 자기 입력 키 추가(`lineage_refs.source`)를 하지 않는다 — 같은 타입을 `lineage_refs`에 넣으면 I-7 "자기 자신 제외"와 충돌한다. 하류 `ParsedDocument.lineage_refs.source`는 액티비티 입력(`fetch` 산출물) 참조를 유지한다(04-pipelines/03과 합의, 미해결 이슈 18) |
+| 봉투 | `SourceDocument → SourceDocument`이므로 `complete_envelope`의 자기 입력 키 추가(`lineage_refs.source`)를 하지 않는다 — 같은 타입을 `lineage_refs`에 넣으면 I-7 "자기 자신 제외"와 충돌한다. 하류 `ParsedDocument.lineage_refs.source`는 **결정(R-10, CR-01·CR-11):** `detect` 산출물(판정 완료된 `SourceDocument`) 참조를 싣는다 — `fetch` 원본이 아니다. `parse` 스테이지의 실제 `run()` 입력이 `detect` 출력이므로 `complete_envelope`가 `inp.input_ref`로 채우는 값도 자연히 `detect` 산출물이다(04-pipelines/03과 합의, 미해결 이슈 18 해소) |
 | 오류 | `parse.unsupported_format`·`parse.corrupt_container`는 `detect`가 던지고(비재시도, 바이블 §4.2), 암호·배포 플래그는 `container_flags`로 판정만 남긴다. 1m 초과는 `TimeoutError` → 미분류 예외로 부모 액티비티 재시도(§10.2) |
 | 캐시 | 조건부 GET 304로 `SourceDocument` 봉투가 새로 발급되어도 `content_hash`가 같으면 `detect`·`parse` 둘 다 적중한다(ADR-0037 중립 1) |
 | 확장 | 다른 합성 스테이지(`enrich` 다중 enricher, `index` 다중 백엔드)는 서브스테이지가 아니라 한 스테이지 안의 합성(§4.3)이므로 `SubstageRunner`를 쓰지 않는다. 새 서브스테이지는 바이블 §4.2 표 추가가 전제다 |
-
----
 
 ## 6. 산출물 저장과 로딩
 
@@ -645,7 +551,9 @@ class SubstageRunner:
 | `ArtifactStore` | `put_artifact(obj, *, tenant_id, stage_key)`, `put_source(data, *, tenant_id, media_type)`, `put_derived(data, *, tenant_id, kind, ext, media_type)`, `get(ref, schema_type)`, `get_bytes(ref)`, `exists(uri)` | 셸(`orchestration.context`), `storage`, `retrieval.pack.chunk_text_store` | 계약 산출물 `tenants/{tenant_id}/artifacts/{schema_type_kebab}/{stage_key[:2]}/{stage_key}.json`; 원본 `tenants/{tenant_id}/sources/{blake3[:2]}/{blake3}`; 파생물 `tenants/{tenant_id}/derived/{kind}/{blake3[:2]}/{blake3}.{ext}` |
 | `DerivedArtifacts`(`ctx.artifacts`) | `put_source(data, *, media_type)`, `put_derived(data, *, kind, ext, media_type)` | 스테이지(셸이 `tenant_id` 바인딩) | 위와 동일; `tenant_id` 인자·읽기·계약 저장 없음(E5·E17) |
 
-캐시 제외 스테이지(`fetch`·`index`)의 산출물은 `stage_key`가 없다. **제안:** 이 경우 `put_artifact(stage_key=None)`은 바이트 해시 키 `tenants/{tenant_id}/artifacts/{schema_type_kebab}/{blake3[:2]}/{blake3}.json`을 쓴다(06 미해결 이슈 16의 `SourceDocument` 제안을 `IndexCommit`까지 일반화; 바이블 §13.3 patch, 미해결 이슈 2). 같은 바이트 해시 키는 §7.2 "덮어쓰기 금지" 규칙에서 `stage_key` 경로가 이미 점유된 경우의 대체 경로로도 쓰인다.
+**결정(#86):** 타입 이름 `DerivedArtifacts`는 파생물 전용을 암시하지만 `put_source`는 **원본 바이트** 포트다 — `fetch` 스테이지만 호출하며(§2.5 "허용" 행), 나머지 스테이지의 `ctx.artifacts`는 사실상 `put_derived`만 유효하게 쓴다. 타입명 변경은 이 문서 범위를 벗어나므로(코드 표기는 유지) 본문에서만 원본/파생 구분을 명시한다.
+
+캐시 제외 스테이지(`fetch`·`index`)의 산출물은 `stage_key`가 없다. **결정(바이블 §13.3 1.3.0, AM-19):** 이 경우 `put_artifact(stage_key=None)`은 바이트 해시 키 `tenants/{tenant_id}/artifacts/{schema_type_kebab}/{blake3[:2]}/{blake3}.json`을 쓴다. 같은 바이트 해시 키는 §7.2 "덮어쓰기 금지" 규칙(점유된 `stage_key` 경로는 정규화 동치면 기존 참조 반환, 다르면 바이트 해시 키에 저장 — 바이블 §13.3 1.3.0 동일 등재)에서 대체 경로로도 쓰인다.
 
 ### 6.3 로딩 규칙
 
@@ -654,13 +562,11 @@ class SubstageRunner:
 - 큰 본문(벡터 npz, 부모 텍스트 번들, 표 HTML, 페이지 이미지)은 계약 JSON에 인라인하지 않고 `derived` 참조로 둔다(계약 개요 §8.4). 스테이지는 `ctx.artifacts.put_derived`로 저장하고 반환된 `ArtifactRef`를 계약 필드(`vectors_ref`, `html_ref` 등)에 넣는다.
 - 압축·`content_encoding`은 미정(계약 개요 U-4). 확정 전까지 셸은 압축 없이 저장한다.
 
----
-
 ## 7. 캐싱과 멱등성
 
 ### 7.1 `stage_key`와 캐시 부류
 
-**결정:** 일반식은 바이블 §4.1·§6.2 `stage_key` 행 그대로 `stage_key = H("stage", stage_name, scope_key, input_ref.blake3, fingerprint)`, `scope_key = f"{tenant_id}/{collection_id}/{document_id}"`이며, 스테이지별 구성은 바이블 §4.2 표와 [ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md) §"스테이지별 `stage_key` 구성"을 그대로 따른다 — "`detect`·`parse`는 입력 해시로 `content_hash`를, 그 뒤는 직전 산출물의 `blake3`를 쓴다". `artifacts(tenant_id, stage_key)` 행이 있으면 실행을 생략하고 계보만 기록한다(`cache_hit=true`). 계약 산출물은 봉투를 품으므로 잡 스코프 안에서만 재사용하고, 봉투 없는 콘텐츠 전용 캐시만 스코프 없이 테넌트 내 공유한다. 작성 지시의 "입력 해시 + stage version + config hash"는 입력 해시(`key_input`) + `fingerprint`(`plugin_version`·`config_hash`·`image_digest`·`model_ids`)로 실현되며 `scope_key`가 추가로 들어간다.
+**결정:** 일반식은 바이블 §4.1 1.3.0(AM-05)이 명문화한 그대로 `stage_key = H("stage", stage_name, scope_key, <입력 해시>, fingerprint)`, `scope_key = f"{tenant_id}/{collection_id}/{document_id}"`이며, 입력 해시는 `detect`·`parse` = 원본 `content_hash`, 그 외 = `input_ref.blake3`다. 스테이지별 구성은 바이블 §4.2 표와 [ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md) §"스테이지별 `stage_key` 구성"을 그대로 따른다. `artifacts(tenant_id, stage_key)` 행이 있으면 실행을 생략하고 계보만 기록한다(`cache_hit=true`). 계약 산출물은 봉투를 품으므로 잡 스코프 안에서만 재사용하고, 봉투 없는 콘텐츠 전용 캐시만 스코프 없이 테넌트 내 공유한다. 작성 지시의 "입력 해시 + stage version + config hash"는 입력 해시(`key_input`) + `fingerprint`(`plugin_version`·`config_hash`·`image_digest`·`model_ids`)로 실현되며 `scope_key`가 추가로 들어간다.
 
 | 스테이지 | 바이블 §4.2 표기 | 4번째 인자(`StageSpec.key_input`) | 5번째 인자 — 셸이 넣는 값 |
 |----------|------------------|------------------------------------|----------------------------|
@@ -668,7 +574,7 @@ class SubstageRunner:
 | `detect` | `H("stage","detect", scope_key, content_hash, fingerprint)` | `SourceDocument.content_hash` | `format_detector` 플러그인의 `fingerprint()` |
 | `parse` | `H("stage","parse", scope_key, content_hash, parser_fingerprint)` | `SourceDocument.content_hash` | `parser.router`의 `fingerprint()`. `parser_fingerprint`는 이 값을 가리키며, 라우터의 `config_hash`(프로파일 `router`·`options` 전체)·`model_ids`·`image_digest`(체인 멤버 합집합)를 통해 체인 멤버 각각의 `parser_fingerprint_hash`(바이블 §6.2) 구성요소를 모두 포함한다 — 별도 산출값이 아니다 |
 | `normalize`, `chunk`, `enrich`, `embed` | `H("stage", name, scope_key, {parsed\|normalized\|chunk_set\|enriched}.blake3, fingerprint)` | `input_ref.blake3`(직전 산출물 바이트 해시) | 해당 위치 플러그인의 `fingerprint()` |
-| `recount` | `H("stage","recount", scope_key, chunk_set.blake3, tokenizer_id)` | `input_ref.blake3` | `token_counter` 플러그인의 `fingerprint()`. `tokenizer_id`는 그 `config_hash`의 결정 구성요소이며, 바이블 표기는 지문을 결정하는 유일 항목을 이름한 것으로 읽는다(`tokenizer_id` 문자열을 직접 넣지 않음 — 셸은 §4.1 일반식 하나만 구현한다, ADR-0037 준수 확인 "단일 구현 린트"). 이 읽기의 바이블 §4.2 표기 정합은 미해결 이슈 16 |
+| `recount` | `H("stage","recount", scope_key, chunk_set.blake3, tokenizer_id)` | `input_ref.blake3` | `token_counter` 플러그인의 `fingerprint()`. `tokenizer_id`는 그 `config_hash`의 결정 구성요소이며, 바이블 표기는 지문을 결정하는 유일 항목을 이름한 것으로 읽는다(`tokenizer_id` 문자열을 직접 넣지 않음 — 셸은 §4.1 일반식 하나만 구현한다, ADR-0037 준수 확인 "단일 구현 린트"). 이 읽기는 바이블 §4.2 1.3.0(AM-05)이 그대로 정합했다(미해결 이슈 16 해소) |
 | `index`, `publish` | 해당 없음 | — | — (`record_id`·`commit_id`·`event_id` 멱등) |
 
 | 캐시 부류 | 조회 키 | 스코프 | 저장 위치 | 조회 주체 |
@@ -687,7 +593,7 @@ class SubstageRunner:
 |------|------|
 | `CACHE_EXEMPT = {fetch, index}` | `fetch`는 원천 신선도·egress 검사 때문에 항상 실행(검증자 있으면 조건부 GET). `index`는 항상 실행해 새 `index_generation`으로 적재하며 멱등은 `commit_id`·`record_id` 단위다(06 §3.2) |
 | `force` | `reprocess.document.v1 {from_stage}`에서 `from_stage` 이상 스테이지는 `StageActivityInput.force=true`로 캐시를 조회하지 않고 강제 재실행한다([데이터 흐름](../02-architecture/03-data-flow-and-document-lifecycle.md) §4.1 "시작 하한"). 지문이 같은 강제 재실행은 같은 `stage_key`를 내지만 봉투 `created_at`이 달라 바이트는 반드시 다르다 — 아래 "덮어쓰기 금지" 규칙으로 처리한다 |
-| 덮어쓰기 금지(제안) | `put_artifact(out, stage_key=k)`는 경로 `…/{k}.json`에 오브젝트가 이미 있으면 **덮어쓰지 않는다**(이전 잡의 `lineage`·`IndexCommit.artifact_refs`가 든 `ArtifactRef.blake3`가 저장 바이트와 어긋나 I-3 `contract.violation`이 되기 때문). 셸은 기존 바이트를 읽어 정규화 해시 `golden_hash`(§12.2)를 비교하고, (a) 같으면 새 바이트를 쓰지 않고 기존 `ArtifactRef`를 반환한다(계보만 기록; 스팬 속성 `rag.force_equivalent=true` 제안) — 하류 `stage_key`가 그대로 적중한다, (b) 다르면(`generative` 등급이거나 `pure` 등급의 결정성 버그) 새 오브젝트를 바이트 해시 키 `artifacts/{schema_type_kebab}/{blake3[:2]}/{blake3}.json`(§6.2)에 저장하고 `artifacts(tenant_id, stage_key)` 행을 새 참조로 UPSERT하며 이전 오브젝트는 참조 GC(06 §2.7)가 회수할 때까지 유효하게 남긴다. `pure` 등급의 (b)는 경고 로그(`code=contract.violation` 아님, 관측용) + 적합성 `idempotency` 버그 신호다. 좀비 시도(하트비트 타임아웃 뒤 늦게 쓰는 워커)가 커밋된 산출물을 덮는 경합도 같은 규칙이 막는다. 바이블 §13.3 "순수 스테이지이므로 `stage_key` 경로 = 콘텐츠 주소" 주석의 patch 제안은 미해결 이슈 2 |
+| 덮어쓰기 금지(바이블 §13.3 1.3.0, AM-19) | `put_artifact(out, stage_key=k)`는 경로 `…/{k}.json`에 오브젝트가 이미 있으면 **덮어쓰지 않는다**(이전 잡의 `lineage`·`IndexCommit.artifact_refs`가 든 `ArtifactRef.blake3`가 저장 바이트와 어긋나 I-3 `contract.violation`이 되기 때문). 셸은 기존 바이트를 읽어 정규화 해시 `golden_hash`(§12.2)를 비교하고, (a) 같으면 새 바이트를 쓰지 않고 기존 `ArtifactRef`를 반환한다(계보만 기록; 스팬 속성 `rag.force_equivalent=true` 제안) — 하류 `stage_key`가 그대로 적중한다, (b) 다르면(`generative` 등급이거나 `pure` 등급의 결정성 버그) 새 오브젝트를 바이트 해시 키 `artifacts/{schema_type_kebab}/{blake3[:2]}/{blake3}.json`(§6.2)에 저장하고 `artifacts(tenant_id, stage_key)` 행을 새 참조로 UPSERT하며 이전 오브젝트는 참조 GC(06 §2.7)가 회수할 때까지 유효하게 남긴다. `pure` 등급의 (b)는 경고 로그(`code=contract.violation` 아님, 관측용) + 적합성 `idempotency` 버그 신호다. 좀비 시도(하트비트 타임아웃 뒤 늦게 쓰는 워커)가 커밋된 산출물을 덮는 경합도 같은 규칙이 막는다. 바이블 §13.3 "순수 스테이지이므로 `stage_key` 경로 = 콘텐츠 주소" 주석은 1.3.0에서 "정규화 콘텐츠 주소; 봉투 `created_at`으로 바이트는 다를 수 있음"으로 완화 반영됐다(미해결 이슈 2 해소) |
 | 첫 미스 원리 | `stage_key`는 실행 없이 계산 가능하므로 `plan_reprocess`가 `SourceDocument.content_hash`에서 출발해 계보 체인을 따라 첫 미스 스테이지를 찾는다(데이터 흐름 §4.1·§4.2). 재실행된 산출물이 기존과 정규화 동치면((a) 경로) 하류 키가 그대로 적중하고, 다르면 새 바이트 해시로 하류 키가 미스한다(데이터 흐름 §4.1의 "필연적 미스" 서술은 (a)로 완화된다 — 데이터 흐름 미해결 이슈 5와 합의) |
 | 보존 정책 | `artifacts` 행이 있어도 오브젝트가 회수되었으면 미스로 판정한다(`exists` 검사) |
 
@@ -701,8 +607,6 @@ class SubstageRunner:
 | 이벤트 | `event_ids`는 스테이지 호출당 1회 발급(Temporal은 재생 결정적, Local은 일반 ULID)되어 시도 간 재사용 → 아웃박스 정확히 한 번 |
 | 인덱스 | `commit_id` 워크플로우 발급, `index_generation` 원장 행 잠금 할당, `record_id = H("record", tenant_id, collection_id, document_id, str(index_generation), chunk_id)` upsert, `committed`면 no-op([ADR-0026](../06-adr/0026-index-commit-generation-saga-and-ledger.md), [ADR-0004](../06-adr/0004-deterministic-chunk-id-scoped-record-id-and-ulid-exception.md)) |
 | 무효화 | `rag cache invalidate --stage {name} [--document …]`(바이블 §12 `cli`)는 스코프별 `artifacts` 행을 지운다(오브젝트는 참조 GC가 회수, 06 §2.7). 지문이 바뀌면 자연히 미스이므로 무효화는 버그 산출물 제거 용도다 |
-
----
 
 ## 8. 결정성 요구와 비결정 스테이지
 
@@ -722,7 +626,7 @@ class SubstageRunner:
 
 | 규칙 | 내용 |
 |------|------|
-| 키 구성요소 | `model_id`는 `{repo}@{revision}` 표기(바이블 §6.1), `prompt_hash`는 프롬프트 템플릿과 고정 파라미터의 해시(산출식은 04-pipelines/11이 확정; 제안 `H("prompt", template_id, template_version, canonical_json(params))`), `embed_text`는 3-텍스트 규칙의 임베딩 입력 |
+| 키 구성요소 | `model_id`는 로컬·HF 모델은 `{repo}@{revision}`, API 모델은 `{provider}:{model}`(`@{revision}`은 선택 — 공급자 날짜 스냅샷이 있으면 그 값, 없으면 Models API `created_at`을 `producer`에 병기, 바이블 §6.1 1.3.0 AM-11), `prompt_hash`는 프롬프트 템플릿과 고정 파라미터의 해시(산출식은 04-pipelines/11이 확정; 제안 `H("prompt", template_id, template_version, canonical_json(params))`), `embed_text`는 3-텍스트 규칙의 임베딩 입력 |
 | 지문 반영 | `prompt_hash`·`model_id@revision`은 `config_hash`·`model_ids`를 통해 `fingerprint`에 들어간다. 프롬프트가 바뀌면 `stage_key`도 바뀌어 세트가 재실행되지만 청크 캐시는 새 `prompt_hash`로만 미스한다 |
 | 생성 파라미터 | `temperature=0`·고정 `seed`·`top_p=1`을 어댑터가 요청한다(권고, 공급자별 보장 없음). 결정성의 보증은 캐시다 |
 | 기록 | 결과에는 `generated_by`(모델·프롬프트 지문)와 `status`(`complete`/`partial`, `EnrichStatus`)가 남는다(바이블 §3.2 O-05, §5.7). 예산 소진은 `enrich.budget_exceeded` → 잡 `partial`(비LLM 결과는 커밋) |
@@ -732,8 +636,6 @@ class SubstageRunner:
 ### 8.3 두 셸의 동등성
 
 같은 골든 입력을 `LocalRunner`와 Temporal(`WorkflowEnvironment.start_time_skipping()`)로 실행하면 (a) `detect`~`embed` 산출물의 정규화 해시 `golden_hash`(§12.2; `created_at`·`producer`·`lineage_refs` 제외)와 (b) `IndexCommit.commit_hash = H("commit", profile_hash, *sorted(chunk_id:content_hash:embed_text_hash))`가 같아야 한다. ADR-0003 준수 확인 5는 (b)만 요구하며 (a)는 이 문서가 더한 기준이다(미해결 이슈 10). 바이트(`blake3`) 동일은 요구하지 않는다 — `created_at`은 봉투 필드로 산출물 바이트에 들어가고(바이블 §5.2) 두 셸의 `now()` 원천이 다르기 때문이다(§3.1). 바이트 동일까지 확인하려면 두 셸의 `ShellRuntime.now()`에 같은 고정 시계를 주입한 적합성 `idempotency` 경로를 쓴다. 발급형 `workflow_run_id`·`event_id`·`commit_id`는 산출물 봉투와 `commit_hash` 어디에도 들어가지 않는다.
-
----
 
 ## 9. 관측성 자동 계측
 
@@ -771,8 +673,6 @@ class SubstageRunner:
 
 structlog JSON 필드 `event, level, tenant_id_hash, job_id, trace_id, stage, code`(바이블 §6.5). 이 중 실행 전에 확정되는 문맥 필드 `tenant_id_hash`·`job_id`·`trace_id`·`stage`만 셸이 `run` 호출 전에 `bind_contextvars`로 바인딩하고 스레드·헬퍼 프로세스에도 전파한다(헬퍼는 자식 기동 인자로 전달). `event`·`level`은 로그 호출마다 structlog가 채우고, `code`는 셸이 `StageFailure`를 기록하는 시점(`record_failure`)에 그 로그 이벤트의 필드로 넣는다. 플러그인은 `structlog.get_logger()`만 쓰고 필드를 직접 넣지 않으며, 본문 문자열을 넣으면 적합성 `security_invariants`가 실패한다.
 
----
-
 ## 10. 오류 분류와 재시도 힌트
 
 ### 10.1 `StageError`와 `StageFailure`
@@ -809,32 +709,13 @@ raise StageFailure(stage_error("parse.document_encrypted", stage="parse", plugin
 
 스테이지 코드에 재시도 루프·자체 타임아웃이 있으면 리뷰 거부다(ADR-0003 준수 확인 9).
 
----
-
 ## 11. 부분 결과와 재개(`Resumable`)
 
 ### 11.1 부분 성공의 표현
 
 문서 전체 실패로 확대하지 않는다(바이블 §4.1). 수집 측은 `quality: degraded` + `warnings[]`(`Warning{code, message, block_id?, chunk_id?, page?}`; 코드는 카탈로그의 경고·폴백 코드 — `chunk.block_oversized`, `embed.token_overflow`, `normalize.segmenter_fallback` 등) + `page_status[]`(`PageStatus ∈ {ok, timeout, ocr_failed, skipped}`), 보강은 `EnrichStatus ∈ {complete, partial}`. 질의 측은 `degraded[]`(`DegradedEntry{component, reason, detail?}`)와 `channel_runs[].status`, `explain[]`, `omitted[]`다. 셸은 `quality`·`status`를 보고 `outcome` 라벨과 잡 상태(`partial`)를 정한다.
 
-```mermaid
-stateDiagram-v2
-    [*] --> started: mark_stage_started / record_retry
-    started --> cache_hit: artifacts(tenant_id, stage_key) 존재 · force=false
-    started --> running: 미스 또는 CACHE_EXEMPT
-    running --> running: ctx.heartbeat(ResumeCursor)
-    running --> succeeded_full: quality=full
-    running --> succeeded_degraded: quality=degraded 또는 status=partial (예외 없음)
-    running --> failed_retryable: StageFailure(retryable=true) · 미분류 예외 · 타임아웃
-    running --> failed_final: StageFailure(retryable=false) · contract.violation · 시도 소진
-    running --> cancelled: 취소 요청 → 현재 단위 마무리 → CancelledError
-    failed_retryable --> started: 백오프 후 재시도 (resume_details = 마지막 ResumeCursor)
-    cache_hit --> [*]
-    succeeded_full --> [*]
-    succeeded_degraded --> [*]
-    failed_final --> [*]
-    cancelled --> [*]
-```
+액티비티 상태 전이: `started`(`mark_stage_started`/`record_retry`) → **`cache_hit`**(`artifacts(tenant_id, stage_key)` 존재·`force=false`, 종료) 또는 **`running`**(미스 또는 `CACHE_EXEMPT`; 자기 루프로 `ctx.heartbeat(ResumeCursor)`) → `running`에서 **`succeeded_full`**(`quality=full`, 종료), **`succeeded_degraded`**(`quality=degraded` 또는 `status=partial`, 예외 없음, 종료), **`failed_retryable`**(`StageFailure(retryable=true)`·미분류 예외·타임아웃 → 백오프 후 `started`로 재시도, `resume_details`=마지막 `ResumeCursor`), **`failed_final`**(`StageFailure(retryable=false)`·`contract.violation`·시도 소진, 종료), **`cancelled`**(취소 요청 → 현재 단위 마무리 → `CancelledError`, 종료) 중 하나로 간다.
 
 ### 11.2 `heartbeat_details` 스키마(`ResumeCursor`) — 이 문서가 확정
 
@@ -853,62 +734,7 @@ stateDiagram-v2
 | `partial_ref` | `ArtifactRef` | N | 지금까지의 부분 산출물. 계약이 아닌 파생물이므로 `derived/partial_{stage}/{blake3[:2]}/{blake3}.json`에 저장하고 미디어 타입은 계약 개요 §9.3 파생물 행의 `application/json`이다(`application/vnd.rag.*+json` 접두는 계약 산출물 전용 — 바이블 §6.4, 불변식 I-2; 따라서 `schema_type`·`schema_version` 없음). 내부 구조는 스테이지가 정한다(04-pipelines/05·11·12) | 아래 |
 | `updated_at` | string(date-time) | Y | `ctx.now()` | `"2026-09-22T09:00:00.000Z"` |
 
-```json
-{
-  "schema_version": "1.0.0",
-  "stage": "parse",
-  "unit": "page",
-  "done": 37,
-  "total": 120,
-  "page": 38,
-  "partial_ref": {
-    "uri": "s3://rag/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9X/derived/partial_parse/0c/0c5e9b3d7a1f6e2c4b8d0a9f3e7c1b5d2a6f8e0c4b9d3a7f9f3a6c1e2b7d4a8f.json",
-    "blake3": "0c5e9b3d7a1f6e2c4b8d0a9f3e7c1b5d2a6f8e0c4b9d3a7f9f3a6c1e2b7d4a8f",
-    "media_type": "application/json",
-    "size_bytes": 1048576
-  },
-  "updated_at": "2026-09-22T09:00:00.000Z"
-}
-```
-
-JSON Schema(내부 검증용; `ArtifactRef`는 공용 타입 `$defs` 참조). `allOf`의 각 분기는 대응 단위 키를 요구하고 나머지 단위 키의 공존을 금지해 "`unit`과 정확히 하나의 단위 키"를 강제한다:
-
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:rag:internal:resume-cursor:1",
-  "title": "ResumeCursor",
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["schema_version", "stage", "unit", "done", "total", "updated_at"],
-  "properties": {
-    "schema_version": {"type": "string", "const": "1.0.0"},
-    "stage": {"type": "string", "enum": ["parse", "enrich", "embed"]},
-    "unit": {"type": "string", "enum": ["page", "chunk_offset", "batch_offset"]},
-    "done": {"type": "integer", "minimum": 0},
-    "total": {"type": ["integer", "null"], "minimum": 1},
-    "page": {"type": "integer", "minimum": 1},
-    "chunk_offset": {"type": "integer", "minimum": 0},
-    "batch_offset": {"type": "integer", "minimum": 0},
-    "partial_ref": {"$ref": "urn:rag:schema:common-types:1#/$defs/ArtifactRef"},
-    "updated_at": {"type": "string", "format": "date-time"}
-  },
-  "allOf": [
-    {
-      "if": {"properties": {"unit": {"const": "page"}}},
-      "then": {"required": ["page"], "properties": {"chunk_offset": false, "batch_offset": false}}
-    },
-    {
-      "if": {"properties": {"unit": {"const": "chunk_offset"}}},
-      "then": {"required": ["chunk_offset"], "properties": {"page": false, "batch_offset": false}}
-    },
-    {
-      "if": {"properties": {"unit": {"const": "batch_offset"}}},
-      "then": {"required": ["batch_offset"], "properties": {"page": false, "chunk_offset": false}}
-    }
-  ]
-}
-```
+객체는 `additionalProperties: false`이고, 내부 검증용 JSON Schema(`$id: urn:rag:internal:resume-cursor:1`; `partial_ref`는 공용 `common-types` `$defs`의 `ArtifactRef` 참조)의 `allOf`/`if`-`then` 세 분기가 `unit` 값별로 대응 단위 필드(`page`/`chunk_offset`/`batch_offset`)만 허용하고 나머지 두 필드는 `false`로 금지해 "`unit`과 정확히 하나의 단위 키" 규칙을 강제한다. 예시 값은 위 표의 "예시" 열과 같다(`stage="parse", unit="page", done=37, total=120, page=38`에 `partial_ref` 파생물 참조 + `updated_at`).
 
 ### 11.3 재개 규약
 
@@ -922,8 +748,6 @@ JSON Schema(내부 검증용; `ArtifactRef`는 공용 타입 `$defs` 참조). `a
 ### 11.4 취소
 
 취소 요청은 워크플로우 시그널 → 액티비티 취소 → 셸이 `ctx.cancelled=True`를 세우는 순서로 도달한다. 스테이지는 감지 의무가 없으며(02 §4.2 규칙 3), `Resumable` 스테이지가 단위 경계에서 `ctx.cancelled`를 보고 현재 단위를 마무리한 뒤 반환하면 셸이 `asyncio.CancelledError`로 종료한다(06 §3.3). 헬퍼 프로세스는 프로세스 그룹 KILL, 사이드카는 `deadline_ms` 만료로 정리된다. `index`는 플립 시작 이후 취소를 보류하고 커밋을 완료한다(06 §5). 취소된 시도의 부분 산출물은 버려진다(파생물은 참조 GC가 회수).
-
----
 
 ## 12. 테스트 유틸리티
 
@@ -975,40 +799,13 @@ async def run_golden(case: GoldenCase, registry: PluginRegistry) -> GoldenResult
                         warning_codes=[w.code for w in out.warnings], heartbeats=ctx.heartbeats)
 ```
 
-```json
-{
-  "stage": "chunk",
-  "cases": [
-    {
-      "case_id": "hwpx-public-notice-001",
-      "stage": "chunk",
-      "plugin_id": "chunker.structure_aware",
-      "config": {"leaf_max_tokens": 512, "parent_max_tokens": 2048, "merge_min_tokens": 64},
-      "input_ref": {
-        "uri": "file:///workspace/tests/golden/chunk/fixtures/normalized-document/hwpx-public-notice-001.json",
-        "blake3": "3f0a9c2e7b1d4e6f8a9c0b1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f",
-        "media_type": "application/vnd.rag.normalized-document+json",
-        "schema_type": "NormalizedDocument",
-        "schema_version": "1.0.0",
-        "size_bytes": 184320
-      },
-      "lineage": {},
-      "expected_golden_hash": "b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8",
-      "expected_quality": "full",
-      "expected_warning_codes": [],
-      "cassette": null
-    }
-  ]
-}
-```
+`tests/golden/{stage}/cases.json`는 `{"stage": "chunk", "cases": [<`GoldenCase` 필드 1:1 직렬화>, …]}` 형태이며 필드·타입은 위 `GoldenCase` 정의 그대로다(예: `case_id="hwpx-public-notice-001"`, `input_ref`는 `file://` 픽스처의 `ArtifactRef`, `expected_golden_hash`는 `H("golden", …)` 16진 문자열).
 
 키트가 제공하는 것: 확장 지점별 픽스처(`SourceDocument` 코퍼스, `NormalizedDocument`·`ChunkSet` 스냅샷, `CandidateSet`·`RankedSet` 벡터, 골든 `ContextPack`), 두 테넌트 시나리오 생성기(ADR-0037 `same_bytes_three_scopes`), `FakeStageContext`·`FakeRuntimeServices`(결정적 `now()`, 인메모리 `ArtifactStore`, 기록형 HTTP 클라이언트로 사이드카·모델 서버 응답 재생), 스키마 스냅샷 비교, `InMemoryLedger`(제안; `artifacts`·`lineage`·`outbox`를 메모리에 두어 PostgreSQL 없이 `run_stage` 실행).
 
----
+## 13. 로컬 CLI `rag run-stage`(개발 전용; 완전성 #10)
 
-## 13. 로컬 CLI `rag run-stage`(제안)
-
-바이블 §12 `cli`에는 `rag ingest/query/reprocess/…`만 있고 스테이지 단건 실행 명령이 없다. 어댑터 개발·골든 케이스 생성·장애 재현을 위해 다음 하위 명령을 제안한다(바이블 §12 patch, 미해결 이슈 6). 실행 경로는 프로덕션과 같은 `run_stage`이며 셸만 `LocalRuntime` + `FileArtifactStore` + (기본) `InMemoryLedger`다.
+**명령 정본은 [10-development/02 §CLI](../10-development/02-development-environment.md)다(바이블 §12 1.3.0, AM-22)** — 전체 서브커맨드 목록·소유 문서 대응표는 그 문서가 갖고, 이 절은 `rag run-stage`의 실행 문맥·옵션·출력 스키마만 설명한다(10-development/02 §CLI·10-development/06 §2.3은 이 절을 인용만 하고 옵션을 복제하지 않는다). 어댑터 개발·골든 케이스 생성·장애 재현을 위한 하위 명령이며, 실행 경로는 프로덕션과 같은 `run_stage`이고 셸만 `LocalRuntime` + `FileArtifactStore` + (기본) `InMemoryLedger`다.
 
 ```text
 rag run-stage <stage> --input <path|uri> --profile <profile_id>
@@ -1029,33 +826,9 @@ rag run-stage <stage> --input <path|uri> --profile <profile_id>
 | `--resume` | `ResumeCursor` 파일을 `ctx.resume_details`로 주입(재개 경로 재현) | 없음 |
 | `--json` | 표준 출력에 `stage`, `plugin_id`, `cache_hit`, `duration_ms`, `quality`, `warnings[]`, `artifact_ref`(`ArtifactRef`)의 7키만 JSON으로 출력 | 사람용 표 |
 
-```text
-$ rag run-stage parse --input ./samples/notice.hwpx --profile lite --json
-```
-
-```json
-{
-  "stage": "parse",
-  "plugin_id": "parser.hwpx_python_hwpx",
-  "cache_hit": false,
-  "duration_ms": 842,
-  "quality": "full",
-  "warnings": [],
-  "artifact_ref": {
-    "uri": "file:///workspace/.rag/artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9X/artifacts/parsed-document/9a/9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b.json",
-    "blake3": "7c1e9f3a2b4d6e8f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f",
-    "media_type": "application/vnd.rag.parsed-document+json",
-    "schema_type": "ParsedDocument",
-    "schema_version": "1.0.0",
-    "size_bytes": 204800,
-    "stage_key": "9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
-  }
-}
-```
+예: `rag run-stage parse --input ./samples/notice.hwpx --profile lite --json`는 표준 출력에 위 7키(`stage="parse"`, `plugin_id`, `cache_hit`, `duration_ms`, `quality="full"`, `warnings`, `artifact_ref`(계약 산출물의 `ArtifactRef`, `stage_key` 포함))만 JSON 한 객체로 낸다.
 
 동작 규칙: (1) 프로파일 검증 실패는 `profile.invalid`로 종료 코드 2, `StageFailure`는 `StageError` JSON 출력 + 종료 코드 3, `contract.violation`은 종료 코드 4. (2) `--ledger none`이면 `stage_key`는 계산·출력하되 조회하지 않는다. (3) 질의 측 스테이지는 `--security <json>`·`--plan <json>`을 추가로 받아 `invoke_inline` 경로를 탄다(옵션 명세는 04-pipelines/14 이후 문서와 합의). (4) 출력 산출물은 `rag run-stage`를 이어 붙일 수 있게 `ArtifactRef` JSON을 `--out`에 함께 남긴다(`<stage>.ref.json`).
-
----
 
 ## 결정 사항 요약
 
@@ -1065,7 +838,7 @@ $ rag run-stage parse --input ./samples/notice.hwpx --profile lite --json
 - **결정:** `StageContext`는 02 §2.2 시그니처를 따르고 `cancelled`(읽기 전용)와 `substages`(플랫폼 소유 합성 스테이지 전용)만 제안으로 더한다. `secrets`·`logger`·`metrics`·`artifact_store(읽기)` 멤버는 두지 않는다 — 비밀은 `credentials_ref`, 로그·메트릭은 셸 자동 계측, 산출물 읽기는 `ctx.lineage`만.
 - **결정:** 오케스트레이터 경계의 위상은 선형 체인(`STAGES`)이며 프로파일은 `recount` 유무·플러그인·정책만 고른다. 다중 임베딩 공간·다중 enricher·파서 체인·다중 백엔드 팬아웃은 한 액티비티 안에서 합성되고, 질의 측 팬아웃은 `asyncio.gather`다. 범용 DAG 엔진은 도입하지 않는다.
 - **결정:** 셸 `run_stage`(`orchestration/context.py`)가 잡 전이 → `stage_key` 캐시(`parse`는 `SourceDocument`를 먼저 로드해 `content_hash`) → 입력 로드·검증 → `requires_lineage` → `StageContext` → 격리 모드별 `run` → 봉투 완성·출력 검증 → 콘텐츠 주소화 저장 → 원장 동일 트랜잭션을 수행한다. 계약 검증은 세 지점(API·입력 로드·출력 저장 전)에서 셸이 강제하고 위반은 `contract.violation`(비재시도)이다. 출력 봉투의 `lineage_refs` 자기 입력 키는 셸이 완성한다. `detect` 서브스테이지는 셸 `SubstageRunner`가 `parse` 액티비티 안에서 같은 순서로 실행한다(플랫폼 소유 `parser.router`에만 `ctx.substages` 주입).
-- **결정:** `stage_key`는 바이블 §4.1 일반식 `H("stage", stage_name, scope_key, <입력 해시>, fingerprint)`이며 입력 해시는 바이블 §4.2·ADR-0037대로 `detect`·`parse`는 원본 `content_hash`, 그 뒤는 직전 산출물 `input_ref.blake3`(`StageSpec.key_input`); 5번째 인자는 항상 해당 위치 플러그인의 `fingerprint()`(`parser_fingerprint`·`tokenizer_id`는 그 지문의 결정 구성요소). `fetch`·`index`는 캐시 제외; `reprocess`의 `from_stage` 이상은 `force`; 봉투 없는 콘텐츠 캐시(원본·파생물·청크 임베딩·LLM 보강)만 스코프 없이 테넌트 내 공유([ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md)). 캐시 제외 스테이지 산출물은 바이트 해시 키로 저장하고, 점유된 `stage_key` 경로는 덮어쓰지 않는다 — 정규화 동치면 기존 참조 반환, 다르면 바이트 해시 키에 저장(제안).
+- **결정:** `stage_key`는 바이블 §4.1 1.3.0(AM-05) 일반식 `H("stage", stage_name, scope_key, <입력 해시>, fingerprint)`이며 입력 해시는 바이블 §4.2·ADR-0037대로 `detect`·`parse`는 원본 `content_hash`, 그 뒤는 직전 산출물 `input_ref.blake3`(`StageSpec.key_input`); 5번째 인자는 항상 해당 위치 플러그인의 `fingerprint()`(`parser_fingerprint`·`tokenizer_id`는 그 지문의 결정 구성요소). `fetch`·`index`는 캐시 제외; `reprocess`의 `from_stage` 이상은 `force`; 봉투 없는 콘텐츠 캐시(원본·파생물·청크 임베딩·LLM 보강)만 스코프 없이 테넌트 내 공유([ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md)). 캐시 제외 스테이지 산출물은 바이트 해시 키(바이블 §13.3 1.3.0, AM-19)로 저장하고, 점유된 `stage_key` 경로는 덮어쓰지 않는다 — 정규화 동치면 기존 참조 반환, 다르면 바이트 해시 키에 저장.
 - **결정:** 결정성 등급 `pure / model_pinned / generative`(제안)를 두고, `generative` 스테이지는 `H("llm-enrich", model_id, prompt_hash, embed_text)` 콘텐츠 캐시로 첫 결과를 고정한다. 두 셸의 산출물은 정규화 해시(`golden_hash`)와 `IndexCommit.commit_hash`가 같아야 하며, 바이트 동일은 고정 시계를 주입한 경우에만 요구한다([ADR-0016](../06-adr/0016-llm-enrichment-default-off-and-budget-policy.md)).
 - **결정:** 스팬 정본은 바이블 §6.5의 `rag.ingest.{stage}`·`rag.{stage}`·`rag.retrieve.{channel}`이고 `rag.{stage}.call`은 05 §9 제안이다. 수집 지연 메트릭은 `rag_ingest_stage_duration_seconds{stage, outcome, queue}`이며 플러그인은 스팬·메트릭을 만들지 않는다([ADR-0022](../06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md)).
 - **결정:** 오류는 `StageError` 하나이고 플러그인은 `StageFailure` 예외만 던진다. 재시도 여부는 카탈로그, 정책은 `StagePolicy`, 적용은 오케스트레이터다. 부분 성공은 예외가 아닌 데이터(`quality`·`warnings`·`page_status`·`status`·`degraded`)다([ADR-0018](../06-adr/0018-api-rest-sse-mcp-no-grpc-rfc9457.md)).
@@ -1077,9 +850,9 @@ $ rag run-stage parse --input ./samples/notice.hwpx --profile lite --json
 1. **`ResumeCursor` 확정에 따른 정합.** 06 §3.3의 `cursor{page}` 중첩 제안을 이 문서가 최상위 키(바이블 §4.4 경로)로 확정했으므로 06 §3.3 예시 정정을 요청한다(06 예시의 `partial_ref.media_type` `application/vnd.rag.partial-parse+json`도 `application/json`으로 정정 — `vnd.rag` 접두는 계약 전용, I-2). `partial_ref`는 두 갈래 중 전자를 택했다: (a) 파생물로 두고 `application/json`(현재), (b) `PartialParse` 등 `schema_type`을 03-contracts/12 또는 16에 등재해 계약으로 승격 — 재개 산출물의 상호운용 요구가 생기면 (b)로 전환. `ResumeCursor.unit`(`page, chunk_offset, batch_offset`)과 `JobStatus.progress.unit`(바이블 §5.6 `stage, page, chunk, document`)의 사상 `chunk_offset→chunk`, `batch_offset→chunk`(배치 → 청크 수 환산 규칙)은 03-contracts/12·04-pipelines/12와 합의(바이블 미해결 이슈 8 해소 보고).
 2. **캐시 제외 스테이지 산출물의 오브젝트 키와 덮어쓰기 금지.** `fetch`(`SourceDocument`)·`index`(`IndexCommit`)는 `stage_key`가 없어 바이블 §13.3 규약을 적용할 수 없다. `tenants/{tenant_id}/artifacts/{schema_type_kebab}/{blake3[:2]}/{blake3}.json` 제안(06 미해결 이슈 16 확장)을 바이블 §13.3 patch·04-pipelines/02·13과 확정. 같은 patch에 §7.2 "덮어쓰기 금지" 규칙(점유된 `stage_key` 경로는 정규화 동치면 기존 참조 반환, 다르면 바이트 해시 키에 저장)과 바이블 §13.3 "순수 스테이지이므로 `stage_key` 경로 = 콘텐츠 주소" 주석의 완화("정규화 콘텐츠 주소; 봉투 `created_at`으로 바이트는 다를 수 있음")를 포함한다. 조건부 PUT(`If-None-Match: *`) 지원 여부는 저장소 아키텍처에서 RustFS·SeaweedFS·`file://`별로 확인 필요(as of 2026-09).
 3. **`StageFailure` 예외와 미분류 예외 분류.** 05 §2.4 제안을 이 문서가 채택했다. 06 §3.1·§7.1 스케치의 `except StageError`를 `except StageFailure` + `.error`로 정정하고 바이블 §12 `sdk/`에 `StageFailure`·`stage_error` 등재(ADR-0032 minor). 아울러 05 §2.4의 "`StageFailure` 이외의 예외는 셸이 `contract.violation`(비재시도)으로 감싼다"는 02 §6.1 B2(재시도 가능 취급)와 충돌하므로 이 문서(§10.2)가 B2를 정본으로 확정했다 — 05 §2.4 문장 정정(patch) 요청.
-4. **`StageContext` 확장 멤버와 `ShellRuntime.now()`.** 02 §2.2 시그니처에 읽기 전용 `cancelled: bool`과 `substages: SubstageRunner | None`(§5.6) 추가(patch) 제안. 02 §4.2 규칙 3("감지 의무 없음")과 06 §3.3("현재 단위 마무리")은 "의무 없음 + 선택 폴링"으로 조화한다. 02 미해결 이슈 2(`StageContext` 확장 멤버의 바이블 §4.1 반영)와 함께 처리. `ShellRuntime`에 `now()`를 더한 것(§5.2)은 06 §3.1 `TemporalRuntime`·§7.1 `LocalRuntime` patch 요청.
+4. **`StageContext` 확장 멤버와 `ShellRuntime.now()`.** `plan`·`artifacts`는 해소(바이블 §4.1 1.3.0, AM-27). 남은 것: 02 §2.2 시그니처에 읽기 전용 `cancelled: bool`과 `substages: SubstageRunner | None`(§5.6) 추가(patch) 제안. 02 §4.2 규칙 3("감지 의무 없음")과 06 §3.3("현재 단위 마무리")은 "의무 없음 + 선택 폴링"으로 조화한다. 02 미해결 이슈 2와 함께 처리. `ShellRuntime`에 `now()`를 더한 것(§5.2)은 06 §3.1 `TemporalRuntime`·§7.1 `LocalRuntime` patch 요청.
 5. **`lineage_refs` 완성 주체.** 계약 개요 §3.2는 "각 스테이지가 자기 입력의 `ArtifactRef`를 추가"라고 적지만 스테이지는 입력 참조를 알 수 없다. 이 문서의 "스테이지는 복사, 셸이 자기 입력 키 완성" 규칙으로 §3.2 문장 정정 제안(patch). 대안 `ctx.input_ref` 멤버 추가는 채택하지 않는다.
-6. **`rag run-stage`·`InMemoryLedger`.** 바이블 §12 `cli` 목록과 `testing/` 패키지에 등재(patch). 질의 측 스테이지 옵션(`--security`, `--plan`)은 04-pipelines/14~17과, 종료 코드는 10-development/06과 합의.
+6. **`rag run-stage`·`InMemoryLedger`.** 명령 정본은 10-development/02 §CLI로 확정(AM-22, §13 해소). `testing/` 패키지 등재는 남은 patch 대상. 질의 측 스테이지 옵션(`--security`, `--plan`)은 04-pipelines/14~17과, 종료 코드는 10-development/06과 합의.
 7. **스테이지 표의 위치.** `rag_platform.sdk.stage_table`(`StageSpec`, `INGEST_STAGES`, `QUERY_STAGES`, `STAGE_TABLE`, `LINEAGE_KEY`)은 바이블 §12 `sdk/` 행에 없다. 등재(patch)와 함께 바이블 §4.2·§4.3 표 변경 시 코드 사본을 CI가 대조하는 규칙을 §1.2에 추가 제안.
 8. **결정성 등급의 선언 위치와 `prompt_hash`.** `Capabilities.extra.determinism ∈ {pure, model_pinned, generative}`(N)은 03-contracts/15 `capabilities.schema.json` 제안. LLM `prompt_hash` 산출식과 `generated_by` 필드의 정확한 위치(`Enrichment` 하위)는 04-pipelines/11·03-contracts/06이 확정.
 9. **관측 제안.** `outcome` 라벨 값 집합(`ok, degraded, partial, failed, cache_hit`), `rag_ingest_stage_duration_seconds`의 `queue` 라벨, 속성 `rag.attempt`·`rag.force`·`rag.force_equivalent`·`rag.error_code`, 메트릭 `rag_ingest_stage_cache_hit_total{stage}`, 자식 스팬 이름 `rag.{stage}.call`(05 §9)은 바이블 §6.5·Weaver 레지스트리 미등재. 09-operations/03과 합의 후 ADR-0022 minor.
@@ -1091,8 +864,9 @@ $ rag run-stage parse --input ./samples/notice.hwpx --profile lite --json
 15. **`StageBase` 기반 클래스와 주입 경로.** `producer()`·`fingerprint()` 자동 일관성을 위한 선택 기반 클래스는 바이블 §12 `sdk/` 미등재. `plugin_version`·`image_digest`(프로파일 예약 키 `image` → 배포 매니페스트의 digest 고정 참조 해석, §2.3·§2.4) 주입 경로(레지스트리 `build()` → 생성자)와 함께 05 §6.3 개정 제안. digest 해석의 원천(Helm values의 `image@sha256:…` vs 런타임 레지스트리 조회)은 배포 아키텍처와 합의.
 16. **스테이지 표 열 `key_input`·`substage_of`와 바이블 §4.2 표기 정합.** 바이블 §4.1 일반식은 4번째 인자를 `input_ref.blake3`로 적고 §4.2 표는 `detect`·`parse`에 `content_hash`, `recount`에 `tokenizer_id`, `parse`에 `parser_fingerprint`를 적는다. 이 문서는 "입력 해시는 §4.2 행별, 5번째 인자는 항상 `fingerprint()`"로 읽었다(§7.1). 바이블 §4.1 일반식에 "입력 해시 = `detect`·`parse`는 `content_hash`, 그 외 `input_ref.blake3`"를 명시하고 §4.2 `recount` 행의 `tokenizer_id`를 `fingerprint(tokenizer_id 포함)`으로 표기 정합하는 patch 제안(ADR-0037 §"스테이지별 `stage_key` 구성"과 함께).
 17. **`ingest.run` 반환 타입.** 바이블 §11.1은 `-> IndexCommit`, 이 문서·06 §1.1은 `-> ArtifactRef(schema_type=IndexCommit)`(워크플로우 코드는 I/O 불가, 경계 페이로드는 `ArtifactRef`만). 바이블 §11.1 시그니처 patch 제안(06 미해결 이슈 13과 공동). `CloudEventEnvelopeList`는 내부 별칭이며 등재 대상이 아니다.
-18. **`detect` 서브스테이지 실행 경로.** §5.6 `SubstageRunner`(셸 소유; `ctx.substages` 주입, 자체 `stage_key`·`artifacts`·`lineage`·1m 데드라인·자식 스팬)는 02 미해결 이슈 5가 이 문서 계열로 위임한 항목의 답이다. 04-pipelines/03(동시 작성 중)과 합의할 것: (a) `format_detector` 플러그인의 프로파일 위치(`parse.detect` 키 신설 vs 기본 고정), (b) `ParsedDocument.lineage_refs.source`가 `fetch` 산출물과 `detect` 산출물 중 어느 `SourceDocument` 참조를 실을지(현재: `fetch` 산출물), (c) 바이블 §12 트리의 라우터 파일 위치.
+18. **`detect` 서브스테이지 실행 경로 — 해소(바이블 1.3.0 AM-05·AM-22, R-10/CR-01, 04-pipelines/03과 합의).** §5.6 `SubstageRunner`는 02 미해결 이슈 5의 답이다. (a) `format_detector` 플러그인 프로파일 키는 `parse.detect`(정본 04-pipelines/03), (b) `ParsedDocument.lineage_refs.source`는 `detect` 산출물(§5.6 참조), (c) 라우터 파일 위치는 바이블 §12 `adapters/parse/router.py`.
 19. **`derived` 조회 색인.** 파생물 조회 키 `H("derived", content_hash, sidecar_image_digest)`와 오브젝트 키 `derived/{kind}/{blake3}`(출력 바이트 해시)의 대응 색인(원장 표·Valkey·키 규칙)은 [저장소 아키텍처](../02-architecture/04-storage-architecture.md)가 소유하며 아직 미확정이다(ADR-0037 중립 3). 확정 전까지 `SidecarStage`는 색인이 없으면 재변환하고 `put_derived`의 동일 키 존재 검사만 신뢰한다.
+20. **해소(문서 길이, D4-2).** 1,112행(900행 초과)이었던 것을 §4.2 프로파일 예시·§5.1 시퀀스 다이어그램(§5.2 코드와 중복)·§11.2 `ResumeCursor` JSON 예시·`JSON Schema`(표와 중복)·§4.3 팬아웃 다이어그램(표와 중복)·§12.2·§13의 골든/CLI 출력 예시(코드·옵션 표와 중복) 압축과 장식용 구분선(`---`) 제거로 900행 이내로 줄였다(완전성 #10·#168, 브리프 §9.11). 다른 문서가 절 번호로 인용하는 표·코드·결정 문장은 그대로 유지했다.
 
 ## 참조
 

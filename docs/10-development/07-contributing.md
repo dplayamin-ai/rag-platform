@@ -2,7 +2,7 @@
 title: 기여 가이드
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -242,7 +242,7 @@ stateDiagram-v2
 |------|-------------|-----------------|
 | `proposed` | `rfc.yml` 전 항목 작성 | 트리아지 ≤ 5영업일 |
 | `discussing` | 이슈 스레드에서 토론. 설계 변경은 이슈 본문을 편집해 반영하고 편집 이력을 남긴다 | 최소 7일(major·D-xx 개정 14일). 마지막 실질 코멘트 뒤 72시간 무반대면 종료 |
-| `adr_drafted` | `docs/06-adr/NNNN-slug.md` PR. 번호는 바이블 §3.3 표의 다음 번호(현재 0039)이며 architecture 소유자가 채택 시 부여하고 같은 PR에서 §3.3 표에 행을 추가한다. slug는 kebab-case ≤ 80자 | PR 리뷰 SLA(§5.5) |
+| `adr_drafted` | `docs/06-adr/NNNN-slug.md` PR. 번호는 바이블 §3.3 표의 다음 번호(현재 0040; ADR-0039는 바이블 1.3.0 가산 개정 묶음으로 사용됨)이며 architecture 소유자가 채택 시 부여하고 같은 PR에서 §3.3 표에 행을 추가한다. slug는 kebab-case ≤ 80자 | PR 리뷰 SLA(§5.5) |
 | `accepted` | architecture 팀 2인 승인 + 영향 CODEOWNERS 팀에서 해소되지 않은 반대 없음. 품질 기본값이면 `evaluation` 팀 승인과 `EvalReport` 링크 | — |
 | `adopted` | 바이블 표 갱신(+ 브리프 §4 행) PR 머지. 구현 PR은 `ADR: ADR-NNNN` 푸터(§7)로 참조 | 채택 후 30일 내 바이블 갱신(넘기면 `blocked`) |
 | `superseded` | 새 ADR의 `related`에 이전 번호, 이전 ADR frontmatter `status: superseded` | — |
@@ -308,6 +308,7 @@ ADR은 MADR 형식이며 60~200행(브리프 §9.11)이다. 정본 예는 [ADR-0
 - [ ] 생성물 재생성 (openapi.yaml · Weaver · Helm 프로파일 사본 · TS 타입)
 - [ ] 문서: frontmatter·구조·문서 맵 링크·수치 근거, SPDX 헤더 (새 소스 파일)
 - [ ] 릴리스 노트 문구 (feat/fix/breaking) 아래에 한 줄
+- [ ] 브레이킹 변경(`BREAKING CHANGE:` 동반)은 `Breaking-Kind:`(`api_contract_major`|`plugin_sdk`|`naming_or_hash`|`workflow_type`), 캐시 무효화가 필요한 변경은 `Cache-Invalidation:`(`prompt_cache_prefix`|`plan`|`qemb`|`stage_key`) 트레일러를 커밋에 추가(값 정본: [릴리스 프로세스](./08-release-process.md) §4.3; CI 린트는 05-ci-cd `pr / meta`, #94)
 
 ## 릴리스 노트
 <!-- 사용자 관점 한 줄. 없으면 "없음" -->
@@ -322,6 +323,7 @@ ADR은 MADR 형식이며 60~200행(브리프 §9.11)이다. 정본 예는 [ADR-0
 | 경로 등급 | 대상(CODEOWNERS §8) | 필수 승인 | 추가 조건 |
 |-----------|----------------------|-----------|-----------|
 | 기본 | 그 외 모든 경로 | 해당 팀 1인 | — |
+| 봇 PR(예외) | `tests/fixtures/`·`tests/replay/histories/`·`tests/eval/baselines/`(범위는 CI/CD §5.1) | 0(사람 승인 대체) | 커밋 타입 `test(fixtures)`·`test(replay)`·`test(eval)` 한정 + 작성자 `github-actions[bot]`(또는 조직 앱) + 라벨 `bot` + 통상 PR 게이트 전부 통과([CI/CD](./05-ci-cd.md) §5.1, #94); `staging` 승격 PR은 이 예외에 포함되지 않고 "기본" 행을 따른다 |
 | 보안 | `src/rag_platform/security/`, `tests/security/`, `docs/02-architecture/07-*.md`, `docs/06-adr/0027-*.md`, `docs/06-adr/0038-*.md` | 2인(`security` 1 + 영향 팀 1) | 카나리 침투 스위트 통과(`tests/security/`) |
 | 정본 문서 | `docs/00-vision/00-design-brief.md`, `docs/02-architecture/00-design-bible.md`, `schemas/common-types.schema.json` | `architecture` 2인 | 바이블 §1.2 절차 표기(patch/minor/major)와 ADR 링크 |
 | ADR | `docs/06-adr/` | `architecture` 2인 | 영향 CODEOWNERS 팀의 해소되지 않은 반대 없음, 품질 기본값이면 `evaluation` 승인(§4.3 `accepted` 조건) |
@@ -637,7 +639,7 @@ ADR들의 "준수 확인 방법" 표가 이 문서를 코드 리뷰 체크리스
 
 | # | 항목 | 근거 |
 |---|------|------|
-| P1 | PyMuPDF·Poppler·pyhwp·JPype·LibreOffice 임포트·서브프로세스가 없다 | ADR-0006 (a), ADR-0007 (a) |
+| P1 | PyMuPDF(AGPL, 대안·기각 — ADR-0006)·Poppler·pyhwp(대안·기각 — ADR-0007)·JPype·LibreOffice 임포트·서브프로세스가 없다 | ADR-0006 (a), ADR-0007 (a) |
 | P2 | 버전은 잠금 파일에 정확 고정, 범프 PR은 계약 코퍼스 통과 | ADR-0006 (b), ADR-0007 (f) |
 | P3 | `ParsedDocument.parser_chain[]`·`warnings[]`·`page_status[]`를 기록하고, 고속 경로는 `Producer.model_ids = []`·`image_digest = null` | ADR-0006 (c)(e)(f), ADR-0007 (e) |
 | P4 | 좌표는 좌상단 원점·PDF 포인트로 변환하고 단위 테스트가 있다; 흐름 포맷은 `page`/`bbox` null | ADR-0006 (d), ADR-0002 |
@@ -674,9 +676,9 @@ ADR들의 "준수 확인 방법" 표가 이 문서를 코드 리뷰 체크리스
 - **결정:** 행동 강령은 Contributor Covenant 2.1(수정 없음, 한/영 병기)을 `CODE_OF_CONDUCT.md`로 게시하고 4단계 집행 사다리를 따른다. 관련 ADR 없음(거버넌스 규약).
 - **결정:** 이슈는 GitHub 이슈 폼 5종(`bug_report`, `feature_request`, `rfc`, `parser_error`, `docs`)으로만 받고 빈 이슈를 막는다. 파서 오류 문서 첨부는 "재배포 가능 라이선스 + PII·기밀 없음"을 보고자가 확인한 ≤ 1MB 파일만 허용하고, 그 외는 `content_hash`·`parser_chain[]`·`StageError`와 합성 재현으로 대신한다. 첨부 PII 발견은 보안 채널로 처리한다. 브리프 원칙 9, [보안·컴플라이언스](../09-operations/05-security-and-compliance.md) §8.
 - **결정:** 라벨은 `kind/`·`area/`·`format/`(`SourceFormat` 철자)·`stage/`·`priority/`·`impact/` 6그룹 + 상태·기여자 라벨이며, `good-first-issue`는 모듈 하나·≤ 200행·계약 불변·멘토 배정 조건을 모두 충족할 때만 붙인다.
-- **결정:** 바이블 §1.2의 "ADR 발의"가 필요한 모든 변경은 `rfc.yml` 이슈 → 의견 수렴(7일, major·D-xx 개정 14일) → ADR PR(다음 번호 0039부터, §3.3 표 행 추가 동반) → `architecture` 2인 승인 + 영향 팀 무반대 → 바이블·브리프 갱신 순서를 따른다. 품질 기본값 변경은 `EvalReport.gate_result.passed` 없이는 채택되지 않는다(바이블 §7.4). 바이블 §1.2가 정본.
+- **결정:** 바이블 §1.2의 "ADR 발의"가 필요한 모든 변경은 `rfc.yml` 이슈 → 의견 수렴(7일, major·D-xx 개정 14일) → ADR PR(다음 번호 0040부터, §3.3 표 행 추가 동반) → `architecture` 2인 승인 + 영향 팀 무반대 → 바이블·브리프 갱신 순서를 따른다. 품질 기본값 변경은 `EvalReport.gate_result.passed` 없이는 채택되지 않는다(바이블 §7.4). 바이블 §1.2가 정본.
 - **결정:** 트렁크 기반, 보호 브랜치 `main`(선형 이력·직접 푸시 금지), `release/{major}.{minor}`는 백포트 전용, 작업 브랜치는 포크의 `{type}/{short-kebab}`. 기본 머지는 스쿼시(PR 제목 = 커밋 제목), 원자적 다중 커밋 PR은 rebase 허용, merge commit 금지.
-- **결정:** 브랜치 보호 승인 수는 기본 1인, 보안 경로 2인(`security` 1 + 영향 팀 1), 정본 문서(브리프·바이블·`common-types.schema.json`) `architecture` 2인, ADR `architecture` 2인 + 영향 팀 무반대(§4.3), 라이선스 경계 `license-compliance` 1 + 1, 계약 minor 이상 `contracts` 1 + `architecture` 1이다(저장소 구조 미해결 이슈 7 해소). [ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md), 바이블 §1.2.
+- **결정:** 브랜치 보호 승인 수는 기본 1인, 보안 경로 2인(`security` 1 + 영향 팀 1), 정본 문서(브리프·바이블·`common-types.schema.json`) `architecture` 2인, ADR `architecture` 2인 + 영향 팀 무반대(§4.3), 라이선스 경계 `license-compliance` 1 + 1, 계약 minor 이상 `contracts` 1 + `architecture` 1이다(저장소 구조 미해결 이슈 7 해소). 스코프 제한된 봇 PR(`test(fixtures)`·`test(replay)`·`test(eval)`)은 예외로 사람 승인 없이 게이트 통과만으로 자동 머지된다(§5.4, 05-ci-cd와 합의 #94). [ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md), 바이블 §1.2.
 - **결정:** 리뷰 SLA(초안 목표)는 일반 PR 첫 응답 ≤ 3영업일, `good-first-issue` ≤ 2영업일, 문서 ≤ 5영업일, 보안 ≤ 1영업일, 이슈 트리아지 ≤ 72시간(KPI-17); 작성자 무응답 30일 → `stale`, +14일 → 닫음. SLA 초과는 재배정 신호다.
 - **결정:** 기여 라이선스 동의는 DCO 1.1(`Signed-off-by`)이며 CLA는 두지 않는다(Apache-2.0 §5, inbound = outbound). 제3자 코드는 A 등급만, 새 소스 파일은 REUSE `SPDX-License-Identifier: Apache-2.0`, 모델·데이터는 커밋하지 않는다. 재단 기부 시 CLA 재검토. [ADR-0001](../06-adr/0001-license-grade-table-and-d02-interpretation.md), 브리프 D-02.
 - **결정:** 커밋은 Conventional Commits 1.0.0 `type(scope)!: subject`, 제목 영문 ≤ 72자, 본문 한/영, scope는 바이블 §12 모듈명·`plugin_id`·저장소 영역·`rag-plugin-{name}`, 푸터 `Signed-off-by`(필수)·`Closes/Refs`·`ADR:`·`BREAKING CHANGE:`(ADR 동반 필수)·`Schema-Version:`(제안). [ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md).
@@ -696,11 +698,11 @@ ADR들의 "준수 확인 방법" 표가 이 문서를 코드 리뷰 체크리스
 6. **실시간 채팅·메일링 리스트 개설.** GA 이후 Discussions 트래픽과 응답률을 보고 개설 여부를 정한다. 후보(Discord·Zulip·Matrix)의 라이선스·데이터 보존 정책은 조사되지 않았다(확인 필요 as of 2026-09).
 7. **비공개 문서 재현 경로(§3.4 (3)).** 파서 오류 재현용 문서를 메인테이너에게 비공개로 전달하는 도구(만료 링크, 암호화 업로드)와 보존 기간·삭제 증적 규칙이 없다. 보안·컴플라이언스 §8(개인정보 처리)과 정합하도록 09-operations/05 소유자와 함께 확정한다. GitHub 첨부 영구 삭제 절차도 확인 필요다.
 8. **생성 도구(LLM) 기여 정책.** §6의 "사용 도구 표기"는 제안이다. 라이선스 세탁 위험과 리뷰 부담을 고려한 상세 규칙(허용 범위, 표기 형식, 거부 조건)은 라이선스 컴플라이언스 팀이 별도 Discussions 제안으로 다룬다.
-9. **ADR 번호 부여 시점과 §3.3 표 갱신 절차.** 이 문서는 "채택 시 architecture가 다음 번호(0039)를 부여하고 §3.3 표 행을 같은 PR에 추가"로 정했지만, 바이블 §1.2 변경 종류 표에 "ADR 행 추가"가 어느 등급(patch/minor)인지 명시되어 있지 않다. 바이블 소유자에게 §1.2 표 각주로 명시해 달라고 요청한다(이 문서는 patch로 가정).
+9. 해소(v1.3, AM-23). ADR 번호 부여 시점과 §3.3 표 갱신 절차: "채택 시 architecture가 다음 번호를 부여하고 §3.3 표 행을 같은 PR에 추가"는 유지한다. §3.3 행 추가 자체의 변경 등급은 바이블 §1.2 1행(오탈자·설명 보강·예시 추가 = patch)에 해당하는 표 보강으로 결론낸다(§1.2 나머지 4행은 필드·열거·기본값·D-xx 변경에만 적용). 1.3.0 §1.2 표는 "필수 → 선택화·제약 완화 = minor(조건부), 제약 강화 = major"도 명확히 했다(AM-23).
 10. **문서 리뷰 체크리스트(NFR 검증 방법 M7)의 본문 위치.** 비기능 요구사항 문서는 체크리스트를 이 문서에 위임했으나 이 문서는 §8.1 규약 표로만 다뤘다. 문서 status 전이용 체크리스트(항목별 확인 문구)를 §8에 절로 추가할지, [테스트 전략](./04-testing-strategy.md)의 문서 검증기 규칙으로 옮길지 확정한다.
 11. **번역 PR 자동 생성·배너(§8.3 규칙 3·4).** 문서 빌드 도구가 선정되지 않았다(문서 사이트는 마일스톤 §9.1 GA 산출물). 도구 선정 후 구현 가능 여부를 재검토한다.
 12. **코딩 표준 §14·§15와의 어휘 정렬.** [코딩 표준](./03-coding-standards.md)은 커밋 스코프·브랜치 이름을 제안으로 두고 이 문서가 확정하면 인용으로 바꾸기로 했다(그 문서 미해결 이슈 10). 대조 결과 세 가지가 다르다: (a) 플러그인 스코프 `plugin-{name}`(03 §14) vs 이 문서 §7.1 `rag-plugin-{name}`(바이블 §6.7 패키지명 그대로), (b) ADR 참조 푸터 `Refs:`(03 §14) vs 이 문서 §7.1 `ADR:`(`BREAKING CHANGE:` 동반 필수; CI/CD §5 `pr / meta`도 `ADR:`을 검사), (c) 브랜치 이름 `{type}/{scope}-{slug}` ≤ 60자(03 §15) vs 이 문서 §5.1 `{type}/{short-kebab}`. 이 문서가 정본이므로 03 소유자에게 patch 인용 갱신을 요청한다. (c)는 03의 패턴이 이 문서 형식의 부분집합이라 충돌은 아니며 권장 예로 채택할 수 있다.
-13. **봇 PR 자동 머지와 PR 템플릿 트레일러(CI/CD 미해결 이슈 6·11).** CI/CD는 `test(fixtures)`·`test(replay)`·`test(eval)` 스코프의 봇 PR을 게이트 통과만으로 자동 머지하는 예외와, 릴리스 트레일러 `Breaking-Kind`·`Cache-Invalidation`의 PR 템플릿(§5.3) 반영을 제안했다. 전자는 §5.4 "해당 팀 1인" 규칙의 명시적 예외 행을 §5.4에 추가할지, 후자는 §5.3 템플릿에 두 트레일러 줄을 넣을지 CI/CD·릴리스 프로세스 소유자와 확정한다.
+13. 해소(v1.3, #94). 봇 PR 자동 머지는 §5.4 "봇 PR(예외)" 행으로, 릴리스 트레일러 `Breaking-Kind`·`Cache-Invalidation`는 §5.3 PR 템플릿 체크리스트 줄로 반영했다(CI/CD 미해결 이슈 6·11 동시 해소).
 
 ## 참조
 

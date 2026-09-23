@@ -2,7 +2,7 @@
 title: 정규화와 정제
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -135,7 +135,7 @@ PDF·OCR 텍스트 추출은 레이아웃의 줄을 그대로 `LF`로 이어 붙
 | W2 리가처 | `ﬁ`·`ﬂ` 등 U+FB00~U+FB06 | 표시 텍스트는 보존(NFC는 리가처를 풀지 않음), N11 S4 `nfkc_kr`이 렉시컬 뷰에서 펼침 | 항상 |
 | W3 줄 끝 공백 | `LF` 직전의 연속 공백 | 공백 삭제 후 L1~L5 적용 | 항상 |
 
-- `korean_join=analyzer`는 `analyzer_id`·`dictionary_hash`에 의존하므로 두 값이 지문(`model_ids`, §5.1)에 포함된 것으로 충분히 재현 가능하다(바이블 §4.2). 다만 계약 04 §8 표 `dictionary_hash` 변경 행의 "공백기 기본에서는 `display_text`·`sentence_spans`가 바뀌지 않는다"는 서술은 이 규칙이 적용된 블록에서는 예외가 된다(미해결 이슈 10).
+- `korean_join=analyzer`는 `analyzer_id`·`dictionary_hash`에 의존하므로 두 값이 지문(`model_ids`, §5.1)에 포함된 것으로 충분히 재현 가능하다(바이블 §4.2). 다만 계약 04 §8 표 `dictionary_hash` 변경 행의 "공백기 기본에서는 `display_text`·`sentence_spans`가 바뀌지 않는다"는 서술은 이 규칙이 적용된 블록에서는 예외가 된다(미해결 이슈 10). `dictionary_hash`의 정규화 행(`row = canonical_json({surface, pos, reading, synonyms, decompound, weight})`, `entry_id`·`tenant_id`·`collection_id`·`source`·`updated_at`·`schema_version` 제외) 정의는 바이블 §6.2 1.3.0(AM-12)이 [03-contracts/16 §6.2](../03-contracts/16-eval-feedback-and-sidecar-contracts.md)를 정본 참조로 확정했다(CR-44); 이 문서는 인용만 한다.
 - 결정성: mecab-ko는 오프셋을 직접 주지 않으므로 어댑터가 `node.rlength`로 재구성한 형태소 경계를 쓴다(13 §MeCab-ko 함정). 분석기 예외 시 그 블록은 `space` 정책으로 강등한다(경고 코드 없음 — 리포트 카운터 제안, 미해결 이슈 2).
 - I-8과의 관계: `LF → 공백`(L2·L5)은 1:1 구간 안의 동일 길이 치환이고, 하이픈·`LF` 삭제(L1~L4·W1·W3)는 사상 밖 문자다. 둘 다 계약 04 I-8 현행 허용 집합(NBSP→공백; `Cc`·`Cf`·`Co`·`exclude` 원문) 밖이므로 위 **제안** 문단의 선행 조건이 적용된다. 05 §4.1이 하이픈 줄바꿈 복원을 `normalize`에 위임한 만큼 개정은 이 문서의 최우선 요청이다.
 
@@ -152,9 +152,10 @@ PDF·OCR 텍스트 추출은 레이아웃의 줄을 그대로 `LF`로 이어 붙
 
 - 정책 값은 워크플로우가 `SourceDocument.pii_policy`·`pii_tokenize_mode`를 스테이지 설정 `pii.policy`·`pii.tokenize_mode`로 주입하므로 `config_hash`·`stage_key`에 반영된다(계약 04 §7).
 - 탐지 대상은 블록 중간값 전체와 표 앵커 셀 텍스트(N14)의 접힘 뷰다. `annotations[]`(메모·변경 추적)는 인덱싱 제외 기본이므로 탐지하지 않는다.
+- `pii_report.tokenize_mode_applied`(바이블 §5.4 1.3.0, AM-31)는 `policy_applied = tokenize`일 때만 적용 모드(`hash`/`encrypt`)를 기록하는 선택 필드다. 이 문서의 P4 연산자 처리가 채우며 값은 항상 워크플로우가 주입한 `pii.tokenize_mode`와 같다.
 - **토큰 결정성(계약 04 §7·I-23):** `tokenize` 토큰은 같은 `(tenant_id, entity_type, NFKC 접힘 평문)`에 대해 같아야 한다 — `hash`는 테넌트 고정 salt의 키드 해시, `encrypt`는 테넌트 DEK의 **결정적 AEAD**(AES-SIV 또는 DEK·평문에서 유도한 nonce). Presidio 기본 `encrypt` 연산자는 임의 IV를 쓰므로(확인 필요 as of 2026-09) 그대로 쓰지 않고 `custom` 연산자로 감싼다. 이 요건이 §1의 결정성 등급 `pure`와 §8.3 "2회 실행 바이트 동일"의 근거다.
 - `tokenize`의 `hash` salt·`encrypt` DEK는 `pii_detector` 플러그인이 `RuntimeServices`의 키 공급자(01 §3.2 `secrets` 행의 `key_provider`; 모듈은 바이블 §12 `security/key_provider` — 프로파일·설정 키 경로는 바이블 §7.3에 없으므로 **미확정**)에게서 받는다(스테이지 문맥에 비밀 값을 두지 않는 01 §3.2 규칙). 전달 포트(`ctx.secret(credentials_ref)` 여부)의 확정은 01 §3.2 `secrets` 행이 지정한 [02-architecture/05 플러그인 아키텍처](../02-architecture/05-plugin-architecture.md) 미해결 이슈 1과 함께 한다(미해결 이슈 13).
-- 탐지기 구성은 프로파일 §7.1 PII 행: `lite` 정규식 + KR 인식기 5종, `standard` + spaCy `ko_core_news_lg`(런타임 다운로드), `korean-gov` `tokenize`+`encrypt`·주민등록번호 `reject`. 마지막은 단일 `pii.policy`로 표현할 수 없으므로 **`pii.reject_entities: [KR_RRN]`(제안 키, §5.2·미해결 이슈 20)**으로 표현한다 — 이 엔티티가 1건이라도 탐지되면 연산자 적용 전에 `normalize.pii_policy_violation`(비재시도)로 실패하고, 산출물이 나오는 경우 모든 `pii_spans[].operator == policy_applied`이므로 계약 04 I-15·I-16은 그대로 성립한다(엔티티별로 **다른 연산자**를 두는 것은 계약 04 미해결 이슈 9). `Producer.model_ids`에 spaCy 모델(`spacy/ko_core_news_lg@3.8.0`)과 `pii_detector:{detector_version}`을 기록한다(§5.1).
+- 탐지기 구성은 프로파일 §7.1 PII 행: `lite` 정규식 + KR 인식기 5종, `standard` + spaCy `ko_core_news_lg`(런타임 다운로드), `korean-gov` `tokenize`+`encrypt`·주민등록번호 `reject`. 마지막은 단일 `pii.policy`로 표현할 수 없으므로 **`pii.reject_entities: [KR_RRN]`(바이블 §7.3 1.3.0 등재 키, AM-43; §5.2)**으로 표현한다 — 이 엔티티가 1건이라도 탐지되면 연산자 적용 전에 `normalize.pii_policy_violation`(비재시도)로 실패하고, 산출물이 나오는 경우 모든 `pii_spans[].operator == policy_applied`이므로 계약 04 I-15·I-16은 그대로 성립한다(엔티티별로 **다른 연산자**를 두는 것은 계약 04 미해결 이슈 9). `Producer.model_ids`에 spaCy 모델(`spacy/ko_core_news_lg@3.8.0`)과 `pii_detector:{detector_version}`을 기록한다(§5.1).
 
 ### 3.4 N4 `display_freeze`
 
@@ -263,7 +264,7 @@ HTML 숨김 요소 제거·PDF 극소 폰트 판정은 파서 책임이며 이 �
 
 - 순수 NFKC를 쓰지 않는 이유: NFKC는 한글 호환 자모를 조합형 자모로 보낸다(`ㅇ` U+3147 → U+110B, `ㄱ` U+3131 → U+1100, `ㆍ` U+318D → U+119E). 공문서 개조식의 표준 글머리 `ㅇ`과 `ㄱ. ㄴ.` 항목 표기가 있는 모든 블록이 자모 잔존 검사에 걸려 핵심 대상 문서군 전체가 비재시도 실패하므로, 계약 04 §3.2는 호환 자모를 NFKC 대상에서 제외하는 `nfkc_kr`을 확정했다. N1 U5가 호환 자모를 표시 텍스트에 보존하는 것과도 일관된다. 형태소 분석기(Kiwi `compatible_jamo=True`, Nori)도 호환 자모를 기대한다(13 §띄어쓰기 교정과 정규화 도구).
 - S1이 S4 앞에 오는 이유는 `ㆍ`를 `·`로 통일해 두면 보호 대상에 남지 않기 때문이다(보호 없이 NFKC하면 U+119E가 되어 잔존 검사에 걸린다; 계약 04 §3.2). S2가 S4 앞에 오는 이유는 호환 한자가 NFKC로 정규 한자에 사상된 뒤에도 독음 비교가 성립하도록 원 문자열로 판정하기 위함이다. S3가 S4 앞에 오는 이유는 시험지·법령 별표·서식의 항목 기호 `㉠㉡㉢`·`㈀㈁`이 호환 자모가 아니라 NFKC가 단독 조합형 자모로 펼치는 호환 문자여서 보호 범위만으로는 막을 수 없기 때문이다.
-- 원문에 이미 들어 있던 조합형 자모(옛한글 연쇄·단독 자모)는 S3 대상이 아니어서 I-6a에 걸린다. 국어 자료·고문서 컬렉션의 정상 입력이므로 "버그" 분류와 맞지 않으며 계약 04 미해결 이슈 18(역표 되돌리기 또는 경고 강등)을 골든셋 실측 후 ADR로 결정한다.
+- 원문에 이미 들어 있던 조합형 자모(옛한글 연쇄·단독 자모)는 S3 대상이 아니어서 I-6a에 걸린다. 국어 자료·고문서 컬렉션의 정상 입력이므로 "버그" 분류와 맞지 않으며 계약 04 미해결 이슈 18(역표 되돌리기 또는 경고 강등)을 골든셋 실측 후 ADR로 결정한다. **잠정 규칙(AM-48 보류):** 재발의 전까지는 현행 불변식을 유지한다 — 원문 유래 조합형 자모는 그대로 `normalize.nfd_residual` 경로로 실패하며, 한국어 골든셋에서 옛한글 문서가 실제로 확인되는 시점에 재발의한다(바이블 §5.4 불변식, §4.2; 03-contracts/04 미해결 이슈 18).
 - 띄어쓰기 교정은 복합명사를 과분리할 수 있어(13 측정 "공공기관" → "공공 기관") 표시 텍스트에는 절대 적용하지 않고 기본 끔이다(13 §띄어쓰기 교정과 정규화 도구; [ADR-0021](../06-adr/0021-korean-analyzer-kiwi-promotion-and-interim-mecab-kss.md) 코드 리뷰 항목 (2)). 사용자 사전 `NNG` 항목은 교정기의 결합 후보로 우선 적용한다.
 - `lang ≠ ko` 블록은 S1·S3·S4만 적용한다. 대소문자는 바꾸지 않는다(서버 분석기 `LowerCaseFilter`·플랫폼 분석기 책임).
 
@@ -309,7 +310,9 @@ HTML 숨김 요소 제거·PDF 극소 폰트 판정은 파서 책임이며 이 �
 
 표의 정본은 `ParsedDocument.Block.table`(`TableData`, 앵커 셀 + span)이고 `NormalizedDocument`는 구조를 복제하지 않는다(계약 03 §6, 04 §1). 그러나 `TableData.cells[].text`는 원문이어서 NFC·PII 정책이 적용되지 않은 상태로 청커의 표 행 그룹 직렬화에 들어갈 수 있다(계약 04 §2.9·미해결 이슈 2).
 
-**결정:** `normalizer.chain`은 `type = table` 블록의 모든 앵커 셀에 대해 `table_cell_views[]{block_id, row, col, display_text, lexical_text, offset_map}`(계약 04 §2.9 **조건 필수** 필드 — `pii_report.policy_applied ≠ keep`이면 필수·앵커 셀 1:1, 표가 없으면 `[]`; `keep`이면 N, I-22)을 **항상 생산**한다(`steps.table.cell_views = true` 기본; `pii.policy ≠ keep`이면 끌 수 없다 — 셀 안의 PII가 `Chunk.text`로 새는 것을 막는 유일한 경로다). 셀 텍스트에는 N1·N3·N4·N11을 적용하고 N2는 적용하지 않는다(셀 안 `LF`는 문단 병합 구분자, 계약 03 §2.8). 청커는 `table_cell_views`가 있으면 그것을 쓰고, 없을 때 `TableData.cells[].text`로 폴백하는 것은 `policy_applied = keep`일 때만 허용된다(정책 ≠ `keep`인데 뷰가 없으면 `contract.violation`, 계약 04 §2.9). 계약 04 I-11(PII 원문 부재)은 셀 뷰에도 적용한다.
+**결정:** `normalizer.chain`은 `type = table` 블록의 모든 앵커 셀에 대해 `table_cell_views[]{block_id, row, col, display_text, lexical_text, offset_map}`(바이블 §5.4 1.3.0 등재, AM-31; 계약 04 §2.9 **조건 필수** 필드 — `pii_report.policy_applied ≠ keep`이면 필수·앵커 셀 1:1, 표가 없으면 `[]`; `keep`이면 N, I-22)을 **항상 생산**한다(`steps.table.cell_views = true` 기본; `pii.policy ≠ keep`이면 끌 수 없다 — 셀 안의 PII가 `Chunk.text`로 새는 것을 막는 유일한 경로다). 셀 텍스트에는 N1·N3·N4·N11을 적용하고 N2는 적용하지 않는다(셀 안 `LF`는 문단 병합 구분자, 계약 03 §2.8). 청커는 `table_cell_views`가 있으면 그것을 쓰고, 없을 때 `TableData.cells[].text`로 폴백하는 것은 `policy_applied = keep`일 때만 허용된다(정책 ≠ `keep`인데 뷰가 없으면 `contract.violation`, 계약 04 §2.9). 계약 04 I-11(PII 원문 부재)은 셀 뷰에도 적용한다.
+
+셀 텍스트 재호출(N1·N3·N4·N11) 중 N3가 셀 안에서 PII를 탐지하면 그 구간은 문서 전체 `annotations.pii_spans[]`에 `row`·`col`을 채워 기록한다(값이 있으면 `table_cell_views[]`의 `(block_id, row, col)` 셀 뷰 `display_text` 기준, 둘 다 없으면 `NormalizedBlock.display_text` 기준 — 바이블 §5.4 1.3.0 `pii_spans[].row/col`, AM-31; 계약 04 §2.9·I-22). 블록 단위 탐지(P1~P4)와 같은 정책·연산자를 그대로 적용한다.
 
 표 정제 정책은 **의미를 이 문서가 정의하고 집행은 청커의 표 직렬화기**([10](./10-chunking-strategies.md))가 한다 — `TableData`를 바꿀 수 없으므로 "제거"와 "전파"는 직렬화 시점의 선택이다.
 
@@ -327,7 +330,7 @@ HTML 숨김 요소 제거·PDF 극소 폰트 판정은 파서 책임이며 이 �
 
 각주 블록(`type = footnote`, `container = footnote_body`)은 앵커 블록과 같은 부모의 형제로 앵커 직후에 놓이고 미주는 문서 끝 루트 형제다(계약 03 §4.2). 앵커 텍스트의 마커(`1)`, `※`)는 원문이므로 `display_text`에 남는다(계약 03 §7). 정규화는 각주 블록을 본문 블록과 같게 처리하며(`boilerplate = false`, `lang`·`lexical_text`·`sentence_spans`), 각주 본문을 앵커 블록의 `display_text` 안에 끼워 넣는 "인라인"은 블록 1:1·`offset_map` 단일 원문 규칙상 불가능하다.
 
-**결정:** 각주 정책 `FootnotePolicy`(제안 열거)는 청커가 집행하고 **기본값의 정본은 [10](./10-chunking-strategies.md) §1 설정 표 `footnote_policy`(기본 `attach`, `kind` 무관)**다 — `attach`: 각주 블록을 앵커 블록과 같은 청크에 넣는다(읽기 순서상 앵커 직후이므로 구조 인식 청킹이 자연히 합치고, 예산 초과 시 앵커 청크 다음 청크의 첫 블록으로 둔다); `separate`: 각주만으로 청크를 만들고 heading 경로는 앵커 섹션을 따른다; `drop`: 청크에서 제외(법률 주석처럼 잡음이 큰 컬렉션). 미주(`footnote.kind = endnote`, 문서 끝 루트 형제)의 기본을 `separate`로 두는 `kind`별 기본값은 10 문서와 합의할 **제안**이다(미해결 이슈 5). 어떤 정책도 `Chunk.text = block_refs 합집합` 불변식을 깨지 않는다([ADR-0029](../06-adr/0029-three-text-rule-and-deterministic-context-prefix.md) 준수 항목 (1)). 렉시컬 뷰에서 위 첨자 마커(`¹`)는 NFKC로 `1`이 되며 별도 제거는 하지 않는다.
+**결정:** 각주 정책 `FootnotePolicy`(제안 열거)는 청커가 집행하고 **기본값의 정본은 [10](./10-chunking-strategies.md) §1 설정 표 `footnote_policy`**다 — `attach`(기본, `kind=footnote`): 각주 블록을 앵커 블록과 같은 청크에 넣는다(읽기 순서상 앵커 직후이므로 구조 인식 청킹이 자연히 합치고, 예산 초과 시 앵커 청크 다음 청크의 첫 블록으로 둔다); `separate`(기본, `kind=endnote`): 각주만으로 청크를 만들고 heading 경로는 앵커 섹션을 따른다; `drop`: 청크에서 제외(법률 주석처럼 잡음이 큰 컬렉션). 미주(`footnote.kind = endnote`, 문서 끝 루트 형제)는 앵커와 같은 리프에 붙을 수 없으므로 기본값이 `separate`이며, 10 §1·§5가 이 값을 병기해 두 문서가 맞췄다(#1). `kind`별 기본값은 여전히 바이블·계약 미등재 제안이다(미해결 이슈 5). 어떤 정책도 `Chunk.text = block_refs 합집합` 불변식을 깨지 않는다([ADR-0029](../06-adr/0029-three-text-rule-and-deterministic-context-prefix.md) 준수 항목 (1)). 렉시컬 뷰에서 위 첨자 마커(`¹`)는 NFKC로 `1`이 되며 별도 제거는 하지 않는다.
 
 ### 3.16 N15 `report` — 통계·플래그·품질
 
@@ -384,7 +387,7 @@ HTML 숨김 요소 제거·PDF 극소 폰트 판정은 파서 책임이며 이 �
 
 ```python
 # src/rag_platform/adapters/normalize/chain.py — normalizer.chain 의 config_schema.
-# analyzer · sentence_splitter · pii 는 바이블 §7.3 정본 키, steps 와 pii.reject_entities 는 이 문서의 제안(미해결 이슈 7·20).
+# analyzer · sentence_splitter · pii(reject_entities 포함, 바이블 §7.3 1.3.0 등재 AM-43) 는 바이블 §7.3 정본 키, steps 는 이 문서의 제안(미해결 이슈 7).
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -404,7 +407,7 @@ class PiiConfig(Frozen):
     policy: Literal["mask", "tokenize", "exclude", "keep", "reject"]      # 워크플로우가 SourceDocument.pii_policy 로 주입
     tokenize_mode: Literal["hash", "encrypt"] = "encrypt"
     recognizers: tuple[str, ...] = ("KR_RRN", "KR_PHONE", "KR_BANK_ACCOUNT", "KR_CARD", "KR_PASSPORT")
-    reject_entities: tuple[str, ...] = ()         # 제안(§3.3): 이 엔티티가 1건이라도 탐지되면 normalize.pii_policy_violation. korean-gov: ("KR_RRN",)
+    reject_entities: tuple[str, ...] = ()         # 바이블 §7.3 1.3.0 등재(AM-43, §3.3): 이 엔티티가 1건이라도 탐지되면 normalize.pii_policy_violation. korean-gov: ("KR_RRN",)
 
 
 class LinebreaksStep(Frozen):
@@ -514,7 +517,7 @@ class NormalizeConfig(Frozen):
 | N1 `unicode` | 켬(끔 불가) | 동일 | 동일 | 동일 |
 | N2 `linebreaks` / `korean_join` | 켬* / `analyzer` | 동일 | 동일 | 동일 + `apply_to_converted_flow: true` |
 | N2 `letter_spacing_repair` | 끔 | 끔 | 끔 | 켬(`ocr` 블록) |
-| N3 `pii` 탐지기 | 정규식 + KR 인식기 5종 | + spaCy `ko_core_news_lg` | 동일 | `tokenize`+`encrypt`(OpenBao DEK, 바이블 §7.1); `pii.reject_entities: [KR_RRN]`(제안 키, §3.3); L2 분류기(12 문서) |
+| N3 `pii` 탐지기 | 정규식 + KR 인식기 5종 | + spaCy `ko_core_news_lg` | 동일 | `tokenize`+`encrypt`(OpenBao DEK, 바이블 §7.1); `pii.reject_entities: [KR_RRN]`(바이블 §7.3 1.3.0 등재, AM-43; §3.3); L2 분류기(12 문서) |
 | N5 `risk_l1` | 켬 | 켬 | 켬 | 켬 + 감사 로그 |
 | N7 `furniture` 반복 탐지(최소 2회·3페이지·30%) / 상용구 | 켬 / `[]` | 켬 / `[]` | 켬 / `[]` | 켬 / 공문서 상용구 목록(§3.7 F5 예시) |
 | N8 `dedup` | `adjacent_exact` / 20 | 동일 | 동일 | 동일 |
@@ -546,7 +549,7 @@ ingest:
       sentences: {line_boundary: true, bullet_boundary: true}
       risk_l1: {enabled: true, injection_patterns: []}
 # korean-gov 오버라이드(extends: standard; 배열은 교체)
-#   pii: {tokenize_mode: encrypt, reject_entities: [KR_RRN]}                          # reject_entities 는 제안 키(미해결 이슈 20); policy 는 워크플로우 주입
+#   pii: {tokenize_mode: encrypt, reject_entities: [KR_RRN]}                          # reject_entities 는 바이블 §7.3 1.3.0 등재 키(AM-43); policy 는 워크플로우 주입
 #   steps.linebreaks: {apply_to_converted_flow: true, letter_spacing_repair: true}
 #   steps.furniture.phrases: ["^이 문서는 .*전자문서.*$", "^(배포용|열람용|사본)$", "^무단\\s*(전재|복제).*금지.*$"]
 #   steps.lexical.spacing: {enabled: true, sources: [ocr, converted]}
@@ -561,8 +564,8 @@ ingest:
 | `display_text`가 NFC가 아님; `lexical_text`가 `nfkc_kr` 고정점이 아니거나 조합형 자모 U+1100~U+11FF 잔존 | `normalize.nfd_residual` | no | 편집 규칙 버그로 취급, 잡 실패(바이블 §4.2; 계약 04 I-6a) |
 | `display_text`에 `Cc`(탭·LF 제외)·`Cf`·`Co` 잔존 | `contract.violation` | no | 셸 출력 저장 전 검증(계약 04 I-6b); N1 U3가 모두 제거하므로 정상 경로에서 발생하지 않음 |
 | PII 탐지기 로딩·호출 실패 | `normalize.pii_detector_unavailable` | yes(3, 지수) | `keep` 폴백 금지, 소진 시 잡 `failed`(E4); `rag_pii_detector_errors_total` 증가 |
-| `reject` 정책에서 탐지 ≥ 1건; `pii.reject_entities`(제안) 엔티티 탐지 ≥ 1건; keep 불가 항목에 `keep` | `normalize.pii_policy_violation` | no | 산출물 없이 실패 |
-| 문장 분리기 예외 | `normalize.segmenter_fallback`(경고) | — | 다음 폴백(kss → 정규식), `quality = degraded` |
+| `reject` 정책에서 탐지 ≥ 1건; `pii.reject_entities`(바이블 §7.3 1.3.0 등재, AM-43) 엔티티 탐지 ≥ 1건; keep 불가 항목에 `keep` | `normalize.pii_policy_violation` | no | 산출물 없이 실패 |
+| 문장 분리기 예외 | `normalize.segmenter_fallback`(경고, `StageError`가 아닌 `Warning.code`로만 기록 — 계약 감사 정본 결정 CR-33) | — | 다음 폴백(kss → 정규식), `quality = degraded` |
 | `offset_map` 정규형·1:1 왕복·1:1 블록 규칙·크기 한계 위반 | `contract.violation` | no | 셸 출력 저장 전 검증(계약 00 §10.1) |
 | 한글 결합 판정 중 분석기 예외 | — | — | 그 블록만 `korean_join = space`로 강등, 카운터(제안) |
 | 형태소 분석기 미설치 | `profile.invalid`(로딩 시) | — | 런타임에 도달하지 않는다(바이블 §7.4 (9)) |
@@ -710,9 +713,9 @@ ingest:
 3. 판정·파생 규칙(N5~N13) 변경은 furniture 정밀도·재현율과 렉시컬 레그 nDCG@10 회귀(MIRACL-ko dev + 내부 골든셋)를 게이트로 한다(바이블 §7.4).
 4. 배포 후 기존 문서는 지문 불일치로 자연히 캐시 미스가 나며, 일괄 재정규화는 `reprocess {from_stage: normalize}`로 한다.
 
-### 8.5 diff 리포트 CLI(제안)
+### 8.5 diff 리포트 CLI(제안) — 개발 전용 하위 명령
 
-`rag normalize diff <parsed-document.json> [--config a.yaml] [--config b.yaml]`(01 §13 `rag run-stage`의 정규화 특화 래퍼)은 두 설정(또는 현재 설정 vs 골든 픽스처)의 산출물을 블록별로 나열한다 — `display_text` 유니파이드 diff, `lexical_text` diff, `offset_map` 변화, `boilerplate`·`furniture_reason`·`lang`·`genre` 변화, 리포트 카운터 표. 출력은 Markdown이며 PR 본문에 그대로 붙일 수 있다. 콘텐츠를 포함하므로 CI 아티팩트로만 보관하고 로그·이벤트로 내보내지 않는다(바이블 §6.5 콘텐츠 캡처 기본 끔).
+`rag normalize diff <parsed-document.json> [--config a.yaml] [--config b.yaml]`(01 §13 `rag run-stage`의 정규화 특화 래퍼)는 개발 전용 하위 명령이며, 명령 정본은 [10-development/02 §CLI](../10-development/02-development-environment.md)다(바이블 §12 1.3.0, AM-22; 완전성 #10). 이 문서는 규칙 변경 리뷰에 필요한 동작만 설명한다. 두 설정(또는 현재 설정 vs 골든 픽스처)의 산출물을 블록별로 나열한다 — `display_text` 유니파이드 diff, `lexical_text` diff, `offset_map` 변화, `boilerplate`·`furniture_reason`·`lang`·`genre` 변화, 리포트 카운터 표. 출력은 Markdown이며 PR 본문에 그대로 붙일 수 있다. 콘텐츠를 포함하므로 CI 아티팩트로만 보관하고 로그·이벤트로 내보내지 않는다(바이블 §6.5 콘텐츠 캡처 기본 끔).
 
 ## 결정 사항 요약
 
@@ -733,7 +736,7 @@ ingest:
 2. **`normalization_report` 확장 카운터(N)** — `dehyphenated`, `linebreaks_merged`, `letter_spacing_repaired`, `duplicate_blocks`, `empty_blocks`, `heading_levels_reinferred`, `language_mismatch_blocks`, `content_risk_blocks`, `segmenter_fallback_blocks` — 바이블 §5.4·계약 04 §2.6 minor 반영 제안. 채택 전에는 골든 diff 픽스처에만 존재한다.
 3. **`FurnitureReason`에 `duplicate` 추가** 제안(ADR, minor). 채택 전까지 중복 블록은 `boilerplate`로 기록한다.
 4. **heading 재추론과 I-13(계약 04 소유).** 재추론이 깊이를 늘리면 `len(path) > level + 1`이 되므로 채택 전까지 §3.9 절단 규칙(제목·가까운 조상 우선)을 적용한다. 개정(minor) 제안: I-13을 `len(path) ≤ max(level, effective_level) + 1`로 완화하고 `heading_tree[].effective_level`(N)을 추가, 추론 heading 강등 표시(종결어미·120자 초과)도 함께. 채택 시 절단 규칙을 제거한다.
-5. **표 정제·각주 정책의 소유와 열거 등재** — `TableMergedCellPolicy{anchor_only, repeat_in_row_groups, span_marker}`·`FootnotePolicy{attach, separate, drop}`의 §5.7 등재, 프로파일 키 위치(`ingest.normalize` vs `ingest.chunk`), 미주(`kind = endnote`) 기본을 `separate`로 두는 `kind`별 기본값(현재 정본은 10 §1 `footnote_policy = attach`, `kind` 무관), `table_cell_views` 조건 필수(`pii ≠ keep`)의 바이블 §5.4 반영은 [10 청킹](./10-chunking-strategies.md)·[계약 05](../03-contracts/05-chunk-set.md)와 합의한다.
+5. **표 정제·각주 정책의 소유와 열거 등재** — `TableMergedCellPolicy{anchor_only, repeat_in_row_groups, span_marker}`·`FootnotePolicy{attach, separate, drop}`의 §5.7 등재, 프로파일 키 위치(`ingest.normalize` vs `ingest.chunk`)는 [10 청킹](./10-chunking-strategies.md)·[계약 05](../03-contracts/05-chunk-set.md)와 합의한다. 미주(`kind = endnote`) 기본을 `separate`로 두는 `kind`별 기본값은 10 §1·§5와 이미 병기해 맞췄다(해소, #1). `table_cell_views` 조건 필수(`pii_report.policy_applied ≠ keep`)는 바이블 §5.4 1.3.0(AM-31)에 이미 반영되어 종결되었다.
 6. **카탈로그 추가 제안(경고 `—`)**: `normalize.language_mismatch`(계약 04 미해결 이슈 8과 공동), `normalize.heading_levels_reinferred`, 메트릭 `rag_normalize_segmenter_fallback_total`·`rag_normalize_furniture_ratio`(계약 04 미해결 이슈 15와 공동). 등재 전 발생 금지. 로그 `event` 값은 바이블 §6.5에 카탈로그가 없으므로 이 문서는 정의하지 않는다.
 7. **`ingest.normalize.steps` 프로파일 키**(§5.2·§5.4)는 바이블 §7.3·`profile.schema.json` 미등재다. minor 추가와 §7.4 검증 규칙 4개(§5.4 끝) 제안. `steps.furniture.repeat_min_occurrences`(§3.7)·`steps.linebreaks.enabled` 기본값 전환(이슈 1) 포함.
 8. **역할·플러그인 ID 추가** — 역할 `spacing_corrector`(바이블 §7.1이 이름만 언급)·`hanja_reader`, 플러그인 `normalizer.kiwi_spacing`·`normalizer.kss_spacing`·`normalizer.kss_hanja`, 모듈 `adapters/normalize/chain.py`·`korean/hanja.py`·`korean/spacing.py` — 바이블 §3.1 D-10 예시·§12 모듈 맵 반영.
@@ -748,7 +751,7 @@ ingest:
 17. **성능 실측** — Presidio + spaCy `ko_core_news_lg` 처리량, 셀 뷰 추가 비용, 산출물 팽창 비율(§7 2.3배), mecab-ko 오프셋 재구성 비용을 100페이지 표본으로 측정해 §7을 갱신한다.
 18. **개조식 글머리 기호 정본 집합**(§3.13 표)을 청킹의 `flat_text` 문장 윈도우·개조식 분할(`genre_rules.outline_report.bullet_regex`)과 공유하도록 [10](./10-chunking-strategies.md)과 단일 소스로 둔다. `ㅁ`(U+3141)·`※` 포함 여부는 골든셋으로 확정.
 19. **`web_article` 조건 정정 제안(계약 04 §5, patch)** — 계약 04 §5 표의 "`SourceDocument.format = html`이고 `metadata.web`"은 `normalize` 입력에 없는 필드를 읽는다(`ParsedDocument`에 `format`이 없음). 이 문서 §3.10처럼 "`ParsedDocument.metadata.web` 존재"로 정정 요청.
-20. **`pii.reject_entities`(제안 키)** — 바이블 §7.1 korean-gov "`tokenize`+`encrypt`, 주민등록번호 `reject`"를 단일 `pii.policy`로는 표현할 수 없어 §3.3·§5.2가 도입했다. 바이블 §7.3 `pii` 키(현재 `plugin`·`policy`·`recognizers`)와 [계약 15](../03-contracts/15-collection-profile-and-policy-contracts.md) 프로파일 스키마에 minor 추가 제안. `reject`만 허용하므로 계약 04 I-15(`operator == policy_applied`)는 유지된다; 엔티티별 다른 연산자는 계약 04 미해결 이슈 9.
+20. **해소(v1.3, AM-43).** `pii.reject_entities` — 바이블 §7.1 korean-gov "`tokenize`+`encrypt`, 주민등록번호 `reject`"를 단일 `pii.policy`로는 표현할 수 없어 §3.3·§5.2가 도입했던 제안 키를 바이블 §7.3 1.3.0이 그대로 등재했고, [계약 15](../03-contracts/15-collection-profile-and-policy-contracts.md) 프로파일 스키마에도 이미 반영되었다. `reject`만 허용하므로 계약 04 I-15(`operator == policy_applied`)는 유지된다; 엔티티별 다른 연산자는 계약 04 미해결 이슈 9(그대로 열림).
 21. **`model_ids` 해소 시점과 인스턴스 재사용 단위(01 합의)** — `dict:{dictionary_hash}`가 컬렉션마다 다르므로 `normalizer.chain` 인스턴스(01 §3.2 "profile_hash당 1회")의 캐시 키에 `dictionary_hash`(또는 `collection_id`)를 포함하거나 `fingerprint()`를 잡 단위로 재계산해야 한다. 01 §2.3 `PluginRegistry.build` 규약에 반영 요청.
 
 ## 참조

@@ -2,7 +2,7 @@
 title: 개발 환경
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -13,7 +13,12 @@ depends_on:
   - ../09-operations/01-deployment-guide.md
   - ../09-operations/02-configuration-reference.md
   - ../04-pipelines/01-pipeline-framework.md
+  - ../04-pipelines/09-normalization-and-cleaning.md
   - ../02-architecture/08-deployment-architecture.md
+  - ../05-api/02-ingestion-api.md
+  - ../05-api/03-retrieval-api.md
+  - ../05-api/04-management-api.md
+  - ../05-api/05-mcp-server.md
   - ../05-api/06-client-sdks.md
   - ../06-adr/0035-python-version-and-toolchain-pins.md
   - ../06-adr/0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md
@@ -29,10 +34,35 @@ depends_on:
 
 ## 범위
 
-- **포함**: 요구 도구와 버전, 설정 절차(clone → `uv sync` → `pre-commit install` → compose 개발 스택 → 마이그레이션 → 샘플 수집 → 첫 질의), Temporal 없는 개발 모드(`LocalRunner`)의 동작·제약·프로파일, 샘플 데이터(`samples/`) 구성 규칙과 라이선스, 디버깅(스테이지 단독 실행, 산출물 열람, 설명 가능 질의, 로그·트레이스), GPU 개발 옵션, IDE 설정(ruff·mypy·import-linter), 환경 변수 예시(`.env.example` 개발 값), 흔한 문제, Windows/WSL2 참고.
+- **포함**: 요구 도구와 버전, 설정 절차(clone → `uv sync` → `pre-commit install` → compose 개발 스택 → 마이그레이션 → 샘플 수집 → 첫 질의), Temporal 없는 개발 모드(`LocalRunner`)의 동작·제약·프로파일, 샘플 데이터(`samples/`) 구성 규칙과 라이선스, 디버깅(스테이지 단독 실행, 산출물 열람, 설명 가능 질의, 로그·트레이스), GPU 개발 옵션, IDE 설정(ruff·mypy·import-linter), 환경 변수 예시(`.env.example` 개발 값), 흔한 문제, Windows/WSL2 참고. **이 문서(§CLI)가 `rag` CLI 명령·인자·호출 API 대응의 정본이다**(완전성 #10, 바이블 §12 1.3.0 `cli/` 주석, AM-22) — 다른 문서는 `10-development/02 §CLI`를 인용만 하고 명령 목록을 복제하지 않는다(04-pipelines/01 §13, 04-pipelines/09 §8.5).
 - **제외**: 저장소 레이아웃·의존 방향([저장소 구조](./01-repository-structure.md)), 린트 규칙 세부·타입 스텁 정책([코딩 표준](./03-coding-standards.md)), 테스트 종류·마커·픽스처 보관([테스트 전략](./04-testing-strategy.md)), CI 잡 정의([CI/CD](./05-ci-cd.md)), 플러그인 템플릿([플러그인 개발 가이드](./06-plugin-development-guide.md)), 운영 배포([배포 가이드](../09-operations/01-deployment-guide.md)), 환경 변수 전체 목록·기본값([설정 레퍼런스](../09-operations/02-configuration-reference.md)).
 - **수치**: 소요 시간·하드웨어 값은 바이블 §11.6과 배포 가이드 §2.1의 "초안 목표"를 옮긴 것이다. 외부 도구 버전은 선정 매트릭스 확인일(2026-09-18~22) 기준이며 `uv.lock`·이미지 digest가 정본이다. 07-tech-landscape에 비교 조사가 없는 도구(pre-commit, just, Node 코드젠 도구, VS Code 확장)는 "확인 필요(as of 2026-09)"로 표기한다.
 - **전제**: 저장소는 현재 설계 문서(`docs/`)·스키마(`schemas/`)·도구(`tools/`)만 담고 있다. 아래 절차는 구현 착수 시점의 **목표 상태**이며, 이미 존재하는 경로는 그대로 흡수된다(저장소 구조 §범위).
+
+---
+
+## CLI 명령 정본(§CLI; 완전성 #10)
+
+**결정:** `rag` CLI(`src/rag_platform/cli/`, entry point `rag = "rag_platform.cli:main"`)의 명령·인자·호출 API·소유 문서 대응은 **이 절이 정본**이다(바이블 §12 1.3.0 `cli/` 주석, AM-22). 바이블 §12가 확정한 서브커맨드(`up ingest query reprocess reindex eval profile(validate diff) plugin(list --check-license) cache(invalidate --stage) serve(api worker relay sidecar) mcp`)에 관리 API 래퍼 `rag tenant`(AM-39)와 개발 전용 `rag run-stage`([파이프라인 프레임워크](../04-pipelines/01-pipeline-framework.md) §13)·`rag normalize diff`([정규화와 정제](../04-pipelines/09-normalization-and-cleaning.md) §8.5)를 더한다. 다른 문서(04-pipelines/01·04-pipelines/09 등)는 이 표를 인용만 하고 명령·옵션을 복제하지 않는다.
+
+| 명령 | 주요 인자 | 호출 API·경로 | 소유 문서 |
+|------|-----------|---------------|-----------|
+| `rag up` | `--profile <id> [--durable]` | 없음(compose 렌더·기동, 마이그레이션, `/readyz` 대기) | 이 문서 §2, [배포 가이드](../09-operations/01-deployment-guide.md) §3 |
+| `rag ingest` | `<path...> --collection <id> [--wait]` | `POST /v1/documents`(배치는 §7.2) | [수집 API](../05-api/02-ingestion-api.md) |
+| `rag query` | `"<text>" --collection <id> [--render <fmt>] [--explain]` | `POST /v1/query` | [검색 API](../05-api/03-retrieval-api.md) |
+| `rag reprocess` | `<document_id> [--from-stage <stage>]` | `POST /v1/documents/{document_id}/reprocess` | [수집 API](../05-api/02-ingestion-api.md) §7.4 |
+| `rag reindex` | `<collection_id> [--reason <text>]` | `POST /v1/collections/{collection_id}/reindex` | [관리 API](../05-api/04-management-api.md) §3.5 |
+| `rag eval` | `run --dataset <id>` | `POST /v1/eval/runs` | [평가 전략](../08-evaluation/01-evaluation-strategy.md) |
+| `rag profile validate\|diff` | `<profile.yaml>` | `validate` = `POST /v1/profiles/validate`; `diff`는 로컬 비교(API 없음) | [관리 API](../05-api/04-management-api.md) §4.2 |
+| `rag plugin list [--check-license]` | — | `GET /v1/plugins`; 라이선스 검사는 로컬 pip-licenses + liccheck | [관리 API](../05-api/04-management-api.md) §5 |
+| `rag cache invalidate` | `--stage <name> [--document <ulid>]` | 없음(로컬 아티팩트 스토어·원장 조작) | 이 문서 §5.1 |
+| `rag serve` | `api\|worker\|relay\|sidecar` | 없음(프로세스 기동, 역할은 CLI 플래그) | [배포 아키텍처](../02-architecture/08-deployment-architecture.md) §3.3 |
+| `rag mcp` | `serve` | MCP 도구(`search`·`get_document`·`list_collections`) | [MCP 서버](../05-api/05-mcp-server.md) |
+| `rag tenant` | `create\|list\|get\|update --name <name> [--quotas <json>]`(AM-39) | `POST`·`GET`·`PATCH /v1/tenants[/{tenant_id}]` | [관리 API](../05-api/04-management-api.md) §2.4 |
+| `rag run-stage`(개발 전용) | `<stage> --input <path> --profile <id> [--plugin …] [--config …] [--json]` | 없음(로컬 `run_stage`, `LocalRuntime`) | [파이프라인 프레임워크](../04-pipelines/01-pipeline-framework.md) §13 |
+| `rag normalize diff`(개발 전용) | `<parsed-document.json> [--config a.yaml] [--config b.yaml]` | 없음(로컬, `run-stage`의 정규화 특화 래퍼) | [정규화와 정제](../04-pipelines/09-normalization-and-cleaning.md) §8.5 |
+
+`serve`·`run-stage`·`normalize diff`를 제외한 모든 명령은 관리·수집·검색 API를 얇게 감싼 클라이언트이며 토큰(`RAG_AUTH__*` 또는 API 키)을 그대로 전달한다. CLI가 API에 없는 동작(캐시 무효화, 스테이지 단독 실행)을 수행할 때만 "호출 API·경로"가 "없음"이다.
 
 ---
 
@@ -47,7 +77,7 @@ depends_on:
 | Docker Engine + Compose v2 | Docker Desktop(macOS·Windows) 또는 Docker Engine(Linux). `docker compose` 서브커맨드 | 필수 | `rag up`이 호출하는 개발 스택(PostgreSQL·Qdrant·Valkey), 선택 오버레이(Temporal·오브젝트 스토리지·TEI·관측) | 배포 가이드 §2.3, §3.1 |
 | git | 2.x | 필수 | `core.autocrlf=false` + `.gitattributes`(§10) | 골든 해시 안정성 |
 | pre-commit | 확인 필요(as of 2026-09) | 권장 | 커밋 전 ruff·import-linter·잠금·JSON·비밀 검사(§7.3). dev 그룹 의존으로 설치 | 이 문서 제안 |
-| `just` | 확인 필요(as of 2026-09) | 선택 | `justfile`(제안) 태스크 래퍼. 정본 명령은 항상 `uv`·`rag` CLI이며 `just`는 편의 수단 | §1.1 |
+| `just` | 확인 필요(as of 2026-09) | 선택 | `justfile`(바이블 §12 1.3.0, AM-22) 태스크 래퍼. 정본 명령은 항상 `uv`·`rag` CLI이며 `just`는 편의 수단 | §1.1 |
 | Node.js | **22 LTS 이상** | 선택(권장) | `sdk/typescript` 코드젠·빌드(`npm run generate`), `tools/*.mjs` 문서·스키마 검증기(`node tools/validate-contracts.mjs --root .`) | [클라이언트 SDK](../05-api/06-client-sdks.md) §2 런타임 행(확인 필요 as of 2026-09), 저장소 구조 미해결 이슈 11 → §1.1 결정 |
 | Java 21 + Maven 3 | `maven:3-eclipse-temurin-21` 빌드 이미지와 동일 | 선택 | `sidecars/parser-workers`(hwplib·hwp2hwpx·hwpxlib·Tika) 소스 작업. 로컬 JDK 없이 `docker build sidecars/parser-workers`만으로도 가능 | 배포 아키텍처 §3.3, 저장소 구조 §3.1 |
 | NVIDIA 드라이버 + NVIDIA Container Toolkit | CUDA 12.2+ 호환 드라이버(TEI), Compute Capability ≥ 7.5 | 선택 | GPU 서빙 컨테이너(TEI·vLLM pooling)·`ocr-gpu` 사이드카 로컬 실행(§6) | 배포 가이드 §2.2 |
@@ -66,11 +96,11 @@ depends_on:
 
 ### 1.1 태스크 러너와 Node 툴체인
 
-**결정:** 태스크 러너로 `make`를 요구하지 않는다. 저장소 루트에 `justfile`(제안)을 두어 아래 §2 명령을 레시피로 감싸되, 모든 레시피는 문서화된 `uv`·`rag`·`docker compose` 명령 한 줄로 환원되어야 하며 `just` 없이도 같은 결과가 나와야 한다(Windows 기본 환경에 `make`가 없고, 레시피가 정본 명령을 숨기면 CI와 로컬이 갈라진다). 근거 문서가 없으므로 `just` 자체의 버전·라이선스는 확인 필요(as of 2026-09)다.
+**결정:** 태스크 러너로 `make`를 요구하지 않는다. 저장소 루트에 `justfile`(바이블 §12 1.3.0 등재, AM-22)을 두어 아래 §2 명령을 레시피로 감싸되, 모든 레시피는 문서화된 `uv`·`rag`·`docker compose` 명령 한 줄로 환원되어야 하며 `just` 없이도 같은 결과가 나와야 한다(Windows 기본 환경에 `make`가 없고, 레시피가 정본 명령을 숨기면 CI와 로컬이 갈라진다). 근거 문서가 없으므로 `just` 자체의 버전·라이선스는 확인 필요(as of 2026-09)다.
 
 **결정:** Node.js 22 LTS를 **선택 개발 도구로 등재**한다(저장소 구조 미해결 이슈 11의 (b)). 이유는 (1) `sdk/typescript` 코드젠이 이미 npm을 요구하고(클라이언트 SDK §2), (2) 기존 `tools/validate-contracts.mjs`가 의존성 0의 Node 스크립트로 JSON Schema 2020-12 부분 검증·바이블 §5.7 열거 대조·인벤토리 커버리지를 이미 수행하고 있어 Python 이식의 이득이 없기 때문이다. 단, Node가 없는 기여자도 코어 개발이 가능해야 하므로 Node 의존 검사는 pre-commit에서 `node` 존재 시에만 실행하고 CI에서는 항상 실행한다. `tools/phase3/*.js`(문서 작성 워크플로우 스크립트)는 개발 도구가 아니며 `docs/12-appendix/` 이관 대상이다(저장소 구조 미해결 이슈 11·12).
 
-| `justfile` 레시피(제안) | 환원되는 명령 |
+| `justfile` 레시피(레시피 이름은 이 문서 제안; `justfile` 자체는 바이블 §12 1.3.0 등재) | 환원되는 명령 |
 |--------------------------|---------------|
 | `just sync` | `uv sync --all-packages --all-extras --group dev` |
 | `just up` / `just down` | `uv run rag up --profile lite` / `docker compose -f deploy/compose/compose.lite.yaml down` |
@@ -106,7 +136,7 @@ flowchart TD
 | 2 | `uv python install 3.12 3.13` → `uv sync --all-packages --all-extras --group dev` | `.venv/` 생성, 루트·`sdk/python`·`plugins/*` 전부 편집 가능 설치, `uv.lock` 불변 | 3~5분(최초; 캐시 후 30초) | §2.2 `[kiwi]` 공백기, §9 |
 | 3 | `uv run pre-commit install` | `.git/hooks/pre-commit` 설치 | 10초 | pre-commit이 dev 그룹에 있는지 확인 |
 | 4 | `cp deploy/compose/.env.example deploy/compose/.env`; `mkdir -p .secrets && … > .secrets/pg_owner_password` | `.env`·`.secrets/`는 `.gitignore` 대상 | 1분 | §8 |
-| 5 | `uv run rag up --profile lite` | 컨테이너 3개 `healthy`(`postgres`·`qdrant`·`valkey`), `app` 컨테이너 또는 호스트 프로세스 `GET :8000/readyz` 200, `./.rag/models`에 bge-m3 ONNX int8·mecab-ko-dic·RapidOCR ONNX, 마이그레이션 완료 | 90초(모델 최초 다운로드 제외 시; 바이블 §11.6) | §9 포트 충돌·모델 다운로드 |
+| 5 | `uv run rag up --profile lite` | 컨테이너 3개 `healthy`(`postgres`·`qdrant`·`valkey`) + `app`(모드 A) 또는 호스트 프로세스(모드 B) `GET :8000/readyz` 200 — `lite` 개발 컨테이너 수는 모드 A 기준 4종(바이블 §7.1 1.3.0, AM-14), `./.rag/models`에 bge-m3 ONNX int8·mecab-ko-dic·RapidOCR ONNX, 마이그레이션 완료 | 90초(모델 최초 다운로드 제외 시; 바이블 §11.6) | §9 포트 충돌·모델 다운로드 |
 | 6 | `uv run rag tenant create --name demo`(제안) → `rag api-key create --tenant <tenant_id> --principal service:bootstrap`(제안) → `curl -X POST :8000/v1/collections`(배포 가이드 §5.4 JSON, `profile_id: lite`) | `tenant_id`·`collection_id`(ULID), 키 1회 표시, `backends[0].alias = col_<id>_vec` | 1분 | `profile.invalid` → `rag profile validate` |
 | 7 | `uv run rag ingest ./samples/*.hwpx --collection <collection_id> --wait` | 잡 `succeeded`, `index.commit.published`, `workflow_run_id = null`(`LocalRunner`) | 30초(바이블 §11.6) | `GET /v1/jobs/{job_id}`의 `last_error.code` |
 | 8 | `uv run rag query "정보공개 청구 절차" --collection <collection_id> --render markdown --explain` | `ContextPack.items ≥ 1`, Markdown 렌더, `score_breakdown`; 리랭커 없으면 `degraded[{rerank, skipped_by_policy}]` | 2초 | §9 검색 0건 |
@@ -626,8 +656,9 @@ Windows NVIDIA 드라이버(WSL CUDA 지원 포함) + Docker Desktop GPU 지원�
 
 ## 결정 사항 요약
 
+- **결정:** 이 문서의 §CLI가 `rag` 명령·인자·호출 API·소유 문서 대응의 정본이다(완전성 #10, 바이블 §12 1.3.0, AM-22·AM-39). 다른 문서(04-pipelines/01 §13, 04-pipelines/09 §8.5 등)는 인용만 하며 명령 목록을 복제하지 않는다.
 - **결정:** 필수 개발 도구는 uv·Python 3.12/3.13(uv 관리)·Docker Engine + Compose v2·git 넷이며, JVM·LibreOffice·CUDA·libmagic은 개발 머신에 설치하지 않고 컨테이너(사이드카·서빙 이미지) 또는 대체 라이브러리(puremagic)로 대신한다([ADR-0035](../06-adr/0035-python-version-and-toolchain-pins.md), [ADR-0001](../06-adr/0001-license-grade-table-and-d02-interpretation.md), [ADR-0033](../06-adr/0033-sidecar-convert-contract-and-isolation-ladder.md)).
-- **결정:** `.python-version = 3.12`(하한 인터프리터에서 개발), 3.13은 `uv run --python 3.13`·CI 매트릭스로 검증한다. `make`는 요구하지 않고 `justfile`(제안)은 정본 `uv`·`rag` 명령의 래퍼다. Node.js 22 LTS는 선택 개발 도구로 등재하며 기존 `tools/validate-contracts.mjs`는 Python 이식 없이 유지한다(저장소 구조 미해결 이슈 11 해소).
+- **결정:** `.python-version = 3.12`(하한 인터프리터에서 개발), 3.13은 `uv run --python 3.13`·CI 매트릭스로 검증한다. `make`는 요구하지 않고 `justfile`(바이블 §12 1.3.0, AM-22)은 정본 `uv`·`rag` 명령의 래퍼다. Node.js 22 LTS는 선택 개발 도구로 등재하며 기존 `tools/validate-contracts.mjs`는 Python 이식 없이 유지한다(저장소 구조 미해결 이슈 11 해소).
 - **결정(잠정):** `kiwipiepy>=0.24.0` Apache-2.0 wheel 공개 확인 전까지 `[kiwi]` extra를 `pyproject.toml`에 선언하지 않는다(단일 `uv.lock` 해소 보장). 바이블 §6.7 extras 6종 철자는 유지하고 공개 즉시 pin-and-bump로 복원한다([ADR-0021](../06-adr/0021-korean-analyzer-kiwi-promotion-and-interim-mecab-kss.md)).
 - **결정:** 개발·CI·하네스는 비내구 `LocalRunner`(`RAG_TEMPORAL__ADDRESS` 미설정)로 실행하고, 일상 개발은 "모드 B: compose 데이터 계층 + 호스트 `api` 프로세스"를 기본으로 한다. 개발 파생 프로파일(`-local`/`-dev` 접미)은 프로덕션 컬렉션에 쓰지 않으며 Temporal 셸 검증은 `start_time_skipping` 테스트·`start-dev`·`--durable` 오버레이로 한다([ADR-0003](../06-adr/0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md)).
 - **결정:** `samples/`는 KOGL 제1유형·Apache-2.0·합성 문서만, 파일당 1MB 이하, `samples/MANIFEST.json`(제안)에 출처·라이선스·`content_hash`를 기록하고 CI가 대조한다. PII 경로는 합성 문서로만 검증하고 외부 평가셋은 `EvalDataset`으로 등록한다([ADR-0023](../06-adr/0023-evaluation-qrels-answer-spans-and-linear-ndcg.md)).
@@ -638,7 +669,7 @@ Windows NVIDIA 드라이버(WSL CUDA 지원 포함) + Docker Desktop GPU 지원�
 
 ## 미해결 이슈
 
-1. **`justfile`·`.editorconfig`·`.vscode/extensions.json`·`.pre-commit-config.yaml`·`samples/MANIFEST.json`·`src/rag_platform/cli/__main__.py`의 바이블 §12 등재.** 모두 바이블 트리에 없는 제안 파일이다. 저장소 구조 미해결 이슈 2와 묶어 patch로 등재 여부를 architecture 소유자에게 제안한다.
+1. **`.editorconfig`·`.vscode/extensions.json`·`samples/MANIFEST.json`·`src/rag_platform/cli/__main__.py`의 바이블 §12 등재.** 모두 바이블 트리에 없는 제안 파일이다. 저장소 구조 미해결 이슈 2와 묶어 patch로 등재 여부를 architecture 소유자에게 제안한다. `justfile`·`.pre-commit-config.yaml`은 바이블 §12 1.3.0에 등재되어 해소(v1.3, AM-22).
 2. **`rag run-stage`·`rag ledger migrate`·`rag tenant create`·`rag api-key create`의 CLI 등재.** 각각 파이프라인 프레임워크 §13, 배포 가이드 미해결 이슈 1·2의 제안이며 바이블 §12 `cli/` 목록 개정(minor)이 필요하다. 이 문서의 §2·§5 절차는 이 이름을 전제한다.
 3. **개발 모드 부트스트랩 범위.** `rag up --profile lite`가 `demo` 테넌트·API 키·컬렉션까지 만들지(5분 기동 목표에 유리), 별도 명령으로 남길지(운영 절차와 동형) 배포 가이드 미해결 이슈 2·[보안과 컴플라이언스](../09-operations/05-security-and-compliance.md)와 합의한다.
 4. **compose 오버레이 표면.** `compose.observability.yaml`·`compose.dev-opensearch.yaml`(제안)을 `rag up` 플래그(예: `--with observability,opensearch`)로 켤지 `docker compose -f … -f …` 직접 호출로 둘지, 그리고 OpenSearch 개발 오버레이의 이미지(`analysis-nori` 포함 빌드)와 값 파일 소유(배포 아키텍처 §4.1 compose 목록에 없음)를 확정한다.
@@ -671,6 +702,6 @@ Windows NVIDIA 드라이버(WSL CUDA 지원 포함) + Docker Desktop GPU 지원�
 - [클라이언트 SDK](../05-api/06-client-sdks.md) §2 런타임(Node.js 22 LTS), 미해결 이슈 3
 - [범위와 비목표](../00-vision/04-scope-and-non-goals.md) 플랫폼 지원 표(macOS/Windows 개발 머신·Windows 네이티브 워커)
 - [골든셋 구축](../08-evaluation/03-golden-dataset-construction.md) 코퍼스 선정·라이선스
-- 개발 문서(문서 맵 경로, 작성 예정 포함): [코딩 표준](./03-coding-standards.md), [테스트 전략](./04-testing-strategy.md), [CI/CD](./05-ci-cd.md), [플러그인 개발 가이드](./06-plugin-development-guide.md), [기여 가이드](./07-contributing.md), [릴리스 프로세스](./08-release-process.md)
+- 개발 문서(문서 맵 경로): [코딩 표준](./03-coding-standards.md), [테스트 전략](./04-testing-strategy.md), [CI/CD](./05-ci-cd.md), [플러그인 개발 가이드](./06-plugin-development-guide.md), [기여 가이드](./07-contributing.md), [릴리스 프로세스](./08-release-process.md)
 - ADR: [0001 라이선스 등급표](../06-adr/0001-license-grade-table-and-d02-interpretation.md), [0003 오케스트레이터 중립 파이프라인·비내구 LocalRunner](../06-adr/0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md), [0007 HWP 5.0 경로](../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md), [0008 OCR 기본값](../06-adr/0008-ocr-default-rapidocr-ppocrv5-korean.md), [0009 임베딩 서빙](../06-adr/0009-embedding-serving-vllm-pooling-tei-inprocess.md), [0011 Valkey·오브젝트 스토리지](../06-adr/0011-kv-and-object-storage-valkey-rustfs-seaweedfs.md), [0012 lite Qdrant 단독](../06-adr/0012-lite-profile-qdrant-only-client-bm25.md), [0021 한국어 분석기](../06-adr/0021-korean-analyzer-kiwi-promotion-and-interim-mecab-kss.md), [0022 관측성 규약](../06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md), [0023 평가 하네스](../06-adr/0023-evaluation-qrels-answer-spans-and-linear-ndcg.md), [0032 플러그인 SDK·적합성 키트](../06-adr/0032-plugin-sdk-stage-protocol-and-conformance-kit.md), [0033 사이드카 convert 계약](../06-adr/0033-sidecar-convert-contract-and-isolation-ladder.md), [0035 Python 버전·툴체인](../06-adr/0035-python-version-and-toolchain-pins.md), [0037 산출물 캐시 스코프](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md), [0038 egress 정책](../06-adr/0038-outbound-egress-policy-and-webhook-signing.md)
 - 저장소 도구: `tools/validate-contracts.mjs`(`node tools/validate-contracts.mjs --root . [--json report.json] [--quiet]`; 의존성 0, JSON Schema 2020-12 부분 검증·바이블 §5.7 열거 대조·§5.1 인벤토리 커버리지)

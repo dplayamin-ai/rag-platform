@@ -2,7 +2,7 @@
 title: 배포 가이드
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -34,7 +34,7 @@ depends_on:
 - **포함**: 사전 요구(하드웨어·OS·GPU 드라이버·컨테이너 런타임·외부 의존), `lite` docker compose 배포(파일 구조·서비스·환경 변수·볼륨·헬스체크·quickstart), `standard`/`premium` Kubernetes(Helm 설치 절차, values 예시, 네임스페이스·시크릿·스토리지클래스, Temporal 설치 옵션, Qdrant/OpenSearch 자체·관리형 연결, 모델 서빙 배치, 인그레스·TLS), 초기화(DB 마이그레이션, 테넌트·컬렉션 생성, 프로파일 검증), 모델 준비(다운로드·캐시·에어갭 미러), 검증 체크리스트와 smoke test 스크립트, 업그레이드 절차 링크, 흔한 문제.
 - **제외**: 환경 변수 전체 목록과 기본값 → [설정 레퍼런스](02-configuration-reference.md); 관측 백엔드 구성 → [관측성](03-observability.md); 사이징 실측·튠 → [확장과 성능](04-scaling-and-performance.md); 인증·인가·mTLS·비밀 관리 상세 → [보안과 컴플라이언스](05-security-and-compliance.md); 장애 대응 → [런북](06-runbooks.md); 백업·복구 → [백업과 재해 복구](07-backup-and-disaster-recovery.md); 업그레이드 세부 → [업그레이드와 마이그레이션](08-upgrade-and-migration.md); 이미지 빌드·서명 파이프라인 → [CI/CD](../10-development/05-ci-cd.md).
 - **수치**: 하드웨어·용량 값은 배포 아키텍처 §7의 "초안 목표"를 그대로 옮긴 것이며 실측 후 갱신된다. 외부 이미지 태그·버전은 선정 매트릭스 확인일(2026-09-18~22) 기준이고, 실제 배포에서는 Helm values의 digest 고정값이 정본이다(배포 아키텍처 P5).
-- **전방 참조**: 위 `→` 문서들과 05-api/04는 브리프 §8 문서 맵 경로이며 작성 예정이다. 작성 전까지는 바이블 해당 절이 정본이다.
+- **전방 참조**: 위 `→` 문서들과 05-api/04는 브리프 §8 문서 맵 경로이며 모두 작성이 끝났다(§8 최신 경로 기준).
 
 ---
 
@@ -58,7 +58,7 @@ flowchart TD
     J --> K
 ```
 
-컨테이너 수는 배포 아키텍처 §2.1 확정값(개발 4 / 운영 `--durable` 5, `objectstore` 동거 시 6)이다. 바이블 §7.1 열 머리의 "컨테이너 5"는 운영 모드·`file://` 기준 값이며, "4(개발) / 5~6(운영)"으로 정밀화하는 patch는 배포 아키텍처 미해결 이슈 14로 이미 요청되어 있다.
+컨테이너 수는 배포 아키텍처 §2.1 확정값(개발 4 / 운영 `--durable` 5, `objectstore` 동거 시 6)이며, 바이블 §7.1 1.3.0이 열 머리를 "컨테이너 4(개발) / 5~6(운영 `--durable`: + Temporal 단일 바이너리, RustFS·SeaweedFS 동거 시 6)"로 정밀화해 두 문서가 일치한다(AM-14; 배포 아키텍처 미해결 이슈 14 해소).
 
 | 항목 | `lite` | `standard` | `premium` | `korean-gov` |
 |------|--------|------------|-----------|--------------|
@@ -314,7 +314,7 @@ Temporal 컨테이너 환경 변수 이름(`DB`, `POSTGRES_SEEDS`, `SKIP_SCHEMA_
 |------|------|-----------|---------|
 | 1 | `uv tool install rag-platform` | `rag --version` 출력 | uv 사설 인덱스 설정(에어갭, §6.3) |
 | 2 | `rag up --profile lite`(운영: `--durable`) | 컨테이너 4(운영 5~6, §1) `healthy`; `GET :8000/readyz` 200; `./.rag/models`에 bge-m3 ONNX int8·mecab-ko-dic·RapidOCR ONNX | §9 "포트 충돌"·"모델 다운로드 실패" |
-| 3 | `rag tenant create demo`(제안) → `TENANT_ID`; `rag api-key create --tenant $TENANT_ID --principal service:bootstrap`(제안) → `RAG_TOKEN` | ULID 테넌트, 키 1회 표시(원장 `api_keys.hash`만 저장) | 관리자 DSN 권한(`rag_platform_admin`) 확인 |
+| 3 | `rag tenant create demo`(`POST /v1/tenants` 래퍼, 바이블 §14 1.3.0) → `TENANT_ID`; `rag api-key create --tenant $TENANT_ID --principal service:bootstrap`(`POST /v1/api-keys` 래퍼) → `RAG_TOKEN` | ULID 테넌트, 키 1회 표시(원장 `api_keys.hash`만 저장) | 정본 명령은 10-development/02 §CLI; 실패 시 플랫폼 관리자 역할(`rag_platform_admin`) 확인 |
 | 4 | 컬렉션 생성 — `curl -X POST :8000/v1/collections`(§5.4 JSON) | 201, `backends[0].alias = col_<id>_vec` | `profile.invalid`·`plugin.license_denied` → §5.3 |
 | 5 | `rag ingest ./samples/*.hwpx --collection <collection_id> --wait` | 잡 `succeeded`, `index.commit.published` | `GET /v1/jobs/{job_id}` `last_error.code` |
 | 6 | `rag query "정보공개 청구 절차" --collection <collection_id> --render markdown --explain` | `ContextPack.items` ≥ 1, `degraded = []`(리랭커 생략 시 `degraded[{rerank, skipped_by_policy}]`) | §9 "검색 0건" |
@@ -577,7 +577,7 @@ observability: {otelCollector: {mode: gateway, replicas: 2}, contentCapture: non
 
 ### 5.2 테넌트·API 키 부트스트랩
 
-바이블 §14 API 표면에는 테넌트 **생성** 엔드포인트가 없고(`PATCH /v1/tenants/{tenant_id}/policies`·`GET .../usage`만), `tenants` 쓰기는 `rag_platform_admin` 역할의 횡단 모드다(저장소 아키텍처 §2.4). 따라서 최초 테넌트는 CLI로 만든다(제안 명령, 미해결 이슈 1·2).
+**결정:** 최초 테넌트는 `GET/POST /v1/tenants`(플랫폼 관리자 역할; 바이블 §14 1.3.0, AM-39, FR-MGT-01)로 만들고, `rag tenant create`는 같은 API를 호출하는 CLI 래퍼다(정본 명령은 10-development/02 §CLI). 원장에 직접 삽입하는 경로(`rag_platform_admin` 횡단 모드)는 그 API조차 쓸 수 없는 최초 부트스트랩 1회로만 한정한다(저장소 아키텍처 §2.4).
 
 ```bash
 rag tenant create --name demo --tier standard \
@@ -839,7 +839,7 @@ Kubernetes에서는 이 스크립트를 `helm test` 훅 또는 CI Job으로 실�
 | 서빙 파드 CrashLoop: CUDA 오류 | 이미지 CUDA 버전과 노드 드라이버 불일치(TEI CUDA 12.2+, PaddlePaddle 이미지 결합) | 드라이버 호환 매트릭스에 맞는 이미지 digest로 `serving.*.digest`·`sidecars.ocrGpu` 교체 |
 | `profile-validate` 훅 실패 `profile.invalid` | `parse.router`에 `SourceFormat` 13값 누락, `ocr.version/model/lang` 누락, `hydrate.top_n < max(rerank.top_n_in, pack.k_max)` | `ProblemDetails.errors[].location.pointer`의 키 수정 |
 | 훅 실패 `plugin.license_denied` / DOC·RTF가 `parse.unsupported_format` | C 등급 이미지(`lo-sidecar`·AGPL 사이드카)를 `optIn.*.enabled`·`acknowledgeLicense: true` 없이 프로파일이 참조 / `lo-sidecar` 미설치 | `optIn.loSidecar.enabled: true`(GPL 고지 인지) 또는 라우터에서 제거 |
-| HWP 5.0 실패율 증가 + `rag_parser_sidecar_unavailable_total` 증가 | `parser-workers` 다운 또는 NetworkPolicy가 `worker-cpu → parser-workers:8080` 차단 | 사이드카 `GET /healthz`; 정책 확인; 폴백 unhwp → hwp-hwpx-parser는 자동 |
+| HWP 5.0 실패율 증가 + `rag_parser_sidecar_unavailable_total` 증가 | `parser-workers` 다운 또는 NetworkPolicy가 `worker-cpu → parser-workers:8080` 차단 | 사이드카 `GET /healthz`; 정책 확인; 폴백 unhwp → hwp-hwpx-parser는 자동. `standard`+ 배포용(distribution) 문서는 테넌트 `allow_distribution_documents` 옵트인 시 Tika `HwpV5Parser` 텍스트(`quality=degraded`)로 대체되고, 옵트인이 없으면 `parse.distribution_document`로 종료한다(바이블 §7.1 1.3.0, AM-14) |
 | 검색 응답에 `degraded[{channel.lexical, unavailable}]` | OpenSearch 불가(readiness에는 영향 없음, 설계상 정상 저하) | OpenSearch 복구; `retrieve` "최소 1채널 성공" 규칙 |
 | 검색 0건 | 잡 미완료(`is_current=false` 세대만 존재), ACL(`visibility`·`allow_principals`)로 필터, 다른 `collection_id` | `GET /v1/jobs`·`GET /v1/documents/{id}/commits`의 `status=committed`; `explain: true`로 필터 확인 |
 | `POST /v1/ingest` 503 + `Retry-After` | Temporal frontend 불가 | Temporal 상태 확인; 잡은 `queued` 유지, 조정 스케줄이 재시작 |
@@ -862,8 +862,8 @@ Kubernetes에서는 이 스크립트를 `helm test` 훅 또는 CI Job으로 실�
 
 ## 미해결 이슈
 
-1. **CLI 하위 명령 이름(제안).** `rag ledger migrate`, `rag models mirror|verify|sync`, `rag release bundle|verify`, `rag schedules apply`(배포 아키텍처 미해결 이슈 5)에 이 문서가 `rag tenant create`, `rag api-key create`, `lite` 단일 프로세스의 워커·릴레이 동거 플래그를 더했다. 바이블 §12 `cli/` 행 갱신(patch)과 [CI/CD](../10-development/05-ci-cd.md)·[릴리스 프로세스](../10-development/08-release-process.md) 확정 필요.
-2. **테넌트 생성·부트스트랩 경로.** 바이블 §14에 테넌트 생성 엔드포인트가 없다. CLI 전용(`rag_platform_admin` 횡단 모드)으로 둘지 `POST /v1/tenants`를 추가할지 05-api/04에서 확정 후 바이블 §14 minor 개정 여부 결정. 운영 `lite`에서 `rag up`이 첫 테넌트·API 키까지 만들지, `standard`의 카나리 테넌트를 Helm `post-install` 훅으로 자동 생성할지는 [보안과 컴플라이언스](05-security-and-compliance.md)와 합의.
+1. **CLI 하위 명령 이름.** 정본 위치는 해소(v1.3, AM-22) — 바이블 §12 1.3.0이 `cli/` 명령 정본을 10-development/02 §CLI로 확정했다. 남은 것은 개별 서브커맨드 등재뿐이다: `rag ledger migrate`, `rag models mirror|verify|sync`, `rag release bundle|verify`, `rag schedules apply`(배포 아키텍처 미해결 이슈 5), `rag tenant create`, `rag api-key create`, `lite` 단일 프로세스의 워커·릴레이 동거 플래그를 10-development/02 §CLI에 등재하고 [CI/CD](../10-development/05-ci-cd.md)·[릴리스 프로세스](../10-development/08-release-process.md)와 맞출 확정 작업이 남는다.
+2. **테넌트 생성·부트스트랩 자동화.** 엔드포인트 선택은 해소(v1.3, AM-39) — `GET/POST /v1/tenants`(바이블 §14 1.3.0)가 정본이고 `rag tenant create`는 그 API를 호출하는 CLI 래퍼다. 남은 질문: 운영 `lite`에서 `rag up`이 첫 테넌트·API 키까지 자동으로 만들지, `standard`의 카나리 테넌트를 Helm `post-install` 훅으로 자동 생성할지는 [보안과 컴플라이언스](05-security-and-compliance.md)와 합의 필요.
 3. **역할별 PostgreSQL DSN.** `Settings`는 `RAG_PG__DSN` 하나인데 마이그레이션(`rag_owner` 소유자 권한)·애플리케이션(`rag_app`)·릴레이·정합성 검사(`rag_maintenance`)는 다른 역할이다. `rag_owner`는 `NOLOGIN`(저장소 아키텍처 §2.4)이므로 마이그레이션 DSN의 로그인 역할과 `rag_owner` 멤버십 부여(§5.1 제안: `rag_platform_admin` + `SET ROLE rag_owner`), 시크릿 키 `dsn_owner`·`dsn_maintenance`(제안), 프로세스별 주입 규칙을 [설정 레퍼런스](02-configuration-reference.md)·컴포넌트 아키텍처 §5.2에서 확정.
 4. **컬렉션 생성 요청 본문.** `CollectionSpec` 중 클라이언트가 보내는 부분집합(§5.4 예시)의 스키마와 서버 계산 필드 목록은 05-api/04 확정 대상.
 5. **관리형 OpenSearch 적합성.** 3.8 제공 시점, `analysis-nori`, JWT 인증 도메인·DLS, `repository-s3`의 관리형 서비스별 지원은 확인 필요(as of 2026-09). 미충족 시 자체 설치만 허용.
@@ -891,5 +891,5 @@ Kubernetes에서는 이 스크립트를 `helm test` 훅 또는 CI Job으로 실�
 - [임베딩 모델과 서빙](../07-tech-landscape/05-embedding-models-and-serving.md) — vLLM pooling 진입점, TEI 엔드포인트, VRAM 표
 - [벡터·렉시컬 인덱스 백엔드](../07-tech-landscape/06-vector-and-lexical-index-backends.md) — Nori 플러그인 설치 모델, Elasticsearch 이미지 라이선스
 - [PDF 파싱·레이아웃·OCR](../07-tech-landscape/02-document-parsing-pdf-layout-ocr.md) — PaddlePaddle CUDA 결합, OCR 컨테이너 리소스
-- 운영·개발 문서(작성 예정): [설정 레퍼런스](02-configuration-reference.md), [관측성](03-observability.md), [확장과 성능](04-scaling-and-performance.md), [보안과 컴플라이언스](05-security-and-compliance.md), [런북](06-runbooks.md), [백업과 재해 복구](07-backup-and-disaster-recovery.md), [업그레이드와 마이그레이션](08-upgrade-and-migration.md), [CI/CD](../10-development/05-ci-cd.md), [릴리스 프로세스](../10-development/08-release-process.md), [MCP 서버](../05-api/05-mcp-server.md)
+- 운영·개발 문서: [설정 레퍼런스](02-configuration-reference.md), [관측성](03-observability.md), [확장과 성능](04-scaling-and-performance.md), [보안과 컴플라이언스](05-security-and-compliance.md), [런북](06-runbooks.md), [백업과 재해 복구](07-backup-and-disaster-recovery.md), [업그레이드와 마이그레이션](08-upgrade-and-migration.md), [CI/CD](../10-development/05-ci-cd.md), [릴리스 프로세스](../10-development/08-release-process.md), [MCP 서버](../05-api/05-mcp-server.md)
 - ADR: [0001](../06-adr/0001-license-grade-table-and-d02-interpretation.md), [0003](../06-adr/0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md), [0008](../06-adr/0008-ocr-default-rapidocr-ppocrv5-korean.md), [0009](../06-adr/0009-embedding-serving-vllm-pooling-tei-inprocess.md), [0011](../06-adr/0011-kv-and-object-storage-valkey-rustfs-seaweedfs.md), [0012](../06-adr/0012-lite-profile-qdrant-only-client-bm25.md), [0018](../06-adr/0018-api-rest-sse-mcp-no-grpc-rfc9457.md), [0021](../06-adr/0021-korean-analyzer-kiwi-promotion-and-interim-mecab-kss.md), [0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md), [0028](../06-adr/0028-tenant-isolation-tiering-policy.md), [0031](../06-adr/0031-profile-schema-extends-and-quality-gates.md), [0034](../06-adr/0034-retrieval-hot-path-postgres-independence-and-hydrate.md), [0038](../06-adr/0038-outbound-egress-policy-and-webhook-signing.md)

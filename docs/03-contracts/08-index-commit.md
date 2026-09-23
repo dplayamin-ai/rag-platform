@@ -141,7 +141,7 @@ flowchart LR
 | `bytes_dense` / `bytes_sparse` / `bytes_lexical` / `bytes_late_interaction` | integer(≥0) | Y | 적재 바이트(dense는 레코드 수 × dim × 4 fp32 기준; lexical은 OpenSearch 적재분이라 `lite`는 0; late interaction 끔이면 0) → `rag_index_bytes_total{vector}`, `usage_ledger.bytes_indexed` |
 | `leaf_count` / `parent_count` | integer(≥0) | Y | `level=0` 리프 수(색인) / `level=1` 부모 수(색인 안 함, `ChunkTextStore` 번들). `record_count ≥ leaf_count`(차이는 `level=2` 파생 항목) |
 | `llm_tokens` | integer(≥0) | Y | `= EnrichedChunkSet.budget_used.llm_tokens_in + llm_tokens_out` → `usage_ledger.llm_tokens` |
-| `wall_seconds` | number(≥0) | Y | `pending` → 종결 상태까지 벽시계 초 |
+| `wall_seconds` | number(≥0) | Y | `pending` → 종결 상태까지 실제 경과 시간 초 |
 
 ### 2.6 `compensation`(`Compensation`, 이 계약 `$defs`)
 
@@ -1158,7 +1158,7 @@ green 물리 컬렉션에는 gen ≤ N 레코드가 없으므로 자식 커밋�
         "wall_seconds": {
           "type": "number",
           "minimum": 0,
-          "description": "pending → 종결 상태까지 벽시계 초"
+          "description": "pending → 종결 상태까지 실제 경과 시간 초"
         }
       },
       "required": [

@@ -2,7 +2,7 @@
 title: 업그레이드와 마이그레이션
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -235,6 +235,8 @@ flowchart LR
 
 Temporal 영속화 DB는 이 절의 대상이 아니다 — `temporal-sql-tool update-schema`(§3.3 1단계)가 별도로 관리하며 다운그레이드가 없다. `outbox`·`job_events`의 파티션 전환·보존 정리는 마이그레이션이 아니라 `maintenance.cleanup.v1`의 몫이다(19 §7.1 (5)).
 
+원장 마이그레이션 목록(1.3.0 expand 대상, 전부 NULL 허용 또는 `DEFAULT` 컬럼이라 backfill·contract 불필요): `tenants.status`·`tenants.quotas`·`tenants.disabled_at`(AM-39), `collections.deleted_at`(AM-37), `idempotency_keys.job_ids`(AM-44).
+
 ### 3.5 워커 드레인과 워크플로우 코드 버전
 
 **결정:** 드레인은 "짧은 액티비티는 완료, 긴 액티비티는 재개 가능 지점까지"다 — SIGTERM을 받은 워커는 폴링을 중단하고 진행 중 액티비티만 마무리하며, 유예 안에 끝나지 않는 액티비티(OCR 최대 60m, 임베딩 20m)는 끝내지 않고 하트비트 타임아웃(60s) 후 다른 워커가 `heartbeat_details`로 재개한다(`Resumable`, 바이블 §4.4·§11.3, 08 §10.3; [ADR-0003](../06-adr/0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md)). 진행 중 실행과 호환되는 워크플로우 변경은 `workflow.patched`, 비호환 변경은 타입 증분(`ingest.document.v2`)이다(06 §4.2).
@@ -335,7 +337,7 @@ sequenceDiagram
 | 1 모델 등록 | `models.lock`에 `id, revision, sha256, license, grade, territory, format, consumers` 추가(D 등급은 프로파일 `model_license_ack: true` 필수); `rag models mirror`로 미러 적재; 에어갭은 매체 반입 | `models-verify` 훅 통과; `LICENSE` 존재 |
 | 2 서빙 준비 | `serving.additional[]`에 모델당 Deployment 1개(08 §6.3). 엔진 규칙: BGE-M3 3-in-1은 vLLM pooling, dense 전용은 TEI | 임베딩 스모크(차원·정규화·프롬프트), VRAM 여유 |
 | 3 프로파일 개정 | 새 `version`; `ingest.embed.dense.{model_id, revision, dim, normalized}`, 필요 시 `ingest.embed.sparse`, `ingest.chunk.tokenizer`(임베딩 모델 토크나이저와 일치, 바이블 §7.4 (4)); `pack.tokenizer`는 대상 LLM이라 무관 | `POST /v1/profiles/validate`([관리 API](../05-api/04-management-api.md) §4.2): 바이블 §7.4 (2) `capabilities()` 대조, (4) 토크나이저 일치, (8) `embedding_space_ids` 재계산 |
-| 4 영향 판정 | 응답의 해시 비교: `embedding_profile_hash'` ≠ 현재 → 벡터 blue/green; `lexical_profile_hash` 불변 → §4.3 주의; `from_stage`는 19 §3.2 표 | `POST /v1/collections/{collection_id}/reindex {dry_run: true}`(관리 API §3.5; 응답 `ReindexEstimate`는 제안) 비용·벽시계 추정(19 §5.6) — GPU 초·저장량 2배 기간 확인 |
+| 4 영향 판정 | 응답의 해시 비교: `embedding_profile_hash'` ≠ 현재 → 벡터 blue/green; `lexical_profile_hash` 불변 → §4.3 주의; `from_stage`는 19 §3.2 표 | `POST /v1/collections/{collection_id}/reindex {dry_run: true}`(관리 API §3.5; 응답 `ReindexEstimate`는 제안) 비용·실제 경과 시간 추정(19 §5.6) — GPU 초·저장량 2배 기간 확인 |
 | 5 재색인 시작 | `POST /v1/collections/{collection_id}/reindex`(요청 본문 `profile_id`·`profile_version`·`from_stage`·`dry_run`·`reindex_max_share`는 관리 API §3.5가 19 미해결 10 제안을 채택) 또는 `PATCH /v1/collections/{collection_id}`로 프로파일 변경 | `JobStatus{kind=reindex_collection, progress{unit: document}}` |
 | 6 백필·따라잡기 | 자식 `ingest.document.v1`이 `stage_key` 캐시 적중 스테이지를 생략하고 `embed`부터 실행, green에 `committed`(포인터 미전진); 재색인 중 수집은 blue에만 쓰고 델타 패스가 흡수(19 §5.4) | 정합성 사전 검사: green 커밋 수 = 활성 문서 수 |
 | 7 게이트 | `eval.run.v1`이 green을 대상으로 실행 → `EvalReport.gate_result{passed, failed_gates[]}`; 골든셋이 없으면 샘플 질의 비교(보조, 운영자 승인) | `passed=true`만 교체; 실패 시 green 폐기 예약, `collection.reindex.completed{gate_passed=false}` |
@@ -611,12 +613,14 @@ flowchart TD
 
 ### 9.3 정리 릴리스 실행 조건
 
+계약 `schema_version`은 M1 이전에는 major 개정이 없다(트리아지 §1.2 — 채택 major 0건, 바이블 목표 1.3.0은 minor); 아래 게이트는 M1 이후 major 개정에 대비해 고정해 둔다. CI가 생성하는 `SchemaDiffReport`(바이블 §5.1 인벤토리 35번째 행, AM-01)가 이 릴리스 게이트와 관리 API가 소비하는 표준 산출물이다.
+
 | 조건 | 확인 방법 |
 |------|-----------|
 | 패치 전 코드로 시작된 워크플로우 실행 0건 | 가시성 조회 `WorkflowType = 'ingest.document.v1' AND StartTime < <배포 시각> AND ExecutionStatus = 'Running'` |
 | 구 타입(`v{n-1}`) 실행 0건 | 같은 조회, 타입별 |
 | backfill 100% | 백필 잡 완료 상태, 대상 컬럼 NULL 0건 |
-| 이전 계약 major 산출물 0건 또는 지원 창 종료 | `rag schema check-artifacts --older-than-major {n}` |
+| 이전 계약 major 산출물 0건 또는 지원 창 종료 | `rag schema check-artifacts --older-than-major {n}` + 해당 계약의 `SchemaDiffReport`(AM-01) `declared_level` 확인 |
 | 재색인 롤백 창 경과 | 이 릴리스 기간에 alias 교체된 컬렉션의 `collection.reindex.completed` + 24h |
 | 롤백 관찰 창 경과 | 릴리스 노트 `rollback` 절의 관찰 기간(초안 7일) |
 | PITR 기준점 | 수축 직전 원장 스냅샷·기준 시각 기록 |
@@ -641,10 +645,10 @@ flowchart TD
 
 ## 미해결 이슈
 
-1. **플랫폼 semver 증분 규칙(§1.2)과 릴리스 종류(§1.4)는 제안이다.** 브리프·바이블에 정의가 없고 바이블 §3.3에 ADR 슬롯이 없다. [릴리스 프로세스](../10-development/08-release-process.md) §1.2·§2.2가 두 표를 그대로 채택했고, 신규 ADR 발의(`0039-platform-release-versioning-and-support-policy` slug 제안)는 그 문서 미해결 이슈 1이다. 그 ADR이 등재되면 이 문서의 `**제안:**` 표기를 결정으로 승격한다.
+1. **플랫폼 semver 증분 규칙(§1.2)과 릴리스 종류(§1.4)는 제안이다 — 유지한다(#4).** 브리프·바이블에 정의가 없고 바이블 §3.3에 ADR 슬롯이 없다. `ADR-0039`는 1.3.0 가산 묶음(O-11·O-12 등, 바이블 §3.3)이 이미 쓰므로, 신규 ADR 발의(`platform-release-versioning-and-support-policy`, 번호 미정 — **0040 이후 백로그**)는 [릴리스 프로세스](../10-development/08-release-process.md) 미해결 이슈 1로 등록한다. 그 ADR이 등재되면 이 문서의 `**제안:**` 표기를 결정으로 승격한다.
 2. **`deploy/compat-matrix.json`·`release-manifest.json` 형식과 `rag release verify`의 판정 규칙(§2.2·§8.2)** — 매니페스트 형식은 [릴리스 프로세스](../10-development/08-release-process.md) §9.2가 `1.0.0`으로 확정(필드 추가 포함)했고 생성은 [CI/CD](../10-development/05-ci-cd.md) §6.1 `compat-matrix`·`manifest` 잡이다. 남은 것은 (a) `rag release verify`의 판정 규칙과 CLI 등재 — 08 미해결 이슈 5·CI/CD 미해결 이슈 8·릴리스 프로세스 미해결 이슈 12와 함께 바이블 §12 `cli/` 행 patch를 요청, (b) 두 파일의 JSON Schema(`schemas/release-manifest.schema.json`·`schemas/compat-matrix.schema.json`)를 14 §5.1 도구 스키마 지위로 게시할지(릴리스 프로세스 미해결 이슈 4).
 3. **`analyzer_id`의 `version` 컴포넌트 의미(§5.3).** 바이블 §6.1은 `{engine}:{version}:{dictionary}`이며 예시가 서버 버전(`nori:3.8:…`)이다. 이대로면 OpenSearch 패치 업그레이드마다 `lexical_profile_hash`가 바뀌어 렉시컬 재색인이 함의된다. 토큰화 동등성 코퍼스로 "동작 버전"을 판정해 `analyzer_id`를 유지하는 규칙은 [ADR-0021](../06-adr/0021-korean-analyzer-kiwi-promotion-and-interim-mecab-kss.md)·[ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md) 개정 대상이다.
-4. **물리 이름이 바뀌지 않는 백엔드의 전환(§4.3, 19 §5.5)** 확정 전에는 임베더만 바꾸는 재색인과 OpenSearch 메이저 업그레이드 뒤의 렉시컬 재색인이 자동 실행되지 않는다. 이 문서는 19의 해소안 (a)(물리 이름에 `profile_hash[:12]` 합성, 바이블 §13.4 개정) 권고에 동의하며 ADR-0026 개정 또는 신규 ADR·바이블 §3.2 후보 O-11 등재를 지지한다.
+4. **미정(O-11):** 물리 이름이 바뀌지 않는 백엔드의 전환(§4.3, 19 §5.5) — 확정 전에는 임베더만 바꾸는 재색인과 OpenSearch 메이저 업그레이드 뒤의 렉시컬 재색인이 자동 실행되지 않는다. 바이블 1.3.0이 이 개방 결정을 **O-11**로 번호 배정했고(AM-21) 해결은 `ADR-0039` 이후로 보류했다(AM-45; 04-pipelines/19 실측 뒤 `ADR-0026` 개정). 이 문서는 19의 해소안 (a)(물리 이름에 `profile_hash[:12]` 합성, 바이블 §13.4 개정)에 동의한다.
 5. **두 릴리스 규칙(소비자 선배포, 14 §2.4) 채택 여부.** 채택 전에는 워커 롤링 중 구 워커가 신 minor 산출물을 `contract.violation`으로 거부하고 `retry`로 복구하는 것이 유일한 장치다(§3.5·§7.3).
 6. **Temporal Worker Versioning(Build ID) 도입**(06 §4.2 보류, 14 미해결 14) — 확인 필요(as of 2026-09). 확인되면 `patched`·타입 증분 절차의 대체 수단으로 ADR.
 7. **`numHistoryShards` 변경 절차.** 생성 후 변경 불가이므로 새 Temporal 클러스터 + 진행 중 워크플로우 종료 대기(또는 디스패처가 새 잡을 새 클러스터로 라우팅)가 필요하다. 초기값(standard 512, lite 4)은 부하 테스트 후 확정(08 §10.4).

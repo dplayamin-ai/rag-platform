@@ -4,8 +4,8 @@ status: accepted
 date: 2026-09-22
 deciders: architecture
 owner: architecture
-version: 0.1.0
-last_updated: 2026-09-22
+version: 0.1.1
+last_updated: 2026-09-23
 priority: P0
 related: ["K6"]
 depends_on:
@@ -101,6 +101,13 @@ depends_on:
 - 장점: 검색 공백·중복 없음, 실패 지점이 원장에 남아 보상이 결정적, 재시도 멱등, 복구가 산출물 재적재 하나로 수렴한다.
 - 단점: 세대별 레코드가 `cleanup_delay` 동안 2배 공존하고 플립마다 두 백엔드 payload 갱신(쓰기 증폭)이 있다(아래 결과 참조).
 
+### 대안 9 — `documents.last_generation`(마지막 할당 번호) 컬럼 추가(기각, 1.3.0 추가 검토, R-01)
+
+- 설명: `documents`에 `last_generation` 컬럼을 두고 `index_generation = last_generation + 1`로 할당한 뒤 같은 트랜잭션에서 컬럼을 갱신한다(03-contracts/08 미해결 이슈 14가 병기했던 대안; 02-architecture/03 §9.2 (3)의 `next_generation` 제안과 같은 성격).
+- 장점: `index_commits`를 스캔해 `max`를 구하지 않고 컬럼 값만 읽으면 되어 조회 경로가 가볍다.
+- 단점: `index_commits.index_generation`의 `max`가 이미 "다음에 쓸 번호"를 담고 있어 컬럼은 파생 값의 중복 저장이다. 컬럼과 원장 `max`의 갱신 타이밍이 어긋나면(트랜잭션 경합·마이그레이션 누락) 서로 다른 답을 낼 수 있고, 그 경우 `UNIQUE(tenant_id, document_id, index_generation)`(02-architecture/04 I1) 위반의 원인 진단이 한 곳(원장 `max`) 대신 두 곳(컬럼 대 원장)이 된다.
+- 판정: 기각(트리아지 결정 R-01). `documents` 행 잠금 아래 `max(index_commits.index_generation) + 1`(없으면 1) 하나로 충분하고 폐기·롤백 세대도 재사용하지 않으므로(위 결정 6) 별도 컬럼이 필요 없다(바이블 §11.4 (6) 1.3.0, AM-18).
+
 ## 결정
 
 **결정:** `index` 스테이지는 `IndexCommit` 세대 사가로 실행된다(바이블 §2.1 K6, §11.4). 워크플로우는 원장 `SELECT documents … FOR UPDATE`로 `index_generation=N+1`을 할당하고 `INSERT index_commits(commit_id[워크플로우 발급], N+1, status=pending)`을 **동일 트랜잭션**에서 기록한다 → Qdrant `upsert(records: point_id=uuid5(record_id=H("record", …, N+1, chunk_id)), commit_id, is_current=false)`(`record_id` 멱등) → `status=vector_written` → OpenSearch `bulk(records: _id=record_id, commit_id, is_current=false, routing=tenant_id)` → `status=lexical_written → flipping_lexical` → OpenSearch `update_by_query(document_id: gen=N+1 → is_current=true; gen≤N → false; conflicts=proceed, 재시도 3)` → `status=flipping_vector` → Qdrant `set_payload(document_id: gen=N+1 → is_current=true; gen≤N → false)` → `status=committed`, `documents.current_generation=N+1`, outbox(`index.commit.published`). 실패 시 `status=rolling_back`. 플립 전(`pending`~`lexical_written`): `delete_by_filter(commit_id)` 양쪽. 플립 후(`flipping_*`): `previous_commit_id` 세대를 양 백엔드에서 `is_current=true`로 복원(`compensation.restored_generation=N`)한 후 N+1 삭제 → `rolled_back`, outbox(`index.commit.rolled_back`); 보상 실패 → `failed` + `index.consistency.mismatch`. 이전 세대 물리 삭제는 `maintenance.cleanup.v1`(`cleanup_delay` 1h). 원칙은 바이블 §11.4 그대로다.
@@ -110,7 +117,7 @@ depends_on:
 3. 보상은 실패 지점에 따라 둘이다 — 플립 전은 새 세대 삭제, 플립 후는 **이전 세대(`previous_commit_id`) 복원 후 새 세대 삭제**(`compensation.restored_generation`); 복원 실패는 `failed` + `index.consistency.mismatch`.
 4. OpenSearch `update_by_query`는 비원자적이므로 `conflicts=proceed` + 재시도 후 정합성 검사 잡(`maintenance.consistency.v1`)이 세대별 `is_current=true` 카운트를 `record_count`와 대조하고, `content_hash` 집합 불일치는 **산출물 재적재**로 복구한다(스냅샷 복원은 시간 단축용 2순위).
 5. 컬렉션 단위 프로파일 변경은 세대 플립이 아니라 blue/green 물리 컬렉션 + alias 교체다(`reindex.collection.v1`, 바이블 §11.2).
-6. 발급·직렬화: `commit_id`·`event_id`는 워크플로우가 `workflow.now()`·`workflow.random()`(재생 결정적)으로 1회 생성해 액티비티 인자로 전달(재시도 불변; `LocalRunner`는 일반 생성), `index_generation`은 원장 `documents` 행 잠금 아래 할당, 문서 단위 잡 직렬화·테넌트 동시성(`runtime.tenant_concurrent_jobs_max`)은 디스패처(api 프로세스; PG advisory lock `tenant_id`, `jobs.waiting_for`)가 보장하며 플립 시 `documents.current_generation ≥ N+1`이면 `index.generation_conflict`(비재시도, 안전망).
+6. 발급·직렬화: `commit_id`·`event_id`는 워크플로우가 `workflow.now()`·`workflow.random()`(재생 결정적)으로 1회 생성해 액티비티 인자로 전달(재시도 불변; `LocalRunner`는 일반 생성), `index_generation`은 원장 `documents` 행 잠금 아래 **그 문서의 `max(index_commits.index_generation) + 1`**(없으면 1)로 할당하며 `documents.current_generation + 1`이 아니다(바이블 §11.4 (6) 1.3.0, AM-18) — 롤백된 세대는 `current_generation`을 전진시키지 않았고 재색인 모드 A의 전진하지 않은 green 세대도 있으므로 `current_generation + 1`은 이미 쓰인 번호를 재발급해 원장 `UNIQUE(tenant_id, document_id, index_generation)`(02-architecture/04 I1)을 깨뜨릴 수 있다; 폐기·롤백된 세대 번호는 재사용하지 않으며 이를 위한 별도 `last_generation` 컬럼은 두지 않는다(대안 9, 기각). 문서 단위 잡 직렬화·테넌트 동시성(`runtime.tenant_concurrent_jobs_max`)은 디스패처(api 프로세스; PG advisory lock `tenant_id`, `jobs.waiting_for`)가 보장하며 플립 시 `documents.current_generation ≥ N+1`이면 `index.generation_conflict`(비재시도, 안전망).
 
 PostgreSQL `index_commits`가 commit ledger 정본이다(바이블 §5.4 `IndexCommit`, §13.1). `commit_hash = H("commit", profile_hash, *sorted(f"{chunk_id}:{content_hash}:{embed_text_hash}"))`가 브리프 §7 재현성 목표를, `artifact_refs{source, parsed, normalized, chunk_set, enriched, embedded}`가 재적재 복구 1순위를 담당한다. `CommitStatus`는 `pending, vector_written, lexical_written, flipping_lexical, flipping_vector, committed, rolling_back, rolled_back, failed` 9단, `CommitKind`는 `upsert, delete`(바이블 §5.7)이며 삭제는 `record_count=0` 커밋(`delete.document.v1`: 양 백엔드 `delete_by_filter(document_id)` → `is_current` 없음 → `ingest.document.deleted`, §11.2)이다.
 
@@ -205,6 +212,8 @@ stateDiagram-v2
 - Qdrant payload 인덱스 목록(§13.4)에 `commit_id`를 추가할지 여부가 보상 `delete_by_filter(commit_id)` 비용 측정(04-pipelines/13)으로 결정될 때 — 바이블 §13.4 표 갱신(patch 또는 minor).
 - 교체 백엔드가 `IndexBackendCapabilities.supports_delete_by_filter=false`이거나 부분 payload 갱신(`set_payload`/`update_by_query` 상당)을 제공하지 않아 플립·보상을 어댑터가 다른 수단으로 흡수해야 할 때.
 - `lite` 프로덕션 실행기가 DBOS Transact 등으로 바뀌어 "워크플로우 코드 1회 발급"의 결정론 모델이 달라질 때(바이블 §11.1, 미해결 이슈 6). `CommitStatus` 값 추가·개명, `flip_order`·`cleanup_delay` 기본값 변경, 보상 규칙 변경은 계약 major/minor 절차(바이블 §1.2)를 밟고 본 ADR을 개정한다.
+- **미정(O-11, AM-21·AM-45):** 두 물리 해시(`embedding_profile_hash`·`analyzer_id`)가 불변이고 `profile_hash`만 바뀐 컬렉션 프로파일 변경의 재색인 모드 B와 green 물리 이름. 잠정 규칙은 자동 재색인 불가(부모 잡 `failed`) + 운영자 대안(변경 묶기·새 컬렉션 이관, 04-pipelines/19). 해결은 ADR-0039 이후 ADR(0040+)의 본 ADR 개정으로 다룬다(major 유발, D4-3 보류).
+- **미정(O-12, AM-21·AM-45):** blue/green 채움 중 `documents` 원장 포인터(모드 A는 `ledger.advance_pointers`가 alias 교체 직후 1회 전진, 02-architecture/06 §2.5)와 정합성 검사(`maintenance.consistency.v1`)의 기준 세대. 해결은 O-11과 같은 후속 ADR(0040+)로 이관한다.
 
 ## 참조
 

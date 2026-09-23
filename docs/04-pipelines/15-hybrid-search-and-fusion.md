@@ -2,8 +2,8 @@
 title: 하이브리드 검색과 융합
 status: active
 owner: architecture
-version: 0.1.2
-last_updated: 2026-09-22
+version: 0.1.3
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - ../02-architecture/00-design-bible.md
@@ -155,7 +155,7 @@ async def run_one(ch: ChannelPlan, v: RewrittenQuery, qvecs: QueryVectors, plan:
     retriever = ctx.registry.retriever(ch.retriever_id)
     filt = ctx.filters.build(plan.filters, plan.exclude_ids, backend_id=ch.backend_id)   # (a)+(b)+(c)+(d), §4
     if not filt.has_tenant_id:
-        raise SecurityContextMissing("retrieve.security_context_missing")
+        raise SecurityContextMissing("retrieve.security_context_missing")  # 500(바이블 §5.7·§10.3 E7 1.3.0, AM-25)
     with ctx.tracer.span(f"rag.retrieve.{ch.channel}", **{"gen_ai.data_source.id": ch.collection_id}):
         inp = ChannelRunInput(channel=ch, variant=v, query_vectors=qvecs, filter=filt,
                               security=plan.security_context, payload_slim_keys=PAYLOAD_SLIM_KEYS)
@@ -167,10 +167,10 @@ async def run_one(ch: ChannelPlan, v: RewrittenQuery, qvecs: QueryVectors, plan:
 | 항목 | 규칙 |
 |------|------|
 | 예외 격리 | 한 런의 예외가 다른 런을 취소하지 않는다(`return_exceptions=True`). 타임아웃된 런의 백엔드 요청은 `wait_for`가 취소한다 |
-| 계약 위반 예외 | `retrieve.security_context_missing`(필터에 `tenant_id` 부재)은 부분 실패가 아니라 요청 전체 실패다(E7). 어댑터는 요청을 보내기 전에 검사한다 |
+| 계약 위반 예외 | `retrieve.security_context_missing`(필터에 `tenant_id` 부재)은 부분 실패가 아니라 요청 전체 실패이며 HTTP 500 카탈로그 코드다(서버 측 계약 위반, 미분류 500이 아니라 이 코드로 실패; 바이블 §5.7·§10.3 E7 1.3.0, AM-25). 어댑터는 요청을 보내기 전에 검사한다 |
 | 질의 벡터 부재 | 임베딩 서버 실패(`embed.server_unavailable`) 시 dense·sparse 런은 `status=error`(해당 코드)로 제외하고 `degraded += {query_embedding, unavailable}`; lexical 런은 영향 없이 진행하므로 "최소 1채널"이 보통 성립한다 |
 | 결과 정렬 | 어댑터는 후보를 채널 원점수 내림차순으로 정렬하고 `rank`를 1..n으로 연속 부여한다. 동점은 `record_id` 오름차순(융합 타이브레이크와 동일 규칙) |
-| 런당 상한 | `returned ≤ min(top_k, 300)`(바이블 §5.1 `CandidateSet` 한계). 백엔드가 더 돌려주면 절단 + `truncated=true` |
+| 런당 상한 | `returned ≤ min(top_k, 300)`(바이블 §5.1 `CandidateSet` 한계; 여기의 `top_k`는 `query.channels[*].top_k` 채널 검색 폭이며 `top_k`와 별개인 `pack.k_max`(= 프로파일 `query.pack.k_max`, CR-14)와는 무관하다). 백엔드가 더 돌려주면 절단 + `truncated=true` |
 | 세대 기록 | `index_generation_seen[]`에 후보의 `index_generation` 집합을 기록하고 `channels[].index_generation_min`보다 작은 세대가 보이면 `warnings[]`에 `retrieve.stale_generation_seen`(경고 코드 제안, 미해결 이슈 9)을 남긴다 |
 | `total_hits` | OpenSearch `hits.total.value`(`track_total_hits` 상한까지 정확, 이후 근사), Qdrant는 `null`(필터 후 총량을 돌려주지 않음; 근사 카운트 API 채택은 미해결 이슈 5) |
 | 부분 실패 표기 | `degraded`는 상류(플랜) 항목을 상속하고 자기 항목을 더한다. 콘텐츠·질의문은 `detail`에 넣지 않는다 |
@@ -185,6 +185,7 @@ async def run_one(ch: ChannelPlan, v: RewrittenQuery, qvecs: QueryVectors, plan:
 | `status`, `took_ms`, `error` | 코디네이터 | `ok` / `timeout`(`retrieve.channel_timeout`) / `error`(`retrieve.backend_error`, `embed.server_unavailable`, `embed.space_mismatch`) / `disabled` |
 | `returned`, `total_hits`, `truncated`, `index_generation_seen[]`, `candidates[]` | 어댑터 | 후보 `payload_slim`은 백엔드 payload에서 `{heading_path, page_start, page_end, doc_date, acl_classification, acl_hash, token_count_primary, text_preview, content_hash, text_source}`만 복사한다(본문·좌표·전체 ACL은 `hydrate`) |
 | `filters_applied`, `security_context_hash`, `total_unique`, `total_latency_ms` | 코디네이터 | `security`·`strategy`·`user`·`self_query` 구분 기록(완화 후 값), `H("sec", …)` 서명(바이블 §6.2), 전 런의 서로 다른 `record_id` 수, 병렬 구간 경과(§4.4 완화 재검색이 있으면 1차 + 재검색 합산) |
+| `producer.plugin_id`(봉투, 바이블 §5.2) | 코디네이터 | 여러 `retriever` 플러그인(채널별)을 합성한 `CandidateSet`이므로 바이블 §6.1 1.3.0이 채택한 합성 생산자 예약 구현명 `retriever.pipeline`(AM-11) |
 
 ## 3. Retriever 플러그인
 
@@ -208,7 +209,7 @@ class Retriever(Stage[ChannelRunInput, ChannelRun], Protocol):
     async def run(self, inp: ChannelRunInput, ctx: StageContext) -> ChannelRun: ...
 ```
 
-**결정:** 리트리버는 (1) 필터에 `tenant_id`가 없으면 요청을 보내지 않고 `retrieve.security_context_missing`을 던진다(E7), (2) 사후 필터를 쓰지 않는다, (3) `candidates[]`를 원점수 내림차순·`rank` 연속으로 돌려준다, (4) 백엔드 요청 본문에 질의문 외의 콘텐츠를 로그·스팬에 남기지 않는다(E13). 적합성 키트 `security_invariants`("백엔드 요청에 `tenant_id` 필터 존재")가 (1)·(2)를 검사한다.
+**결정:** 리트리버는 (1) 필터에 `tenant_id`가 없으면 요청을 보내지 않고 `retrieve.security_context_missing`(HTTP 500 카탈로그 코드, 바이블 §5.7·§10.3 E7 1.3.0, AM-25)을 던진다(E7), (2) 사후 필터를 쓰지 않는다, (3) `candidates[]`를 원점수 내림차순·`rank` 연속으로 돌려준다, (4) 백엔드 요청 본문에 질의문 외의 콘텐츠를 로그·스팬에 남기지 않는다(E13). 적합성 키트 `security_invariants`("백엔드 요청에 `tenant_id` 필터 존재")가 (1)·(2)를 검사한다.
 
 ### 3.2 `dense` — `retriever.qdrant_dense`
 
@@ -619,7 +620,7 @@ flowchart TD
 
 ## 11. `hydrate` 서브스텝
 
-`fuse`가 절단한 상위 `hydrate.top_n`의 `record_id`로 벡터 백엔드(`standard`·`lite` 모두 Qdrant)에 `retrieve(record_ids, with_payload=[text, context_prefix, heading_path, numbering_path, page_start, page_end, block_refs, sentence_spans, table_ref, html_ref, acl_*, acl_hash, title, source_uri, external_id, doc_date, doc_type, lang, text_source, ocr_confidence_min, chunk_set_blake3])`를 **1회 배치** 호출하고 `RankedSet.hydrated=true`로 바꾼다(바이블 §8.1 9단계, [ADR-0034](../06-adr/0034-retrieval-hot-path-postgres-independence-and-hydrate.md)). 필드 대응은 [10 §6](../03-contracts/10-candidate-set-and-ranked-set.md)이 정본이다. `heading_path`·`numbering_path`·`page_start`·`page_end`는 바이블 §4.3·§8.1 9단계의 `with_payload` 목록에는 없고 바이블 §5.5 `RankedSet` 조건 필수(`hydrated=true`) 목록에는 있어 계약 표를 따라 함께 조회한다(`numbering_path`는 `payload_slim`에도 없어 여기서 채우지 않으면 조건 필수 위반; 바이블 patch 대상은 10 미해결 이슈 13).
+`fuse`가 절단한 상위 `hydrate.top_n`의 `record_id`로 벡터 백엔드(`standard`·`lite` 모두 Qdrant)에 `retrieve(record_ids, with_payload=[text, context_prefix, heading_path, numbering_path, page_start, page_end, block_refs, sentence_spans, table_ref, html_ref, acl_*, acl_hash, title, source_uri, external_id, doc_date, doc_type, lang, text_source, ocr_confidence_min, chunk_set_blake3, token_count_primary, ordinal, text_truncated, pii_policy_applied])`를 **1회 배치** 호출하고 `RankedSet.hydrated=true`로 바꾼다(바이블 §8.1 9단계, [ADR-0034](../06-adr/0034-retrieval-hot-path-postgres-independence-and-hydrate.md)). 앞 18개는 바이블 §5.5 `RankedSet` 조건 필수(`hydrated=true`) 목록, 뒤 4개(`token_count_primary`·`ordinal`·`text_truncated`·`pii_policy_applied`)는 1.3.0 `RankedResult` 선택 가산분이다(AM-33). 필드 대응은 [10 §6](../03-contracts/10-candidate-set-and-ranked-set.md)이 정본이다. **해소(v1.3.0, AM-08):** `heading_path`·`numbering_path`·`page_start`·`page_end`는 이전에는 바이블 §4.3·§8.1 9단계의 `with_payload` 목록에 없었으나 1.3.0이 그 목록에 추가해 `RankedSet` 조건 필수 목록과 정합했다(10 미해결 이슈 13 종결).
 
 | 규칙 | 내용 |
 |------|------|

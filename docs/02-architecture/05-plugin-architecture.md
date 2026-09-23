@@ -2,7 +2,7 @@
 title: 플러그인 아키텍처
 status: active
 owner: architecture
-version: 0.1.1
+version: 0.1.2
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -71,25 +71,7 @@ flowchart TB
 
 ### 2.1 `Stage[In, Out]` 5멤버
 
-바이블 §4.1의 정본 시그니처를 Python으로 옮긴 것이며 02 §2.2 `src/rag_platform/sdk/stage.py`와 같다. 모든 확장 지점 구현은 이 프로토콜을 구조적으로(structural subtyping) 만족해야 하며, 추가 멤버는 확장 지점별 Protocol이 정의한다(§3; 02 §2.2 결정대로 14 확장 지점은 모두 이 프로토콜의 타입 특수화이고 실행 진입점은 `run(inp, ctx)` 하나다). 이 문서의 모든 Python 블록은 `from __future__ import annotations`, `from typing import Any, ClassVar, Generic, Protocol, TypeVar`, `from collections.abc import Mapping, Sequence`, `from pydantic import BaseModel`, `from rag_platform.contracts import *`(계약·열거 타입), `from rag_platform.sdk import *`(SDK 타입)를 전제하고 임포트를 생략한다.
-
-```python
-# src/rag_platform/sdk/stage.py (02 §2.2와 동일)
-In = TypeVar("In", bound=BaseModel, contravariant=True)
-Out = TypeVar("Out", bound=BaseModel, covariant=True)
-
-
-class Stage(Protocol[In, Out]):
-    """바이블 §4.1 스테이지 시그니처(5멤버). I/O·시간·난수는 ctx로만 접근한다."""
-
-    plugin_id: str                                 # "{extension_point}.{implementation}" (§6.1)
-    config_schema: type[BaseModel]                 # 플러그인이 선언하는 설정 모델(§4); config_hash 원천
-    requires_lineage: ClassVar[tuple[str, ...]] = ()   # 선택. 셸이 함께 로드할 상류 schema_type(index·chunk·enrich LLM 서브스텝만, 바이블 §4.1 1.3.0 AM-26)
-
-    def capabilities(self) -> Capabilities: ...
-    def fingerprint(self) -> str: ...              # H("producer", plugin_id, plugin_version, config_hash, image_digest, model_ids)
-    async def run(self, inp: In, ctx: StageContext) -> Out: ...
-```
+바이블 §4.1의 정본 시그니처를 Python으로 옮긴 것이며 02 §2.2 `src/rag_platform/sdk/stage.py`(`Stage(Protocol[In, Out])`: `plugin_id: str`, `config_schema: type[BaseModel]`, `requires_lineage: ClassVar[tuple[str, ...]] = ()`, `capabilities()`, `fingerprint()`, `async def run(inp, ctx)`)와 코드가 같으므로 여기서는 반복하지 않는다. 모든 확장 지점 구현은 이 프로토콜을 구조적으로(structural subtyping) 만족해야 하며, 추가 멤버는 확장 지점별 Protocol이 정의한다(§3; 02 §2.2 결정대로 14 확장 지점은 모두 이 프로토콜의 타입 특수화이고 실행 진입점은 `run(inp, ctx)` 하나다). 이 문서의 모든 Python 블록은 `from __future__ import annotations`, `from typing import Any, ClassVar, Generic, Protocol, TypeVar`, `from collections.abc import Mapping, Sequence`, `from pydantic import BaseModel`, `from rag_platform.contracts import *`(계약·열거 타입), `from rag_platform.sdk import *`(SDK 타입)를 전제하고 임포트를 생략한다.
 
 | 멤버 | 의미 | 셸이 사용하는 곳 |
 |------|------|------------------|
@@ -104,26 +86,9 @@ class Stage(Protocol[In, Out]):
 
 스테이지가 외부 세계에 닿는 유일한 통로다. 바이블 §4.1이 명시한 멤버(`token_counter`, `analyzer`, `now()`, `lineage`, 1.3.0부터 `plan`·`artifacts`도 **결정**)가 정본이고, 나머지 멤버는 02 §2.2 `StageContext`·§2.3 `DerivedArtifacts`(구체 파사드 형태는 02가 제안)·§2.4 `TokenCounter`/`KoreanAnalyzer`를 그대로 옮긴 것이다. 02 §2.3 `ArtifactStore`(`put_artifact`·`get`·`get_bytes`·`exists`, `tenant_id` 인자)는 셸(`orchestration.context`)·`storage`·`retrieval.pack.chunk_text_store`에만 노출되며 **스테이지에는 주지 않는다**. `heartbeat_details` 스키마는 04-pipelines/01(파이프라인 프레임워크)이 확정한다(바이블 미해결 이슈 8). 플러그인 설정(`config_schema` 인스턴스)은 `ctx`가 아니라 레지스트리 `build_stage()`/`build_port()`가 인스턴스에 고정한다(§6.3).
 
+`TokenCounter`(role `token_counter`: `tokenizer_id`, `count_method: CountMethod`, `count`/`count_many`/`truncate`)와 `KoreanAnalyzer`(role `korean_analyzer`: `analyzer_id`, `dictionary_hash`, `tokenize`/`split_sentences`/`normalize_query`/`keywords`) 전문은 02 §2.4와 동일하며 여기서는 반복하지 않는다(§3.1 역할 표·§3.4·§3.6 참고).
+
 ```python
-# 02 §2.4 sdk/retrieval.py — packer·chunker 그룹 role=token_counter
-class TokenCounter(Protocol):
-    tokenizer_id: str                                   # hf:{repo} | tiktoken:{encoding} | anthropic:{model} | gemini:{model} (§6.1)
-    count_method: CountMethod                           # exact_api | exact_local | approximate
-    async def count(self, text: str) -> int: ...
-    async def count_many(self, texts: Sequence[str]) -> list[int]: ...
-    def truncate(self, text: str, max_tokens: int) -> str: ...
-
-
-# 02 §2.4 — normalizer 그룹 role=korean_analyzer; ctx.analyzer
-class KoreanAnalyzer(Protocol):
-    analyzer_id: str                                    # "{engine}:{version}:{dictionary}" (§6.1)
-    dictionary_hash: str
-    def tokenize(self, text: str) -> list[Morpheme]: ...            # Morpheme{surface, pos, start, end} (02 §2.4)
-    def split_sentences(self, text: str) -> list[tuple[int, int]]: ...
-    def normalize_query(self, text: str) -> str: ...                # Kiwi 교정; mecab-ko는 항등
-    def keywords(self, text: str) -> list[tuple[str, str]]: ...     # (term, pos) — NNG/NNP/SL/SN
-
-
 # 02 §2.2 sdk/stage.py
 class StageContext(Protocol):
     """셸이 만들어 넘기는 실행 문맥. 스테이지가 볼 수 있는 유일한 부수효과 창구."""
@@ -311,40 +276,22 @@ class Embedder(Stage[EnrichedChunkSet, EmbeddedChunkSet], Protocol):
 ### 3.8 `index_backend`
 
 ```python
-# src/rag_platform/sdk/index_backend.py (02 §2.4와 동일)
+# src/rag_platform/sdk/index_backend.py — 시그니처는 02 §2.4와 동일(메서드별 동작 설명은 그 문서 코드 주석이 정본)
 class IndexBackend(Protocol):
     """포트. 인덱스를 바꾸는 유일한 인터페이스. 플랫폼 index 사가·hydrate·retriever 어댑터가 호출한다. 모든 검색·조회는 사전 필터(E7)."""
-    backend_id: str                     # "qdrant" | "opensearch" | 플러그인 값 — CollectionSpec.backends[].backend_id, IndexCommit.backend_results[].backend_id, QueryPlan.channels[].backend_id, 메트릭 라벨 backend_id
-    plugin_id: str                      # "index_backend.qdrant" — Producer.plugin_id, 프로파일 backends[].plugin
+    backend_id: str                     # "qdrant" | "opensearch" | 플러그인 값
+    plugin_id: str                      # "index_backend.qdrant"
 
-    def capabilities(self) -> Capabilities: ...   # extra = IndexBackendCapabilities(§5.3)
-
+    def capabilities(self) -> Capabilities: ...
     async def ensure_physical(self, spec: CollectionSpec) -> str: ...
-    # 물리 컬렉션/인덱스·alias·payload 인덱스 보장(§13.4). 반환 = physical_name
-
     async def upsert(self, records: Sequence[IndexRecord], *, commit_id: str) -> BackendResult: ...
-    # is_current=false로 적재. record_id 단위 멱등, 배치 256. tenant_id·collection_id·acl_allow·acl_visibility·acl_hash
-    # 누락 레코드가 1건이라도 있으면 배치 전체 거부 → index.security_fields_missing (E5)
-
     async def flip_current(self, scope: DocumentScope, *, generation: int) -> BackendResult: ...
-    # scope = (tenant_id, collection_id, document_id). gen == generation → is_current=true, gen < generation → false
-
     async def restore_generation(self, scope: DocumentScope, *, generation: int) -> BackendResult: ...
-    # 보상: 이전 세대를 is_current=true로 복원(바이블 §11.4 플립 후 실패)
-
     async def delete_by_filter(self, flt: EffectiveFilter) -> BackendResult: ...
-    # 삭제 커밋(delete.document.v1: document_id)·보상(commit_id)·정리(maintenance.cleanup.v1: index_generation < current), 바이블 §11.2
-
     async def update_acl(self, scope: DocumentScope, *, acl_fields: Mapping[str, Any]) -> BackendResult: ...
-    # acl_* payload·acl_hash만 갱신(재임베딩 없음, E11)
-
     async def search(self, req: BackendSearchRequest) -> list[BackendHit]: ...
-    # req.filter에 tenant_id 조건이 없으면 retrieve.security_context_missing 예외(E7·§10.2). 사후 필터 금지
-
     async def retrieve(self, record_ids: Sequence[str], *, with_payload: Sequence[str],
                        with_vectors: bool, security: EffectiveFilter) -> list[Mapping[str, Any]]: ...
-    # hydrate(§4.3) 1회 배치. 보안 필터를 다시 적용(E10). 누락은 빈 자리로 반환(플립 경합)
-
     async def swap_alias(self, alias: str, physical_name: str) -> None: ...   # blue/green; supports_alias_swap=true 백엔드만
     async def count(self, flt: EffectiveFilter) -> int: ...                  # 정합성 검사(maintenance.consistency.v1)
 ```
@@ -370,16 +317,13 @@ class QueryTransformer(Stage[QueryPlan, QueryPlan], Protocol):
 ### 3.10 `retriever`
 
 ```python
-# src/rag_platform/sdk/retrieval.py (02 §2.4와 동일) — 질의 측 확장 지점은 모두 Stage[In, Out] 특수화(5멤버 그대로). plan·security는 ctx(§2.2)
+# src/rag_platform/sdk/retrieval.py — 시그니처는 02 §2.4와 동일. 질의 측 확장 지점은 모두 Stage[In, Out] 특수화(5멤버 그대로). plan·security는 ctx(§2.2)
 class RetrieveInput(BaseModel):          # 제안(sdk 내부): 리트리버 In. 계약 하나가 아니므로 sdk가 소유(02 미해결 이슈 4)
     channel: ChannelSpec                 # QueryPlan.channels[] 원소(채널 × 컬렉션; backend_id 포함)
     variant: QueryVariant                # QueryPlan.rewritten_queries[] 원소
 
-
 class Retriever(Stage[RetrieveInput, ChannelRun], Protocol):
     channel: Channel                     # sparse_bm25 벡터를 쓰는 리트리버는 channel=lexical(§5.7 Channel); plugin_id 예 retriever.qdrant_dense
-    # run(inp, ctx): 사전 필터 = ctx.plan.filters + ctx.security(E7). channel_run_id = "{channel}:{collection_id}:{variant_id}"
-    # 실패는 예외가 아니라 ChannelRun.status=error + error(StageError)
 ```
 
 - `ChannelSpec`(= `QueryPlan.channels[]` 원소), `QueryVariant`(= `QueryPlan.rewritten_queries[]` 원소), `ChannelRun`(= `CandidateSet.channel_runs[]` 원소)은 02 §2.4가 제안한 계약 `$defs` Pydantic 클래스명이며 03-contracts/09·10이 확정한다. `RetrieveInput`은 계약 하나가 아닌 `In`을 위한 `sdk` 내부 타입 제안이다(02 미해결 이슈 4). 플랫폼 `retrieve` 스테이지가 (채널 × 컬렉션 × 변형)마다 `run(RetrieveInput, ctx)`를 병렬 호출하고 결과를 `CandidateSet.channel_runs[]`로 모은다. 리트리버가 어느 백엔드를 쓰는지는 `ChannelSpec.backend_id`(플래너가 `CollectionSpec.backends[]`에서 채움)로 전달되고, 리트리버 자체는 `Capabilities.extra.backend_id`(제안, §5)로 호환 백엔드를 선언한다.
@@ -389,37 +333,21 @@ class Retriever(Stage[RetrieveInput, ChannelRun], Protocol):
 
 ### 3.11 `fuser`
 
-```python
-class Fuser(Stage[CandidateSet, RankedSet], Protocol):    # 02 §2.4와 동일
-    method: FusionMethod                 # plugin_id = fuser.{method}: fuser.rrf | fuser.convex_minmax | fuser.convex_zscore | fuser.dbsf | fuser.combmnz
-    # run(candidates, ctx): ctx.plan.fusion{method, k, weights, variant_query_weight}만 읽는 순수 변환(await 없음), 절단은 ctx.plan.hydrate.top_n.
-    # stage=fused, hydrated=false, Σ contribution = fused_score, 타이브레이크 record_id 오름차순
-```
+`Fuser(Stage[CandidateSet, RankedSet])`(02 §2.4와 동일)의 추가 멤버는 `method: FusionMethod`(`plugin_id = fuser.{method}`: `fuser.rrf` | `fuser.convex_minmax` | `fuser.convex_zscore` | `fuser.dbsf` | `fuser.combmnz`)뿐이다.
 
 - 불변식 `Σ contribution = fused_score`, 타이브레이크 `record_id` 오름차순, `ctx.plan.fusion.k` 필수(`fuse.k_missing`은 로딩 시 차단). 적합성 키트 `fuser_equivalence`가 ranx 결과와 대조한다([ADR-0013](../06-adr/0013-fusion-rrf-k60-then-convex-combination-and-postprocess-order.md)).
 - `hydrate`는 fuser 다음의 플랫폼 서브스텝이며 플러그인 확장 지점이 아니다(`index_backend.retrieve` 호출).
 
 ### 3.12 `reranker`
 
-```python
-class Reranker(Stage[RankedSet, RankedSet], Protocol):    # 02 §2.4와 동일; 추가 멤버 없음
-    ...                                  # reranker.tei_cross_encoder | reranker.qdrant_maxsim | reranker.flashrank
-    # run(ranked, ctx): 파라미터는 ctx.plan.rerank{model_id, backend, response_schema, top_n_in, top_n_out, max_tokens_per_text, timeout_ms, normalization}.
-    # capabilities().extra = {backend: enum(RerankBackend), response_schema: enum(RerankResponseSchema), …}(02 §2.4)
-    # 타임아웃·5xx → 예외 대신 fused 순서 유지 + rerank.applied=false + explain rerank_skipped. stage=reranked
-```
+`Reranker(Stage[RankedSet, RankedSet])`(02 §2.4와 동일)는 추가 멤버가 없다(파라미터는 `ctx.plan.rerank`; 구현 예 `reranker.tei_cross_encoder` | `reranker.qdrant_maxsim` | `reranker.flashrank`).
 
 - 입력 텍스트는 `context_prefix + "\n" + text`(hydrate 값)를 **리랭커 토크나이저**로 `ctx.plan.rerank.max_tokens_per_text` 절단한다. `rerank_raw`·`rerank_normalized`(`normalization: enum(ScoreNormalization)`)를 `score_breakdown`에 기록한다.
 - 타임아웃·5xx는 fused 순서 폴백(`rerank.applied=false`, `explain += rerank_skipped`, `rag_rerank_fallback_total`)이며 오류가 아니다. 스키마 파싱 실패는 `rerank.schema_mismatch`(비재시도).
 
 ### 3.13 `postprocessor`
 
-```python
-class Postprocessor(Stage[RankedSet, RankedSet], Protocol):   # 02 §2.4와 동일
-    step: PostprocessStep                # plugin_id = postprocessor.{step}: relevance_gate | dedup | mmr | parent_expand | sentence_window | compress
-    # run(ranked, ctx): 단계 파라미터는 ctx.plan.postprocess[step](relevance_gate.tau, dedup.*, mmr.lambda, parent_expand.*, sentence_window.n, compress.*).
-    # text를 바꾸면 block_refs·sentence_spans를 함께 재계산(K1)
-```
+`Postprocessor(Stage[RankedSet, RankedSet])`(02 §2.4와 동일)의 추가 멤버는 `step: PostprocessStep`(`plugin_id = postprocessor.{step}`: `relevance_gate` | `dedup` | `mmr` | `parent_expand` | `sentence_window` | `compress`)뿐이다.
 
 - 단계 순서는 플랫폼이 고정한다(`relevance_gate → dedup → mmr → parent_expand → dedup → sentence_window → compress`, D-07 v1.2). 플러그인은 **한 단계의 구현을 교체**할 수 있을 뿐 순서를 바꾸지 못한다. `reorder`·`citation_align`은 `pack` 내부 `PackStep`이므로 이 확장 지점에 속하지 않는다.
 - `text`를 바꾸는 단계(`sentence_window`, `compress`)는 `block_refs`·`sentence_spans`를 함께 재계산해야 하며 적합성 키트 `renderer_citation_roundtrip`이 검증한다. 토큰 단위 압축은 `block_refs`를 무효화하므로 `text_format=plain`으로만 허용된다.
@@ -427,12 +355,9 @@ class Postprocessor(Stage[RankedSet, RankedSet], Protocol):   # 02 §2.4와 동�
 
 ### 3.14 `packer`
 
+`Packer(Stage[RankedSet, ContextPack])`(02 §2.4와 동일)는 추가 멤버가 없다(내부 순서는 아래 참고).
+
 ```python
-class Packer(Stage[RankedSet, ContextPack], Protocol):    # 02 §2.4와 동일; 추가 멤버 없음
-    ...
-    # run(ranked, ctx): 파라미터는 ctx.plan.pack. 내부 고정 순서 acl_recheck → budget_cut → reorder → citation_align(바이블 §8.2), 결정적 content_hash
-
-
 class ContextRenderer(Protocol):                      # 02 §2.4 포트(Stage 아님); packer 그룹 role=renderer. render 스테이지가 validate → render 순으로 호출
     plugin_id: str                       # 보완 제안 — 02 §2.4 코드에는 없음(레지스트리 조회 키, §미해결 이슈 11)
     renderer: Renderer                   # enum(Renderer) 9종: anthropic_search_result | anthropic_document | openai_messages | gemini_messages | xml_documents | markdown | mcp_tool_result | plain_records | dify_external_knowledge
@@ -450,8 +375,6 @@ class ContextRenderer(Protocol):                      # 02 §2.4 포트(Stage �
 ```python
 class Evaluator(Stage[EvalRun, EvalReport], Protocol):    # 02 §2.4 표 행: EvalRun → EvalReport(부분); 추가 멤버 metrics
     metrics: frozenset[str]                           # 산출 메트릭 키("ndcg@10", "recall@20", "span_hit_rate@k", "judged@10", …); plugin_id 예 evaluator.retrieval_metrics
-    # run(run, ctx): 부분 EvalReport — run_id와 metrics(자기 metrics 키만)만 채운다.
-    # 골든셋(EvalDataset)과 하네스가 생성한 ContextPack 집합(TREC run)은 ctx.lineage로 받는다(requires_lineage 확장 제안, §미해결 이슈 19)
 ```
 
 - 하네스는 프로덕션과 동일한 인프로세스 스테이지(`LocalRunner`)로 `ContextPack`을 생성한 뒤, `EvalRun`을 `In`으로 evaluator의 `run()`을 호출한다(D-12). 스테이지는 I/O를 직접 하지 않으므로(바이블 §4.1) 골든셋(`EvalDataset.qrels_ref`·`answer_spans_ref`)과 생성된 `ContextPack` 집합은 하네스가 로드해 `ctx.lineage`로 제공한다 — `requires_lineage`를 `index`·`chunk`·`enrich` LLM 서브스텝 밖(`evaluator`)에서도 쓰는 확장이므로 키 이름과 함께 §미해결 이슈 19의 제안이다. nDCG는 **선형 이득** 고정, 다중 비교는 Holm 보정([ADR-0023](../06-adr/0023-evaluation-qrels-answer-spans-and-linear-ndcg.md)).
@@ -523,9 +446,7 @@ class StructureAwareChunkerConfig(BaseModel):
 
 ### 6.1 패키지와 entry point
 
-**결정:** 플러그인 배포 패키지는 `rag-plugin-{name}`(import `rag_plugin_{name}`), entry point 그룹은 `rag_platform.{extension_point}`, entry point 이름은 `implementation`(snake_case)이다(바이블 §6.7). 코어 어댑터(`rag_platform.adapters.*`)도 동일 그룹에 등록되어 코어와 외부 플러그인이 같은 경로로 발견된다. [ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md).
-
-`plugin_id`는 항상 `"{extension_point}.{implementation}"`이다(바이블 §6.1). 여러 플러그인을 합성한 생산자(`Producer.plugin_id`)는 실제 entry point 대신 예약 구현명 `{extension_point}.pipeline`(`enricher.pipeline`, `query_transformer.pipeline`, `retriever.pipeline`)을 쓰며, 이 값은 레지스트리에 등록되지 않고 `stage_key`·계보 기록의 합성 표시로만 쓰인다(바이블 §6.1 1.3.0, AM-11).
+**결정:** 플러그인 배포 패키지는 `rag-plugin-{name}`(import `rag_plugin_{name}`), entry point 그룹은 `rag_platform.{extension_point}`, entry point 이름은 `implementation`(snake_case)이다(바이블 §6.7). `plugin_id`는 항상 `"{extension_point}.{implementation}"`이다. 코어 어댑터(`rag_platform.adapters.*`)도 동일 그룹에 등록되어 코어와 외부 플러그인이 같은 경로로 발견된다. 여러 플러그인을 합성한 생산자(`Producer.plugin_id`)는 실제 entry point 대신 예약 구현명 `{extension_point}.pipeline`(`enricher.pipeline`, `query_transformer.pipeline`, `retriever.pipeline`)을 쓰며 레지스트리에는 등록되지 않는다(바이블 §6.1 1.3.0, AM-11). [ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md).
 
 ```toml
 # rag-plugin-lightrag/pyproject.toml (예시; 버전·의존성은 확인 필요 as of 2026-09)
@@ -589,25 +510,21 @@ capabilities = {isolation_modes = ["in_process", "sidecar"], supports_resumable 
 ### 6.3 레지스트리 조회
 
 ```python
-# src/rag_platform/sdk/ports.py (02 §2.3과 동일). 구현은 plugins.registry
+# src/rag_platform/sdk/ports.py — 시그니처는 02 §2.3과 동일. 구현은 plugins.registry
 class PluginRegistry(Protocol):
-    """entry point 그룹 rag_platform.{extension_point}(§6.7)."""
+    """entry point 그룹 rag_platform.{extension_point}(§6.7). discover()는 메타데이터만 읽고 모듈을 임포트하지 않는다."""
     def discover(self, extension_point: ExtensionPoint) -> Sequence[PluginMeta]: ...
-    # importlib.metadata.entry_points(group=f"rag_platform.{extension_point.value}") — 그룹 선택자는 정확 일치만 지원하므로
-    # 전체 발견은 ExtensionPoint 14값을 순회한다(와일드카드 group 인자는 표준 라이브러리에 없다). 메타데이터만 읽고 모듈은 임포트하지 않는다
     def meta(self, plugin_id: str) -> PluginMeta: ...
-    def build_stage(self, plugin_id: str, config: Mapping[str, Any], services: RuntimeServices) -> Stage[Any, Any]: ...
-    # 14 확장 지점 중 Stage 특수화(포트 4종 제외)만 반환. config는 Stage.config_schema로 검증된 뒤 인스턴스에 고정(config_hash 확정). entry point load()는 이 시점
-    def build_port(self, plugin_id: str, config: Mapping[str, Any], services: RuntimeServices) -> IndexBackend | ContextRenderer | TokenCounter | KoreanAnalyzer: ...
-    # index_backend·renderer·token_counter·korean_analyzer 4개 포트 전용(02 §2.3, 트리아지 #14). 포트도 config_schema를 선언하므로 동일하게 config_hash를 확정한다
+    def build_stage(self, plugin_id: str, config: Mapping[str, Any], services: RuntimeServices) -> Stage[Any, Any]: ...   # Stage 특수화(포트 4종 제외)
+    def build_port(self, plugin_id: str, config: Mapping[str, Any], services: RuntimeServices) -> IndexBackend | ContextRenderer | TokenCounter | KoreanAnalyzer: ...   # 포트 4종 전용(트리아지 #14)
     def check_license(self, meta: PluginMeta, policy: LicensePolicy) -> None: ...        # 위반 → plugin.license_denied
     def check_capabilities(self, meta: PluginMeta, required: Mapping[str, Any]) -> None: ...  # 위반 → plugin.capability_unsupported
 ```
 
 | 항목 | 규칙 |
 |------|------|
-| 조회 키 | `meta(plugin_id)`·`build(plugin_id, …)`의 키는 `plugin_id`다. 프로파일은 `plugin_id`만 쓰고 버전은 `uv.lock`이 고정한다(한 환경에 한 배포 버전만 설치). `plugin_id@version` 표기(`version` = `PluginMeta.version`, 배포 패키지 버전; 예 `parser.hwpx_python_hwpx@1.0.0` — 래핑 라이브러리 python-hwpx의 버전은 `parser_fingerprint_hash`의 `parser_version`으로 별도 기록된다, 바이블 §6.2)는 `Producer` 재현·적합성 테스트·CLI 출력에서 쓰는 **검증 단언**이며, 레지스트리 API에 `@version` 조회를 추가하는 것은 `plugins.registry` 구현 계층의 제안이다(02 §2.3 개정 대상, §미해결 이슈 11) |
-| 포트 반환 | `build()`의 선언 반환 타입은 02 §2.3 그대로 `Stage[Any, Any]`다. 14 확장 지점이 모두 `Stage` 특수화이므로 리트리버·퓨저·패커도 이 타입으로 반환된다. 단 `index_backend`(`IndexBackend`)와 role 포트(`ContextRenderer`·`TokenCounter`·`KoreanAnalyzer`)는 `Stage`가 아니므로 정적 타입이 맞지 않는다 — 02 §2.3 개정 제안(§미해결 이슈 11); 확정 전에는 호출 측(`index` 사가·`render`·`ctx` 조립)이 포트 타입으로 좁혀 쓴다 |
+| 조회 키 | `meta(plugin_id)`·`build_stage(plugin_id, …)`·`build_port(plugin_id, …)`의 키는 모두 `plugin_id`다. 프로파일은 `plugin_id`만 쓰고 버전은 `uv.lock`이 고정한다(한 환경에 한 배포 버전만 설치). `plugin_id@version` 표기(`version` = `PluginMeta.version`, 배포 패키지 버전; 예 `parser.hwpx_python_hwpx@1.0.0` — 래핑 라이브러리 python-hwpx의 버전은 `parser_fingerprint_hash`의 `parser_version`으로 별도 기록된다, 바이블 §6.2)는 `Producer` 재현·적합성 테스트·CLI 출력에서 쓰는 **검증 단언**이며, 레지스트리 API에 `@version` 조회를 추가하는 것은 `plugins.registry` 구현 계층의 제안이다(§미해결 이슈 11 잔여분) |
+| 포트 반환 | `build()`는 `build_stage()`와 `build_port()`로 나뉜다(02 §2.3, 트리아지 #14). `build_stage()`는 14 확장 지점 중 `Stage` 특수화(포트 4종 제외, 리트리버·퓨저·패커 포함)를 반환하고, `build_port()`는 `index_backend`(`IndexBackend`)와 role 포트(`ContextRenderer`·`TokenCounter`·`KoreanAnalyzer`) 4개를 반환한다 — 포트는 `Stage`가 아니므로 반환 타입 합집합 없이 메서드로 분리해 정적 타입을 맞춘다. 호출 측(`index` 사가·`render`·`ctx` 조립)은 그대로 포트 타입을 받는다 |
 | 역할 | `PluginMeta.role`은 **확장 지점 안에서만** 고유하다(`chunker`의 `token_counter` = `recount` 스테이지, `packer`의 `token_counter` = 대상 LLM 카운터). 역할 조회는 항상 `discover(extension_point)` 결과를 `role`로 걸러 수행하므로 두 그룹이 섞이지 않는다 |
 | 중복 | 같은 `plugin_id`가 두 배포 패키지에서 발견되면 로딩 실패(`profile.invalid`, 사유 `duplicate plugin_id`). 이름 충돌 방지는 코어 어댑터가 접두 없이, 외부 패키지가 벤더 접두(`lightrag_`, `hipporag_`)를 쓰는 관례로 해결한다 |
 | 검증 순서 | (1) `PluginMeta` 스키마 → (2) `plugin_id` = 그룹·이름 조립값 → (3) `contracts_compat` ∩ 코어 계약 버전(§8) → (4) `check_license`(§7.4 (1): `license_grade ≤ license_policy.max_grade`, C/D/X는 `optIn` 명시, D 모델 `model_license_ack`, `territory` 대조, `B + static_bundled` 거부) → (5) `check_capabilities`(정적 능력 일치) → (6) 격리 모드 결정(§7) → (7) `build`(`config_schema` 검증 + 인스턴스 생성) → (8) `StageLifecycle.init(services)`(구현 시) |
@@ -663,7 +580,7 @@ class SidecarStage(Generic[In, Out]):
     """sidecar 격리 스테이지의 기반 클래스(rag_platform.sdk, 바이블 §12). 서브클래스는 to_request/from_response 만 구현한다."""
     sidecar_image: ClassVar[str]                              # PluginMeta.sidecar_image
 
-    def __init__(self, config: BaseModel, services: RuntimeServices) -> None:   # PluginRegistry.build()가 호출(02 §2.3)
+    def __init__(self, config: BaseModel, services: RuntimeServices) -> None:   # PluginRegistry.build_stage()가 호출(02 §2.3)
         self.config = config
         self._http = services.http                            # EgressGuard 적용 httpx.AsyncClient 팩토리; 주소는 서비스 디스커버리 값만(E16)
 
@@ -927,14 +844,14 @@ query:
 | `rag-plugin-kure-late-interaction` | `plugins/` | `embedder.kure_late_interaction`, `reranker.kure_maxsim` | 외부 HTTP | A(Apache-2.0) | O-04 M2 실험 슬롯. 코어 `embedder.pylate_late_interaction`·`reranker.qdrant_maxsim`은 모델 무관 범용 어댑터, 이 패키지는 KURE-v2 전용 전처리·서빙 경로다(경계 확정과 바이블 §12 `plugins/` 목록 정리는 §미해결 이슈 17) |
 | `rag-plugin-smb-fetcher`(제안) | `plugins/` | `fetcher.smbprotocol` | in_process | A(MIT; 확인 필요) | 브리프 R1 `smb://` |
 | `lo-sidecar` | `rag-platform-gpl-sidecars` | 이미지(코어 `parser.office_lo_sidecar`가 호출) | sidecar | C(H2Orestart GPL-3.0; LibreOffice MPL-2.0) | Helm `optIn.loSidecar` |
-| `rag-plugin-pyhwp-sidecar` / `rag-plugin-pymupdf-sidecar` | `rag-platform-gpl-sidecars` | `parser.hwp5_pyhwp_sidecar` / `parser.pdf_pymupdf_sidecar` | sidecar 강제 | C(AGPL-3.0) | 최후 폴백 / 옵트인만(D-18) |
+| `rag-plugin-pyhwp-sidecar`(대안·기각 후 격리 사이드카 — pyhwp는 ADR-0007이 정본 경로에서 대안·기각하고 최후 폴백으로만 격리) / `rag-plugin-pymupdf-sidecar` | `rag-platform-gpl-sidecars` | `parser.hwp5_pyhwp_sidecar` / `parser.pdf_pymupdf_sidecar` | sidecar 강제 | C(AGPL-3.0) | 최후 폴백 / 옵트인만(D-18) |
 | `rag-plugin-surya-ocr`(제안) | 별도 | `parser.ocr_surya`(`ocr_engine`) | sidecar | D(가중치 OpenRAIL-M 매출 임계) | `model_license_ack` 필수, 옵트인 |
 
 카탈로그 등재 조건: `PluginMeta` 유효, 적합성 키트 통과 리포트, 라이선스 등급·`territory` 판정, 격리 모드 선언, 소유자 연락처. 라이선스 사유로 `HunyuanOCR`(대한민국 사용 비허가, X)·jina 계열(CC-BY-NC, D)·Elasticsearch 공식 이미지(ELv2/SSPL, C)를 제외하고(D-02, D-15, D-16), `EasyOCR`(Apache-2.0)은 라이선스가 아니라 **유지보수 정체·한국어 품질** 사유로 제외한다(O-08, ADR-0008, 07-tech-landscape/02).
 
 ## 결정 사항 요약
 
-- **결정:** 확장 지점은 D-10 14종(`ExtensionPoint`)을 유지하고 서브 역할은 `PluginMeta.role`로 표현한다. 14 확장 지점 인터페이스는 모두 바이블 §4.1 `Stage[In, Out]` 5멤버(`plugin_id`, `config_schema`, `capabilities()`, `fingerprint()`, `run()`)의 타입 특수화이며 실행 진입점은 `run(inp, ctx)` 하나다 — 질의 측 `QueryPlan`·`SecurityContext`는 인자가 아니라 `ctx.plan`·`ctx.security`로 받는다(02 §2.2 결정). `Stage`와 별개의 포트 Protocol은 02 §2.4의 `IndexBackend`(`index_backend`; `index` 사가·`hydrate`·`retriever` 어댑터가 호출), `ContextRenderer`(packer role `renderer`), `TokenCounter`(role `token_counter`), `KoreanAnalyzer`(role `korean_analyzer`) 4개뿐이며, 포트 구현도 `config_schema`를 선언한다(`build()` 검증). 시그니처는 02 §2.2~§2.4를 복사하며 이 문서가 독자 정의하지 않는다([ADR-0032](../06-adr/0032-plugin-sdk-stage-protocol-and-conformance-kit.md)).
+- **결정:** 확장 지점은 D-10 14종(`ExtensionPoint`)을 유지하고 서브 역할은 `PluginMeta.role`로 표현한다. 14 확장 지점 인터페이스는 모두 바이블 §4.1 `Stage[In, Out]` 5멤버(`plugin_id`, `config_schema`, `capabilities()`, `fingerprint()`, `run()`)의 타입 특수화이며 실행 진입점은 `run(inp, ctx)` 하나다 — 질의 측 `QueryPlan`·`SecurityContext`는 인자가 아니라 `ctx.plan`·`ctx.security`로 받는다(02 §2.2 결정). `Stage`와 별개의 포트 Protocol은 02 §2.4의 `IndexBackend`(`index_backend`; `index` 사가·`hydrate`·`retriever` 어댑터가 호출), `ContextRenderer`(packer role `renderer`), `TokenCounter`(role `token_counter`), `KoreanAnalyzer`(role `korean_analyzer`) 4개뿐이며, 포트 구현도 `config_schema`를 선언한다(`build_port()` 검증). 시그니처는 02 §2.2~§2.4를 복사하며 이 문서가 독자 정의하지 않는다([ADR-0032](../06-adr/0032-plugin-sdk-stage-protocol-and-conformance-kit.md)).
 - **결정:** 플러그인은 SDK 예외 `StageFailure(.error: StageError)`만 던지고 셸이 경계에서 계약 `StageError`로 직렬화한다(계약 모델은 예외가 아니다). 수명주기 훅 `init/warmup/health/close`는 선택 프로토콜 `StageLifecycle`(제안)이며 계약·프로토콜 멤버 수를 바꾸지 않는다. 셸이 구현 여부를 판별해 프로세스 단위로 호출한다.
 - **결정:** 등록은 entry point 그룹 `rag_platform.{extension_point}` + `pyproject.toml` `[tool.rag_platform.plugin]`(`PluginMeta` 하나)이며 `plugin_id = "{extension_point}.{implementation}"`은 그룹·이름 조립값과 일치해야 한다. 레지스트리 API는 02 §2.3 `PluginRegistry`(`discover(extension_point)`, `meta`, `build`, `check_license`, `check_capabilities`)이고 조회 키는 `plugin_id`, 버전 고정은 `uv.lock`([ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md)).
 - **결정:** 폴백은 프로파일 배열 순서가 유일한 우선순위다(별도 `priority` 없음). 파서 라우터는 `SourceFormat` 13값 전부에 후보 체인 또는 오류 코드를 갖고, 체인 진행 조건은 `parse.sidecar_unavailable`·`parse.conversion_failed`류로 한정된다([ADR-0007](../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md)).
@@ -957,7 +874,7 @@ query:
 8. `fetcher` 연구 공백(fsspec/obstore/httpx/smbprotocol 비교·라이선스)은 바이블 미해결 이슈 5와 동일. `fetcher.smbprotocol` 별도 패키지 여부는 04-pipelines/02 작성 전 조사.
 9. 플러그인 핫 리로드(프로파일 교체 시 `close → init` vs 워커 재기동)와 해소 결과 캐시 무효화의 경합은 02-architecture/06(오케스트레이션)에서 확정.
 10. 헬스 `degraded` 후보를 체인 안에서 뒤로 미루는 규칙(§6.4)이 `parser_chain[]` 기록·재현성과 충돌하지 않는지(같은 입력·같은 프로파일이 헬스 상태에 따라 다른 파서를 탈 수 있음) 검토 필요. 대안은 "건너뛰기만 허용, 재배열 금지".
-11. 02 §2.3·§2.4 개정 제안: (a) 포트 Protocol 4개(`IndexBackend`, `ContextRenderer`, `TokenCounter`, `KoreanAnalyzer`) 코드에 `config_schema: type[BaseModel]`을 명시(`build()` 검증·`config_hash` 산출 근거)하고, role 포트 셋에 `plugin_id`·`capabilities()`를 더하며, `fingerprint()`의 필수 범위(모든 Stage형 + `index_backend`)를 적는다; `PluginRegistry.build() -> Stage[Any, Any]`는 `IndexBackend`·role 포트를 포괄하지 못하므로 반환 타입 합집합 또는 포트 전용 `build_port()` 중 하나로 02 §2.3을 개정한다; `index_backend`가 02 §2.4 표에서 `Stage[EmbeddedChunkSet, IndexCommit]` 행으로 적혀 있으나 실제 진입점은 `IndexBackend` 포트 메서드이므로 `run()`의 의미(단일 백엔드 upsert 배치인지, 미구현 허용인지)를 04-pipelines/13과 합의한다. 질의 측 6종(`Retriever`·`Fuser`·`Reranker`·`Postprocessor`·`Packer`·`Evaluator`)은 이 개정(v0.1.0, 2026-09-22)으로 02 §2.2 결정대로 `Stage` 특수화·`run(inp, ctx)`로 통일했으므로 02 미해결 이슈 4의 "05 개정" 항목은 해소되었고, 남는 것은 `$defs` 클래스명(`ChannelSpec`·`QueryVariant`·`ChannelRun`)의 03-contracts/09·10 확정과 `RetrieveInput`의 `sdk` 등재다; (b) `PluginRegistry`에 `plugin_id@version` 검증 단언, 프로파일 전체 해소 결과 캐시(제안 명 `PluginGraph`), `role` 필터 편의 메서드를 둘지는 `plugins.registry` 구현 계층에서 결정.
+11. 해소(v1.3, 트리아지 #14 일부): `PluginRegistry`는 `build_stage() -> Stage[Any, Any]`(14 확장 지점 중 `Stage` 특수화)와 `build_port() -> IndexBackend | ContextRenderer | TokenCounter | KoreanAnalyzer`(포트 4종)로 분리해 반환 타입 문제를 해소한다(02 §2.3). 남은 02 §2.3·§2.4 개정 제안: (a) 포트 Protocol 4개 코드에 `config_schema: type[BaseModel]`을 명시(`build_port()` 검증·`config_hash` 산출 근거)하고, role 포트 셋에 `plugin_id`·`capabilities()`를 더하며, `fingerprint()`의 필수 범위(모든 Stage형 + `index_backend`)를 적는다; `index_backend`가 02 §2.4 표에서 `Stage[EmbeddedChunkSet, IndexCommit]` 행으로 적혀 있으나 실제 진입점은 `IndexBackend` 포트 메서드이므로 `run()`의 의미(단일 백엔드 upsert 배치인지, 미구현 허용인지)를 04-pipelines/13과 합의한다. 질의 측 6종(`Retriever`·`Fuser`·`Reranker`·`Postprocessor`·`Packer`·`Evaluator`)은 이 개정(v0.1.0, 2026-09-22)으로 02 §2.2 결정대로 `Stage` 특수화·`run(inp, ctx)`로 통일했으므로 02 미해결 이슈 4의 "05 개정" 항목은 해소되었고, 남는 것은 `$defs` 클래스명(`ChannelSpec`·`QueryVariant`·`ChannelRun`)의 03-contracts/09·10 확정과 `RetrieveInput`의 `sdk` 등재다; (b) `PluginRegistry`에 `plugin_id@version` 검증 단언, 프로파일 전체 해소 결과 캐시(제안 명 `PluginGraph`), `role` 필터 편의 메서드를 둘지는 `plugins.registry` 구현 계층에서 결정.
 12. `enrich` 스테이지가 여러 `Enricher`를 순차 적용할 때의 중간 타입(첫 enricher 뒤의 `EnrichedChunkSet`을 다음 enricher가 `ChunkSet` 대신 받는가, `Enrichment` 병합 규칙, `enricher_fingerprint` 산출)은 04-pipelines/11 소유. 계약 경계 `ChunkSet → EnrichedChunkSet`(바이블 §4.2)은 바꾸지 않는다.
 13. 한 배포 패키지가 여러 확장 지점을 제공하는 경우(`rag-plugin-lightrag`의 `retriever` + `enricher`, 바이블 §3.2 O-03·§12)의 `PluginMeta` 복수 선언(`[[tool.rag_platform.plugin]]` 배열 테이블)은 바이블 §5.6 확장 제안이며 03-contracts/15 `plugin-meta.schema.json`이 확정한다.
 14. `requires_gpu = true` 플러그인이 GPU 큐(`ingest-gpu-*`) 또는 `sidecar` 밖에 배치되면 `profile.invalid`로 거부하는 규칙은 바이블 §7.4 규칙 13 추가 제안(03-contracts/15·바이블 minor).

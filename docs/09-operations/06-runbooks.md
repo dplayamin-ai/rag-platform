@@ -2,7 +2,7 @@
 title: 런북
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -62,7 +62,7 @@ depends_on:
 
 | ID | 제목 | 주 증상(알림 후보) | 심각도 | FMEA · 카오스 | 자동 복구 |
 |----|------|--------------------|--------|---------------|-----------|
-| RB-01 | PostgreSQL 페일오버·복구 | `/healthz` PG `down`, `POST /v1/ingest` 503 | S2 | F-31 · C-08 | 페일오버 자동, 조정 틱 |
+| RB-01 | PostgreSQL 페일오버·복구 | `POST /v1/ingest` 503(`/healthz`는 liveness 전용이라 무관, 1.3.0 §3.4) | S2 | F-31 · C-08 | 페일오버 자동, 조정 틱 |
 | RB-02 | Temporal 불가 | 503 + `Retry-After`, `queued` 체류 | S2 | F-33 · C-09 | 조정 틱 |
 | RB-03 | 커밋 사가 실패·정합성 불일치 | `index.consistency.mismatch`, `rag_consistency_mismatch_total` | S2 | F-16, F-14, F-15 · C-10 | 정합성 검사 재적재 |
 | RB-04 | Qdrant 노드·클러스터 장애 | `degraded{channel.dense}`, 503 `retrieve.unavailable` | S2 | F-21, F-22, F-29 · C-04, C-05 | 부분 자동 |
@@ -111,7 +111,8 @@ depends_on:
 |------|------|-----------|
 | 원장 SQL | 잡·커밋·아웃박스·문서 상태(정본) | `rag_platform_admin`, 트랜잭션 안 `SET LOCAL app.cross_tenant = 'on'`; 없으면 RLS `FORCE`로 0행(배포 가이드 §9) |
 | Prometheus | 바이블 §6.5 정본 메트릭만(`tenant_id` 라벨 없음) | 테넌트별 수치는 원장 SQL·`usage_ledger` |
-| `GET /healthz` · `GET /readyz` | 의존성 상태(`ok \| degraded \| down`, 형식은 09 문서 제안) / 트래픽 수신 가능 여부 | `/readyz`는 프로파일 캐시 + Qdrant만(09 문서 §3.4) |
+| `GET /healthz` | liveness 전용, 의존성 미포함(1.3.0 §3.4·#174) — 프로세스 생존만 의미, 진단에 쓰지 않는다 | 의존성 상태는 원장 SQL·Prometheus·백엔드 REST로 직접 확인 |
+| `GET /readyz` | 트래픽 수신 가능 여부(`ok \| degraded \| down`, 형식은 09 문서 제안) | 프로파일 캐시 + Qdrant만(09 문서 §3.4) |
 | Temporal CLI·UI | 워크플로우 `describe`/`show`, 태스크 큐 폴러 | 네임스페이스 `rag`(배포 가이드); CLI 문법은 1.x 확인 필요(as of 2026-09) |
 | Qdrant REST/gRPC | 컬렉션 상태·포인트 카운트(필터) | 물리명 `rag_vec_{hash12}`, alias `col_{collection_id}_vec`(바이블 §13.4) |
 | OpenSearch REST | `_cluster/health`, `_count`, 샤드 할당 | 물리명 `rag_lex_{hash12}`, alias `col_{collection_id}_lex`, `routing=tenant_id` |
@@ -243,7 +244,7 @@ S2 · F-31 · C-08 · 자동 복구: 페일오버(동기 복제 1) + 조정 틱�
 
 | 절 | 내용 |
 |----|------|
-| 증상 | `GET /healthz` 의존성 PG `down`; `POST /v1/ingest`·`GET /v1/jobs/*` 503 + `Retry-After`(채택 코드 없음 — 13 문서 §3.3 `api.dependency_unavailable` 조기 채택 대상); 워커 로그에 트랜잭션 실패 → 재시도; 검색은 정상(ADR-0034) |
+| 증상 | `POST /v1/ingest`·`GET /v1/jobs/*` 503 + `Retry-After`(채택 코드 없음 — 13 문서 §3.3 `api.dependency_unavailable` 조기 채택 대상; `/healthz`는 liveness 전용이라 PG 상태를 보이지 않는다, 1.3.0 §3.4·#174 — `pg_stat_replication` 직접 조회로 판정); 워커 로그에 트랜잭션 실패 → 재시도; 검색은 정상(ADR-0034) |
 | 영향 | 수집 정지(모든 스테이지가 원장 트랜잭션), 잡 조회 실패, 아웃박스 정지(이벤트 지연), API 키 인증은 캐시 미스 시 실패(09 문서 미해결 이슈 3). 수집 접수 가용성 SLI 소진 |
 | 진단 단계 | (1) 프라이머리·복제 상태와 페일오버 진행 여부 확인 (2) Temporal DB(별도 인스턴스)가 같은 장애인지 분리 확인 (3) `pg_stat_replication` 지연·`statement_timeout` 오류율 (4) 디스크 풀이면 RB-05, 연결 고갈이면 RB-17로 분기 (5) 페일오버 완료 후 RLS `FORCE`·역할이 남아 있는지 |
 | 완화 | 클라이언트에 `Retry-After` 준수·같은 `Idempotency-Key` 재전송 안내; 검색 경로는 조치 없음; 워커는 그대로(재시도가 흡수) |
@@ -287,7 +288,7 @@ S2 · F-16, F-14, F-15 · C-10 · 자동 복구: 정합성 검사 잡이 재적�
 | 영향 | 문서 단위 검색 누락·중복(플립 중 혼합 상태), 최악은 보상 실패로 `is_current` 카운트 ≠ `record_count`. 정합성 SLI(불일치 0) 위반 |
 | 진단 단계 | (1) 문서의 커밋 이력을 세대 역순으로 읽고 `status`·`compensation.failed_at_status`·`restored_generation` 확인 (2) 양 백엔드에서 `document_id ∧ is_current=true` 카운트와 `index_generation` 분포를 `record_count`와 대조 (3) 물리 대상은 **커밋의 `backend_results[].physical_name`**(alias 아님; 재색인 중 거짓 불일치 방지, 06 문서 §2.7) (4) 백엔드 장애가 원인이면 RB-04·RB-16 먼저 (5) `flipping_*`에 머문 시간이 `start_to_close`(10m)를 넘으면 RB-18 |
 | 완화 | 진행 중 사가는 기다린다 — `flipping_*` 중 취소는 보류(09 문서 §7); 새 잡 접수는 그대로(문서 단위 직렬화가 뒤에 세운다) |
-| 복구 | (a) `rolled_back`(보상 성공): 원인 해소 후 §2.1 재시도(같은 `commit_id`·세대 재사용) (b) `failed`(보상 실패): §2.2 `reprocess {"from_stage":"index"}` → 새 세대 플립 → 이전 세대는 `maintenance.cleanup.v1`(1h) 정리 (c) 원장에 없는 세대가 백엔드에 남으면 §2.3 (d) 완료 후 해당 문서로 정합성 검사 재실행(`(제안)` `rag maintenance consistency --document-id`) |
+| 복구 | (a) `rolled_back`(보상 성공): 원인 해소 후 §2.1 재시도(같은 `commit_id`·세대 재사용) (b) `failed`(보상 실패): §2.2 `reprocess {"from_stage":"index"}` → 새 세대 플립 → 이전 세대는 `maintenance.cleanup.v1`(1h) 정리 (c) 원장에 없는 세대가 백엔드에 남으면 §2.3 (d) 완료 후 정합성 검사 재실행 — 컬렉션 전체는 `POST /v1/collections/{collection_id}/consistency-check`(`JobKind.consistency_check`, AM-39), 문서 단위는 여전히 `(제안)` `rag maintenance consistency --document-id` |
 | 재발 방지 | 세대 합성 `record_id`(ADR-0004), 플립 순서 렉시컬 → 벡터 + 중간 상태 기록(ADR-0026), `update_by_query conflicts=proceed` 재시도 3, 정합성 검사 시간 1회 샘플 + 일 1회 전체(바이블 §7.2), I-05~I-07·C-10 |
 
 ```sql
@@ -334,7 +335,7 @@ S2 · F-34, F-35 · C-12 · 자동 복구: 없음(용량 증설); 사가 보상�
 | 진단 단계 | (1) 어느 볼륨인지 — Qdrant / OpenSearch / PG / 오브젝트 / 워커 (2) Qdrant: `points_count`·세그먼트 수, `is_current=false` 잔존 포인트 수(정리 지연 여부), 같은 볼륨의 스냅샷 파일 (3) OpenSearch: `_cat/allocation`, `index.blocks.read_only_allow_delete` 걸린 인덱스 (4) `rag_index_bytes_total{vector}`로 `late_interaction`·`page_multivector` 증가 여부 (5) 최근 대량 재색인(blue/green 물리 대상 2벌) 진행 중인지 |
 | 완화 | `ingest-io` 워커 드레인(새 사가 보류); Qdrant 스냅샷을 오브젝트 스토리지 `snapshots/`로 옮기고 로컬 삭제; `maintenance.cleanup.v1` 즉시 트리거(`temporal schedule trigger`, 문법 확인 필요) — `is_current=false ∧ index_generation < current_generation`만 지운다; OpenSearch는 flood-stage 해제 전 삭제 가능 데이터(만료 감사 인덱스 아님) 정리 |
 | 복구 | PVC 확장(`allowVolumeExpansion`) 또는 노드·샤드 추가(`shard_key` 승격은 E15 절차) → OpenSearch 블록 해제(`index.blocks.read_only_allow_delete: null`) → 드레인 해제 → §2.1로 `rolled_back` 잡 재시도 → `rag_consistency_mismatch_total` 0 확인 |
-| 재발 방지 | 사이징(배포 아키텍처 §7.2: M 규모 Qdrant 48GB × 2사본), 알림 80/90, 스냅샷 수명주기(오브젝트 스토리지로만 보존), `cleanup_delay` 유지, 재색인 롤백 창(24h 초안) 후 blue 정리(06 문서 §2.7), C-12 분기 |
+| 재발 방지 | 사이징(배포 아키텍처 §7.2: M 규모 Qdrant 48GB × 2사본), 알림 80/90, 스냅샷 수명주기(오브젝트 스토리지로만 보존), `cleanup_delay` 유지, 재색인 롤백 창(24h 초안) 후 blue 정리(06 문서 §2.7), C-12 분기. 오브젝트 스토리지 **버킷 전체 손실**은 전용 RB를 두지 않는다(#59 판단) — 진단 (1)·(5)의 오브젝트 분기를 준용하고 승격·재수집 절차는 [백업과 재해 복구](07-backup-and-disaster-recovery.md) §6.4가 소유한다 |
 
 ```bash
 kubectl -n "$NS" exec sts/qdrant-0 -- df -h /qdrant/storage
@@ -446,7 +447,7 @@ S2(레이트리밋 경로) / S4(캐시) · F-32, F-27 · C-07 · 자동 복구: 
 
 | 절 | 내용 |
 |----|------|
-| 증상 | 모든 질의 429 `api.rate_limited`(운영 `security.rate_limit.fail_mode=closed` — 설계상 정상); p95 +40ms(질의 임베딩 캐시 미스); `degraded{acl_recheck, unavailable}`·`degraded{token_count, approximate_count}`; MCP `cursor` 무효; `idem:` 미스로 PG 판정 부하; `/healthz` Valkey `degraded` |
+| 증상 | 모든 질의 429 `api.rate_limited`(운영 `security.rate_limit.fail_mode=closed` — 설계상 정상); p95 +40ms(질의 임베딩 캐시 미스); `degraded{acl_recheck, unavailable}`·`degraded{token_count, approximate_count}`; MCP `cursor` 무효; `idem:` 미스로 PG 판정 부하; Valkey 상태는 커맨드 타임아웃 메트릭·`PING`으로 확인(`/healthz`는 liveness 전용, 1.3.0 §3.4·#174) |
 | 영향 | 검색 가용성은 429가 성공으로 집계되지만 사용자에게는 전면 거부; `aclrev` 힌트 손실 시 ACL 전파 창 재노출 위험(RB-10) |
 | 진단 단계 | (1) `PING`, 복제·센티널/클러스터 상태 (2) 메모리 상한·eviction 정책(힌트 키가 evict되면 안 됨) (3) 커맨드 타임아웃(10ms 초안) 초과율 (4) 페일오버 중 데이터 손실 여부(영속화 끔인 `lite`는 전량 손실) |
 | 완화 | **`fail_mode`를 `open`으로 바꾸지 않는다**(운영·`korean-gov`); 페일오버 촉진; 인메모리 토큰 버킷 폴백은 미채택(09 문서 미해결 이슈 4) |
@@ -590,7 +591,7 @@ S3 · F-05, F-18, F-33 · 자동 복구: 조정 틱이 종료된 워크플로우
 |----|------|
 | 증상 | `state='running'`인데 `updated_at`이 `max(start_to_close) + 백오프 합`을 넘음; `GET /v1/jobs/{job_id}`의 `stage`·`progress` 정체; Temporal에 `WorkflowTaskFailed`(비결정성) 반복 또는 `PendingActivities.attempt` 증가; `cancelling`이 `cancelled`로 안 감; 태스크 큐 폴러 0 |
 | 영향 | 문서 체인 대기(`waiting_for`), 테넌트 슬롯 점유, 수집 누락 SLI(24h) 위험 |
-| 진단 단계 | (1) `describe`로 상태·대기 액티비티·마지막 실패(`lastFailure`의 `StageError` 코드) (2) 히스토리에 `WorkflowTaskFailed` + NonDeterminism이면 워커 배포 버전 불일치(06 문서 §4.2 버전 관리) (3) 큐 폴러 수(0 → 워커 미기동·큐 이름 오타) (4) 액티비티가 하트비트는 보내는데 진행이 없으면 파서 행(F-05; 래퍼 타이머 하트비트가 가림) (5) `cancelling`인데 `get_status.cancel_requested=false`면 시그널 유실 |
+| 진단 단계 | (1) `describe`로 상태·대기 액티비티·마지막 실패(`lastFailure`의 `StageError` 코드) (2) 히스토리에 `WorkflowTaskFailed` + NonDeterminism이면 워커 배포 버전 불일치(06 문서 §4.2 버전 관리) (3) 큐 폴러 수(0 → 워커 미기동·큐 이름 오타) (4) 액티비티가 하트비트는 보내는데 진행이 없으면 파서 행(F-05; 래퍼 타이머 하트비트가 가림) (5) `cancelling`인데 `get_status.cancel_requested=false`면 시그널 유실 — 단, `flipping_*` 진입 후 도착한 취소는 AM-46 잠정 규칙(트리아지 §5.2)대로 `cancelling`으로 전이하지 않고 잡이 `running → succeeded`로 끝나며 취소 API가 202 + 그 시점 `JobStatus`를 돌려주는 것이 정상이다(결함 아님, CR-29) |
 | 완화 | 폴러 0 → 워커 기동; 비결정성 → 이전 워커 이미지로 롤백(또는 `patched` 버전 배포); 행 → 해당 워커 파드 드레인·재기동으로 `heartbeat_timeout` 유도(`start_to_close` 기다리는 것보다 빠름) |
 | 복구 | 원장은 조정 틱이 보정(`describe_workflow` → 종료 결과를 `publish`와 같은 트랜잭션으로) → 그래도 `running`이면 `POST /v1/jobs/{job_id}/cancel` 후 §2.1 `retry`(새 `workflow_run_id`, `stage_key` 캐시로 완료 스테이지 생략) → 히스토리 리셋(`temporal workflow reset`)은 스테이지 멱등성(`stage_key`·`record_id`·`event_id`) 덕에 안전하지만 재시도 API를 우선 |
 | 재발 방지 | `Replayer` CI 회귀, 워크플로우 버전 규칙, 진행 정지(stall) 규칙 제안(09 문서 이슈 7), 조정 틱 10s, C-01 |
@@ -644,9 +645,9 @@ S1 예방(잔존 = 규제 위반) · 자동 복구: 삭제 사가·참조 GC 자
 
 | 절 | 내용 |
 |----|------|
-| 증상 | 트리거: `DELETE /v1/documents/{document_id}` 대량 요청, 컬렉션 삭제, 테넌트 오프보딩 요청 후 "완전 삭제 증명" 요구; 또는 삭제 후 검색에 문서가 보인다는 신고 |
+| 증상 | 트리거: `DELETE /v1/documents/{document_id}` 대량 요청, 컬렉션 삭제(`JobKind.delete_collection`→`collection.delete.v1`이 `collections.deleted_at` 논리 삭제를 찍고 문서 목록을 페이지 순회해 자식 `delete.document.v1`로 팬아웃, AM-37), 테넌트 오프보딩 요청 후 "완전 삭제 증명" 요구; 또는 삭제 후 검색에 문서가 보인다는 신고 |
 | 영향 | 잔존 시 규제·계약 위반; 검색 노출은 `is_current`·`aclrev` 힌트가 막지만 저장 잔존은 별개 |
-| 진단 단계 | 다섯 저장소를 순서대로 대조 — (1) 원장: `delete_document` 잡 `succeeded`, `documents.current_commit_id`가 `kind='delete'`·`committed` 커밋(`record_count=0`), `ingest.document.deleted` 발행 (2) Qdrant: `tenant_id ∧ document_id` 포인트 수 0(세대 무관; `cleanup_delay` 1h 전에는 `is_current=false` 잔존 정상) (3) OpenSearch: 같은 조건 `_count` 0 (4) 오브젝트 스토리지: `tenants/{tenant_id}/sources|artifacts|derived` 아래 해당 문서 산출물이 참조 GC(mark-and-sweep, 1h 주기 + 1h 유예 ≤ 3h 초안, 06 문서 §2.7) 뒤 0건, `artifacts`·`lineage` 행 0 (5) Valkey: `ptxt:{tenant}:{chunk_set_blake3}`(24h TTL)·`aclrev:`만 남을 수 있음 — 즉시 삭제 요구면 `UNLINK` |
+| 진단 단계 | 다섯 저장소를 순서대로 대조 — (1) 원장: `delete_document` 잡 `succeeded`, `documents.current_commit_id`가 `kind='delete'`·`committed` 커밋(`record_count=0`), `ingest.document.deleted` 발행; 컬렉션 삭제는 `collections.deleted_at IS NOT NULL` + 팬아웃 자식 `delete.document.v1` 잡 전량 `succeeded`로 완료 판정(AM-37) (2) Qdrant: `tenant_id ∧ document_id` 포인트 수 0(세대 무관; `cleanup_delay` 1h 전에는 `is_current=false` 잔존 정상) (3) OpenSearch: 같은 조건 `_count` 0 (4) 오브젝트 스토리지: `tenants/{tenant_id}/sources|artifacts|derived` 아래 해당 문서 산출물이 참조 GC(mark-and-sweep, 1h 주기 + 1h 유예 ≤ 3h 초안, 06 문서 §2.7) 뒤 0건, `artifacts`·`lineage` 행 0 (5) Valkey: `ptxt:{tenant}:{chunk_set_blake3}`(24h TTL)·`aclrev:`만 남을 수 있음 — 즉시 삭제 요구면 `UNLINK` |
 | 완화 | 검색 노출 신고면 힌트 존재 확인(RB-10) → 없으면 즉시 재기록(`retry`) |
 | 복구 | 잔존 발견 시: 백엔드 잔존 → 삭제 잡 `retry`(`delete_by_filter` 전진 복구, I-14); 산출물 잔존 → `maintenance.cleanup.v1` 트리거 후 재검증; 툼스톤 `documents` 행은 산출물 회수 회전에서 하드 삭제됨(감사 로그·`index_commits`·`usage_ledger`는 보존 대상, 본문 없음) |
 | 재발 방지 | 삭제 사가 + 참조 GC 규칙(06 문서 §2.7), `tenants/{tenant_id}/` 접두 스코프, 정합성 검사의 툼스톤 확인(백엔드 0건·`artifacts` 부재), 검증 스크립트를 오프보딩 체크리스트에 고정 |
@@ -836,7 +837,7 @@ S3 · 자동 복구: 없음
 | 증상 | `RagMetricsAbsent`: `up{job=~"rag-platform.*"} == 0`; `RagCollectorDropping`(Collector 익스포트 실패·거부); 대시보드 공백, 트레이스 누락; 알림 침묵(다른 런북의 증상이 보이지 않음) |
 | 영향 | 서비스 무영향이나 **다른 모든 런북의 감지가 멈춘다**; `korean-gov` 감사 스트림은 OpenSearch 감사 인덱스 별도 경로 |
 | 진단 단계 | (1) 스크레이프 대상 `/metrics` 직접 호출 — 응답하면 Prometheus·서비스 디스커버리 문제 (2) Collector 파드·큐 포화·백엔드(Tempo·Loki·Prometheus) 디스크 (3) redaction·transform 프로세서 오류(콘텐츠 차단 규칙 변경 후) (4) OTLP 엔드포인트 `RAG_OTEL__EXPORTER_OTLP_ENDPOINT`·인증서(RB-23) |
-| 완화 | 원장 SQL·`GET /healthz`로 수동 감시 전환(§1.4); Collector 메모리 리미터·배치 크기 조정 |
+| 완화 | 원장 SQL·컴포넌트별 REST 직접 점검으로 수동 감시 전환(§1.4; `GET /healthz`는 liveness 전용이라 의존성 진단에 못 쓴다, 1.3.0 §3.4); Collector 메모리 리미터·배치 크기 조정 |
 | 복구 | 스택 복구 후 알림 규칙 `promtool test rules`·대시보드 확인; 누락 구간은 원장(`jobs`·`index_commits`·`outbox`)으로 사후 재구성 |
 | 재발 방지 | Collector·Prometheus HA, 메타 알림(`RagMetricsAbsent`) 외부 경로, [관측성](03-observability.md) §11 검증·CI |
 
@@ -864,9 +865,9 @@ promtool check rules deploy/observability/alerts/rag-platform.rules.yaml && prom
 
 ## 미해결 이슈
 
-1. **[관측성](03-observability.md)과의 ID·알림 정합.** 그 문서 §8은 `RB-13`~`RB-18`을 `(제안)`으로 다른 주제에 배정했다(검색 지연·egress·인가·인용·LLM 비용·관측 스택). 이 문서가 ID 정본이므로 §1.3 매핑표대로 `RB-19`·`RB-25`~`RB-29`로 읽으며, 관측성 문서 §8 "런북" 열의 번호 교체(patch)를 요청한다. `/healthz` 의존성 상태 응답 형식(09 문서 이슈 17)이 확정되면 §1.4를 갱신한다.
+1. **[관측성](03-observability.md)과의 ID·알림 정합.** 그 문서 §8은 `RB-13`~`RB-18`을 `(제안)`으로 다른 주제에 배정했다(검색 지연·egress·인가·인용·LLM 비용·관측 스택). 이 문서가 ID 정본이므로 §1.3 매핑표대로 `RB-19`·`RB-25`~`RB-29`로 읽으며, 관측성 문서 §8 "런북" 열의 번호 교체(patch)를 요청한다. `/healthz` 의존성 상태 응답 형식(09 문서 이슈 17)은 **해소(v1.3, #174)** — `/healthz`=liveness 전용, 의존성은 원장 SQL·백엔드 REST로 직접 진단(§1.4 반영 완료).
 2. **제안 메트릭 의존.** 관측성 문서 §4.2가 "제안"으로 분류한 메트릭(`rag_job_queue_wait_seconds`, `rag_dispatch_waiting_jobs_count`, `rag_stage_errors_total`, `rag_ingest_jobs_total`, `rag_retrieve_channel_runs_total`, `rag_query_degraded_total`, `rag_webhook_*`, `rag_api_problems_total`, `rag_answer_llm_cost_usd_total`)은 바이블 §6.5 정본이 아니다. 이 문서의 진단 단계는 정본 메트릭·원장 SQL·Temporal 서버 메트릭만 쓰고, 알림 매핑표에서만 그 이름을 인용한다. ADR-0036 개정(minor)으로 등재되면 진단 단계에 흡수한다.
-3. **제안 CLI.** 이 문서가 새로 제안한 `rag outbox republish`, `rag index compensate --commit-id`, `rag maintenance consistency --document-id`, `rag acl rehint --document-id`, `rag reindex rollback --collection`과 배포 가이드 제안(`rag models mirror|verify|sync`, `rag ledger migrate`, `rag tenant create`, `rag api-key create`)을 바이블 §12 `cli/` 행에 반영할지 10-development/05·08에서 확정. 채택 전 임시 SQL(RB-08)은 `rag_platform_admin` + 감사 기록으로만 실행한다.
+3. **제안 CLI.** 이 문서가 새로 제안한 `rag outbox republish`, `rag index compensate --commit-id`, `rag maintenance consistency --document-id`(컬렉션 단위는 AM-39 `POST /v1/collections/{collection_id}/consistency-check`로 채택 완료, 문서 단위만 제안 잔존), `rag acl rehint --document-id`, `rag reindex rollback --collection`과 배포 가이드 제안(`rag models mirror|verify|sync`, `rag ledger migrate`, `rag tenant create`, `rag api-key create`)을 바이블 §12 `cli/` 행에 반영할지 10-development/05·08에서 확정. 채택 전 임시 SQL(RB-08)은 `rag_platform_admin` + 감사 기록으로만 실행한다.
 4. **오류 코드 조기 채택(13 문서 §3.3).** `api.orchestrator_unavailable`(RB-02), `api.dependency_unavailable`(RB-01·RB-17), `parse.helper_crashed`(RB-07), `{stage}.timeout`(RB-18)이 없어 증상을 HTTP 상태 + `Retry-After`로 기술했다. 채택 후 갱신.
 5. **격리 목록(quarantine) 원장 표.** 같은 `content_hash`가 2개 잡에서 연속 `failed`이면 자동 재시도·재접수를 거부하는 규칙과 해제 관리 API(09 문서 이슈 5)는 ADR(minor) 필요. 확정 전 RB-07은 수동 취소·클라이언트 협조에 의존한다.
 6. **`StagePolicy` 인내 시간(09 문서 이슈 16).** 5회·Σ 백오프 15s로는 임베딩·백엔드의 수 분 재기동도 잡 `failed`로 끝나므로 RB-05·RB-06·RB-16이 "드레인 → 복구 → §2.1 배치 재시도"를 표준 경로로 둔다. `StagePolicy` 기본값 ADR 후 드레인 단계를 완화할 수 있다.

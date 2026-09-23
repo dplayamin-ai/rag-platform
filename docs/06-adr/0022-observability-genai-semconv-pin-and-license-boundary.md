@@ -4,8 +4,8 @@ status: accepted
 date: 2026-09-22
 deciders: architecture
 owner: architecture
-version: 0.1.0
-last_updated: 2026-09-22
+version: 0.1.1
+last_updated: 2026-09-23
 priority: P2
 related: ["D-11"]
 depends_on:
@@ -147,6 +147,7 @@ flowchart LR
 - 스팬(바이블 §6.5): 이름 `rag.{stage}`(`rag.plan`, `rag.retrieve.dense`, `rag.rerank`, `rag.ingest.parse`); 속성은 Weaver 생성 상수 `gen_ai.*`(retrieval 스팬 `gen_ai.data_source.id = collection_id`), OpenInference `retrieval.documents.*`/`reranker.*`, 자체 `rag.*`(`rag.tenant_id_hash`, `rag.profile_hash`, `rag.plan_id`, `rag.degraded_count`). 콘텐츠 캡처 기본 끔; 점수 분해는 스팬 이벤트 아닌 `RankedSet`에. 상수 모듈은 `src/rag_platform/telemetry/`(otel·metrics·redaction, 바이블 §12) 하나이며 다른 패키지는 속성명을 문자열 리터럴로 쓰지 않는다. `gen_ai.*` 레지스트리의 저장소 URL·고정 커밋 해시와 `schema_url`은 이 모듈의 레지스트리 매니페스트에 기록한다(초기 값은 구현 시 확정).
 - 메트릭(바이블 §6.5): `rag_<stage>_<name>_<unit>`(Prometheus; 단위 `seconds, bytes, total, count, ratio`), 라벨은 `stage, channel, backend_id, profile_id, outcome, renderer, queue`만, **`tenant_id` 라벨 금지**, 정본 목록(`rag_query_latency_seconds` … `rag_eval_metric_value{metric}`)은 §6.5 그대로. 노출은 `GET /metrics`(바이블 §14).
 - 로그(바이블 §6.5): structlog JSON, 필드 `event, level, tenant_id_hash, job_id, trace_id, stage, code`. 계약의 `trace_id`(`ContextPack.trace_id`, `StageError.trace_id`, `ConvertRequest.trace_id`; 바이블 §5.3·§5.5·§5.6)가 트레이스·로그·응답을 상관한다.
+- 이벤트 식별자(도메인 이벤트, 관측 신호 아님 — ADR-0017 F6, E12): CloudEvents `source = urn:rag:{component}`(`{component}`는 §2.3 컨테이너 이름), 생산자는 `urn:rag:api`·`urn:rag:worker` 둘뿐(평가 하네스 `eval.run.completed`도 `worker`), `subject = tenant/{tenant_id}/{entity}/{id}`, 확장 속성 `tenantid`(바이블 1.3.0 §6.5, AM-13). 트레이스의 `rag.tenant_id_hash`(해시)와 이벤트의 `tenantid`(테넌트 스코프 릴레이용, 평문 ULID)는 서로 다른 식별자이며 혼용하지 않는다.
 - 설정(바이블 §6.6·§7.3): `RAG_OTEL__EXPORTER_OTLP_ENDPOINT`, `RAG_OTEL__CONTENT_CAPTURE=none`; 프로파일 `observability: {content_capture: none, tenant_id_hash: true}`. 비밀은 로그·트레이스에 값 미기록. `content_capture: none`은 OTel 콘텐츠 캡처 모드 `NO_CONTENT`(F4)에 대응한다.
 - 강제 지점 E13(바이블 §10.3): 트레이스 콘텐츠 캡처 기본 끔, `rag.tenant_id_hash`만, Collector redaction; `korean-gov` `NO_CONTENT` 잠금; 검증은 "본문 문자열이 스팬에 없음" 테스트.
 - Collector(바이블 §2.2·§2.3): redaction(콘텐츠 차단)·transform·팬아웃, 격리 `sidecar`, `lite`는 선택. 물리 배포 단위는 [배포 아키텍처](../02-architecture/08-deployment-architecture.md)가 확정하며 차트는 OTLP 엔드포인트 값(`externals.otel.endpoint`)만 받는다. Langfuse 파이프라인의 `transform`은 `langfuse.observation.type`(캡처를 켠 프로파일에서만 `langfuse.observation.input/output`)을 부착하고 플랫폼 코드에는 벤더 속성이 없다(09 문서 §표준 모델 매핑).
@@ -181,6 +182,7 @@ flowchart LR
 - 09 문서가 제안한 메트릭 라벨(`collection_id`, `model`, `provider`, `dataset_id` 등)·스팬 이벤트 `rag.candidate.scored`·속성 `rag.tenant_id`는 바이블 §6.5의 라벨 허용 목록·`RankedSet`·`rag.tenant_id_hash`로 대체되었다(바이블이 정본).
 - 관측 신호는 도메인 이벤트가 아니다(ADR-0017 F6, E12). `gen_ai.evaluation.result` 이벤트·`rag_eval_metric_value{metric}`의 사용 방식은 [ADR-0023](./0023-evaluation-qrels-answer-spans-and-linear-ndcg.md)의 하네스가 정한다.
 - 자동 계측기 선택(OTel contrib 공식 우선, 공식 계측기가 없는 대상만 OpenInference·OpenLLMetry; 모두 Apache-2.0, 대상별 하나만 활성화)은 매트릭스 `tracing/observability` 행·09 문서 §역할별 1차·2차·폴백의 권고이며 이 ADR이 새로 정하지 않는다.
+- 바이블 1.3.0(§6.5, AM-41)이 정본 메트릭 목록에 36종(09-operations/03 미해결 2 확정분 34종 + 04-pipelines/03 라우터 2종)과 스팬 2종(`rag.ingest.detect`, `rag.parse.call`)을 추가했다. 라벨 규약(7종·`tenant_id` 금지)은 불변이며, 새 메트릭도 이 ADR이 고정한 이름 형식(`rag_<stage>_<name>_<unit>`)·스팬 이름 형식(`rag.{stage}`)을 그대로 따른다.
 
 ## 준수 확인 방법
 
@@ -205,6 +207,7 @@ flowchart LR
 - Grafana·Tempo·Loki 라이선스가 바뀌거나 Perses·VictoriaTraces·OpenSearch Observability가 성숙해 AGPL 불가 환경 1차 대안의 순위가 바뀔 때(09 문서 §비AGPL 관측성 스택 대안).
 - OTel Collector redaction processor의 로그·메트릭 지원이 베타 이상이 되거나, `korean-gov`에서 Collector 없이 SDK 단독으로 `NO_CONTENT`를 보증해야 하는 배포가 생길 때(배포 아키텍처 미해결 이슈 9·12).
 - 바이블 §6.5 라벨 허용 목록·정본 메트릭 목록·`rag.*` 속성 목록 변경은 ADR 발의 + §6.5 갱신(minor)이며, 스팬 이름 규약·필드 제거·의미 변경은 major다(바이블 §1.2).
+- **대기 중(이 ADR의 minor 개정 예정):** `rag_stage_errors_total`·`rag_api_problems_total`·`rag_feedback_events_total`·`rag_api_sse_connections_count` 4종은 새 라벨(`code`, `status`, `route`, `kind`)이 필요해 바이블 1.3.0(§6.5)이 노출을 보류했다(09-operations/03 미해결 1). 라벨 허용 집합(§6.5 "저카디널리티만: `stage, channel, backend_id, profile_id, outcome, renderer, queue`")을 이 4종으로 확장하는 개정은 이 ADR의 minor 개정(§1.2)으로 처리하고, 값 영역이 저카디널리티임을 확인하는 근거를 09-operations/03이 제공한 뒤 착수한다.
 
 ## 참조
 

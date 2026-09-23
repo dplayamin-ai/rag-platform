@@ -2,7 +2,7 @@
 title: 코딩 표준
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -38,16 +38,16 @@ depends_on:
 
 ## 1. 규칙과 강제 수단의 대응
 
-**결정:** 코딩 표준의 모든 규칙은 (a) 기계 게이트, (b) 적합성 키트(conformance kit), (c) 코드 리뷰 중 하나 이상에 대응해야 하며, 게이트가 없는 규칙은 §16 리뷰 체크리스트에 반드시 등장한다. 도구는 D-01의 ruff·mypy(strict)·import-linter·uv 넷이고 그 밖의 검사는 `tools/ci/*.py`(제안, 01 §2.1)로 둔다([ADR-0035](../06-adr/0035-python-version-and-toolchain-pins.md) 준수 확인 표 "정적 검사").
+**결정:** 코딩 표준의 모든 규칙은 (a) 기계 게이트, (b) 적합성 키트(conformance kit), (c) 코드 리뷰 중 하나 이상에 대응해야 하며, 게이트가 없는 규칙은 §16 리뷰 체크리스트에 반드시 등장한다. 도구는 D-01의 ruff·mypy(strict)·import-linter·uv 넷이고 그 밖의 검사는 `tools/ci/*.py`(제안, 10-development/01 §2.1)로 둔다([ADR-0035](../06-adr/0035-python-version-and-toolchain-pins.md) 준수 확인 표 "정적 검사").
 
 | 영역 | 규칙 요약 | 강제 수단 | 게이트 |
 |------|-----------|-----------|--------|
 | 스타일·포맷 | §2 ruff 규칙 세트, `ruff format` | `ruff check`, `ruff format --check` | 위반 0 |
 | 타입 | §3 mypy strict + `pydantic.mypy` | `mypy --strict src/ plugins/ sdk/python/` | 오류 0 |
-| 계층·금지 임포트 | 바이블 §12 방향, C 등급 차단, 순수성 금지 API | import-linter 5계약(01 §3.2), ruff `TID251`(banned-api) | 계약 전부 KEPT |
+| 계층·금지 임포트 | 바이블 §12 방향, C 등급 차단, 순수성 금지 API | import-linter 5계약(10-development/01 §3.2), ruff `TID251`(banned-api) | 계약 전부 KEPT |
 | 계약 모델 | §4 `ContractModel` 패턴, `Field(description=…)` 필수, alias 금지 | Pydantic 동치 게이트(00 §10.3), 스키마 린트(ADR-0036 준수 2), `tools/ci/check_field_descriptions.py`(제안) | 빌드 실패 |
 | 오류 처리 | §6 `StageFailure`만, 카탈로그 코드만, 삼키기 금지 | ruff `E722`·`BLE001`·`S110`·`TRY`, 적합성 키트, 카탈로그 대조 | 빌드 실패 / 등록 거부 |
-| 로깅·관측 | §7·§8 structlog 필드, 속성 상수만, `tenant_id` 평문 금지 | ruff `T201`·`G`, `tools/ci/check_span_literals.py`(제안, 01 §4.2), 적합성 `security_invariants` | 빌드 실패 / 등록 거부 |
+| 로깅·관측 | §7·§8 structlog 필드, 속성 상수만, `tenant_id` 평문 금지 | ruff `T201`·`G`, `tools/ci/check_span_literals.py`(제안, 10-development/01 §4.2), 적합성 `security_invariants` | 빌드 실패 / 등록 거부 |
 | 시간·ID | §10 `ctx.now()`, 발급형 ULID는 셸·API만 | ruff `DTZ`·`TID251`, 적합성 `idempotency` | 빌드 실패 / 등록 거부 |
 | 의존성 | §11 A 등급만, pin-and-bump, `requires-python` 3.12·3.13 | `uv lock --check`, pip-licenses + liccheck, `tools/ci/check_lock_ranges.py`(제안) | 머지 차단 |
 | 문서 문자열 | §12 영어, Google 스타일, 공개 API 필수 | ruff `D`(pydocstyle) | 위반 0(`src/rag_platform/sdk`·`contracts`·`testing`), 경고(그 외) |
@@ -88,7 +88,7 @@ target-version = "py312"
 line-length = 120
 src = ["src", "tests", "plugins", "sdk/python", "tools"]
 extend-exclude = [
-  "src/rag_platform/telemetry/otel",   # Weaver 생성물(01 §6) — 편집·린트 대상 아님
+  "src/rag_platform/telemetry/otel",   # Weaver 생성물(10-development/01 §6) — 편집·린트 대상 아님
   "src/rag_platform/ledger/migrations/versions",
   "build",
 ]
@@ -181,7 +181,7 @@ indent-style = "space"
 docstring-code-format = true
 ```
 
-`banned-api`는 고정된 API 이름을 막는 내장 규칙이므로 "ruff 사용자 정의 규칙"이 아니다. 문자열 리터럴 내용(스팬 속성 이름)처럼 API 이름이 아닌 것은 ruff로 막을 수 없어 `tools/ci/check_span_literals.py`(제안; AST 순회)가 담당한다(01 §4.2 마지막 행, §8.2). 플러그인 저장소(`rag_plugin_*`)는 같은 `[tool.ruff]` 절을 템플릿으로 받는다([플러그인 개발 가이드](./06-plugin-development-guide.md)).
+`banned-api`는 고정된 API 이름을 막는 내장 규칙이므로 "ruff 사용자 정의 규칙"이 아니다. 문자열 리터럴 내용(스팬 속성 이름)처럼 API 이름이 아닌 것은 ruff로 막을 수 없어 `tools/ci/check_span_literals.py`(제안; AST 순회)가 담당한다(10-development/01 §4.2 마지막 행, §8.2). 플러그인 저장소(`rag_plugin_*`)는 같은 `[tool.ruff]` 절을 템플릿으로 받는다([플러그인 개발 가이드](./06-plugin-development-guide.md)).
 
 ### 2.3 포맷
 
@@ -192,7 +192,7 @@ docstring-code-format = true
 ### 2.4 임포트
 
 - **절대 임포트만**(`ban-relative-imports = "all"`). 임포트 순서는 ruff isort(표준 → 서드파티 → `rag_platform` → 로컬 없음)이며 `from __future__ import annotations`를 모든 모듈 첫 줄에 둔다(Pydantic v2는 지연 주석을 `model_rebuild` 없이 해석하며, 순환 참조 타입은 `TYPE_CHECKING` 블록으로 옮긴다 — 00 Pydantic 절·02 §2.2 스케치와 동일).
-- 모듈 간 의존은 import-linter 5계약이 정본이다(01 §3.2·§4). 계층 밖 능력이 필요하면 `sdk` 포트 프로토콜로 받는다(02 §1.3). "임포트 한 줄이면 되는데"는 계층 위반의 신호다.
+- 모듈 간 의존은 import-linter 5계약이 정본이다(10-development/01 §3.2·§4). 계층 밖 능력이 필요하면 `sdk` 포트 프로토콜로 받는다(02 §1.3). "임포트 한 줄이면 되는데"는 계층 위반의 신호다.
 - 선택 extra(`[kiwi]`, `[docling-chunker]`, `[opensearch]`, `[temporal]`, `[eval]`)의 패키지는 **해당 어댑터 모듈 최상위**에서만 임포트하고, 코어 공용 모듈(`sdk`·`contracts`·`plugins`)은 임포트하지 않는다. 미설치 시 `ImportError`는 삼키지 않고 레지스트리 `build()`가 `profile.invalid`(detail에 필요한 extra 이름)로 변환한다(§6.2, §11.4).
 - 벤더 타입(`DoclingDocument`, `qdrant_client.models.*`)은 어댑터 모듈 밖으로 새지 않는다(원칙 2 Adapters over Forks). 어댑터의 공개 함수 시그니처에 벤더 타입이 나타나면 리뷰 거부.
 
@@ -202,7 +202,7 @@ PEP 8 + ruff `N` 규칙에 바이블 §6을 겹친다.
 
 | 대상 | 규칙 | 예 |
 |------|------|----|
-| 모듈·패키지 | snake_case, 바이블 §12 트리의 이름 그대로; 어댑터 파일명 = `implementation`(01 §9) | `adapters/parse/hwpx_python_hwpx.py` |
+| 모듈·패키지 | snake_case, 바이블 §12 트리의 이름 그대로; 어댑터 파일명 = `implementation`(10-development/01 §9) | `adapters/parse/hwpx_python_hwpx.py` |
 | 클래스 | PascalCase; 계약 모델은 바이블 §5.1 타입명과 **동일**; 어댑터 클래스는 `{Implementation}{ExtensionPoint}` | `ParsedDocument`, `HwpxPythonHwpxParser`, `RrfFuser` |
 | 열거 | `contracts/enums.py`의 `StrEnum`(`ChunkLevel`만 `IntEnum`); 멤버 이름 UPPER_SNAKE, 값은 바이블 §5.7 철자 그대로 | `Channel.LATE_INTERACTION = "late_interaction"`, `ProfileTier.KOREAN_GOV = "korean-gov"` |
 | 함수·메서드·변수 | snake_case; 불리언은 `is_`/`has_`/`supports_` 또는 형용사(바이블 §6.4) | `is_current`, `supports_multivector` |
@@ -215,7 +215,7 @@ PEP 8 + ruff `N` 규칙에 바이블 §6을 겹친다.
 
 ### 3.1 mypy 설정
 
-**결정:** `mypy --strict`를 `src/`, `plugins/*/src`, `sdk/python/src`에 적용하고 `pydantic.mypy` 플러그인을 켠다(D-01, [ADR-0035](../06-adr/0035-python-version-and-toolchain-pins.md)). 벤더 라이브러리의 스텁 부재는 **모듈 단위 `ignore_missing_imports`만** 허용하고, 함수·행 단위 `type: ignore`는 오류 코드와 사유 주석이 필수다(ADR-0035 준수 확인 표 "정적 검사"). 루트 `pyproject.toml`의 `[tool.mypy]`가 **유일한 설정**이다 — 워크스페이스 멤버(`plugins/*`, `sdk/python`)의 `pyproject.toml`(01 §3.3)은 자체 `[tool.mypy]`를 두지 않고, CI가 루트 설정을 `--config-file pyproject.toml`로 공유해 멤버 소스 디렉터리를 경로 인자로 검사한다(`packages`는 인자 없이 실행할 때의 기본 대상인 코어만 가리킨다).
+**결정:** `mypy --strict`를 `src/`, `plugins/*/src`, `sdk/python/src`에 적용하고 `pydantic.mypy` 플러그인을 켠다(D-01, [ADR-0035](../06-adr/0035-python-version-and-toolchain-pins.md)). 벤더 라이브러리의 스텁 부재는 **모듈 단위 `ignore_missing_imports`만** 허용하고, 함수·행 단위 `type: ignore`는 오류 코드와 사유 주석이 필수다(ADR-0035 준수 확인 표 "정적 검사"). 루트 `pyproject.toml`의 `[tool.mypy]`가 **유일한 설정**이다 — 워크스페이스 멤버(`plugins/*`, `sdk/python`)의 `pyproject.toml`(10-development/01 §3.3)은 자체 `[tool.mypy]`를 두지 않고, CI가 루트 설정을 `--config-file pyproject.toml`로 공유해 멤버 소스 디렉터리를 경로 인자로 검사한다(`packages`는 인자 없이 실행할 때의 기본 대상인 코어만 가리킨다).
 
 ```toml
 [tool.mypy]
@@ -224,7 +224,7 @@ strict = true
 plugins = ["pydantic.mypy"]
 mypy_path = "src"
 # 인자 없는 `mypy` 실행의 기본 대상(코어). 워크스페이스 멤버 plugins/*/src·sdk/python/src는 CI가
-# `mypy --config-file pyproject.toml plugins/*/src sdk/python/src`로 같은 설정을 공유해 검사한다(01 §3.3 멤버 pyproject.toml에 별도 [tool.mypy] 없음).
+# `mypy --config-file pyproject.toml plugins/*/src sdk/python/src`로 같은 설정을 공유해 검사한다(10-development/01 §3.3 멤버 pyproject.toml에 별도 [tool.mypy] 없음).
 packages = ["rag_platform"]
 warn_unreachable = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool", "possibly-undefined"]
@@ -252,6 +252,7 @@ ignore_missing_imports = true
 - `Protocol` 멤버는 시그니처만 갖고 구현을 갖지 않는다(기본 구현이 필요하면 별도 헬퍼 함수). `@runtime_checkable`은 셸이 `isinstance`로 선택 프로토콜(`StageLifecycle`, `Resumable`) 구현 여부를 판별하는 프로토콜에만 붙인다.
 - 구현 클래스는 프로토콜을 **명시적으로 상속하지 않는다**(구조적 일치만). 정적 확인이 필요하면 테스트 모듈에서 `stage: Stage[ChunkSet, EnrichedChunkSet] = DerivedMetaEnricher(config, plugin_version="0.1.0")` 할당 한 줄로 mypy가 검사하게 한다(`type: ignore`·`cast`로 억지 일치시키는 것은 금지). 런타임 검증은 적합성 키트 `contract_roundtrip`이 한다 — 정적 단언은 **선택**, 적합성 키트는 **필수**다.
 - 포트(`TokenCounter`, `KoreanAnalyzer`, `DerivedArtifacts`, `AclRevocationHints`, `BackendTokenIssuer`, `EgressGuard`; 02 §1.3)는 `sdk`에 프로토콜로, 구현은 상위 계층에, 연결은 조립 지점(`api.create_app`, 워커 `main`, 릴레이 실행기, `cli`)에서만 한다.
+- **`StageContext` 사용 규칙(바이블 §4.1 1.3.0, AM-27):** 스테이지가 읽고 쓸 수 있는 멤버는 `ctx.token_counter`, `ctx.analyzer`, `ctx.now()`, `ctx.lineage[...]`, `ctx.heartbeat(...)`, `ctx.remaining_ms()`, 그리고 1.3.0에서 추가된 선택 멤버 `ctx.plan: QueryPlan | None`(질의 측 스테이지만 채워짐, 수집 측은 `None`)과 `ctx.artifacts: DerivedArtifacts`(파생물 쓰기 포트)뿐이다. `ctx.artifacts`는 파생물(변환본·페이지 이미지 등)을 셸에 넘기는 포트일 뿐 스테이지가 직접 파일·오브젝트 스토리지에 쓰는 것을 허용하지 않는다 — 실제 저장·계보 기록은 여전히 셸이 수행하며 "스테이지는 I/O를 직접 하지 않는다"는 원칙(§5.1)은 그대로다. `ctx.plan`을 채우지 않는 수집 측 스테이지가 이를 읽으면 `None` 분기를 처리해야 한다.
 
 ### 3.3 제네릭 `Stage[In, Out]`
 
@@ -319,7 +320,7 @@ class DerivedMetaEnricher:
         return self._assemble(inp, created_at=ctx.now())
 ```
 
-`config_hash`의 정확한 입력은 `H("config", canonical_json(config))`(바이블 §6.2)이며 위 `model_dump_json`은 스케치다 — 실제 구현은 `sdk`가 제공하는 `config_hash(config)` 헬퍼(제안)를 쓴다(§10.2).
+`config_hash`의 정확한 입력은 `H("config", canonical_json(config))`(바이블 §6.2 1.3.0 — JCS 수치 직렬화·선택 필드 제거 후 해시, AM-12; §10.2)이며 위 `model_dump_json`은 스케치다 — 실제 구현은 `sdk`가 제공하는 `config_hash(config)` 헬퍼(제안)를 쓴다(§10.2).
 
 ### 3.4 `Any`·`cast`·`type: ignore`
 
@@ -360,7 +361,7 @@ class DerivedMetaEnricher:
 ### 4.2 플러그인 설정 모델(`config_schema`)
 
 - `BaseModel` + `ConfigDict(extra="forbid", frozen=True)`. 모든 필드에 `description`과 **기본값**(프로파일이 생략할 수 있어야 하므로; 필수 키는 `Profile` 스키마가 로딩 시 검증). 기본값이 없는 필드는 프로파일 로딩 실패 `profile.invalid`의 원인이 된다.
-- 값은 JSON 직렬화 가능한 원시·열거·중첩 모델만(`config_hash = H("config", canonical_json(config))`, 바이블 §6.2). `Path`·`datetime`·콜러블 금지.
+- 값은 JSON 직렬화 가능한 원시·열거·중첩 모델만(`config_hash = H("config", canonical_json(config))`, 바이블 §6.2 1.3.0 — JCS 수치 직렬화·선택 필드 제거, §10.2). `Path`·`datetime`·콜러블 금지.
 - 모델 서빙 주소·비밀·파일 경로는 config가 아니라 `Settings`(§9) 또는 `credentials_ref`다. config에 들어가면 `profile_hash`가 배포 환경에 따라 달라져 재현성(브리프 §7)이 깨진다.
 
 ### 4.3 `Settings`(pydantic-settings)
@@ -370,7 +371,7 @@ class DerivedMetaEnricher:
 ### 4.4 직렬화
 
 - 계약 인스턴스의 JSON 출력은 **하나의 헬퍼**를 거친다(제안 `rag_platform.contracts.serialize.to_wire(model) -> dict[str, JsonValue]`; 미해결 이슈 3): `model_dump(mode="json", by_alias=True, exclude_unset=False, exclude_none=False)` 후 N 필드 중 `None`만 제거(00 §8.1). `Y(nullable)` 필드를 `exclude_none`으로 떨어뜨리는 직접 호출은 금지.
-- 해시 입력은 `canonical_json(to_wire(model))`(00 §7). `json.dumps` 직접 호출은 `canonical_json` 구현 한 곳에만 있다.
+- 해시 입력은 `canonical_json(to_wire(model))`(00 §7; 수치는 JCS 직렬화, 선택 필드는 제거 후 해시 — 바이블 §6.2 1.3.0, AM-12, §10.2). `json.dumps` 직접 호출은 `canonical_json` 구현 한 곳에만 있다.
 - 파일·오브젝트 저장 바이트는 셸이 만든다(`ArtifactStore.put`). 스테이지가 `model_dump_json()`으로 바이트를 만들어 저장하면 리뷰 거부(바이블 §4.1 경계 페이로드).
 - 입력 파싱은 `Model.model_validate(dict)` / `model_validate_json(bytes)`만. `Model(**dict)`는 alias 해소와 N-null 검증기를 우회할 수 있어 계약 인스턴스 생성에 쓰지 않는다(테스트 픽스처 조립은 허용).
 
@@ -396,8 +397,8 @@ class DerivedMetaEnricher:
 | 상황 | 규칙 | 근거 |
 |------|------|------|
 | API 핸들러·MCP 도구·릴레이·셸 | `async def`. 동기 라이브러리 호출은 `await asyncio.to_thread(fn, *args)`로 감싼다 | 02 §4.2 |
-| `Stage.run` 안의 CPU 연산 | 그대로 실행한다(`await` 없이도 됨). 자체 스레드·프로세스 풀·`to_thread` 생성 금지 — 셸이 이미 전용 스레드 또는 헬퍼 프로세스에 배치했다 | 02 §4.2 규칙 1, 01 §2.5 |
-| `Stage.run` 안의 외부 호출(모델 서버·사이드카·LLM) | `RuntimeServices.http`(egress 가드 적용)·`SidecarStage` 경유, `ctx.remaining_ms()` 존중. `httpx.AsyncClient` 직접 생성 금지 | 01 §2.5 |
+| `Stage.run` 안의 CPU 연산 | 그대로 실행한다(`await` 없이도 됨). 자체 스레드·프로세스 풀·`to_thread` 생성 금지 — 셸이 이미 전용 스레드 또는 헬퍼 프로세스에 배치했다 | 02 §4.2 규칙 1, 04-pipelines/01 §2.5 |
+| `Stage.run` 안의 외부 호출(모델 서버·사이드카·LLM) | `RuntimeServices.http`(egress 가드 적용)·`SidecarStage` 경유, `ctx.remaining_ms()` 존중. `httpx.AsyncClient` 직접 생성 금지 | 04-pipelines/01 §2.5 |
 | 플랫폼 코드의 CPU 팬아웃(평가 하네스, CLI 배치, `helper_process` 실행기) | `concurrent.futures.ProcessPoolExecutor(mp_context=multiprocessing.get_context("spawn"))`만. `fork` 컨텍스트 금지(JVM·CUDA·스레드 상태 상속 위험). 풀은 조립 지점에서 만들고 인자로 전달 | 02 §4.2 표 `eval harness`·`ingest-cpu` 행 |
 | 토큰 카운트·MinHash 같은 동기 연산이 `api` 루프에 있을 때 | 항목 수 임계(초안 20)를 넘으면 `to_thread` | 02 §4.2 표 `api` 행 |
 | 동기 진입점 | `asyncio.run()`은 `cli`와 테스트에만. 라이브러리 코드에서 `asyncio.get_event_loop()`·`run_until_complete`·중첩 `asyncio.run` 금지 | `ASYNC` 규칙, 리뷰 |
@@ -405,7 +406,7 @@ class DerivedMetaEnricher:
 
 ### 5.2 타임아웃·재시도·취소
 
-- **타임아웃은 셸의 것이다.** 스테이지 코드에 `asyncio.timeout`·`wait_for`·재시도 루프·백오프가 있으면 리뷰 거부(01 §10.3 마지막 문장; ADR-0003 준수 확인 9). 스테이지는 `ctx.remaining_ms()`로 남은 예산을 읽고 축소 규칙(리랭크 `top_n_in` 축소 → 생략 → `parent_expand` 생략 → 근사 카운트; 바이블 §8.3)을 데이터로 적용한다.
+- **타임아웃은 셸의 것이다.** 스테이지 코드에 `asyncio.timeout`·`wait_for`·재시도 루프·백오프가 있으면 리뷰 거부(04-pipelines/01 §10.3 마지막 문장; ADR-0003 준수 확인 9). 스테이지는 `ctx.remaining_ms()`로 남은 예산을 읽고 축소 규칙(리랭크 `top_n_in` 축소 → 생략 → `parent_expand` 생략 → 근사 카운트; 바이블 §8.3)을 데이터로 적용한다.
 - 셸·API 코드의 타임아웃은 `async with asyncio.timeout(seconds):`(3.11+) 컨텍스트 매니저를 우선하고, 기존 스케치의 `asyncio.wait_for`는 동치로 허용한다. 타임아웃 값은 `StagePolicy`·`QueryPlan.latency_budget_ms`에서 오며 코드 상수로 박지 않는다.
 - 취소(`asyncio.CancelledError`)는 **절대 삼키지 않는다**. `except Exception`은 `CancelledError`를 잡지 않지만(`BaseException` 계열), `except BaseException`·bare `except:`는 잡으므로 금지(`E722`·`BLE001`). 정리가 필요하면 `try/finally`.
 - 스테이지는 취소를 감지할 의무가 없다(02 §4.2 규칙 3). 긴 루프는 진행 지점을 `ctx.heartbeat(details)`로 알리기만 한다(§3.3 예시).
@@ -414,7 +415,7 @@ class DerivedMetaEnricher:
 
 - 채널 × 컬렉션 × 변형 팬아웃(`retrieve`)은 **각 태스크가 자기 실패를 데이터로 변환**한 뒤(`channel_runs[].status/error`, 02 §6.1 B7) `asyncio.gather(*tasks)`로 모은다. `return_exceptions=True`에 의존하지 않는다 — gather 밖으로 예외가 나오면 버그다. `asyncio.TaskGroup`은 첫 실패가 형제를 취소하므로 "최소 1채널 성공이면 계속" 의미론과 맞지 않아 채널 팬아웃에 쓰지 않는다(전부 성공해야 하는 배치 저장 등에는 허용).
 - 채널별 타임아웃은 태스크 안에서 `asyncio.timeout(timeout_ms / 1000)`으로 걸고 `TimeoutError`를 `ChannelRunStatus.TIMEOUT`으로 기록한다(02 §4.2 표 `api` 행).
-- 공유 가변 상태는 요청 범위(`StageContext`) 또는 프로세스 범위(`RuntimeServices`, 생성자에서 고정)만 존재한다. 모듈 전역 가변 캐시·싱글턴 금지(01 §2.5). 백엔드 클라이언트는 프로세스당 1개(02 §4.2 규칙 5)이며 요청별로 바뀌는 것은 헤더와 필터만이다.
+- 공유 가변 상태는 요청 범위(`StageContext`) 또는 프로세스 범위(`RuntimeServices`, 생성자에서 고정)만 존재한다. 모듈 전역 가변 캐시·싱글턴 금지(04-pipelines/01 §2.5). 백엔드 클라이언트는 프로세스당 1개(02 §4.2 규칙 5)이며 요청별로 바뀌는 것은 헤더와 필터만이다.
 - `contextvars`(structlog 문맥, OTel 컨텍스트)는 `to_thread`·`gather`로 자동 전파된다. 스레드 풀을 직접 만들어 전파를 끊지 않는다.
 
 ## 6. 오류 처리
@@ -440,7 +441,7 @@ flowchart LR
 |------|-----------|---------|------|
 | 어댑터 내부(B1) | `StageFailure(stage_error(code, stage=…, plugin_id=…, detail=…))` — 항상 `raise … from exc` | 벤더 예외 **구체 타입만**(`except VendorEncryptedError as exc`). `except Exception`은 벤더 라이브러리가 예외 계층을 공개하지 않을 때만, 사유 주석 + 즉시 매핑 또는 재전파 | 카탈로그 코드 |
 | 폴백 체인(라우터) | 마지막 실패를 `cause`로 감싼 `parse.conversion_failed` | `except StageFailure as f` → `f.error`를 `parser_chain[]`에 기록 후 다음 어댑터 | 13 G4 |
-| 셸(B2·B3) | — | `StageFailure` → `StageError`; **미분류 예외는 `StageError`로 만들지 않고** 재시도 가능으로 취급, 소진 시 `last_error`에 예외 타입만 | 01 §10.2; `contract.violation`은 계약 검증 실패에만 |
+| 셸(B2·B3) | — | `StageFailure` → `StageError`; **미분류 예외는 `StageError`로 만들지 않고** 재시도 가능으로 취급, 소진 시 `last_error`에 예외 타입만 | 04-pipelines/01 §10.2; `contract.violation`은 계약 검증 실패에만 |
 | 질의 스테이지(B7) | 예외 대신 데이터. 전 채널 실패만 `retrieve.unavailable` | 각 채널 태스크 안에서 자기 예외 | `channel_runs[]`, `degraded[]` |
 | `api`(B8·B9) | — | `StageFailure`, 검증·인증 예외 | `api.problems.to_problem` → `ProblemDetails` |
 | 사이드카 클라이언트(B5) | `parse.sidecar_unavailable`(연결 실패·5xx·타임아웃) / `ConvertResponse.error` 그대로 | `httpx` 예외 | `SidecarStage` |
@@ -462,7 +463,7 @@ flowchart LR
 
 ### 6.3 카탈로그만 사용
 
-- 코드 문자열은 `rag_platform.contracts.errors.ERROR_CATALOG`(13 Pydantic 절)에 등재된 것만 유효하며 `stage_error()` 팩토리가 카탈로그를 조회해 `type`·`retryable`을 채운다. 플러그인이 `retryable`을 임의로 바꾸면 검증이 거부한다(01 §10.1).
+- 코드 문자열은 `rag_platform.contracts.errors.ERROR_CATALOG`(13 Pydantic 절)에 등재된 것만 유효하며 `stage_error()` 팩토리가 카탈로그를 조회해 `type`·`retryable`을 채운다. 플러그인이 `retryable`을 임의로 바꾸면 검증이 거부한다(04-pipelines/01 §10.1).
 - 코드 리터럴은 호출 지점에 그대로 쓴다(`"parse.document_encrypted"`; 상수화하지 않는다 — 상수 이름이 카탈로그와 어긋나는 제2의 이름 공간을 만든다). CI가 소스의 코드 리터럴 집합을 카탈로그와 대조한다(제안 `tools/ci/check_error_codes.py`; ADR-0036 준수 4의 런타임 레지스트리 스냅샷과 병행).
 - 재시도 열 `—`(경고·폴백) 코드는 `StageFailure`로 던질 수 없다 — `Warning.code`·`DegradedEntry.detail`로만 기록한다(13 §1 G5). 13 §3.3의 **제안 코드는 채택 전 사용 금지**이며 "채택 전 대안" 열의 코드를 쓴다.
 - 새 코드가 필요하면 13 §3.3에 제안을 남기고 바이블 §5.7 갱신(ADR minor)을 기다린다. 코드 없이 `contract.violation`을 남용하지 않는다 — `contract.violation`은 스키마·불변식 위반에만(00 §10.2).
@@ -494,7 +495,7 @@ except VendorEncryptedError as exc:
 
 ## 7. 로깅
 
-**결정:** 로그는 structlog JSON이며 정본 필드는 `event, level, tenant_id_hash, job_id, trace_id, stage, code`다(바이블 §6.5; [ADR-0022](../06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md)). 문맥 필드(`tenant_id_hash`·`job_id`·`trace_id`·`stage`)는 셸이 `run` 호출 전에 `structlog.contextvars.bind_contextvars(...)`로 바인딩하고, 플러그인은 `structlog.get_logger()`만 쓰며 문맥 필드를 직접 넣지 않는다(05 §9 규칙 4, 01 §9.3).
+**결정:** 로그는 structlog JSON이며 정본 필드는 `event, level, tenant_id_hash, job_id, trace_id, stage, code`다(바이블 §6.5; [ADR-0022](../06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md)). 문맥 필드(`tenant_id_hash`·`job_id`·`trace_id`·`stage`)는 셸이 `run` 호출 전에 `structlog.contextvars.bind_contextvars(...)`로 바인딩하고, 플러그인은 `structlog.get_logger()`만 쓰며 문맥 필드를 직접 넣지 않는다(05 §9 규칙 4, 04-pipelines/01 §9.3).
 
 | 규칙 | 내용 |
 |------|------|
@@ -528,7 +529,7 @@ except VendorEncryptedError as exc:
 
 ## 8. 관측성 데코레이터와 계측 규칙
 
-**결정:** 플러그인·스테이지는 스팬·메트릭을 직접 만들지 않는다. 셸이 모든 `run` 호출을 `rag.{stage}` 스팬과 정본 메트릭으로 계측하고, 플러그인 내부의 외부 호출(모델 서버·사이드카·LLM·OCR)만 SDK 데코레이터 `@instrumented_call(kind=…)`로 자식 스팬 `rag.{stage}.call`을 붙인다(05 §9, 01 §9, 09-operations/03 §4; D-11, [ADR-0022](../06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md)). 데코레이터 이름·자식 스팬 이름은 **제안**이며 바이블 §6.5·Weaver 레지스트리 등재 전까지 필수가 아니다(05 미해결 이슈 15).
+**결정:** 플러그인·스테이지는 스팬·메트릭을 직접 만들지 않는다. 셸이 모든 `run` 호출을 `rag.{stage}` 스팬과 정본 메트릭으로 계측하고, 플러그인 내부의 외부 호출(모델 서버·사이드카·LLM·OCR)만 SDK 데코레이터 `@instrumented_call(kind=…)`로 자식 스팬 `rag.{stage}.call`을 붙인다(05 §9, 04-pipelines/01 §9, 09-operations/03 §4; D-11, [ADR-0022](../06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md)). 데코레이터 이름·자식 스팬 이름은 **제안**이며 바이블 §6.5·Weaver 레지스트리 등재 전까지 필수가 아니다(05 미해결 이슈 15).
 
 ### 8.1 사용 규칙
 
@@ -598,7 +599,7 @@ class TeiCrossEncoderReranker:
 |----------|--------------------------|-----------|------|
 | `hash_of(label, *parts) -> Hex64` (= `H()`) | `rag_platform.sdk`(바이블 §12 `hash_of(H)`) | 전 계층 | `parts`는 문자열만(정수 `str(n)`, `None` → `""`, 리스트는 표의 구분자로 결합); U+001F 포함 시 `contract.violation`(00 §7.1). 라벨 없는 해시는 문서·청크 `content_hash` 둘만 |
 | `blake3_hex(data: bytes) -> Hex64` | `rag_platform.sdk`(03-contracts/05 임포트 예) | 전 계층(`blake3` 패키지 직접 임포트만 `sdk` 해시 모듈·`contracts` 참조 구현으로 한정, `TID251`) | `blake3` 패키지 임포트는 `sdk`의 해시 모듈(제안 `sdk/hashing.py`)과 `contracts` 참조 구현만(`TID251`). 스테이지는 `stage_key`와 문서(원본 바이트) `content_hash`를 계산하지 않는다(04-pipelines/01 §2.5 — 금지 대상은 `blake3` 직접 임포트와 `stage_key` 계산이며 `sdk.blake3_hex` 호출은 아니다); 청크 `Chunk.content_hash = blake3_hex(utf8(text))`(바이블 §5.4·§6.2, 03-contracts/05)는 청커가 `rag_platform.sdk.blake3_hex`로 채운다 |
-| `canonical_json(obj) -> str` | `rag_platform.contracts`(00 §7.1 참조 구현) | 전 계층 | `sort_keys`, 공백 없음, `ensure_ascii=False`, `allow_nan=False`. 해시 입력의 유일한 직렬화 |
+| `canonical_json(obj) -> str` | `rag_platform.contracts`(00 §7.1 참조 구현) | 전 계층 | `sort_keys`, 공백 없음, `ensure_ascii=False`, `allow_nan=False`, 수치는 **RFC 8785(JCS) 직렬화**(정수값 실수 `1.0` → `1`; 바이블 §6.2 1.3.0, AM-12). 값 없는 선택 필드(키 부재·`null`)는 직렬화 전에 제거한다(`acl_hash`·`metadata_hash` 등). 해시 입력의 유일한 직렬화 |
 | `config_hash(config: BaseModel) -> Hex64` | `rag_platform.sdk`(제안) | 플러그인·레지스트리 | `H("config", canonical_json(to_wire(config)))`; 플러그인이 식을 직접 쓰지 않도록 헬퍼로 고정 |
 | `ulid_from(now: datetime, entropy: int) -> Ulid` | `rag_platform.orchestration.ids`(06 §TemporalContext 스케치) | `orchestration`·`api`·`ledger` | 워크플로우는 `workflow.now()` + `workflow.random().getrandbits(80)`으로 재생 결정적 발급(`commit_id`·`event_id`는 스테이지 호출당 1회). API는 `datetime.now(UTC)` + `secrets.randbits(80)`. 결과는 대문자 26자; 소문자 변환 금지 |
 | `point_id(record_id) -> UUID` | `rag_platform.adapters.index.qdrant.point_id`(바이블 §12) | `adapters/index` | `uuid5(NAMESPACE_RAG_CHUNK, record_id)`, `NAMESPACE_RAG_CHUNK = uuid5(NAMESPACE_URL, "urn:rag:chunk")`. 다른 UUID 생성(`uuid4`) 금지 |
@@ -619,7 +620,7 @@ class TeiCrossEncoderReranker:
 1. 07-tech-landscape 근거 확인 — 비교 조사가 없는 패키지는 PR 본문에 라이선스·릴리스 주기·유지보수 상태·대안을 적고 "확인 필요(as of …)"를 남긴다.
 2. 등급 판정 — `pip-licenses`가 읽는 메타데이터 라이선스와 저장소 LICENSE 파일을 대조한다(메타데이터 오류 사례: H2Orestart MIT 표기). D·X 등급 모델 의존은 `models.lock`·`model_license_ack` 절차(ADR-0001).
 3. 인터프리터 범위 — `requires-python`이 3.12·3.13을 모두 포함해야 한다. 3.13 미지원 패키지는 거부(ADR-0035 코드 리뷰 항목 1).
-4. 배치 — 기본 의존(`dependencies`) / extra(`[kiwi]`·`[docling-chunker]`·`[gpu]`·`[opensearch]`·`[temporal]`·`[eval]` 6종, 바이블 §6.7 철자 고정) / dev 그룹(`[dependency-groups] dev`) / 사이드카 이미지(코어 잠금 비멤버, 01 §3.1) 중 하나. GPU·CUDA 런타임은 코어 잠금에 들어오지 않는다(`gpu = []`).
+4. 배치 — 기본 의존(`dependencies`) / extra(`[kiwi]`·`[docling-chunker]`·`[gpu]`·`[opensearch]`·`[temporal]`·`[eval]` 6종, 바이블 §6.7 철자 고정) / dev 그룹(`[dependency-groups] dev`) / 사이드카 이미지(코어 잠금 비멤버, 10-development/01 §3.1) 중 하나. GPU·CUDA 런타임은 코어 잠금에 들어오지 않는다(`gpu = []`).
 5. 범위 선언 — 하한은 실제 사용 API 기준, **상한은 근거가 있을 때만**(파괴적 변경 이력·업스트림 상한). 상한을 두면 재검토 조건을 `pyproject.toml` 주석에 적는다(예: `semchunk>=3.0.0,<4.0.0  # docling-core 상한, ADR-0020`).
 6. `uv lock` → `uv lock --check` → 라이선스 게이트(pip-licenses + liccheck `cautious`) → 계약 코퍼스·적합성 키트 → SBOM.
 
@@ -630,7 +631,7 @@ class TeiCrossEncoderReranker:
 | `fitz`, `pymupdf`(AGPL), `hwp5`(pyhwp, AGPL) | 저장소 전체 임포트 금지(import-linter 계약 (5) + `TID251`) | D-02, ADR-0001, 12 §6.4 |
 | sunset 공지 패키지(`langchain-experimental`, `langchain_classic` 2026-12 EOL) | 금지 | 매트릭스 공통 요구 3 |
 | 외부 RAG 앱 SDK(RAGFlow 등) | 인프로세스 의존 금지, HTTP 어댑터만 | ADR-0035 부정 결과 5 |
-| Infinity(임베딩 서빙), jina 계열 모델, PyMuPDF, pyhwp, MinIO, Redis 8 | 채택 제외 또는 C/D 등급 격리 — 대체는 브리프 D-14·D-16·D-18 | 매트릭스 리스크 2 |
+| Infinity·jina 계열 모델(임베딩 서빙 대안·기각, ADR-0009), PyMuPDF·pyhwp(AGPL, 대안·기각, ADR-0001·ADR-0007), MinIO·Redis 8(대안·기각, ADR-0011; Redis는 호환 클라이언트로 Valkey만 허용) | 채택 제외 또는 C/D 등급 격리 — 대체는 브리프 D-14·D-16·D-18 | 매트릭스 리스크 2 |
 | `redis` 클라이언트 | Valkey 호환 클라이언트만(패키지 선정은 04-storage-architecture; 02 §1.2 `contracts-pure`는 모듈명 `valkey`를 전제) | D-14 |
 | 런타임 `pip install`·플러그인 동적 설치 | 금지. 플러그인은 잠금 파일로만 | 05 §공급망 |
 | `requirements*.txt` 병행 | 금지. `uv.lock`이 유일한 잠금 | ADR-0035 대안 3 |
@@ -640,7 +641,7 @@ class TeiCrossEncoderReranker:
 
 - 제목 `build(deps): bump {package} {old} → {new}`; 본문에 업스트림 변경 요지, 계약 코퍼스 결과 링크, 상한 조정 여부. 범프는 본 문서·ADR 개정 없이 처리한다(ADR-0035 중립 1).
 - 파괴적 변경이 어댑터 계약에 닿으면(`semchunk` 4.x `chunkerify` 키워드 전용화 등) `refactor(adapters/chunk)!`가 아니라 **범프를 보류**하고 어댑터 개정 PR을 먼저 낸다 — 계약 산출물(`ChunkSet`)이 바뀌면 `chunker_config_hash`·재색인이 걸리므로 04-pipelines/10과 합의.
-- `tools/ci/check_lock_ranges.py`(제안, 01 §6)가 ADR-0035 표의 범위(python-hwpx·semchunk·tiktoken·temporalio·docling·rapidocr·mcp)를 검사한다.
+- `tools/ci/check_lock_ranges.py`(제안, 10-development/01 §6)가 ADR-0035 표의 범위(python-hwpx·semchunk·tiktoken·temporalio·docling·rapidocr·mcp)를 검사한다.
 
 ### 11.4 선택 extra 사용 코드
 
@@ -693,7 +694,7 @@ async def run(self, inp: ParsedDocument, ctx: StageContext) -> NormalizedDocumen
 - 주석은 **왜**를 적는다(무엇은 코드가 말한다). 바이블·문서 인용은 절 번호로: `# Design Bible §6.2: parts are strings; ints via str()`.
 - 주석 처리된 코드 금지(`ERA001`). 임시 비활성화는 삭제 후 git 이력으로.
 - 파일 머리: REUSE 규격 SPDX 헤더 `# SPDX-License-Identifier: Apache-2.0`(12 §6.3, ADR-0001 준수 5) 다음 줄에 `from __future__ import annotations`. 저작권 행은 `# SPDX-FileCopyrightText: 2026 RAG Platform contributors`(문구는 [기여 가이드](./07-contributing.md) 확정).
-- 생성물 파일 첫 줄은 `# generated by … — do not edit`(01 §6 규칙 3).
+- 생성물 파일 첫 줄은 `# generated by … — do not edit`(10-development/01 §6 규칙 3).
 
 ### 12.4 TODO 형식
 
@@ -701,11 +702,11 @@ async def run(self, inp: ParsedDocument, ctx: StageContext) -> NormalizedDocumen
 
 ## 13. 테스트 명명
 
-**결정:** 테스트 파일은 `tests/{group}/test_{subject}.py`(01 §5), 함수는 `test_{대상}_{조건}_{기대}`, 클래스는 `Test{Subject}`이며 적합성 키트 상속 테스트는 `Test{Implementation}Conformance`다. 불변식은 문서 ID를 이름에 넣어 1:1 대응을 기계 검사한다(00 §10.3 "불변식 테스트"). 실행 전략·마커 정의는 [테스트 전략](./04-testing-strategy.md)이 확정하며 아래 마커 이름은 제안이다.
+**결정:** 테스트 파일은 `tests/{group}/test_{subject}.py`(10-development/01 §5), 함수는 `test_{대상}_{조건}_{기대}`, 클래스는 `Test{Subject}`이며 적합성 키트 상속 테스트는 `Test{Implementation}Conformance`다. 불변식은 문서 ID를 이름에 넣어 1:1 대응을 기계 검사한다(00 §10.3 "불변식 테스트"). 실행 전략·마커 정의는 [테스트 전략](./04-testing-strategy.md)이 확정하며 아래 마커 이름은 제안이다.
 
 | 대상 | 규칙 | 예 |
 |------|------|----|
-| 파일 | `tests/{group}/test_{subject}.py`; `{group} ∈ {contracts, adapters, security, replay, eval, golden, unit, integration, e2e}`(01 §7). `unit/`은 `src/rag_platform/` 트리를 미러 | `tests/unit/retrieval/test_fusion.py` |
+| 파일 | `tests/{group}/test_{subject}.py`; `{group} ∈ {contracts, adapters, security, replay, eval, golden, unit, integration, e2e}`(10-development/01 §7). `unit/`은 `src/rag_platform/` 트리를 미러 | `tests/unit/retrieval/test_fusion.py` |
 | 함수 | `test_{대상}_{조건}_{기대}` snake_case; 조건·기대는 동사구가 아닌 명사구 | `test_rrf_contribution_sums_to_fused_score`, `test_stage_error_type_mismatch_rejected` |
 | 불변식 | `test_invariant_{문서}_{ID}_{요지}`; 계약 문서 `## 불변식` 항목마다 1개 이상 | `test_invariant_00_i3_blake3_size_mismatch_violation` |
 | 해시 벡터 | `test_hash_vector_{키}` | `test_hash_vector_chunk_id` |
@@ -714,7 +715,7 @@ async def run(self, inp: ParsedDocument, ctx: StageContext) -> NormalizedDocumen
 | 보안 카나리 | `test_e{n}_{강제지점요지}`(바이블 §10.3 E1~E17) | `test_e6_security_filter_present_in_all_channels` |
 | 파라미터화 | `@pytest.mark.parametrize(..., ids=[...])` — ID는 snake_case 값 서술; 자동 ID(`[0]`)로 남기지 않는다(`PT006`·`PT007`) | `ids=["nfc_only", "nfkc_lexical"]` |
 | 픽스처 | 반환 타입을 이름에: `fake_ctx: StageContext`, `sample_chunk_set: ChunkSet`, `settings: Settings`. 접두 `fake_`(테스트 더블), `sample_`(계약 인스턴스), `golden_`(골든 데이터) | `def sample_parsed_document() -> ParsedDocument` |
-| 마커(제안) | `contract, adapter, security, replay, eval, golden, unit, integration, e2e, slow, gpu, sidecar`; `pyproject.toml` `[tool.pytest.ini_options] markers`에 등재해 미등록 마커는 오류(`--strict-markers`) | `@pytest.mark.integration` |
+| 마커 | 마커 이름·정의·등재는 [테스트 전략](./04-testing-strategy.md) §21이 정본이다(완전성 #187); 이 문서는 명명 규칙만 따른다 | `@pytest.mark.integration` |
 | 단언 | `assert` 원문(`S101` 테스트 면제); 예외는 `pytest.raises(StageFailure) as info` 후 `info.value.error.code == "..."`; `match=`에 코드 문자열 사용 금지(`detail`은 인스턴스마다 다름) | — |
 | 비동기 | `pytest-asyncio` `asyncio_mode = "auto"`; 테스트 함수도 `async def` | — |
 
@@ -722,45 +723,13 @@ async def run(self, inp: ParsedDocument, ctx: StageContext) -> NormalizedDocumen
 
 ## 14. 커밋 메시지
 
-**결정:** 커밋 메시지는 **Conventional Commits 1.0.0** 형식이며 제목은 영어 명령형, 72자 이하, 마침표 없음이다. squash merge를 쓰므로 PR 제목이 곧 `main`의 커밋 제목이고 같은 형식을 따른다(브랜치 전략 §15). 형식 검사는 `tools/ci/check_commit_message.py`(제안)가 PR 제목과 커밋에 적용한다.
+**결정:** 커밋·PR 제목 형식(Conventional Commits 1.0.0, `type`·`scope`·`subject` 규칙, `BREAKING CHANGE:`·`Refs:`·`ADR:`·`Signed-off-by` 등 푸터, 금지 패턴)은 [기여 가이드](./07-contributing.md) §7이 **정본**이다(완전성 #194). 이 문서는 중복 서술하지 않으며, 코드 쪽에서 추가하는 것은 `scope` 값이 바이블 §12 모듈명(§2.5 명명 표와 동일 철자)이어야 한다는 것뿐이다.
 
-```text
-<type>(<scope>)<!>: <subject>
-
-<body: 무엇을·왜. 한국어 또는 영어. 72자 줄바꿈>
-
-Refs: ADR-0035, docs/04-pipelines/01-pipeline-framework.md §10
-Schema-Version: chunk-set 1.1.0
-BREAKING CHANGE: <설명>
-Co-Authored-By: <name> <email>
-```
-
-| 요소 | 규칙 |
-|------|------|
-| `type` | `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`(의존성·잠금·이미지), `ci`, `chore`, `revert`. 계약·스키마 변경은 `feat`/`fix` + 스코프 `contracts`·`schemas`이며 별도 타입을 두지 않는다 |
-| `scope` | 바이블 §12 모듈명(`contracts, sdk, plugins, adapters, pipelines, retrieval, render, orchestration, ledger, storage, security, profiles, korean, eval, telemetry, api, mcp, testing, cli`) 또는 저장소 디렉터리(`schemas, docs, adr, deploy, sidecars, sdk-python, sdk-ts, tools, deps`), 플러그인은 `plugin-{name}`. 하위 스코프는 `/` 하나(`adapters/parse`, `docs/03-contracts`). 정규식 `^[a-z0-9-]+(/[a-z0-9-]+)?$` |
-| `!`·`BREAKING CHANGE:` | 계약 major(필드 제거·의미 변경·열거 개명·명명 규약 변경; 바이블 §1.2), SDK 프로토콜 변경, CLI 플래그 제거, 환경 변수 개명에 필수. 바이블 §1.2 major 절차(ADR 선행)를 밟은 PR만 `!`를 가질 수 있다 |
-| `subject` | 영어, 명령형 현재(`add`, `fix`, `remove`), 소문자 시작(고유명사 예외), 식별자는 백틱 없이 원문(`add parse.page_timeout warning to page_status`) |
-| `body` | 선택. 한국어·영어 모두 허용. "왜"와 대안·영향(재색인 필요 여부, `profile_hash` 변경 여부)을 적는다 |
-| 푸터 | `Refs:` ADR 번호·문서 경로·이슈; `Schema-Version:`(제안) `{kebab-name} {semver}`로 계약 버전 변경 명시; `Co-Authored-By:` 허용. `Signed-off-by`(DCO) 채택 여부는 [기여 가이드](./07-contributing.md) |
-| 금지 | `WIP`, `fix typo`처럼 대상 없는 제목, 이모지, 티켓 번호만인 제목, 여러 타입을 한 커밋에(`feat+fix`) |
-
-예: `feat(adapters/parse)!: emit parse.distribution_document for Tika text-only fallback` / `build(deps): bump python-hwpx 6.4.2 → 6.5.0` / `docs(10-development): add coding standards`.
+예(형식은 07-contributing §7.1 예시와 동일): `feat(adapters/parse)!: emit form_field blocks for HWPX form controls`.
 
 ## 15. 브랜치 전략
 
-**결정:** **trunk 기반**이다 — 보호된 `main` 하나, 짧은 수명의 작업 브랜치, squash merge, `main`에서 태그 `v{semver}`로 릴리스한다(01 §5 태그 규약). 장수 `develop` 브랜치는 두지 않는다. 릴리스 브랜치 `release/{major}.{minor}`는 GA 이후 패치 백포트가 필요할 때만 만들며 세부는 [릴리스 프로세스](./08-release-process.md)가 확정한다(제안).
-
-| 항목 | 규칙 |
-|------|------|
-| 브랜치 이름 | `{type}/{scope}-{slug}`(kebab-case, ≤ 60자): `feat/adapters-parse-hwpx-footnotes`, `fix/retrieval-rrf-tiebreak`, `docs/10-development-coding-standards`, `adr/0039-{slug}`, `build/deps-bump-docling-2-130` |
-| 수명 | 목표 3일 이내, 1 PR = 1 브랜치. 오래 걸리는 작업은 기능 플래그가 아니라 **프로파일 키 기본 끔** 또는 미등록 플러그인으로 점진 병합 |
-| 동기화 | `git rebase origin/main`(머지 커밋 금지). 공유 브랜치에 `--force`는 `--force-with-lease`만 |
-| 머지 | squash merge 기본; PR 제목 = Conventional Commit 제목(§14). 조건: CI 게이트 전부 통과(§1), CODEOWNERS 승인(01 §8), 보안·정본 경로는 해당 팀 승인 |
-| 정본 변경 순서 | 계약 major·명명 변경·D-xx 개정은 (1) ADR PR(`adr/NNNN-…`) 머지 → (2) 바이블·브리프 갱신 PR → (3) 영향 문서·스키마·코드 PR(바이블 §1.2). 코드 PR이 ADR을 앞서면 리뷰 거부 |
-| 태그 | 코어 `v{semver}`(hatch-vcs 유도, 01 §3.2), 플러그인 `rag-plugin-{name}/v{semver}`, 스키마 `schemas/{kebab}@{semver}`(03-contracts/14 제안) — 태그는 `main`의 커밋에만 |
-| 핫픽스 | `fix/…` 브랜치를 `main`에 머지 후 필요 시 `release/x.y`로 cherry-pick(`git cherry-pick -x`) |
-| 금지 | `main` 직접 푸시, 머지 커밋으로 `main` 동기화, 다른 사람 브랜치에 강제 푸시, 생성물만 고치는 커밋(01 §6 규칙 3) |
+**결정:** 브랜치 모델(trunk 기반)·이름 규약·PR 요건·브랜치 보호·승인 규칙·머지 방식·리뷰 SLA는 [기여 가이드](./07-contributing.md) §5가 **정본**이다(완전성 #194). 이 문서가 더하는 것은 하나다 — **정본 변경 순서**: 계약 major·명명 변경·D-xx 개정은 (1) ADR PR 머지 → (2) 바이블·브리프 갱신 PR → (3) 영향 문서·스키마·코드 PR 순서를 지킨다(바이블 §1.2). 코드 PR이 ADR을 앞서면 리뷰 거부.
 
 ## 16. 리뷰 체크리스트
 
@@ -773,7 +742,7 @@ Co-Authored-By: <name> <email>
 | 3 | `type: ignore`·`cast`·`Any`에 오류 코드와 사유가 있는가; 모듈 단위 `ignore_missing_imports`만 늘었는가 | mypy | ADR-0035 (6), §3.4 |
 | 4 | 계약 모델이 `ContractModel`을 상속하고 `Field(description=…)`이 있으며 alias·`alias_generator`가 없는가(예약어 예외 제외); `Y(nullable)`/`N` 타이핑이 맞는가 | 동치 게이트, 필드 설명 검사 | §4.1, ADR-0036 (2) |
 | 5 | 새 필드·열거·식별자가 바이블 §5.7·§6에 먼저 등재되었는가(없으면 `## 미해결 이슈` 제안만); `run_id` 오용이 없는가 | 열거 대조 | ADR-0036 체크리스트 (a)~(c) |
-| 6 | 스테이지가 `ctx` 밖의 시간·난수·환경·파일·HTTP를 쓰지 않는가; 자체 타임아웃·재시도·스레드/프로세스 풀이 없는가 | `TID251`, 적합성 `idempotency` | 바이블 §4.1, 01 §2.5, §5 |
+| 6 | 스테이지가 `ctx` 밖의 시간·난수·환경·파일·HTTP를 쓰지 않는가; 자체 타임아웃·재시도·스레드/프로세스 풀이 없는가 | `TID251`, 적합성 `idempotency` | 바이블 §4.1, 04-pipelines/01 §2.5·§5 |
 | 7 | 예외는 `StageFailure`만 던지고 카탈로그 코드만 쓰는가; `raise … from exc`인가; bare/blind except·삼키기가 없는가; `—` 코드를 예외로 던지지 않는가 | ruff `E722`·`BLE001`·`S110`·`B904` | §6 |
 | 8 | 부분 실패가 예외 대신 `warnings[]`·`page_status[]`·`degraded[]`로 표현되는가 | 적합성 키트 | §6.5 |
 | 9 | `detail`·로그·스팬·메트릭 라벨에 본문·PII·비밀·`source_uri`·주체·`tenant_id` 평문이 없는가; 라벨은 7종 안인가 | `security_invariants`, 비밀 스캔 | §6.4, §7, §8 |
@@ -784,9 +753,9 @@ Co-Authored-By: <name> <email>
 | 14 | 벤더 타입·예외가 어댑터 모듈 밖으로 새지 않는가 | — | 원칙 2, §2.4 |
 | 15 | docstring이 영어·Google 스타일이고 `Raises:`에 카탈로그 코드가 있는가; 주석 처리된 코드·형식 없는 TODO가 없는가 | ruff `D`·`ERA`·`TD` | §12 |
 | 16 | 테스트 이름이 §13 규약이고 불변식·해시 벡터·적합성 상속이 갖춰졌는가; 픽스처가 고정 시계를 쓰는가 | pytest 수집 | §13 |
-| 17 | 계약·스키마 변경 순서가 문서 → `schemas/` → `contracts/*.py`이고 `schema_version`(minor/major)이 맞는가; major면 ADR이 먼저 머지되었는가 | 동치 게이트 | 01 §6 규칙 1, 바이블 §1.2 |
+| 17 | 계약·스키마 변경 순서가 문서 → `schemas/` → `contracts/*.py`이고 `schema_version`(minor/major)이 맞는가; major면 ADR이 먼저 머지되었는가 | 동치 게이트 | 10-development/01 §6 규칙 1, 바이블 §1.2 |
 | 18 | 커밋·PR 제목이 Conventional Commits이고 `!`가 바이블 §1.2 major 절차와 일치하는가; 푸터 `Refs:`가 있는가 | 커밋 메시지 검사(제안) | §14 |
-| 19 | 생성물(`openapi.yaml`, Weaver 상수, Helm 프로파일 사본, TS 타입)을 손으로 고치지 않았는가 | 재생성 diff | 01 §6 |
+| 19 | 생성물(`openapi.yaml`, Weaver 상수, Helm 프로파일 사본, TS 타입)을 손으로 고치지 않았는가 | 재생성 diff | 10-development/01 §6 |
 | 20 | 문서 변경 시 브리프 §9 규약(frontmatter·구조·`**결정:**`·ADR 링크·문서 맵 경로만 링크)을 지키는가 | 문서 링크 검사 | 브리프 §9 |
 
 ## 17. 금지 패턴 표
@@ -836,7 +805,7 @@ Co-Authored-By: <name> <email>
 - **결정:** 로그는 structlog JSON 정본 7필드, 문맥은 셸이 바인딩, 플러그인은 `structlog.get_logger()`만. 스팬·메트릭은 셸 자동 계측 + 외부 호출 `@instrumented_call`(제안), 속성·메트릭 이름은 `telemetry` 상수만, `tenant_id` 평문·본문·비밀은 어디에도 없다([ADR-0022](../06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md)).
 - **결정:** `Settings`는 조립 지점에서 1회 생성해 주입하고 L0~L3은 환경 변수를 읽지 않는다. 시간은 `ctx.now()`/`datetime.now(UTC)`/`workflow.now()`, 발급형 ID는 셸·워크플로우·API의 ULID, 콘텐츠 키는 `sdk`의 `hash_of`(라벨 없는 `content_hash`는 `blake3_hex`)만이다([ADR-0004](../06-adr/0004-deterministic-chunk-id-scoped-record-id-and-ulid-exception.md), [ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md), [ADR-0031](../06-adr/0031-profile-schema-extends-and-quality-gates.md)).
 - **결정:** 의존성은 A 등급 인프로세스만, pin-and-bump, 3.12·3.13 동시 지원, C 등급·sunset·외부 앱 SDK 인프로세스 금지([ADR-0001](../06-adr/0001-license-grade-table-and-d02-interpretation.md), [ADR-0020](../06-adr/0020-default-chunker-structure-aware-and-dependency-locks.md)).
-- **결정:** docstring·주석은 영어(Google 스타일), 테스트는 `test_{대상}_{조건}_{기대}`·불변식 ID 1:1, 커밋은 Conventional Commits(영어 제목, 바이블 §12 스코프, `!`는 §1.2 major 절차와 일치), 브랜치는 trunk 기반 squash merge다. 마커·스코프·브랜치 이름·릴리스 브랜치는 제안이며 04·07·08 문서가 확정한다.
+- **결정:** docstring·주석은 영어(Google 스타일), 테스트는 `test_{대상}_{조건}_{기대}`·불변식 ID 1:1이다. 커밋 메시지·브랜치 전략의 정본은 [기여 가이드](./07-contributing.md) §7·§5이며(완전성 #194), 이 문서는 스코프 철자(바이블 §12)와 정본 변경 순서(ADR → 바이블·브리프 → 코드)만 더한다. pytest 마커 정본은 [테스트 전략](./04-testing-strategy.md) §21이다(완전성 #187). 릴리스 브랜치 생성·수명은 [릴리스 프로세스](./08-release-process.md)가 확정한다.
 
 ## 미해결 이슈
 
@@ -845,11 +814,11 @@ Co-Authored-By: <name> <email>
 3. **직렬화 헬퍼 `to_wire`.** 00 §8.1의 "레퍼런스 직렬화(`model_dump(mode="json", exclude_none=False)` 후 N 필드 `None` 제거)"를 구현하는 단일 헬퍼의 이름·모듈(`rag_platform.contracts.serialize`, 제안)은 바이블 §12 `contracts/` 목록에 없다. 03-contracts/00 소유자에게 등재(patch)를 제안하며, 확정 전 코드는 같은 규칙을 인라인으로 지킨다.
 4. **ULID 라이브러리와 `orchestration.ids`.** 07-tech-landscape에 ULID 라이브러리 비교가 없어 이 문서는 패키지를 단정하지 않는다(`python-ulid` 등 확인 필요 as of 2026-09). `ulid_from(now, entropy)`(06 §TemporalContext)를 `api`도 재사용하려면 모듈이 `orchestration`에 있어 `api → orchestration` 의존이 생기는데 계층상 허용되나(L9 → L6) 개념상 어색하다. `rag_platform.sdk.ids`로 옮길지(스테이지는 `TID251`로 사용 차단) 02·06 소유자와 확정한다.
 5. **docstring 필수 범위.** `D1xx`를 `sdk`·`contracts`·`testing`·플러그인 공개 클래스에만 오류로, 그 외는 경고로 두는 §12.2 방식은 ruff가 경고 수준을 구분하지 않으므로 `per-file-ignores`(`D1` 완화) 또는 두 번 실행(`--select D1 --exit-zero`)으로 구현한다. 방식은 CI/CD 문서에서 확정.
-6. **필드 설명 검사·오류 코드 대조·스팬 리터럴 검사·커밋 메시지 검사 스크립트.** `tools/ci/check_field_descriptions.py`, `check_error_codes.py`, `check_span_literals.py`(01 §4.2 제안 재인용), `check_commit_message.py`는 모두 제안이다. 01 미해결 이슈 11(`tools/`의 Node 의존)과 함께 Python 구현으로 확정하고 [CI/CD](./05-ci-cd.md) 잡에 등재한다. Pydantic 동치 게이트(00 §10.3)가 `description` 존재까지 검사하도록 확장하면 첫 스크립트는 불필요하다 — 03-contracts/00 소유자에게 제안.
-7. **`@instrumented_call`과 `telemetry` 공개 표면.** 데코레이터 이름·`kind` 값 집합(`embedding, rerank, llm, sidecar, ocr` + 09-operations/03의 `source`)·자식 스팬 `rag.{stage}.call`은 05 §9·01 §9·09-operations/03의 제안이며 바이블 §6.5·Weaver 레지스트리 미등재(05 미해결 이슈 15, 01 미해결 이슈 9). 확정 전까지 §8은 "제안"으로 읽고 플러그인은 데코레이터 없이도 적합성을 통과한다. 어댑터의 `opentelemetry` 직접 임포트 금지(`TID251`)는 데코레이터 확정과 함께 켠다.
+6. **필드 설명 검사·오류 코드 대조·스팬 리터럴 검사·커밋 메시지 검사 스크립트.** `tools/ci/check_field_descriptions.py`, `check_error_codes.py`, `check_span_literals.py`(10-development/01 §4.2 제안 재인용), `check_commit_message.py`는 모두 제안이다. 10-development/01 미해결 이슈 11(`tools/`의 Node 의존)과 함께 Python 구현으로 확정하고 [CI/CD](./05-ci-cd.md) 잡에 등재한다. Pydantic 동치 게이트(00 §10.3)가 `description` 존재까지 검사하도록 확장하면 첫 스크립트는 불필요하다 — 03-contracts/00 소유자에게 제안.
+7. **`@instrumented_call`과 `telemetry` 공개 표면.** 데코레이터 이름·`kind` 값 집합(`embedding, rerank, llm, sidecar, ocr` + 09-operations/03의 `source`)·자식 스팬 `rag.{stage}.call`은 05 §9·04-pipelines/01 §9·09-operations/03의 제안이며 바이블 §6.5·Weaver 레지스트리 미등재(05 미해결 이슈 15, 04-pipelines/01 미해결 이슈 9). 확정 전까지 §8은 "제안"으로 읽고 플러그인은 데코레이터 없이도 적합성을 통과한다. 어댑터의 `opentelemetry` 직접 임포트 금지(`TID251`)는 데코레이터 확정과 함께 켠다.
 8. **`SecretStr`·비밀 스캔의 패턴 목록.** 09-operations/05 §6.1의 비밀 패턴(`AKIA…`, `-----BEGIN`, `rgp_…`)을 로그 스냅샷 스캔에 어떻게 적용할지(structlog 프로세서 vs CI 스캐너)는 09-operations/03·05와 합의한다.
-9. **Java 사이드카·TypeScript SDK 표준.** `sidecars/parser-workers`(Java 21, Maven)와 `sdk/typescript`(npm)는 이 문서 범위 밖이다. 각 디렉터리 README에 최소 규약(포맷터, 린터, 테스트 명명, 커밋 스코프 `sidecars`·`sdk-ts`)을 두고, 필요 시 10-development에 부록 문서를 추가할지 01 미해결 이슈 6·11과 함께 결정한다.
-10. **pytest 마커·커밋 스코프·브랜치 이름의 소유.** §13 마커 12종, §14 스코프 집합, §15 브랜치 패턴·`release/x.y`는 제안이다. [테스트 전략](./04-testing-strategy.md)·[기여 가이드](./07-contributing.md)·[릴리스 프로세스](./08-release-process.md)가 확정하면 이 문서는 인용으로 바꾼다. DCO(`Signed-off-by`) 채택 여부도 기여 가이드가 정한다.
+9. **Java 사이드카·TypeScript SDK 표준.** `sidecars/parser-workers`(Java 21, Maven)와 `sdk/typescript`(npm)는 이 문서 범위 밖이다. 각 디렉터리 README에 최소 규약(포맷터, 린터, 테스트 명명, 커밋 스코프 `sidecars`·`sdk-ts`)을 두고, 필요 시 10-development에 부록 문서를 추가할지 10-development/01 미해결 이슈 6·11과 함께 결정한다.
+10. **pytest 마커·커밋 스코프·브랜치 이름의 소유 — 해소(v1.3, 완전성 #187·#194).** §13 마커는 [테스트 전략](./04-testing-strategy.md) §21 인용으로, §14·§15는 [기여 가이드](./07-contributing.md) §7·§5 인용으로 바꿨다. 남은 것은 `release/x.y` 생성·수명(릴리스 프로세스가 확정) 하나뿐이다.
 11. **`Settings` `frozen` 여부와 테스트 재생성.** §4.3은 `Settings`를 프로세스당 1회 생성하도록 요구하나 `frozen=True`를 강제하지 않았다(02 §5.2 스케치에 없음). 테스트가 `model_copy(update=...)`로 변형하는 편의와 불변성 사이의 선택은 02 소유자와 합의한다.
 12. **예약어 alias의 범위.** `FilterNode`의 `and`/`or`/`not` 외에 Python 예약어·내장 이름과 충돌하는 JSON 키(`type`, `id`, `format` 등 내장 이름은 필드로 허용 — `A003` 규칙은 클래스 속성에 적용되지 않으므로 문제 없음)가 더 있는지 03-contracts 전수 확인 후 §4.5 예외 목록을 닫는다.
 

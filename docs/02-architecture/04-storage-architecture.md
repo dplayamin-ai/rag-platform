@@ -2,8 +2,8 @@
 title: 저장소 아키텍처
 status: active
 owner: architecture
-version: 0.2.0
-last_updated: 2026-09-22
+version: 0.2.1
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - ./00-design-bible.md
@@ -145,9 +145,9 @@ erDiagram
 
 | 테이블 | 컬럼(키·핵심) | 제약·비고 |
 |--------|----------------|-----------|
-| `tenants` | `tenant_id char(26)` PK, `name text`, `tier text`, `policies jsonb`(`llm_enrichment_allowed`, `allow_distribution_documents`, `classification_max`, `egress_policy`), `status text`(N), `created_at`, `updated_at` | RLS `FORCE` 적용: `rag_app`은 자기 테넌트 행 `SELECT`만(`policies` 부트스트랩 읽기), 쓰기는 `rag_platform_admin`(§2.4). `tier`의 값 집합은 바이블 §13.1이 정하지 않았고 프로파일 `ProfileTier`와 다른 테넌트 등급(§7.2 `korean-gov` "등급별 8/32/128")을 전제하므로 `CHECK` 없이 두고 02-architecture/07·05-api/04에서 확정(미해결 이슈 #15) |
+| `tenants` | `tenant_id char(26)` PK, `name text`, `tier text`, `policies jsonb`(`llm_enrichment_allowed`, `allow_distribution_documents`, `classification_max`, `egress_policy`), `status text`(`TenantStatus`, 바이블 §13.1 1.3.0, AM-39), `quotas jsonb`(`{documents_max, storage_bytes_max, qps_max}`, 1.3.0), `disabled_at`(N, 1.3.0), `created_at`, `updated_at` | RLS `FORCE` 적용: `rag_app`은 자기 테넌트 행 `SELECT`만(`policies` 부트스트랩 읽기), 쓰기는 `rag_platform_admin`(§2.4). `tier`의 값 집합은 바이블 §13.1이 정하지 않았고 프로파일 `ProfileTier`와 다른 테넌트 등급(§7.2 `korean-gov` "등급별 8/32/128")을 전제하므로 `CHECK` 없이 두고 02-architecture/07·05-api/04에서 확정(미해결 이슈 #15). `tier` 승격은 `tier.promotion.v1` 워크플로우로만(읽기 전용) |
 | `api_keys` | `api_key_id char(26)` PK, `tenant_id`, `hash text`(Argon2id 또는 SHA-256+salt, 09-operations/05에서 확정), `principal text`(`service:{client_id}`), `roles text[]`(N), `expires_at`, `revoked_at`(N), `last_used_at`(N) | 인덱스 `(hash)` UNIQUE; 평문 키 미저장(E1). 인증 시점에는 `app.tenant_id`를 아직 알 수 없으므로 조회는 `SECURITY DEFINER` 함수 `lookup_api_key(hash)`로만 한다(§2.4) |
-| `collections` | `collection_id char(26)` PK, `tenant_id`, `name text`, `profile_id text`, `profile_hash char(64)`, `embedding_space_ids jsonb`, `embedding_profile_hash char(64)`, `analyzer_id text`, `dictionary_hash char(64)`, `dictionary_ref text`, `tenant_isolation_tier text`, `backends jsonb`, `policies jsonb`, `filterable_fields text[]`, `license_policy jsonb`, `calibration_ref text`, `stats jsonb`, `created_at`, `updated_at` | `CollectionSpec` 컬럼(바이블 §5.6; `dictionary_ref`는 string); UNIQUE `(tenant_id, name)`; `backends` = `[{backend_id, role, physical_name, alias}]`; `CHECK tenant_isolation_tier IN ('payload_filter','shard_key','index_per_tenant')` |
+| `collections` | `collection_id char(26)` PK, `tenant_id`, `name text`, `profile_id text`, `profile_hash char(64)`, `embedding_space_ids jsonb`, `embedding_profile_hash char(64)`, `analyzer_id text`, `dictionary_hash char(64)`, `dictionary_ref text`, `tenant_isolation_tier text`, `backends jsonb`, `policies jsonb`, `filterable_fields text[]`, `license_policy jsonb`, `calibration_ref text`, `stats jsonb`, `created_at`, `updated_at`, `deleted_at`(N, 바이블 §13.1 1.3.0, AM-37) | `CollectionSpec` 컬럼(바이블 §5.6; `dictionary_ref`는 string); UNIQUE `(tenant_id, name)`; `backends` = `[{backend_id, role, physical_name, alias}]`; `CHECK tenant_isolation_tier IN ('payload_filter','shard_key','index_per_tenant')`; `deleted_at IS NOT NULL`이면 신규 수집·질의 거부(`collection.delete.v1`의 논리 삭제) |
 | `profiles` | `profile_id text`, `version text`, PK `(profile_id, version)`, `profile_hash char(64)` UNIQUE, `tier text`(N), `yaml text`, `resolved jsonb`, `validated_at`(N), `validation_report jsonb`(N) | `extends` 해소 결과(`resolved`)를 보관해 `profile_hash` 재계산 가능; 테넌트 무관(전역 표, RLS 유일 예외); `tier`는 `Profile.tier`(`ProfileTier`) 사본 |
 | `user_dictionary_entries` | `entry_id char(26)` PK, `tenant_id`, `collection_id`(NULL = 테넌트 공통), `surface text`, `pos text`, `reading text`, `synonyms text[]`, `weight numeric`, `source text`, `updated_at` | `UserDictEntry` 컬럼; UNIQUE `(tenant_id, coalesce(collection_id,''), surface, pos)`; `CHECK source IN ('manual','imported','mined')` |
 | `calibrations` | `calibration_ref text` PK, `tenant_id`, `collection_id`, `reranker_model_id text`, `score_quantiles jsonb`, `computed_at` | `confidence_tier`·`tau` 보정(바이블 §13.1) |
@@ -157,9 +157,9 @@ erDiagram
 | 테이블 | 컬럼(키·핵심) | 제약·비고 |
 |--------|----------------|-----------|
 | `documents` | `document_id char(26)` PK, `tenant_id`, `collection_id`, `external_id text`, `source_uri text`, `source_uri_norm text`(N), `current_doc_version char(64)`, `current_generation integer` DEFAULT 0, `current_commit_id char(26)`, `acl jsonb`, `acl_hash char(64)`, `metadata jsonb`, `metadata_hash char(64)`, `status text`(N), `last_verified_at`(N, 정합성 검사 §7.3), `created_at`, `updated_at`, `deleted_at`(N) | `document_id`는 접수 시 `(tenant_id, collection_id, external_id or source_uri)`로 확정(바이블 §11.2) → UNIQUE `(tenant_id, collection_id, external_id) WHERE external_id IS NOT NULL`, UNIQUE `(tenant_id, collection_id, source_uri_norm) WHERE external_id IS NULL`. `source_uri_norm`은 스킴·호스트 소문자화·기본 포트 제거·경로 정규화 결과(선택 컬럼, 미해결 이슈 #1). `status ∈ {active, deleting, deleted}`(제안, 미해결 이슈 #1) |
-| `jobs` | `job_id char(26)` PK, `tenant_id`, `collection_id`, `kind text`, `state text`, `stage text`, `progress jsonb`, `attempts integer`, `priority smallint`, `workflow_id text`, `workflow_run_id uuid`, `idempotency_key text`, `request_id text`, `document_id char(26)`, `waiting_for char(26)`, `from_stage text`, `index_commit_id char(26)`, `last_error jsonb`, `degraded jsonb`, `cost jsonb`, `created_at`, `started_at`, `updated_at`, `finished_at`, `deadline_at` | `JobStatus` 읽기 모델 정본(바이블 §5.6). UNIQUE `(tenant_id, idempotency_key)`; `CHECK kind IN ('ingest_document','reprocess_document','delete_document','acl_update','reindex_collection','build_graph','evaluate','consistency_check','tier_promotion')`; `CHECK state IN ('queued','running','succeeded','partial','failed','cancelling','cancelled')` |
+| `jobs` | `job_id char(26)` PK, `tenant_id`, `collection_id`, `kind text`, `state text`, `stage text`, `progress jsonb`, `attempts integer`, `priority smallint`, `workflow_id text`, `workflow_run_id uuid`, `idempotency_key text`(N, 배치 자식 잡은 NULL 허용, 바이블 §13.1 1.3.0 AM-44), `request_id text`, `document_id char(26)`, `waiting_for char(26)`, `from_stage text`, `index_commit_id char(26)`, `last_error jsonb`, `degraded jsonb`, `cost jsonb`, `created_at`, `started_at`, `updated_at`, `finished_at`, `deadline_at` | `JobStatus` 읽기 모델 정본(바이블 §5.6). UNIQUE `(tenant_id, idempotency_key)`(배치 자식 잡의 NULL은 유니크 제약에서 제외되므로 다건 허용); `CHECK kind IN ('ingest_document','reprocess_document','delete_document','acl_update','reindex_collection','build_graph','evaluate','consistency_check','tier_promotion','delete_collection')`(AM-37); `CHECK state IN ('queued','running','succeeded','partial','failed','cancelling','cancelled')` |
 | `job_events` | `event_id char(26)`, `tenant_id`, `job_id`, `from_state text`, `to_state text`, `stage text`, `payload jsonb`, `created_at`; PK `(created_at, event_id)` | append-only(UPDATE·DELETE 권한 없음); `job.state.changed` 이벤트의 원천. 바이블 §13.1은 `event_id` PK — 월 단위 파티션 키 `created_at`을 PK에 포함하는 파티셔닝 확장(N; PostgreSQL은 파티션 테이블의 PK/UNIQUE에 파티션 키가 반드시 포함되어야 함) |
-| `idempotency_keys` | `tenant_id char(26)`, `key text`, PK `(tenant_id, key)`, `request_hash char(64)`, `job_id char(26)`, `response_status smallint`(N), `created_at`, `expires_at` | draft-07 판정 정본(200 재생 / 409 진행 중 / 422 `request_hash` 불일치); `jobs` INSERT와 동일 트랜잭션; `expires_at` 기본 24h(초안 목표, 미해결 이슈 #2) |
+| `idempotency_keys` | `tenant_id char(26)`, `key text`, PK `(tenant_id, key)`, `request_hash char(64)`, `job_id char(26)`, `job_ids text[]`(N, 배치 응답 재현 `POST /v1/ingest/batch`, 바이블 §13.1 1.3.0 AM-44), `response_status smallint`(N), `created_at`, `expires_at` | draft-07 판정 정본(200 재생 / 409 진행 중 / 422 `request_hash` 불일치); `jobs` INSERT와 동일 트랜잭션; `expires_at` 기본 24h(초안 목표, 미해결 이슈 #2); 배치 요청은 `job_ids`로 재생하고 자식 `jobs.idempotency_key`는 NULL |
 
 #### 산출물·계보·커밋
 
@@ -214,7 +214,7 @@ CREATE ROLE rag_owner NOLOGIN;
 CREATE ROLE rag_app LOGIN NOBYPASSRLS;
 CREATE ROLE rag_platform_admin LOGIN NOBYPASSRLS;
 CREATE ROLE rag_maintenance LOGIN NOBYPASSRLS;
-
+GRANT rag_owner TO rag_platform_admin;  -- 마이그레이션 실행 시 소유자 권한 상속(09-operations/01, #16)
 -- 예: documents (모든 테넌트 스코프 테이블에 동일 패턴을 마이그레이션이 생성)
 ALTER TABLE documents OWNER TO rag_owner;
 ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
@@ -292,13 +292,14 @@ COMMIT;
 
 ### 3.1 키 레이아웃
 
-바이블 §13.3의 키 규약을 그대로 따른다. 버킷은 프로파일당 하나(`RAG_OBJECT_STORE__URI`, 예 `s3://rag-standard` 또는 `file://./.rag/artifacts`)이며, 테넌트 경계는 `tenants/{tenant_id}/` 접두로 표현한다(E5). 접두 단위로 버킷 정책·SSE-KMS 키·수명주기 규칙을 걸 수 있어야 하므로 테넌트 접두를 최상위에 둔다.
+바이블 §13.3의 키 규약을 그대로 따른다. 버킷은 프로파일당 하나(`RAG_OBJECT_STORE__URI`, 예 `s3://rag-standard` 또는 `file://./.rag/artifacts`)이며, 테넌트 경계는 `tenants/{tenant_id}/` 접두로 표현한다(E5). 접두 단위로 버킷 정책·SSE-KMS 키·수명주기 규칙을 걸 수 있어야 하므로 테넌트 접두를 최상위에 둔다. 규칙(바이블 §13.3 1.3.0): 이미 점유된 `stage_key` 경로는 덮어쓰지 않는다 — 새 산출물이 기존과 정규화 동치면 기존 참조를 반환하고, 다르면(비결정성 버그) 바이트 해시 키 경로에 저장한 뒤 경고를 남긴다.
 
 | 대상 | 키 | 콘텐츠 주소 | 스코프 |
 |------|----|-------------|--------|
 | 원본 | `tenants/{tenant_id}/sources/{blake3[:2]}/{blake3}` | `blake3 = content_hash(원본 바이트)` | 테넌트 내 공유(동일 바이트 문서는 1회 저장) |
 | 스테이지 산출물 | `tenants/{tenant_id}/artifacts/{schema_type_kebab}/{stage_key[:2]}/{stage_key}.json` | 경로 = `stage_key`(잡 스코프 포함); `ArtifactRef.blake3`는 바이트 해시 | 잡 스코프(`tenant/collection/document`) |
-| 파생물 | `tenants/{tenant_id}/derived/{kind}/{blake3[:2]}/{blake3}.{ext}` | `H("derived", content_hash, sidecar_image_digest)` | 테넌트 내 공유(봉투 없음) |
+| 캐시 제외 스테이지 산출물(`fetch`·`index`) | `tenants/{tenant_id}/artifacts/{schema_type_kebab}/{blake3[:2]}/{blake3}.json`(바이블 §13.3 1.3.0) | `stage_key`가 없으므로 바이트 해시 키 | 잡 스코프 |
+| 파생물 | `tenants/{tenant_id}/derived/{kind}/{blake3[:2]}/{blake3}.{ext}`; LLM 보강 캐시는 `derived/llm_enrich/{key[:2]}/{key}.json`(바이블 §13.3 1.3.0) | `H("derived", content_hash, sidecar_image_digest or "", options_hash or "")`(바이블 §6.2 1.3.0, AM-40); LLM 보강 캐시 `key = H("llm-enrich", model_id, prompt_hash, embed_text)` | 테넌트 내 공유(봉투 없음) |
 | 부모 텍스트 번들 | `tenants/{tenant_id}/derived/parent_texts/{chunk_set_blake3}.json`(바이블 §13.2·§13.3 철자) | `ChunkSet` 산출물의 `ArtifactRef.blake3` | 테넌트 내(`ChunkTextStore`, 바이블 §13.2) |
 | 평가셋 | `eval/datasets/{dataset_id}/{qrels\|answer_spans}.jsonl` | `EvalDataset.content_hash`로 검증 | 전역(라이선스 필드 필수) |
 | 모델 미러 | `models/{repo}/{revision}/…` + `LICENSE` + `models.lock` | `models.lock`의 sha256 | 전역 |
@@ -553,7 +554,7 @@ OpenSearch 3.8 + `analysis-nori`(07-tech-landscape/06). 물리 인덱스는 `rag
 | 품사 제거 `rag_pos_stop` | 바이블 §13.4 그대로 `J*`·`E*`·`S*` 전체 = Nori 태그 `E, J, SC, SE, SF, SH, SL, SN, SP, SSC, SSO, SY` | 바이블 §13.4가 `index_text` stoptags를 확정했으므로 개별 문서는 그대로 쓴다(§1.1). `S*`에 포함된 `SL`(외국어)·`SH`(한자)·`SN`(숫자)은 검색어일 수 있어 유지가 유리할 수 있으나, 이는 골든셋 A/B 근거를 붙여 바이블 §13.4 minor 개정으로 제안한다(미해결 이슈 #7). Lucene `DEFAULT_STOP_TAGS`(18개; 07-tech-landscape/13 122행의 "30개"는 세분 태그 표기 — 확인 필요 as of 2026-09)에 포함된 `XSN`(명사 파생 접미사)·`MM`·`MAG`·`IC` 등은 제거하지 않는다(07-tech-landscape/13 함정: "투명성" 정확 매칭) |
 | 사용자 사전 | `user_dictionary_rules` 인라인(생성기 `rag_platform.korean`이 `UserDictEntry`에서 생성) | `dictionary_hash`가 인덱스명에 들어가므로 사전 변경 = 새 인덱스; 규칙 1만 행 초과 컬렉션은 `user_dictionary` 파일(설정 디렉터리 배포)로 전환(미해결 이슈 #8) |
 | `nori_readingform` | 한자 → 한글 독음 | 공문서 한자 표기 대응(`korean-gov` 요구) |
-| 보조 필드 `hangul_bigram` | `cjk_bigram` 한글만, `output_unigrams=false` | OOV·띄어쓰기 오류 내성; 질의 boost 0.3(초안 목표, 골든셋 A/B) |
+| 보조 필드 `cjk_bigram`(바이블 §13.4 1.3.0 필드명; 분석기 `hangul_bigram`은 토큰 필터 `rag_hangul_bigram` 사용) | `cjk_bigram` 필터, 한글만, `output_unigrams=false` | OOV·띄어쓰기 오류 내성; 질의 boost 0.3(초안 목표, 골든셋 A/B) |
 | `codec: best_compression` | DEFLATE 저장 압축 | `_source`가 payload 미러를 담아 크기가 크다; zstd 코덱(`zstd`, `zstd_no_dict`)은 OpenSearch 버전별 지원 확인 필요(as of 2026-09) |
 | `index.sort` | `tenant_id, document_id, ordinal` | 같은 테넌트·문서 레코드 물리 인접 → 라우팅된 샤드 내 블록 압축·스캔 효율 |
 
@@ -573,8 +574,8 @@ OpenSearch 3.8 + `analysis-nori`(07-tech-landscape/06). 물리 인덱스는 `rag
       "commit_id": { "type": "keyword" }, "index_generation": { "type": "integer" }, "is_current": { "type": "boolean" },
       "item_kind": { "type": "keyword" }, "level": { "type": "byte" }, "parent_chunk_id": { "type": "keyword" },
       "ordinal": { "type": "integer" }, "tree_level": { "type": "byte" },
-      "index_text": { "type": "text", "analyzer": "nori_index", "search_analyzer": "nori_search", "index_options": "positions", "norms": true,
-        "fields": { "bigram": { "type": "text", "analyzer": "hangul_bigram", "norms": true } } },
+      "index_text": { "type": "text", "analyzer": "nori_index", "search_analyzer": "nori_search", "index_options": "positions", "norms": true },
+      "cjk_bigram": { "type": "text", "analyzer": "hangul_bigram", "norms": true },
       "context_prefix": { "type": "text", "analyzer": "nori_index", "search_analyzer": "nori_search", "norms": true },
       "lexical_terms": { "type": "keyword" },
       "title": { "type": "keyword", "fields": { "text": { "type": "text", "analyzer": "nori_index", "search_analyzer": "nori_search" } } },
@@ -610,7 +611,7 @@ OpenSearch 3.8 + `analysis-nori`(07-tech-landscape/06). 물리 인덱스는 `rag
 |------|------|
 | `_id` | `record_id`(브리프 D-06 v1.2 "OpenSearch `_id = record_id`", 바이블 §5.4 `record_id` 행, [ADR-0004](../06-adr/0004-deterministic-chunk-id-scoped-record-id-and-ulid-exception.md)); `bulk` 항목은 `index` 액션(멱등 upsert) |
 | `routing` | `tenant_id` 필수(`_routing.required=true` → 누락 시 요청 거부, E5 이중 방어) |
-| BM25 필드 | `index_text`(주, boost 1.0), `context_prefix`(boost 0.5, 바이블 §13.4), `index_text.bigram`(boost 0.3 초안 목표), `title.text`(boost 0.7 초안 목표) — `multi_match` 대신 `bool.should` 4절로 채널 내 점수 분해 유지 |
+| BM25 필드 | `index_text`(주, boost 1.0), `context_prefix`(boost 0.5, 바이블 §13.4), `cjk_bigram`(바이블 §13.4·§8 1.3.0 필드명, boost 0.1~0.3 초안 목표), `title.text`(boost 0.7 초안 목표) — `multi_match` 대신 `bool.should` 4절로 채널 내 점수 분해 유지 |
 | 벡터 필드 | 없음. `unified-opensearch` 프로파일(k-NN fp16/`on_disk`)은 07-tech-landscape/06 대안이며 본 문서 범위 밖 |
 | 미러 필드 | `text`·`block_refs` 등은 `_source`에만 존재(재적재·디버그·`explain`용). `hydrate`는 Qdrant에서 읽으므로 OpenSearch `_source` 크기 축소를 위해 `_source.excludes`로 `text`·`block_refs`·`sentence_spans`를 제외하는 옵션은 미해결 이슈 #9 |
 | 배열의 배열 | `sentence_spans`(`[[int,int],…]`)를 `enabled:false` 오브젝트로 저장하는 것이 OpenSearch 3.8에서 허용되는지 확인 필요(as of 2026-09); 불가 시 어댑터가 `{"spans": [...]}`로 감싼다(미해결 이슈 #9) |
@@ -729,7 +730,7 @@ Valkey 9.x(BSD-3, Redis 프로토콜 호환; [ADR-0011](../06-adr/0011-kv-and-ob
 
 | 불변식 | 내용 | 검증 지점 |
 |--------|------|-----------|
-| I1 세대 단조성 | 문서별 `index_generation`은 `documents` 행 잠금 아래 단조 증가; `UNIQUE(tenant_id, document_id, index_generation)` | PG 제약 |
+| I1 세대 단조성 | 문서별 `index_generation`은 `documents` 행 잠금 아래 `max(index_commits.index_generation) + 1`로 할당(바이블 §11.4 (6) 1.3.0, AM-18); 폐기·롤백된 세대 번호도 재사용하지 않는다(별도 `last_generation` 컬럼 없음); `UNIQUE(tenant_id, document_id, index_generation)` | PG 제약 |
 | I2 현재 세대 유일성 | 각 백엔드에서 `document_id`별 `is_current=true` 레코드의 `index_generation`은 단일 값이며 `documents.current_generation`과 같다 | 정합성 검사 |
 | I3 레코드 수 일치 | `is_current=true` 레코드 수 = `index_commits.record_count`(현재 커밋) — 양 백엔드 동일 | 정합성 검사 |
 | I4 콘텐츠 일치 | 백엔드 `is_current=true` 레코드의 `{chunk_id: content_hash}` 집합 = 현재 커밋 `artifact_refs`에서 파생한 기대 집합(`EmbeddedChunkSet.vectors` 키 × `ChunkSet` 청크의 `content_hash = blake3(Chunk.text)`, 바이블 §6.2) — 바이블 §11.4 (4) "`content_hash` 집합 대조". `commit_hash` 재검증은 `embed_text_hash`가 payload에 없으므로(바이블 §5.4 `IndexRecord`에 부재; `EmbeddedChunkSet.vectors[].embed_text_hash`에만 존재) 백엔드가 아니라 산출물 측에서 `H("commit", profile_hash, sorted(...))`를 재계산해 원장 값과 대조한다(I6의 확장) | 정합성 검사(전체 모드) |
@@ -803,7 +804,7 @@ flowchart TD
 | Qdrant | `replication_factor=2` + 세대 공존(+1%) | ×2 × 1.01 | **약 28 GB** |
 | Qdrant | (`premium` 옵션) `late_interaction` 128d | 1M × 300 토큰 × 128 × 2 B(fp16) / 4-bit | 77 GB / 약 19 GB(07-tech-landscape/05) |
 | OpenSearch | `index_text` 역색인 | 2.2 GB 원문 × 0.6~1.4(LZ4 코덱 측정치, Nori `mixed` 상단) | 1.3~3.1 GB |
-| OpenSearch | `index_text.bigram` 역색인 | 한글 바이그램은 형태소 대비 토큰 1.5~2배 | 2.0~4.0 GB |
+| OpenSearch | `cjk_bigram` 역색인 | 한글 바이그램은 형태소 대비 토큰 1.5~2배 | 2.0~4.0 GB |
 | OpenSearch | `context_prefix`·`title.text`·keyword doc values | 소량 + keyword 25필드 × 1M | 약 1.0 GB |
 | OpenSearch | `_source`(`best_compression`) | 1M × 6 KB × 0.4 | 약 2.4 GB |
 | OpenSearch | **소계(프라이머리)** | 합 | **약 7~10 GB**(§5.6 샤드 3 → 샤드당 약 3 GB) |
@@ -873,7 +874,7 @@ flowchart TD
 12. `audit_log`(`standard`) 볼륨이 원장을 지배한다(약 35 GB/년 가정). `audit.query.executed` 샘플링 또는 OpenSearch 감사 인덱스로의 이관 기준을 09-operations/05와 합의.
 13. Qdrant 확인 필요(as of 2026-09): `is_principal` 힌트의 적용 범위(integer/float/datetime range 인덱스 한정, keyword 배열 미적용 여부), scalar 양자화 파라미터 명칭, `turbo4`·binary 양자화의 멀티벡터 적용, JWT RBAC payload 제한 문법.
 14. 정합성 검사 계약 제안(03-contracts/12·07): (a) `index.consistency.mismatch` 이벤트 `data.kind` 열거(`missing_records, hash_mismatch, stale_current, orphan, acl_hash_mismatch, artifact_missing`)와 메트릭 `outcome` 라벨 값의 동일성; (b) `documents.last_verified_at`(N); (c) `IndexRecord` payload에 `embed_text_hash`(N, 비인덱스)를 추가해 백엔드만으로 `commit_hash` 재계산을 가능하게 할지 — 추가 시 바이블 §5.4 minor; (d) 바이블 §6.5 라벨 목록에 `kind`를 추가하는 대안.
-15. `tenants.tier`의 값 집합(테넌트 등급 열거)은 02-architecture/07·05-api/04에서 확정하고 바이블 §13.1에 반영; §2.2의 `(N)` 컬럼 목록(`tenants.status`, `api_keys.roles/revoked_at/last_used_at`, `profiles.tier/validated_at/validation_report`, `idempotency_keys.response_status`, `artifacts.collection_id/document_id/stage_name/schema_version/job_id/compressed_size_bytes/last_accessed_at`, `outbox.last_error/next_attempt_at`, `audit_log.action/detail/trace_id`, 파티션 PK 확장)을 바이블 §13.1 minor 개정으로 일괄 제안.
+15. `tenants.tier`의 값 집합(테넌트 등급 열거)은 02-architecture/07·05-api/04에서 확정하고 바이블 §13.1에 반영; `tenants.status`·`collections.deleted_at`·`idempotency_keys.job_ids`는 해소(바이블 1.3.0, AM-39·AM-37·AM-44). §2.2의 나머지 `(N)` 컬럼 목록(`api_keys.roles/revoked_at/last_used_at`, `profiles.tier/validated_at/validation_report`, `idempotency_keys.response_status`, `artifacts.collection_id/document_id/stage_name/schema_version/job_id/compressed_size_bytes/last_accessed_at`, `outbox.last_error/next_attempt_at`, `audit_log.action/detail/trace_id`, 파티션 PK 확장)은 바이블 §13.1 minor 개정으로 일괄 제안.
 16. `usage_ledger.meter`에 `bytes_stored`(오브젝트 스토리지 테넌트 접두 바이트) 추가 제안 — 바이블 §13.1 minor.
 17. 바이블 §13.4 Qdrant payload 인덱스 목록에 `doc_version`·`external_id`·`heading_path`·`parent_chunk_id`·`tree_level` 추가 제안(§5.4 인덱싱 열·§5.7 `FilterableField`와 정합). `heading_path` "첫 2단" 제한을 별도 필드(예: `heading_path_top2`(N))로 구현할지는 03-contracts/07과 합의.
 18. PgBouncer 트랜잭션 모드에서 `SET LOCAL` 프롤로그 강제(§2.5)는 바이블 미해결 이슈 #9의 해소안이다 — 02-architecture/07 검토 후 바이블 반영.

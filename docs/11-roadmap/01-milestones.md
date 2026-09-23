@@ -2,8 +2,8 @@
 title: 마일스톤
 status: active
 owner: architecture
-version: 0.1.1
-last_updated: 2026-09-22
+version: 0.1.2
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - ../02-architecture/00-design-bible.md
@@ -94,7 +94,7 @@ depends_on:
 
 | ID | 이름 | 기간(주, 초안) | 구간(W) | 스토리 수 | 주 산출물 | 릴리스 |
 |----|------|---------------:|---------|----------:|-----------|--------|
-| M0 | 설계 완료 | (2.5, 진행 중) | W-2~W0 | — | 문서 세트·계약 스키마 34·ADR 38 | — |
+| M0 | 설계 완료 | (2.5, 진행 중) | W-2~W0 | — | 문서 세트·계약 스키마 35·ADR 38 | — |
 | M1 | 기반 | 10 | W1~W10 | 30 | 계약 패키지, SDK, `LocalRunner`, `lite` 종단 간(end-to-end, e2e) | 0.1.0 |
 | M2 | 한국어 1급 | 10 | W11~W20 | 24 | HWP 5.0 사이드카, Nori OpenSearch, 3-way 하이브리드+리랭커, 렌더러 9종, MCP, 골든셋 v1 | 0.2.0 |
 | M3 | 운영 | 10 | W21~W30 | 22 | Temporal, 멀티테넌시·ACL(E1~E17), 관측성, Helm, 웹훅, NFR P0 벤치마크 | 0.5.0(MVP) |
@@ -104,13 +104,13 @@ depends_on:
 
 스토리 수 합계 91 = 사용자 스토리 문서 §15.1 전체와 일치한다. M1~M3 합계 76은 그 문서의 MVP 포함 74에 US-PLG-06·US-ING-09를 편입한 결과다(§2.4, 결정 사항 요약).
 
-"계약 스키마 34"는 바이블 §5.1 인벤토리의 계약 스키마 파일 수다. 저장소 `schemas/`에는 도구 스키마 `schema-diff-report.schema.json`([스키마 버저닝과 호환성](../03-contracts/14-schema-versioning-and-compatibility.md) §범위·미해결 이슈 15: 인벤토리·`GET /v1/schemas/{name}`·저장 산출물 대상이 아닌 CI 도구 산출물 형식) 1개가 더 있어 파일 수는 35다. 이 문서의 "34"는 모두 계약 스키마 분모이며 M1-D02 CI 게이트의 분모도 같다(미해결 이슈 16).
+"계약 스키마 35"는 바이블 1.3.0 §5.1 인벤토리의 계약 스키마 파일 수다(AM-01: `SchemaDiffReport`가 CI 도구 산출물 형식으로 인벤토리에 편입되어 34 → 35). 이 문서의 "35"는 모두 계약 스키마 분모이며 M1-D02 CI 게이트의 분모도 같다(미해결 이슈 16 해소).
 
 ### 2.2 의존성 그래프
 
 ```mermaid
 flowchart LR
-    M0["M0 설계 완료<br/>브리프·바이블·계약 17·계약 스키마 34·ADR 38"]
+    M0["M0 설계 완료<br/>브리프·바이블·계약 17·계약 스키마 35·ADR 38"]
     M1["M1 기반 (0.1.0)<br/>계약 패키지 · Stage/SDK · LocalRunner<br/>파서 5종 · StructureAwareChunker<br/>bge-m3 ONNX + sparse_bm25 · Qdrant 단독<br/>POST /v1/query · ContextPack · 하네스 초판"]
     M2["M2 한국어 1급 (0.2.0)<br/>parser-workers(HWP 5.0) · RapidOCR<br/>OpenSearch Nori · vLLM pooling · TEI 리랭커<br/>후처리 전 단계 · 렌더러 9종 · MCP<br/>골든셋 v1 · 세대 사가(2 백엔드)"]
     M3["M3 운영 (0.5.0 MVP)<br/>Temporal · 디스패처 · 워크플로우 9종<br/>OIDC · Cedar · E1~E17 · 아웃박스 웹훅<br/>OTel/Weaver · Helm · NFR P0 벤치마크"]
@@ -188,11 +188,11 @@ gantt
 
 | 영역 | 산출물 | 2026-09-22 상태([진행 보고서](../12-appendix/00-progress-report.md) §3) |
 |------|--------|--------------------------------------------------------------------------|
-| 앵커 | 브리프 v1.2.1, 바이블 v1.2.0 | active |
+| 앵커 | 브리프 v1.2.2, 바이블 v1.3.0 | active |
 | 연구 | 기술 지형 14 + 선정 매트릭스 | active |
 | 요구 | 비전·원칙·용어집·범위, FR 217·NFR 184·페르소나·스토리 91 | active |
 | 아키텍처 | 01~09 | active(개정 요청 17건 4단계 처리 대기) |
-| 계약 | 03-contracts 00~16, `schemas/` 계약 스키마 34종(+ 도구 스키마 `schema-diff-report` 1종, 인벤토리 제외) | active, 계약 감사 전 |
+| 계약 | 03-contracts 00~16, `schemas/` 계약 스키마 35종(1.3.0 AM-01로 `schema-diff-report` 인벤토리 편입) | active, 계약 감사 전 |
 | ADR | 0001~0038(MADR), README 인덱스 | accepted, 인덱스 예정 |
 | 파이프라인·API·평가·운영·개발·로드맵 | 04(19)·05(7 + `openapi.yaml`)·08(6)·09(8)·10(8)·11(3) | 04 review, 나머지 작성 중 |
 | 부록 | 제안서 A/B/C, 진행 보고서, 완전성 비평 | 진행 중 |
@@ -216,7 +216,7 @@ gantt
 
 ### 4.1 목표
 
-**한 문서가 계약 위에서 끝까지 흐른다.** `lite` 프로파일(바이블 §7.1 `lite` 열)과 비내구 `LocalRunner`(ADR-0003)로 `IngestRequest → … → IndexCommit`과 `QueryRequest → … → ContextPack`이 동작하고, 바이블 §11.6 개발 모드 1~4단계(`uv tool install rag-platform` → `rag up --profile lite` → `rag ingest` → `rag query`)가 목표 시간 안에 끝난다. 모든 계약은 Pydantic v2 모델과 CI 게이트로 잠긴다.
+**한 문서가 계약 위에서 끝까지 흐른다.** `lite` 프로파일(바이블 §7.1 `lite` 열)과 비내구 `LocalRunner`(ADR-0003)로 `IngestRequest → … → IndexCommit`과 `QueryRequest → … → ContextPack`이 동작하고, 바이블 §11.6 개발 모드 1~4단계(`uv tool install rag-platform` → `rag up --profile lite` → `rag ingest` → `rag query`)가 목표 시간 안에 끝난다. 모든 계약은 Pydantic v2 모델과 CI 게이트로 잠긴다. 바이블 1.3.0의 M1 필수 개정 AM-26(`chunk`·`enrich` LLM 서브스텝까지 `requires_lineage` 범위 확대 — 기본 청커 `structure_aware`가 `ParsedDocument` 구조 필드를 요구)과 AM-27(`StageContext` 선택 멤버 `plan`·`artifacts`)은 이미 반영되어 있다(트리아지 §5.1).
 
 ### 4.2 포함 스토리
 
@@ -226,7 +226,7 @@ US-ING-01, US-ING-02, US-ING-04(AC-1·AC-3 폴링·SSE 부분; AC-2 웹훅은 US
 
 | 영역 | M1 범위(바이블 정본) | 제외(후속) |
 |------|----------------------|-----------|
-| 계약 패키지 | `rag_platform.contracts`: 계약 스키마 34종 전부의 Pydantic v2 모델, `enums.py` 단일 소스, `versioning.py`; `GET /v1/schemas/{name}` 게시 | — |
+| 계약 패키지 | `rag_platform.contracts`: 계약 스키마 35종 전부의 Pydantic v2 모델, `enums.py` 단일 소스, `versioning.py`; `GET /v1/schemas/{name}` 게시 | — |
 | SDK·커널 | `Stage[In, Out]` 5멤버, `StageContext`, `PipelineContext`, `ArtifactRef` 단일 페이로드, `stage_key = H("stage", …, scope_key, …)` 캐시(ADR-0037), `hash_of(H)`·`canonical_json`, `TokenCounter`, 적합성 키트 6종(`contract_roundtrip`·`idempotency`·`security_invariants`·`renderer_citation_roundtrip`·`litm_order`·`fuser_equivalence`) | `SidecarStage`(M2) |
 | 실행기 | `LocalRunner`(asyncio, 비내구), 파이프라인 정의 `pipelines.ingest`·`pipelines.query`(`temporalio`·`fastapi` 임포트 금지 린트) | Temporal(M3) |
 | 원장·저장소 | PostgreSQL 원장 `jobs`·`artifacts`·`lineage`·`index_commits`·`outbox`·`usage_ledger`(바이블 K6·§13.1; `(tenant_id, day, meter)` 스키마와 비LLM 미터 `bytes_indexed`·`queries` 적재만) + `idempotency_keys`(모두 `tenant_id`, RLS 정책 정의), 오브젝트 스토리지 `file://`(S3 호환 어댑터 포함), Valkey(질의 임베딩·토큰 카운트 캐시, 멱등 키 조회 캐시) | RustFS/SeaweedFS 실측(M3), `usage_ledger` `llm_tokens`·`gpu_seconds` 집계·비용 산출(M4) |
@@ -253,7 +253,7 @@ US-ING-01, US-ING-02, US-ING-04(AC-1·AC-3 폴링·SSE 부분; AC-2 웹훅은 US
 | ID | 기준 | 수치 근거 | 검증 |
 |----|------|-----------|------|
 | M1-D01 | 개발 모드 1~4단계가 목표 시간 안에 끝난다: 설치 60s, `rag up --profile lite` 90s, HWPX 샘플 수집 30s, 질의 2s | 바이블 §11.6(초안 목표) | T-E2E |
-| M1-D02 | 계약 CI 8종(§1.4 C1) 전부 통과; 계약 스키마 34종(바이블 §5.1 인벤토리; 도구 스키마 `schema-diff-report` 제외) ↔ Pydantic 동치; `H()`·`block_id`·`chunk_id`·`record_id`·`point_id` 테스트 벡터 고정 | 계약 개요 §10.3 | T-CONTRACT |
+| M1-D02 | 계약 CI 8종(§1.4 C1) 전부 통과; 계약 스키마 35종(바이블 §5.1 인벤토리, 1.3.0 AM-01 `schema-diff-report` 편입) ↔ Pydantic 동치; `H()`·`block_id`·`chunk_id`·`record_id`·`point_id` 테스트 벡터 고정 | 계약 개요 §10.3 | T-CONTRACT |
 | M1-D03 | 재현성: 동일 `IngestRequest` + 동일 프로파일 → 동일 `commit_hash`(KPI-09 100%, CI 회귀) | 브리프 §7, 비전 KPI-09 | T-E2E |
 | M1-D04 | 포맷 5종 계약 코퍼스 파싱 성공, 모든 블록에 `element_path`·`char_start/char_end`(흐름 포맷은 `page`/`bbox` null), `ContextPack` 항목 출처 완전성 100%(KPI-04) | D-04, 비전 KPI-04 | T-FIXTURE |
 | M1-D05 | 검색: `CandidateSet.channel_runs[]`에 `dense`·`lexical` 채널 원점수·순위, `RankedSet` 불변식 `Σ contribution = fused_score`, `cite_id` `d1..dK` 연속·관련도순, `litm_alternating` 테스트 벡터 통과, 설명 가능성 커버리지 100%(KPI-06) | 바이블 §2.1 K3·K4, §9.2 | T-CONTRACT, T-INT |
@@ -366,7 +366,7 @@ US-ING-03, US-ING-04(AC-2 웹훅 부분), US-ING-07, US-ING-08, US-ING-09, US-IN
 | 인증·인가 | OIDC JWT(JWKS, Keycloak/Dex 연동), API 키, `PrincipalResolver`, Cedar 4.12 인가(`policy_version`), 역할(`tenant_admin`·`collection_admin`·`ingestor`·`reader`; 플랫폼 역할은 [멀티테넌시·보안 아키텍처](../02-architecture/07-multi-tenancy-and-security-architecture.md) 확정), 레이트리밋 `limits` + Valkey fail-closed(E3), `auth.*`·`api.rate_limited` 오류 | mTLS·ReBAC(M5) |
 | 테넌트 격리·ACL | E1~E17 전부 검증: RLS `FORCE` + `SET LOCAL app.tenant_id`, OpenSearch DLS 요청별 단명 테넌트 JWT(E8), `acl.update.v1` payload 갱신 + `aclrev:` 회수 힌트 + `pack.acl_recheck`(E9·E11), `TieringPolicy` `shard_key` 승격(E15), 카나리 테넌트 침투 테스트 스위트, `ChunkTextStore`·`get_document` 동일 필터(E10) | `index_per_tenant`·OpenBao(M5) |
 | 아웃바운드·웹훅 | `EgressPolicy` 프로파일 AND 테넌트 정책(E16), `credentials_ref` 간접 참조(`RAG_SECRETS__PROVIDER`), 웹훅 구독 API(`/v1/subscriptions`), `RAG-Signature` HMAC + 5분 재생 창, 릴레이(Temporal 액티비티 standard / Procrastinate lite), 재시도 시 동일 `event_id`, 실패 목록, `GET /v1/events` 테넌트 SSE, `outbox_lag_slo` standard 5s / lite 30s | NATS(M5 조건부) |
-| 관리 API | 바이블 §14 나머지: `POST /v1/ingest/batch`(100건), `POST /v1/jobs/{job_id}/cancel`·`/retry`, `PATCH /v1/jobs/{job_id}`, `PATCH /v1/documents/{document_id}/acl`·`/metadata`, `POST …/reprocess`, `DELETE /v1/documents/{document_id}`, `GET/PATCH/DELETE /v1/collections/{collection_id}`, `POST …/reindex`, `GET …/stats`, `GET /v1/tenants/{tenant_id}/usage`(`usage_ledger` 중 M1부터 적재된 비LLM 미터 `bytes_indexed`·`queries`만 반환; `llm_tokens`·`gpu_seconds` 집계와 비용 산출은 M4 §7.3), `PATCH …/policies`; 잡 목록 커서·산출물 다운로드 URL | `/v1/eval/*`(M4), `/v1/feedback`(M5) |
+| 관리 API | 바이블 §14 나머지: `POST /v1/ingest/batch`(100건), `POST /v1/jobs/{job_id}/cancel`·`/retry`, `PATCH /v1/jobs/{job_id}`, `PATCH /v1/documents/{document_id}/acl`·`/metadata`, `POST …/reprocess`, `DELETE /v1/documents/{document_id}`, `GET/PATCH/DELETE /v1/collections/{collection_id}`(삭제는 `JobKind.delete_collection`·`collection.delete.v1` 워크플로우가 자식 문서에 `delete.document.v1`을 팬아웃하는 비동기 처리, AM-37), `POST …/reindex`, `GET …/stats`, `GET/POST /v1/tenants`·`GET/PATCH /v1/tenants/{tenant_id}`·`GET /v1/tenants/{tenant_id}/policies`, `GET/POST /v1/api-keys`·`DELETE /v1/api-keys/{api_key_id}`·`POST …/rotate`, `GET /v1/audit-events`(AM-39), `GET /v1/tenants/{tenant_id}/usage`(`usage_ledger` 중 M1부터 적재된 비LLM 미터 `bytes_indexed`·`queries`만 반환; `llm_tokens`·`gpu_seconds` 집계와 비용 산출은 M4 §7.3), `PATCH …/policies`; 잡 목록 커서·산출물 다운로드 URL | `/v1/eval/*`(M4), `/v1/feedback`(M5) |
 | 관측성 | GenAI semconv 커밋 고정 + OTel Weaver 상수(`gen_ai.*`, OpenInference `retrieval.*`, `rag.*`), OTel Collector(redaction·transform), 메트릭 정본 목록(바이블 §6.5) 전부, `tenant_id` 라벨 금지·해시만, 콘텐츠 캡처 `none`, Grafana 대시보드(분리 컨테이너; P0 SLI 패널·번레이트 알림), Tempo/Loki/Langfuse는 OTLP 대상, AGPL 불가 대안 문서화, 리플레이 옵트인(`QueryRequest`·`QueryPlan` 저장) | 익스포터 옵션·드리프트·비용(M4) |
 | 배포 | Helm 차트 `values-{tier}.yaml`(lite·standard), compose(lite), NetworkPolicy(워커·릴레이 내부망 egress 차단), 데이터 계층 외부 제공 원칙, `optIn.*` GPL 이미지, 에어갭 절차 초안([배포 아키텍처](../02-architecture/08-deployment-architecture.md)) | `premium` values(M4), `korean-gov` values(M5) |
 | 감사·삭제 | `audit.*` 이벤트 append-only 저장, JSON Lines 내보내기(질의 원문은 옵트인), `trace_id` 연결; 삭제 완결성(메타 툼스톤 즉시, 인덱스 60s p95, NFR §9 SLA), 컬렉션 TTL | PII 정책(M5) |
@@ -430,7 +430,7 @@ US-CHK-06, US-CHK-08, US-RET-06, US-RET-08, US-PCK-08, US-MGT-07(레퍼런스 `a
 | small-to-big·후처리 | `parent_expand.ratio_threshold`·`max_parent_tokens` 튠, `sentence_window` ±2, `compress`(EXIT 추출식 1차; 생성식은 옵션), `confidence_tiers`(0.7/0.4)·`relevance_gate.tau`(0.3) 컬렉션 캘리브레이션과 `calibrations` 표(바이블 이슈 2) |
 | 검색 확장 | `quality` 변형(LLM self-query·라우터, multi-query 3 가중 0.5, HyDE dense), 대화 재작성, 다중 컬렉션 융합 규칙(채널 × 컬렉션 × 변형 RRF, `convex_*`는 동일 `embedding_profile_hash`·`analyzer_id`일 때만, 아니면 `rrf` 강등 + `degraded{fusion, profile_mismatch}`), CC 전환(`convex_minmax`, ranx `optimize_fusion`, ≥200 qrels, 프로파일 버전 증가 → blue/green) |
 | `premium` 프로파일 | `ocr-gpu`(PaddleOCR PP-OCRv5 server) + `ingest-gpu-ocr` 큐, Qwen3-Reranker-4B @ vLLM/SGLang(50→20) 승격 판정, `ko-quality`(KURE-v1 + PIXIE-Splade-v1.5) / `quality-max`(Qwen3-Embedding-4B MRL 1024) A/B, 충분성 LLM 판정, `pdf_vlm_gpu` 골든셋 판정, Helm `values-premium.yaml` |
-| 비용·드리프트 | `usage_ledger` 미터 완성(M1 스키마·`bytes_indexed`·`queries` 위에 `llm_tokens`·`gpu_seconds` 적재, 바이블 §13.1)과 테넌트·컬렉션 집계·비용 산출(`GET /v1/tenants/{tenant_id}/usage` 전 미터 반환), `rag_enrich_llm_tokens_total`·`rag_enrich_llm_cost_usd_total`, 저신뢰·빈 결과 비율 드리프트 경보, Langfuse·Phoenix OTLP 익스포터 옵션 |
+| 비용·드리프트 | `usage_ledger` 미터 완성(M1 스키마·`bytes_indexed`·`queries` 위에 `llm_tokens`·`gpu_seconds` 적재, 바이블 §13.1)과 테넌트·컬렉션 집계·비용 산출(M3에서 추가된 `/v1/tenants` 계열의 `GET /v1/tenants/{tenant_id}/usage`(AM-39) 전 미터 반환), `rag_enrich_llm_tokens_total`·`rag_enrich_llm_cost_usd_total`, 저신뢰·빈 결과 비율 드리프트 경보, Langfuse·Phoenix OTLP 익스포터 옵션 |
 | 벤치마크 공개 | [벤치마크 계획과 베이스라인](../08-evaluation/05-benchmark-plan-and-baselines.md)에 따른 ENV-M 결과 공개(KPI-12), 프로파일별 품질·비용·지연 표, `rag_eval_metric_value{metric}` 추세 |
 
 ### 7.4 산출물
@@ -663,7 +663,7 @@ W49~W52(4주). 선행: M5(RC 0.9.0). 후행: 없음(1.0 이후는 운영 주기�
 | 1 | 사용자 스토리 문서 §1.1·§15의 Phase 열과 MVP 74건이 본 문서(M 배정, MVP 76건)와 다르다 | 그 문서 다음 개정에서 Phase 열을 M 열로 치환하고 US-PLG-06·US-ING-09를 MVP 포함으로 갱신(US-I-02 종결) | §2.4 |
 | 2 | FR 문서가 "첫 공개 릴리스(M1)"로 쓰는 "M1"이 본 문서의 M1(기반)과 충돌한다 | FR §우선순위·결정 사항의 "M1"을 "첫 공개 릴리스(마일스톤 M3, 0.5.0)"로 정정 제안 | §1.2 |
 | 3 | NFR 문서 §2의 검증 방법 코드 M1~M6이 마일스톤 ID와 충돌한다 | 코드를 `V1`~`V6`(또는 `VM-1`~`VM-6`)로 개명 제안. 확정 전까지 본 문서는 "NFR 검증 M1(부하)"처럼 괄호 병기 | §1.2, §9 |
-| 4 | 바이블 §14에 테넌트 생성 엔드포인트가 없다(US-MGT-01 AC-1; 진행 보고서 §6 알려진 이슈) | M3 착수 전 바이블 minor 개정으로 `POST /v1/tenants`(플랫폼 역할) 추가 여부 확정, 역할 집합은 02-architecture/07 | §6.3 |
+| 4 | 바이블 §14에 테넌트 생성 엔드포인트가 없다(US-MGT-01 AC-1; 진행 보고서 §6 알려진 이슈) | **해소(바이블 1.3.0, AM-39)**: `GET/POST /v1/tenants`·`GET/PATCH /v1/tenants/{tenant_id}` 추가로 충족(§6.3). 역할 집합 확정은 02-architecture/07 소관으로 남긴다 | §6.3 |
 | 5 | US-ING-06 AC-3 "관리 API로 롤백"에 대응하는 명시적 롤백 엔드포인트가 바이블 §14에 없다 | 세대 사가 보상 + `previous_commit_id` 복원을 [관리 API](../05-api/04-management-api.md)가 어떤 표면으로 노출할지 확정(예: `reprocess`와 분리된 커밋 복원 액션). 확정 전 M2 DoD는 사가 보상 테스트로 대체 | §5.5 M2-D04 |
 | 6 | US-MCP-04 `resolve_citation`과 US-MCP-05 stdio 전송은 바이블 D-13(도구 3종 + v1.1 후보 `search_batch`·`expand`, Streamable HTTP)에 없다 | ADR-0025 개정 발의로 채택 여부 결정. 미채택 시 `resolve_citation`은 `get_document`로 흡수, stdio는 클라이언트 SDK 브리지로 대체. M5 배정은 조건부 | §8.2 |
 | 7 | 플러그인 스캐폴딩 CLI(US-PLG-03)가 바이블 §12 `cli/` 목록(`plugin(list --check-license)`)에 없다 | `rag plugin new <extension_point> <name>` 추가를 바이블 §12 minor 개정으로 제안 | §8.3 |
@@ -675,8 +675,8 @@ W49~W52(4주). 선행: M5(RC 0.9.0). 후행: 없음(1.0 이후는 운영 주기�
 | 13 | ENV-M 참조 환경(GPU 8장, NFR §2 표)을 M3에 확보하지 못하면 NFR-PERF-01 공식 측정이 불가하다 | 축소 환경 측정값에 외삽을 금지하고 "측정 연기"를 릴리스 노트에 명시; Qdrant JWT RBAC(바이블 이슈 13)와 함께 M3 진입 체크리스트 | §6.5 M3-D04 |
 | 14 | 바이블 §11.6 개발 모드 5단계 중 `rag mcp serve`는 M2에서 충족된다 | M1 퀵스타트 문서는 1~4단계만 다루고 5단계는 0.2.0에서 추가됨을 표기 | §4.5 M1-D01 |
 | 15 | 바이블 §7.2 `ingest.enrich.generated_prefix.enabled`가 `premium`에서도 `false`인데 §7.1 `premium` 청킹·보강 행은 `contextual_llm`을 컬렉션 옵션으로 둔다. 본 문서는 M4에서 "옵션 제공, 기본 끔"으로 읽었다 | 해석 확인은 [보강](../04-pipelines/11-enrichment.md) 소유 | §7.3 |
-| 16 | 스키마 수 표기가 문서마다 다르다: 본 문서·docs/README·진행 보고서는 계약 스키마 34, [저장소 구조](../10-development/01-repository-structure.md)는 파일 35(도구 스키마 `schema-diff-report.schema.json` 포함) | "계약 스키마 34종 + 도구 스키마 1종(인벤토리 제외)" 표기로 docs/README·진행 보고서·10-development/01 정합 요청. 03-contracts/14 미해결 이슈 15(도구 스키마 인벤토리 등재 여부)가 닫히면 분모를 재확인 | §2.1, §3.2, §4.5 M1-D02 |
-| 17 | 매트릭스 게이트 10(VLM 파서 1순위)·14(HTML 2차 추출기)는 바이블 §3.3 ADR 목록에 대응 ADR이 없다(D-18 파서 결정은 ADR-0006·0007·0008이 PDF 고속 경로·HWP·OCR만 다룬다) | M4 게이트 실행 시 신규 ADR(0039~; slug는 바이블 §3.3 규약) 발의 또는 ADR-0008 범위 확장(VLM은 OCR 대체 아닌 보완이므로 별도 ADR 권고). 번호·slug 확정은 바이블 minor 개정 | §10.2 (a) |
+| 16 | 스키마 수 표기가 문서마다 달랐다(본 문서·docs/README·진행 보고서 계약 스키마 34 vs [저장소 구조](../10-development/01-repository-structure.md) 파일 35) | **해소(바이블 1.3.0, AM-01)**: `schema-diff-report`가 인벤토리에 편입되어 계약 스키마는 35종으로 통일(§2.1, §3.2, §4.5 M1-D02 전부 35 적용). docs/README·진행 보고서·10-development/01 정합은 5단계에서 확인 | §2.1, §3.2, §4.5 M1-D02 |
+| 17 | 매트릭스 게이트 10(VLM 파서 1순위)·14(HTML 2차 추출기)는 바이블 §3.3 ADR 목록에 대응 ADR이 없다(D-18 파서 결정은 ADR-0006·0007·0008이 PDF 고속 경로·HWP·OCR만 다룬다) | M4 게이트 실행 시 신규 ADR(0040~; ADR-0039는 1.3.0 가산 묶음이 사용, slug는 바이블 §3.3 규약) 발의 또는 ADR-0008 범위 확장(VLM은 OCR 대체 아닌 보완이므로 별도 ADR 권고). 번호·slug 확정은 바이블 minor 개정 | §10.2 (a) |
 | 18 | 본 문서의 상대 링크 64개 중 13개(`02-epics-and-backlog`, `03-risks-and-mitigations`, 10-development/02·04·06·07·08, 08-evaluation/05, 09-operations/05·06·07·08, 05-api/04; 2026-09-22 링크 검사 기준, 동시 작성 중이라 줄어든다)는 미작성 문서를 가리킨다. 경로는 모두 브리프 §8 문서 맵과 일치하며 바이블 이슈 11 규칙상 경고다 | M0-D01("미작성 링크 0") 판정 시 이 링크 대상의 작성 완료를 확인 항목으로 둔다. 미완이면 M0-D01을 "문서 맵 경로 일치"로 완화하고 미작성 목록을 M1 첫 스프린트로 이월 | §3.3 M0-D01 |
 | 19 | 바이블 §7.1 `korean-gov` 한국어 분석기 행은 "컬렉션 사용자 사전 필수"라 하지만 §7.4 `rag profile validate` 규칙 (1)~(12)에는 이를 강제하는 규칙이 없다 | 규칙 (13) "`korean-gov`(또는 `lexical.user_dictionary_required: true`) 프로파일의 컬렉션은 `UserDictEntry` ≥ 1 없이는 생성 거부(`profile.invalid`)" 추가를 바이블 §7.4 minor 개정으로 제안. 확정 전 M5-D05는 검증 규칙 대신 `korean-gov` Helm values의 사전 시드로 대체 | §8.3, §8.5 M5-D05 |
 

@@ -2,7 +2,7 @@
 title: 보강 (Enrichment)
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -42,7 +42,7 @@ depends_on:
 | 항목 | 값 | 바이블 |
 |------|----|--------|
 | 입력 → 출력 | `ChunkSet`(`ArtifactRef` 1개) → `EnrichedChunkSet`(청크 본문 미복제, `chunk_set_ref` + `enrichments{chunk_id: Enrichment}`) | §4.2, §5.4 |
-| 확장 지점 | `enricher`(D-10). 봉투 `producer.plugin_id`는 플랫폼 합성 보강기 `enricher.pipeline`(06 초안), 개별 플러그인은 `enricher_fingerprint`에 반영 | §5.3, §6.1, §6.2 |
+| 확장 지점 | `enricher`(D-10). 봉투 `producer.plugin_id`는 예약 구현명 `enricher.pipeline`(바이블 §6.1 1.3.0, AM-11: 합성 생산자 `Producer.plugin_id`는 `{extension_point}.pipeline`), 개별 플러그인은 `enricher_fingerprint`에 반영 | §5.3, §6.1, §6.2 |
 | 격리 모드 | 결정적: `in_process`(순수 Python + GLiNER2 CPU). LLM: 외부 HTTP(vLLM·API) — `ingest-llm` 큐 | §4.1, §4.2 |
 | 멱등성 키 | 결정적 세트: `stage_key = H("stage", "enrich", scope_key, chunk_set.blake3, enricher_fingerprint)`(잡 스코프). LLM 청크 캐시: `H("llm-enrich", model_id, prompt_hash, embed_text)`(봉투 없음, 테넌트 내 공유); 문서·섹션 요약(모드 A)만 `H("llm-enrich", model_id, prompt_hash, section_text)`(06 §10, §11) | §4.1, §6.2, ADR-0037 |
 | 정책 | `enrich(결정적)`: `ingest-cpu`, 5m / 60s / 3회, `resumable`(`chunk_offset`). `enrich(LLM)`: `ingest-llm`, 30m / 60s / 5회(최대 간격 5m), `resumable`(`chunk_offset`) | §4.4 |
@@ -98,7 +98,7 @@ flowchart TD
 | 텍스트 불변 | `Chunk.text`·`lexical_text`·`context_prefix.deterministic`·`block_refs`·`sentence_spans`·`content_hash`·`chunk_id`를 변경하지 않는다(K1·K2). 위반은 `contract.violation` |
 | `Entity.span` | `Chunk.text` 기준 코드포인트, 끝 미포함(§6.3). `lexical_text`(NFKC) 위에서 찍은 오프셋은 사용 금지 |
 
-`stage.enrich_llm` 입력은 `EnrichedChunkSet`(결정적) 하나이지만 청크 본문이 필요하므로 `requires_lineage = ("ChunkSet",)`로 `ctx.lineage["ChunkSet"]`을 받는다. 바이블 §4.1은 `requires_lineage` 사용 스테이지를 `index`로 한정하므로 이 확장은 미해결 이슈 1의 승인 대상이다.
+`stage.enrich_llm` 입력은 `EnrichedChunkSet`(결정적) 하나이지만 청크 본문이 필요하므로 `requires_lineage = ("ChunkSet",)`로 `ctx.lineage["ChunkSet"]`을 받는다. **결정(바이블 §4.1 1.3.0, AM-26):** 바이블이 `enrich`의 LLM 서브스텝에 `requires_lineage = ("ChunkSet",)`를 명시적으로 허용해 이 확장은 승인되었다(§4.1·§4.2 `enrich` 행).
 
 ## 3. 3-텍스트 조립 규약(`embed_text`·`index_text`)
 
@@ -107,7 +107,7 @@ flowchart TD
 | 기호 | 원천 | 규칙 |
 |------|------|------|
 | `D` | `Chunk.context_prefix.deterministic`(`chunk` 산출, `"{title} › {heading_path 조인} › {caption?}"`, ≤ 100토큰 초안) | `enrich`는 재계산하지 않고 바이트 그대로 쓴다. 축약 규칙은 06 §3(5단계) |
-| `G` | `generated_prefixes[cid].generated`(`enricher.llm_context_prefix`) 또는, 접두어가 꺼져 있고 `contextual_doc_summary`만 켠 경우 해당 섹션의 `summary` | NFC, ≤ 100토큰(`primary_tokenizer_id`, 초안). 줄바꿈은 공백으로 치환(구분자 충돌 방지). 없으면 슬롯 생략 |
+| `G` | `generated_prefixes[cid].generated`(`enricher.llm_context_prefix`) 또는, 접두어가 꺼져 있고 `contextual_doc_summary`만 켠 경우 해당 섹션의 `summary` | NFC. `G = generated_prefixes[cid].generated`이면 ≤ 100토큰(`primary_tokenizer_id`, 초안). **예외(완전성 #29):** `G = summary`(접두어 꺼짐 + 요약만 켬)일 때는 06 §4 규칙 2(b)에 따라 `Enrichment.summary` 자체의 상한인 ≤ 1,024 코드포인트를 적용한다(100토큰 상한을 적용하지 않는다). 줄바꿈은 공백으로 치환(구분자 충돌 방지). 없으면 슬롯 생략 |
 | `text` / `lexical_text` | `Chunk` | 불변 |
 | 가상 질문 | `hypothetical_questions[]` | `index_text` **끝**에만. `embed_text`·`text`에 넣지 않는다(바이블 §5.4) |
 | 모델 지시 프롬프트 | 임베더 어댑터 소유 | `embed_text`에 넣지 않는다(`embedding_space_id.prompt_hash`로 식별) |
@@ -388,7 +388,7 @@ Anthropic Messages API 요청 형태(예시; 문서 텍스트는 자리표시자
 | Anthropic `claude-sonnet-5` | `anthropic` / `anthropic:claude-sonnet-5@<revision>` | 품질 여유, 1M 컨텍스트, 최소 캐시 1024토큰 | 단가 2배($2/$10), 모드 B에서 문서당 비용 게이트 초과 가능(§7.5) | 모드 A(요약), 장문·고가치 컬렉션 |
 | Anthropic `claude-opus-5` | `anthropic` / `anthropic:claude-opus-5@<revision>` | 최고 품질, 최소 캐시 512토큰 | $5/$25 — 보강 용도에는 게이트 초과 | 관계 추출(`extractor=llm`) 등 구조화 추출 한정 |
 
-단가·컨텍스트·캐시 배수는 10 §B4·§A8(2026-09 확인)을 따르며 변동 시 09-operations/02의 단가표가 정본이다 — 확인 필요(as of 2026-09). API 모델의 `revision`은 날짜 접미가 없는 별칭이므로 어댑터가 첫 사용 시 Models API의 `created_at`(YYYYMMDD)을 `revision`으로 고정해 `models.lock`에 기록한다(제안, 미해결 이슈 5).
+단가·컨텍스트·캐시 배수는 10 §B4·§A8(2026-09 확인)을 따르며 변동 시 09-operations/02의 단가표가 정본이다 — 확인 필요(as of 2026-09). **결정(바이블 §6.1 1.3.0, AM-11):** API 모델의 `revision`은 선택이며 날짜 접미 별칭이 없으면 비워 둔다 — `model_id = {provider}:{model}`만 쓰고, 어댑터가 첫 사용 시 Models API의 `created_at`(YYYYMMDD)을 `Producer`에 별도로 병기한다(`created_at`을 `revision`으로 합성하지 않는다).
 
 ### 7.5 비용 표(초안 추정)
 
@@ -401,7 +401,7 @@ Anthropic Messages API 요청 형태(예시; 문서 텍스트는 자리표시자
 | 모드 A(문서 1회, 섹션 요약 포함) | 8,300 | 200 | $0.009 (≈ $1.2 / M) | $0.019 (≈ $2.3 / M) | $0.047 | $0 |
 | 게이트 `max_cost_per_doc_usd` 0.05(초안) | — | — | B·A 통과 | A만 통과 | 불통과 | GPU 초 게이트 별도(ADR-0016 재검토) |
 
-해석: (1) 캐싱 없는 모드 B는 캐싱 대비 약 3배 비싸므로 어댑터의 접두어 규율(§7.3)이 비용 정책의 일부다. (2) 기본 예산 `premium` 20,000토큰/문서(바이블 §7.2)는 원시 토큰이 아니라 §12.2의 **청구 환산 토큰**(`charged_tokens` = 입력 환산 + 출력)으로 대조한다. 위 가정에서 모드 A는 8,300 + 200 = 8,500으로 통과하지만, 모드 B 캐싱은 26,845 + 750 = **27,595**로 20,000을 초과하므로 기본값으로는 리프 10개·8,000토큰 문서에서도 모드 B를 완주할 수 없다(원시 토큰 92,750으로 대조하면 더 크게 초과). 따라서 `premium` 기본값 재산정(예: 40,000)은 미해결 이슈 2다. (3) Anthropic Contextual Retrieval의 공식 추정 $1.02/M(04 §11, 10 §A3)은 구세대 Haiku 단가 기준이므로 현행 단가에서는 약 4배로 읽어야 한다. (4) Message Batches(비동기, 할인)는 대량 백필에 유효할 수 있으나 30m `start_to_close`·캐시 병용 조건 확인 필요(as of 2026-09) — 미해결 이슈 6.
+해석: (1) 캐싱 없는 모드 B는 캐싱 대비 약 3배 비싸므로 어댑터의 접두어 규율(§7.3)이 비용 정책의 일부다. (2) 기본 예산 `premium` 20,000토큰/문서(바이블 §7.2)는 원시 토큰이 아니라 §12.2의 **청구 환산 토큰**(`charged_tokens` = 입력 환산 + 출력)으로 대조한다. 위 가정에서 모드 A는 8,300 + 200 = 8,500으로 통과하지만, 모드 B 캐싱은 26,845 + 750 = **27,595**로 20,000을 초과하므로 기본값으로는 리프 10개·8,000토큰 문서에서도 모드 B를 완주할 수 없다(원시 토큰 92,750으로 대조하면 더 크게 초과). 따라서 `premium` 기본값 재산정(예: 40,000)은 미해결 이슈 2(AM-52 보류)다. (3) Anthropic Contextual Retrieval의 공식 추정 $1.02/M(04 §11, 10 §A3)은 구세대 Haiku 단가 기준이므로 현행 단가에서는 약 4배로 읽어야 한다. (4) Message Batches(비동기, 할인)는 대량 백필에 유효할 수 있으나 30m `start_to_close`·캐시 병용 조건 확인 필요(as of 2026-09) — 미해결 이슈 6.
 
 ### 7.6 실패 시 폴백
 
@@ -485,10 +485,10 @@ Anthropic Messages API 요청 형태(예시; 문서 텍스트는 자리표시자
 
 | 구성요소 | 식·규칙 |
 |----------|---------|
-| `model_id` | `{repo}@{revision}`(바이블 §6.1). vLLM: HF SHA. API: `anthropic:claude-haiku-4-5@<created_at YYYYMMDD>`(제안 §7.4). `budget_used.model_id`·`generated_by`·`producer.model_ids`에 동일 문자열 |
+| `model_id` | 자체 호스팅(vLLM): `{repo}@{revision}`(HF SHA). API: `{provider}:{model}`, `@{revision}`은 선택(공급자 날짜 스냅샷이 있으면 그 값; 없으면 `created_at`을 `Producer`에 별도 병기) — 예 `anthropic:claude-haiku-4-5`(바이블 §6.1 1.3.0, AM-11; §7.4). `budget_used.model_id`·`generated_by`·`producer.model_ids`에 동일 문자열 |
 | `prompt_hash` | `H("prompt", template_id, template_version, canonical_json(params))`, `params = {max_output_tokens, prefix_max_tokens, lang, provider_params(허용된 샘플링 파라미터만)}`. 템플릿 본문은 `template_id@version`으로 저장소에 고정되며 본문 수정은 `template_version` 증가로만 허용(CI: 본문 해시 ↔ 버전 표 대조). 산출물 종류(플러그인)마다 값이 다르므로 계약에는 `budget_used.prompt_hashes[plugin_id]`(06 §2.4, 선택 N)로 기록하고 단일 `prompt_hash` 필드는 두지 않는다 |
 | 섹션 요약 키(모드 A) | 문서·섹션 요약은 청크가 아니라 섹션 텍스트에서 생성되므로 키는 `H("llm-enrich", model_id, prompt_hash, section_text)`다(06 §10 초안을 이 문서가 확정; 바이블 §6.2 patch 제안은 06 미해결 이슈 17). `section_text` = 해당 `level=1` 부모 `Chunk.text`; 문서 요약은 문서 최상위 부모 `Chunk.text`, 부모가 없으면 `NormalizedDocument.display_text`(pii_policy 적용 후 뷰). 조회 결과(호출 1회 또는 적중 1회)는 섹션당 1회만 `budget_used.calls`·`stats.llm_cache_hits`에 계수하고, 그 섹션 모든 청크의 `GeneratedPrefix.cache_hit`는 같은 값이다 |
-| 캐시 엔트리 | `tenants/{tenant_id}/derived/llm_enrich/{key[:2]}/{key}.json` = `{kind: enum[generated_prefix, hypothetical_questions, summary, entities], plugin_id, model_id, prompt_hash, output, llm_tokens_in, llm_tokens_out, created_at}`(06 §10 초안을 이 문서가 확정). `output`은 `kind`별 string / array<string> / string / array<Entity>이며 `kind=generated_prefix`의 `output`·`model_id`가 `GeneratedPrefix.generated`·`generated_by`다. 봉투 없음, 테넌트 내 공유(재청킹·타 컬렉션·재색인에서 재사용). 조회 순서: 오브젝트 스토리지 → 미스 시 호출 → `ctx.artifacts.put_derived` |
+| 캐시 엔트리 | 경로 `tenants/{tenant_id}/derived/llm_enrich/{key[:2]}/{key}.json`(`key = H("llm-enrich", model_id, prompt_hash, embed_text)`; 문서·섹션 요약은 `embed_text` 자리에 섹션 텍스트 해시)는 바이블 §13.3 1.3.0(AM-19)이, 캐시 키 입력 정의(`embed_text`는 `generated` 미포함 조립 결과)는 바이블 §6.2 1.3.0(AM-12)이 정본으로 확정했다(06 §10과 이 문서는 인용만 한다). 값 = `{kind: enum[generated_prefix, hypothetical_questions, summary, entities], plugin_id, model_id, prompt_hash, output, llm_tokens_in, llm_tokens_out, created_at}`. `output`은 `kind`별 string / array<string> / string / array<Entity>이며 `kind=generated_prefix`의 `output`·`model_id`가 `GeneratedPrefix.generated`·`generated_by`다. 봉투 없음, 테넌트 내 공유(재청킹·타 컬렉션·재색인에서 재사용). 조회 순서: 오브젝트 스토리지 → 미스 시 호출 → `ctx.artifacts.put_derived` |
 | 지문 전파 | `prompt_hash`·`model_ids`는 LLM 보강기의 `config_hash`·`model_ids`를 통해 `fingerprint` → `enricher_fingerprint` → `stage_key`에 들어간다. 프롬프트·모델 변경 = 세트 재실행이지만 청크 캐시는 새 키로만 미스 |
 | 샘플링 | 허용되는 공급자에서만 `temperature=0`, 고정 `seed`(권고, 보증 아님). 최신 Anthropic 모델은 샘플링 파라미터를 거부하므로 어댑터 허용 집합에서 제외 |
 | 적합성 | `idempotency` 키트: 캐시 프라이밍 후 2회 실행 바이트 동일(기록형 HTTP 클라이언트로 재생). `generated_prefix.enabled` 토글 시 `text`·`chunk_id`·`content_hash`·`block_refs` 불변, `embed_text`·`embed_text_hash`·`commit_hash`만 변경 |
@@ -514,14 +514,14 @@ Anthropic Messages API 요청 형태(예시; 문서 텍스트는 자리표시자
 |----|------|
 | `llm_tokens_in` | 공급자 `usage` 합 = `input_tokens + cache_creation_input_tokens + cache_read_input_tokens`(원시 토큰; vLLM은 `prompt_tokens`) |
 | `llm_tokens_out` | `output_tokens` 합 |
-| `charged_tokens`(예산 대조 기준) | `input_tokens + 1.25 × cache_creation + 0.1 × cache_read + output_tokens`(5분 TTL 기준; 공급자별 배수는 어댑터 단가표) |
+| `charged_tokens`(예산 대조 기준; `EnrichedChunkSet.budget_used.charged_tokens` — 바이블 §5.4 1.3.0 선택 필드, AM-32) | `input_tokens + 1.25 × cache_creation + 0.1 × cache_read + output_tokens`(5분 TTL 기준; 공급자별 배수는 어댑터 단가표) |
 | `cost_usd` | `charged_tokens`에 공급자 단가 적용(입력·출력 분리). vLLM은 0(GPU 초는 `JobStatus.cost.gpu_seconds`) |
 | 예산 4 판정 | 문서 누적 `charged_tokens ≤ enrichment_budget_tokens`. 다음 호출의 예상 비용(접두어 + 청크 + `max_output_tokens`)을 더해 초과가 예상되면 호출하지 않고 `partial` |
 | 예산 5 판정 | 문서 누적 `llm_tokens_out ≤ corpus_multiplier_max × Σ leaf token_counts[primary_tokenizer_id]`(15 문서 "생성 토큰 상한 배수"). 문맥 접두어는 보통 0.1배 미만이라 가상 질문·요약·관계 추출·RAPTOR가 주 대상 |
 | `budget_remaining_tokens` | `max(0, enrichment_budget_tokens − 문서 누적 charged_tokens)` |
 | 집계 일치 | `budget_used.llm_tokens_in + llm_tokens_out` = `JobStatus.cost` 증분 = `usage_ledger(meter=llm_tokens)` 증분 = `rag_enrich_llm_tokens_total` 증분(허용 오차 0); `cost_usd` → `rag_enrich_llm_cost_usd_total`; 메트릭 라벨에 `tenant_id` 금지 |
 
-캐시 적중(플랫폼 `H("llm-enrich")`)은 어느 양에도 더하지 않고 `stats.llm_cache_hits`·`generated_prefixes[].cache_hit=true`로만 계수한다. `charged_tokens`를 `BudgetUsed`에 기록할 필드(N)는 06에 제안한다(미해결 이슈 2).
+캐시 적중(플랫폼 `H("llm-enrich")`)은 어느 양에도 더하지 않고 `stats.llm_cache_hits`·`generated_prefixes[].cache_hit=true`로만 계수한다. `budget_used.charged_tokens`는 바이블 §5.4 1.3.0(AM-32)이 이미 선택 필드로 등재했다(§12.4 표 `BudgetUsed` 철자 반영); 남은 미해결 이슈 2는 `premium` 예산 값 자체의 재산정(AM-52 보류)뿐이다.
 
 ### 12.3 지연·처리량 예산(초안 목표)
 
@@ -535,7 +535,7 @@ Anthropic Messages API 요청 형태(예시; 문서 텍스트는 자리표시자
 
 ### 12.4 `partial_ref` 구조(`derived/partial_enrich/`, 이 문서 확정)
 
-`ResumeCursor.partial_ref`가 가리키는 파생물은 계약이 아닌 내부 JSON이다(01 §11.2). 본문 텍스트를 넣지 않는다(`enrichments`의 `embed_text`·`index_text`는 재개 후 SDK가 재조립할 수 있으므로 생략). `budget_used`는 06 §2.4 `BudgetUsed` 철자(7키 + 선택 `prompt_hashes{plugin_id: hex64}`)를 그대로 쓰고, 예산 대조 기준인 `charged_tokens`(§12.2; `BudgetUsed`에는 없는 필드, 미해결 이슈 2)는 최상위에 둔다.
+`ResumeCursor.partial_ref`가 가리키는 파생물은 계약이 아닌 내부 JSON이다(01 §11.2). 본문 텍스트를 넣지 않는다(`enrichments`의 `embed_text`·`index_text`는 재개 후 SDK가 재조립할 수 있으므로 생략). `budget_used`는 06 §2.4 `BudgetUsed` 철자(7키 + 선택 `prompt_hashes{plugin_id: hex64}`)를 그대로 쓴다. 예산 대조 기준인 `charged_tokens`(§12.2)는 최종 계약 `EnrichedChunkSet.budget_used.charged_tokens`(바이블 §5.4 1.3.0 선택 필드, AM-32)로도 나가므로, 이 내부 `partial_ref`는 같은 값을 최상위 키로 임시 보관했다가 세트 커밋 시 `budget_used`로 옮겨 담는다.
 
 예시 가정: vLLM 컬렉션(캐시 분리 없음 → `charged_tokens = llm_tokens_in + llm_tokens_out = 71,200 + 4,400 = 75,600`), 컬렉션 정책 `enrichment_budget_tokens = 100,000`(premium 기본 20,000을 컬렉션에서 상향한 예) → `budget_remaining_tokens = max(0, 100,000 − 75,600) = 24,400`. 모드 B 150호출 시점(`chunk_offset` 150)이다.
 
@@ -582,8 +582,8 @@ Anthropic Messages API 요청 형태(예시; 문서 텍스트는 자리표시자
 | 메트릭 | `rag_ingest_stage_duration_seconds{stage="enrich"}`, `rag_enrich_llm_tokens_total`, `rag_enrich_llm_cost_usd_total`. 라벨은 `stage, profile_id, outcome`만. 캐시 적중률·`partial` 비율 메트릭 추가는 §6.5 정본 목록 개정 필요(미해결 이슈 11) |
 | 로그 | structlog `{event, level, tenant_id_hash, job_id, trace_id, stage: "enrich", code}`; `term`·`generated`·본문 금지 |
 | 이벤트 | `ingest.document.enriched`(`data`: `document_id`, `doc_version`, `chunk_set_id`, `status`, `stats`, `budget_used` 숫자만; 콘텍스트 본문 금지) |
-| 오류 | `enrich.content_policy_violation`(no), `enrich.llm_policy_denied`(no), `enrich.budget_exceeded`(no → `partial`), `enrich.extractor_timeout`(yes), `enrich.llm_unavailable`(yes). `StagePolicy.non_retryable_error_codes`: 결정적 `[enrich.content_policy_violation, contract.violation]`, LLM `[enrich.content_policy_violation, enrich.llm_policy_denied, contract.violation]` |
-| 원장 | `budget_used` → `usage_ledger(tenant_id, day, meter=llm_tokens)`; `IndexCommit.stats.llm_tokens`; `GET /v1/tenants/{tenant_id}/usage` |
+| 오류 | `enrich.content_policy_violation`(no), `enrich.llm_policy_denied`(no), `enrich.budget_exceeded`(no → `partial`), `enrich.extractor_timeout`(yes), `enrich.llm_unavailable`(yes). `StagePolicy.non_retryable_error_codes`: 결정적 `[enrich.content_policy_violation, contract.violation]`, LLM `[enrich.content_policy_violation, enrich.llm_policy_denied, contract.violation]`. **`enrich.extractor_timeout`은 재시도 가능한 액티비티 실패 코드이자 청크 단위 `Warning.code`로도 쓴다**(빈 배열 + `status=partial`; 바이블 §5.7 1.3.0, AM-36; §6.1 표 "타임아웃" 행이 이 경로를 쓴다) |
+| 원장 | `budget_used` → `usage_ledger(tenant_id, day, meter=llm_tokens)`; `IndexCommit.stats.llm_tokens`; `GET /v1/tenants/{tenant_id}/usage`(바이블 §14 1.3.0 `/v1/tenants` 계열과 경로 일치 확인, AM-39) |
 
 ## 14. 평가(보강 켬/끔 A/B)
 
@@ -628,7 +628,7 @@ ingest:
       plugin: enricher.llm_context_prefix
       gate: {metric: ndcg@10, min_delta: 0.03, max_cost_per_doc_usd: 0.05}
       provider: anthropic
-      model_id: "anthropic:claude-haiku-4-5@<created_at>"
+      model_id: "anthropic:claude-haiku-4-5"   # @revision 선택(없음); created_at은 Producer에 별도 병기(바이블 §6.1 1.3.0, AM-11)
       template_id: enrich-ctx-prefix-ko
       template_version: 1
       max_output_tokens: 160
@@ -660,11 +660,11 @@ ingest:
 
 | # | 이슈 | 제안 |
 |---|------|------|
-| 1 | `stage.enrich_llm`이 청크 본문을 읽기 위해 `requires_lineage=("ChunkSet",)`를 선언하지만 바이블 §4.1은 `requires_lineage` 사용 스테이지를 `index`로 한정한다 | 바이블 §4.1·§4.2 `enrich` 행에 "LLM 액티비티는 `ChunkSet` 계보를 함께 로드"를 명시(patch); 대안은 `EnrichedChunkSet(결정적)`과 `ChunkSet` 두 `ArtifactRef`를 인자로 받는 합성 입력 |
-| 2 | 예산 대조 기준을 `charged_tokens`(캐시 배수 반영)로 정했으나 `BudgetUsed`에 기록 필드가 없고, `premium` 기본 20,000은 §7.5 가정(8,000토큰·리프 10개)의 모드 B 캐싱조차 초과한다(27,595; 모드 A 8,500만 통과) | 06에 `BudgetUsed.charged_tokens`(N) 제안; §7.2 `enrichment_budget_tokens` premium 값을 실측 후 §1.2 minor 절차로 재산정(예: 40,000) |
-| 3 | (a) `enrich.llm_unavailable` 재시도 소진 시 바이블 §11.3은 `retryable` 분류라 잡 `failed`가 된다. 결정적 결과가 이미 있으므로 `partial`(결정적 접두어 폴백)로 완화하는 것이 원칙(부분 성공)에 부합한다. (b) §7.6이 청크 1건 폴백을 `warnings[enrich.llm_unavailable]`(청크 단위)로 기록하지만 06 §9 청크 경고 목록은 `enrich.extractor_timeout`·`enrich.content_policy_violation`·`enrich.budget_exceeded`만 둔다 | (a) ADR-0016 개정 검토: "소진 시 `partial` + `warnings[enrich.llm_unavailable]`". (b) 06 §9 경고 목록·바이블 §5.7에 "`enrich.llm_unavailable`은 액티비티 실패 코드(재시도 yes)이면서 청크 단위 폴백 경고로도 기록 가능(`chunk_id` 포함)"을 patch 제안; 거부되면 이 문서 §7.6 1행을 `enrich.extractor_timeout`으로 대체 |
+| 1 | **해소(v1.3, AM-26).** 바이블 §4.1·§4.2 `enrich` 행이 LLM 서브스텝의 `requires_lineage = ("ChunkSet",)`를 명시적으로 허용했다(M1 필수 범위는 `chunk`뿐이며 `enrich` LLM은 옵션 사용) | — |
+| 2 | **부분 해소(v1.3, AM-32).** 예산 대조 기준 `budget_used.charged_tokens`는 바이블 §5.4 1.3.0이 `EnrichedChunkSet.budget_used`의 선택 필드로 이미 등재했다. 남은 것은 값 자체다 — `premium` 기본 20,000은 §7.5 가정(8,000토큰·리프 10개)의 모드 B 캐싱조차 초과한다(27,595; 모드 A 8,500만 통과) | §7.2 `enrichment_budget_tokens` premium 값 재산정(예: 40,000)은 **AM-52 보류**(적대적 코퍼스 측정 근거 대기) — 현행 §7.2·바이블 §7.2 값(20,000)을 유지하고, 해당 측정이 끝나면 minor로 확정한다 |
+| 3 | (a) **AM-47 보류.** `enrich.llm_unavailable` 재시도 소진 시 바이블 §11.3은 `retryable` 분류라 잡 `failed`가 된다. 결정적 결과가 이미 있으므로 `partial`(결정적 접두어 폴백)로 완화하는 안은 트리아지가 접수했으나 근거(대량 LLM 보강 운영 경험)가 부족해 **보류**되었다 — 재발의 시점은 LLM 보강을 켜는 M4 전. (b) **해소(v1.3, AM-36).** 바이블 §5.7이 "`enrich.extractor_timeout`은 청크 단위 `Warning.code`로도 쓴다(빈 배열 + `status=partial`, §4.2)"를 명시했다 | (a) **현행 유지:** 재시도 소진 = 잡 `failed`, 복구는 `POST /v1/jobs/{job_id}/retry?stages=enrich`(§7.6 그대로). M4 전 재발의하지 않는다. (b) §7.6의 `warnings[enrich.llm_unavailable]`(청크 단위) 표기는 그대로 두되, `enrich.extractor_timeout`과 같은 이중 용도(액티비티 실패 코드 + 청크 경고)임을 바이블이 이미 확인했으므로 `enrich.llm_unavailable`도 같은 patch를 06 §9·바이블 §5.7에 별도 요청한다(범위 밖 잔여 항목) |
 | 4 | 가상 질문 플러그인의 `plugin_id`와 프로파일 키(`ingest.enrich.hypothetical_questions{enabled, plugin, max_questions}`)가 바이블 §7.3에 없다 | `enricher.hypothetical_questions`와 키 추가(15 문서·바이블 minor) |
-| 5 | API 모델의 `revision` 표기(별칭에 날짜 접미 없음) | Models API `created_at`(YYYYMMDD)을 `revision`으로 고정해 `models.lock` 기록; 바이블 §6.1 `model_id` 행에 API 공급자 규칙 추가(patch) |
+| 5 | **해소(v1.3, AM-11).** 바이블 §6.1 `model_id` 행이 API 공급자 표기를 확정했다: `{provider}:{model}`, `@{revision}`은 선택(공급자 날짜 스냅샷이 있으면 그 값, 없으면 Models API `created_at`을 `producer`에 병기) — `created_at`을 `revision`으로 합성하지 않는다 | §7.4·§11의 "`created_at`을 `revision`으로 고정"(구 초안)은 바이블 문구와 어긋나므로 폐기하고, `revision` 없이 `model_id = {provider}:{model}`만 쓰고 `created_at`은 `Producer`에 별도로 병기하도록 정정 |
 | 6 | Message Batches API(비동기 할인)로 대량 백필 시 `enrich(LLM)` 30m `start_to_close`와 캐시 병용 조건이 맞지 않는다 | 별도 잡 종류(`reindex_collection` 내 `enrich_backfill`) 또는 `policy_llm` 상향; 배치·캐시 병용 여부 확인 필요(as of 2026-09) |
 | 7 | KeyBERT·YAKE 등 대안 키워드 추출기의 `KeywordSource` 열거값이 없고 07-tech-landscape 연구가 없다 | 필요 시 13 문서 보강 후 `KeywordSource` 값 추가(minor); 그 전까지 플러그인은 `user_dict` 외 값을 낼 수 없다 |
 | 8 | `Chunk.lang` 오판(혼용 문서)이 템플릿·키워드 선택을 그르칠 수 있다 | 선택 `enricher.lang_check`(fastText lid 등, 라이선스·정확도 확인 필요 as of 2026-09) 검토; 기본은 재감지 없음 |

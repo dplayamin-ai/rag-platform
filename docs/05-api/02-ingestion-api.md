@@ -2,7 +2,7 @@
 title: 수집 API
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.2.0
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -217,7 +217,7 @@ sequenceDiagram
 |------|------|------|-----------|
 | 202 | 접수 | — | `Location`, `IngestAccepted` |
 | 200 | 같은 키·같은 지문 재전송(접수 커밋 후) | — | 원 202와 내용 동일 본문, 같은 `Location` |
-| 400 | 스키마·불변식 위반, `Idempotency-Key` 부재, `request_id` 존재, 비밀 평문, 인라인 한계 초과, 미등록 콜백 URL, `Content-Type` 불일치 | `contract.violation`(`errors[].location.pointer` ≤ 16) | `ProblemDetails` |
+| 400 | 스키마·불변식 위반, `Idempotency-Key` 부재, `request_id` 존재, 비밀 평문, 인라인 한계 초과, 미등록 콜백 URL, `Content-Type` 불일치. **예외:** 잠금 ACL(01 계약 §7 IR-5 A4 `deny_principals ∋ tenant:*` 또는 A6 `restricted` + 빈 `allow_principals`)은 더는 400이 아니다 — 202로 접수하고 `warnings += {code: "contract.acl_deny_all"}`를 담는다(바이블 §5.7 1.3.0, AM-17·AM-36) | `contract.violation`(`errors[].location.pointer` ≤ 16) | `ProblemDetails` |
 | 401 / 403 | 미인증 / 컬렉션 `ingest` 권한 없음 | `auth.unauthenticated` / `auth.forbidden` | `WWW-Authenticate` / — |
 | 409 | 같은 키의 접수 트랜잭션 진행 중 | `api.idempotency_conflict` | `instance` = 잠정 `/v1/jobs/{job_id}`, `Retry-After: 1` |
 | 422 | 같은 키·다른 지문 / `profile_overrides` 허용 밖 / 주체 초과 / 본문 `tenant_id` | `api.idempotency_payload_mismatch` / `profile.invalid` / `auth.too_many_principals` / `contract.violation` | — |
@@ -293,7 +293,7 @@ sequenceDiagram
 | 검증 | 전체 원자적. 한 건이라도 위반이면 400 + `errors[].location.pointer = /{index}/{field}`, 잡 0개 | 01 §10.3, 01 계약 §3.2 |
 | 접수 | 단일 트랜잭션: `jobs` N행 + `idempotency_keys` 1행 + `documents` + `artifacts` N행. `request_id`·`document_id`는 건별 | 01 계약 §3.2 |
 | 응답 | 202 `IngestBatchAccepted{jobs[]}`; `jobs[i]`는 요청 배열 `i`번째. `Location`은 `jobs[0].status_url` | 01 계약 §3.2 |
-| 멱등성 | 키 하나가 배치 전체를 덮는다(200/409/422 동일). 부분 접수 없음 | 01 §6·§10.3 |
+| 멱등성 | 키 하나가 배치 전체를 덮는다(200/409/422 동일). 부분 접수 없음. 재생(200)은 `idempotency_keys.job_ids`(배치 자식 잡 ID 배열, 바이블 §13.1 1.3.0)로 원 `IngestBatchAccepted.jobs[]`를 재현하며, 배치 자식 잡의 `jobs.idempotency_key`는 NULL이다(배치 키는 `idempotency_keys`에만 있다; AM-44) | 01 §6·§10.3 |
 | 같은 문서 | 배열 안 두 건이 같은 `document_id`로 확정되면 뒤 건이 `queued(waiting_for = 앞 job_id)` — 배열 순서 = 처리 순서 | 01 계약 §3.2·§10 |
 | 한도 | `ingest` 클래스에서 건수로 계량(§2.3) | 01 §11 |
 
@@ -394,8 +394,8 @@ sequenceDiagram
 | 요청 | `Accept: text/event-stream`, `Authorization: Bearer`(쿼리 토큰 없음), 선택 `Last-Event-ID` |
 | 첫 접속 | 서버가 그 잡의 **발행된 과거 이벤트를 발행 순으로 먼저 재생**한 뒤 실시간으로 이어간다. 이미 종결된 잡은 종결 `job.state.changed`까지 재생 후 즉시 닫는다 — 202 직후 접속해도 이벤트를 놓치지 않는다 |
 | 프레임 | `id: {event_id}` · `event: {type}` · `data: {CloudEventEnvelope JSON 1행}`. 첫 프레임 앞 `retry: 3000`, 15s마다 `: keepalive` |
-| 범위 | `data.job_id = job_id`인 이벤트: `job.state.changed`, `ingest.document.*`, `index.commit.published`·`rolled_back` |
-| 진행률 | `job.state.changed.data.progress`는 **스테이지 경계**만. 페이지·청크 세분 진행률은 §6.2 폴링 |
+| 범위 | `data.job_id = job_id`인 이벤트: `job.state.changed`, `ingest.document.*`, `index.commit.published`·`rolled_back`(바이블 §14 1.3.0, AM-20) |
+| 진행률 | `job.state.changed.data.progress`는 **스테이지 경계**만. 페이지·청크 세분 진행률은 §6.2 폴링. 세분 진행률 이벤트 `job.progress.updated`는 채택하지 않는다(AM-54 보류 — 근거 대기, §미해결 이슈 14) |
 | 종료 | 종결 `job.state.changed` 전달 후 서버가 닫는다. 결과 이벤트(`ingest.document.indexed`·`failed`)는 종결 이벤트보다 먼저 도달한다(12 I-19). `retry` 후에는 새 접속 |
 | 멱등 | at-least-once. `id`(= `event_id`)로 중복 제거 |
 | 오류 | 접속 실패만 `ProblemDetails`(401·403·400). 잡 실패는 스트림 안 이벤트 `data`에 투영 |
@@ -424,12 +424,12 @@ data: {"specversion":"1.0","id":"01JAC0F4E5F6G7H8J9K0M1N2P3","source":"urn:rag:w
 |------|------|
 | 본문 | 없음(빈 본문 또는 `{}`) |
 | 응답 | 202 `JobStatus`(`state=cancelling` — `running`이었을 때; `cancelled` — `queued`였을 때) |
-| 동작 | `queued`(대기 체인 포함) → 즉시 `cancelled`. `running` → 원장 `cancelling` 커밋 후 `handle.signal(cancel)` → 진행 액티비티 취소 + 보상(플립 전 세대 삭제) → `cancelled`. 시그널 전송 실패는 503 + `Retry-After`, 조정 틱이 재전송 |
+| 동작 | `queued`(대기 체인 포함) → 즉시 `cancelled`. `running`(플립 전, `index_commits.status ∈ {pending, vector_written, lexical_written}`) → 원장 `cancelling` 커밋 후 `handle.signal(cancel)` → 진행 액티비티 취소 + 보상(새 세대 삭제) → `cancelled`. `running`(플립 시작 후, `status ∈ {flipping_lexical, flipping_vector}`) → 사가는 보상 없이 완료하고 잡은 `succeeded`로 종결(AM-46 잠정 규칙; 응답은 여전히 202 + 그 시점의 `JobStatus`). 시그널 전송 실패는 503 + `Retry-After`, 조정 틱이 재전송 |
 | 종결 잡 | `succeeded`·`partial`·`failed`·`cancelled`의 취소는 400 `contract.violation`(`api.job_state_conflict` 채택 전; `detail="conflict: job already terminal"`) |
 | 멱등성 | 자연 멱등 — `cancelling`·`cancelled` 잡의 재호출은 현재 상태를 202로 돌려준다. `Idempotency-Key`는 무시 |
 | 이벤트 | `job.state.changed` + `audit.admin.action`(취소는 관리 행위) |
 
-플립 뒤(`flipping_*` 이후) 도착한 취소는 바이블 §11.5에 전이가 없어 보상하지 않고 `succeeded`로 종결하는 제안이 검토 중이다(12 미해결 이슈 5). 채택 전 서버는 플립 후 취소 시그널을 무시하고 `cancelling → cancelled` 대신 사가를 완료한다 — 이 경계는 구현 전 확정이 필요하다(미해결 이슈 7).
+플립 뒤(`flipping_*` 이후) 도착한 취소는 바이블 §11.5에 정식 전이가 아직 없어(`cancelling → succeeded`), 트리아지 AM-46이 잠정 규칙(구현은 이 규칙을 따르되 바이블 patch는 보류, CR-29)으로 "보상 없이 사가 완료 → `succeeded`"를 확정했다 — §미해결 이슈 7은 이 잠정 규칙이 바이블 §11.5 patch로 정식 채택되기까지 열어 둔다.
 
 ### 6.5 `POST /v1/jobs/{job_id}/retry`
 
@@ -504,7 +504,7 @@ data: {"specversion":"1.0","id":"01JAC0F4E5F6G7H8J9K0M1N2P3","source":"urn:rag:w
 }
 ```
 
-삭제 수명주기별 응답(01 §9.4): 삭제 중·툼스톤은 200(`status`·`deleted_at` 노출), 정리(purge) 후는 404(`api.not_found` 채택 전 400 `contract.violation`, `detail="not found: …"`). 조회는 `audit.document.accessed`를 기록한다.
+삭제 수명주기별 응답(01 §9.4): 삭제 중·툼스톤은 200(`status`·`deleted_at` 노출), 정리(purge) 후는 404 `api.not_found`(바이블 §5.7 1.3.0, AM-36; `detail="not found: …"`). 조회는 `audit.document.accessed`를 기록한다.
 
 ### 7.2 `GET /v1/documents/{document_id}/content`
 
@@ -520,7 +520,7 @@ data: {"specversion":"1.0","id":"01JAC0F4E5F6G7H8J9K0M1N2P3","source":"urn:rag:w
 |------|------|
 | 원천 | 현재 커밋 `IndexCommit.artifact_refs.{parsed, normalized, chunk_set}`의 산출물을 오브젝트 스토리지에서 읽어 페이지로 자른다. 인덱스 백엔드는 읽지 않는다 |
 | ACL | 인가(`read_document`) 뒤 문서 ACL을 바이블 §10.2 (a) 조건으로 재평가(E10). 불통과·툼스톤·정리 후는 각각 403 / 410(`api.gone` 채택 전 400) / 404(채택 전 400) |
-| **결정:** `view=parsed`와 PII | `parsed`는 PII 정책 적용 **전** 원문이다(`normalize`가 두 텍스트 뷰에서 PII를 제거·토큰화한다, E4). 따라서 컬렉션 `pii_policy_applied ≠ keep`이면 `view=parsed`는 Cedar `unmask_pii`(`pii_officer` 전용, 07 §4.1)를 추가로 요구하고 그 외 주체는 403 `auth.forbidden`이다. `normalized`·`chunks`는 `read_document`만으로 충분하다(미해결 이슈 5) |
+| **결정:** `view=parsed`와 PII | `parsed`는 PII 정책 적용 **전** 원문이다(`normalize`가 두 텍스트 뷰에서 PII를 제거·토큰화한다, E4). 따라서 컬렉션 `pii_policy_applied ≠ keep`이면 `view=parsed`는 Cedar `unmask_pii`(`pii_officer` 전용, 07 §4.1)를 추가로 요구하고 그 외 주체는 403 `auth.forbidden`이다. `normalized`·`chunks`는 `read_document`만으로 충분하다(미해결 이슈 5). 같은 액션이 강제하는 `POST /v1/documents/{document_id}/unmask`(`pii_tokenize_mode ∈ {tokenize, encrypt}` 토큰의 원문 복원)는 바이블 §14 1.3.0에 등재된 별개 엔드포인트다(AM-39) — 이 문서는 `view=parsed` 열람만 정의하고 그 엔드포인트는 [관리 API](04-management-api.md) §12.2가 소유한다 |
 | 감사 | `audit.document.accessed{view}` 1건/요청(12 §6.4) |
 | 캐시 | `ETag = artifact.blake3[:16]`, `Cache-Control: private, max-age=0` |
 | 한도 클래스 | `query`(MCP `get_document`와 같은 읽기 경로) |
@@ -654,15 +654,15 @@ HWPX는 흐름 포맷이므로 `page`·`bbox`가 `null`이다(D-04). `chunks` �
 
 ### 7.7 `DELETE /v1/documents/{document_id}`
 
-**결정:** 삭제는 `delete.document.v1`(`JobKind=delete_document`) 잡이며 항상 `kind=delete` 툼스톤 커밋(`record_count=0`)을 만든다(바이블 §11.2·§5.4; 12 §3.1). 본문 없음, 응답 202 `JobStatus` + `Location`.
+**결정:** 삭제는 `delete.document.v1`(`JobKind=delete_document`) 잡이며 항상 `kind=delete` 툼스톤 커밋(`record_count=0`)을 만든다(바이블 §11.2·§5.4; 12 §3.1; 계약 감사 정본 결정 CR-30으로 확인). 본문 없음, 응답 202 `JobStatus` + `Location`.
 
 | 항목 | 규칙 |
 |------|------|
 | 동작 | `aclrev:` 삭제 힌트(E9; 전파 전 질의에서도 제외) → `kind=delete` 커밋: 양 백엔드 `delete_by_filter(document_id)` → `is_current` 없음 → `ingest.document.deleted` + `index.commit.published` |
-| 조회 응답 | 삭제 중 200(`status=deleting`) → 툼스톤 200(`status=deleted`, `deleted_at`) → 정리 후 404(채택 전 400). `content`는 툼스톤부터 410(채택 전 400) |
+| 조회 응답 | 삭제 중 200(`status=deleting`) → 툼스톤 200(`status=deleted`, `deleted_at`) → 정리 후 404 `api.not_found`(바이블 §5.7 1.3.0, AM-36). `content`는 툼스톤부터 410(`api.gone` 채택 전 400) |
 | 직렬화 | 같은 문서의 활성 잡이 있으면 `queued(waiting_for)` — 진행 중 수집이 끝난 뒤 삭제된다(접수 순서 보존) |
 | 재수집 | 툼스톤 문서에 같은 `external_id`로 `POST /v1/ingest`하면 같은 `document_id`가 재사용되고 새 세대가 적재된다(`documents` 행은 유지) |
-| 멱등성 | 이미 툼스톤인 문서의 DELETE는 새 잡 없이 202 + 마지막 삭제 잡 `JobStatus`(자연 멱등). `Idempotency-Key` 선택 |
+| 멱등성 | 이미 툼스톤인 문서의 DELETE는 새 잡 없이 202 + 마지막 삭제 잡 `JobStatus`(자연 멱등). `Idempotency-Key` 선택. 본문 없는 잡 접수형 DELETE이므로 지문은 `wire_body = {}`로 고정한다(빈 객체) — [관리 API](04-management-api.md) `DELETE /v1/collections/{collection_id}`와 같은 규칙으로 대조 완료(#52) |
 | 산출물 | 오브젝트 스토리지 산출물(`sources/`·`artifacts/`)은 즉시 지우지 않는다 — 콘텐츠 주소화 저장이라 다른 문서와 공유될 수 있고, 정리는 보존 정책(09-operations)에 따른다(미해결 이슈 11) |
 | 이벤트 | `ingest.document.deleted`, `index.commit.published`, `job.state.changed`, `audit.admin.action` |
 
@@ -855,7 +855,7 @@ client.documents.reprocess(doc_id, from_stage="enrich", idempotency_key=str(uuid
 - **결정:** 재처리는 `{from_stage}` 하나로 지정하고 `chunk_id` 집합이 같아도 새 `index_generation`으로 적재한다([ADR-0026](../06-adr/0026-index-commit-generation-saga-and-ledger.md), [ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md)).
 - **결정:** ACL 갱신은 payload만 바꾸는 `acl_update` 잡(`doc_version` 불변, [ADR-0005](../06-adr/0005-doc-version-content-hash-only-and-acl-payload-update.md)); 삭제는 항상 툼스톤 커밋을 만드는 `delete_document` 잡.
 - **결정(초안):** `GET /v1/documents/{document_id}`는 `documents` 행의 투영 `DocumentMeta`; `PATCH …/metadata`는 200 + 갱신된 `DocumentMeta` + `reprocess_suggestion`(재임베딩은 자동 시작하지 않는다).
-- **결정:** `view=parsed`는 PII 정책 적용 전 원문이므로 `pii_policy_applied ≠ keep` 컬렉션에서 `unmask_pii`를 요구한다([ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md) 강제 지점의 API 투영).
+- **결정:** `view=parsed`는 PII 정책 적용 전 원문이므로 `pii_policy_applied ≠ keep` 컬렉션에서 `unmask_pii`를 요구한다([ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md) 강제 지점의 API 투영). PII 원문 **복원**(`POST /v1/documents/{document_id}/unmask`, 바이블 §14 1.3.0 AM-39)은 이 문서가 아니라 [관리 API](04-management-api.md) §12.2가 정의한다.
 - **결정:** `retry?stages=`의 v1 허용 값은 `enrich` 하나; 종결 잡의 `cancel`·`retry`는 전용 코드 채택 전 400 `contract.violation`.
 - 명명·경로·헤더는 [ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md), 인가는 [ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md)을 따른다.
 
@@ -863,20 +863,20 @@ client.documents.reprocess(doc_id, from_stage="enrich", idempotency_key=str(uuid
 
 | # | 이슈 | 제안 |
 |---|------|------|
-| 1 | 요청 단위 `dry_run`(검증·`document_id` 확정만, 잡 미생성)은 바이블 §14에 없다. 100건 배치가 한 건 위반으로 전체 400이 되는 운영 마찰(§5.2)을 보면 **필요하다고 판단**한다(01 계약 미해결 이슈 9의 판단 요청에 대한 답) | ADR 발의(minor): `IngestRequest.dry_run`(N, boolean) 또는 쿼리 `?dry_run=true`, 200 `IngestDryRunResult{request_id, document_id, normalized: IngestRequest}`(배치는 배열), `Idempotency-Key` 미소비, 한도는 `ingest` 클래스. 바이블 §14 행 개정 후 이 문서 §4·§5에 추가 |
+| 1 | 요청 단위 `dry_run`(검증·`document_id` 확정만, 잡 미생성)은 바이블 §14에 없다. 100건 배치가 한 건 위반으로 전체 400이 되는 운영 마찰(§5.2)을 보면 **필요하다고 판단**한다(01 계약 미해결 이슈 9의 판단 요청에 대한 답). 트리아지는 이 제안(202→200 의미 변경)을 AM-53으로 **보류**했다(설계 미확정) — 제안 지위를 유지한다 | ADR 발의(minor): `IngestRequest.dry_run`(N, boolean) 또는 쿼리 `?dry_run=true`, 200 `IngestDryRunResult{request_id, document_id, normalized: IngestRequest}`(배치는 배열), `Idempotency-Key` 미소비, 한도는 `ingest` 클래스. AM-53 보류 해제(재발의) 후 이 문서 §4·§5에 추가 |
 | 2 | `ingest` 클래스 20 req/s(1s 윈도)가 배치를 건수로 계량하면 100건 배치 한 번이 정원을 넘어 항상 429다 | 01 §11 정밀화: 토큰 버킷 버스트 ≥ 100 또는 배치 전용 정책 `"ingest-items";q=1000;w=60`(초안) 병기. 부하 테스트 후 프로파일 `security.rate_limit` 확정 |
 | 3 | `DocumentMeta`는 바이블 §5.1 인벤토리·스키마 파일이 없는 API 응답 객체다. 01 §9.3은 "문서 메타 객체"를 04-management-api에 위임했으나 엔드포인트가 이 문서에 배정되어 여기서 정의했다 | 바이블 §5.1에 `DocumentMeta`(`document-meta.schema.json`, 생산 API, 소비 클라이언트·MCP `get_document`) 등재(minor) 또는 API 응답 객체 목록을 05-api/openapi.yaml `components`로만 관리하기로 01 문서에 명시. 04-management-api는 이 절을 링크 |
 | 4 | `PATCH …/metadata`의 payload 갱신 경로에 해당하는 `JobKind`·워크플로우가 바이블 §5.7·§11.2에 없다(`acl.update.v1`만 존재). 01 계약 §5.1도 "메타 payload 갱신"을 같은 장치로 전제한다. 또 `reprocess from_stage=index`는 `requires_lineage`의 `SourceDocument.metadata`(접수 시 스냅샷)를 읽으므로 원장의 갱신 메타를 반영하지 못한다 | (a) `acl.update.v1` → `payload.update.v1`로 일반화 + `JobKind.payload_update`(minor, `acl_update`는 별칭 유지) 또는 `JobKind.metadata_update` 추가; (b) `index` 셸이 원장 `documents.acl`·`metadata` 현재값을 `SourceDocument` 봉투에 덮어쓰는 규칙을 바이블 §4.1에 등재(patch) |
-| 5 | `view=parsed`에 `unmask_pii`를 요구한 결정은 07 §4.1 매트릭스(`read_document`만)보다 엄격하다 | 07 문서 §4.1 `read_document` 행에 "`content?view=parsed`는 `pii_policy_applied ≠ keep`이면 `unmask_pii` 병행"을 등재(patch); Cedar 정책 단위 테스트 추가 |
+| 5 | `view=parsed`에 `unmask_pii`를 요구한 결정은 07 §4.1 매트릭스(`read_document`만)보다 엄격하다(바이블 1.3.0이 같은 액션으로 `POST …/unmask` 엔드포인트를 등재해도 이 이슈는 남는다 — 대상이 다르다: 열람 vs 복원) | 07 문서 §4.1 `read_document` 행에 "`content?view=parsed`는 `pii_policy_applied ≠ keep`이면 `unmask_pii` 병행"을 등재(patch); Cedar 정책 단위 테스트 추가 |
 | 6 | `GET /v1/jobs`에 `document_id`·`created_at_gte/lt`·`sort`를 더했다(바이블 §14는 `collection_id`·`state`·`kind`·커서). `split_hint` 멤버 잡을 부모 응답에서 추적할 다른 수단이 없다 | 바이블 §14 `GET /v1/jobs` 행에 `document_id` 추가(patch). 대안: `IngestAccepted.child_job_ids`(N) — 멤버 확정이 `fetch` 이후라 접수 시 알 수 없으므로 기각 |
-| 7 | 플립 이후 늦은 취소(`cancelling → succeeded`)의 전이가 바이블 §11.5에 없다(12 미해결 이슈 5). 이 문서 §6.4는 채택 전 "플립 후 시그널 무시·사가 완료"로 두었다 | 바이블 §11.5 patch 채택 시 §6.4 갱신; 채택 전 구현은 `cancelling` 진입 뒤 플립 여부를 `index_commits.status`로 판정 |
+| 7 | 플립 이후 늦은 취소(`cancelling → succeeded`)의 전이가 바이블 §11.5에 아직 정식 등재되지 않았다(12 미해결 이슈 5). 트리아지 AM-46이 잠정 규칙(CR-29)으로 "플립 시작 후 취소는 보상 없이 사가 완료 → `succeeded`"를 확정해 §6.4가 이를 따른다 | 바이블 §11.5 patch로 AM-46을 정식 등재할 때 §6.4를 그 문구로 맞춘다(구현은 `cancelling` 진입 뒤 플립 여부를 `index_commits.status`로 판정, 지금도 동일) |
 | 8 | `ingestor`의 "자기 잡" 판정 키(`jobs.request_id`를 접수한 `Principal.subject`)는 이 문서 초안이며 `jobs`에 주체 컬럼이 없다(바이블 §13.1) | `jobs.created_by_principal_hash`(= `H("principal", tenant_id, subject)`, 07 §8.1 제안 결합식) 컬럼 추가(minor) 또는 Cedar 정책에서 `Job.request_id → api 감사 행` 조회로 대체 |
 | 9 | 202 응답 `request_id`·`document_id`가 바이블 §14에 없어 N이다(01 계약 미해결 이슈 1). 서버는 항상 채운다 | 바이블 §14 행 개정(minor) 후 Y 승격 — 이 문서 §4.2 예시는 승격 후에도 유효 |
 | 10 | `retry?stages=`는 바이블 §11.5에 `enrich` 예시만 있다. `embed`·`index`부터의 재시도(예 임베딩 서버 장애로 `partial`)는 `reprocess`로 우회해야 한다 | `stages` 값을 `from_stage` 열거 부분집합(`enrich, embed, index`)으로 확장하는 바이블 §11.5·§14 patch; 채택 전 v1은 `enrich`만 |
 | 11 | 삭제 후 오브젝트 스토리지 산출물(`sources/`·`artifacts/`·`derived/`) 보존·정리 규칙이 바이블 §11.2 `maintenance.cleanup.v1`에 없다(인덱스 레코드만 정리) | 09-operations/07 보존 정책 + `maintenance.cleanup.v1` 행에 "툼스톤 후 `retention` 경과·참조 없는 산출물 정리" 추가(patch). 콘텐츠 주소화 공유 산출물은 참조 카운트(`lineage`)로 판정 |
 | 12 | 접수 시 `source_uri` 스킴을 유효 `EgressPolicy`와 대조해 fail-fast(400)할지 미정(01 계약 미해결 이슈 6). UX 관점에서는 커넥터 오설정을 잡 실패가 아니라 접수 거부로 알리는 편이 낫다 | `api.egress_denied`(400, 비재시도) 제안 코드 ADR과 함께 도입; 호스트·CIDR 판정(DNS 해석 필요)은 `fetch`에 남기고 접수 시는 **스킴 허용목록만** 검사 |
-| 13 | 이 문서가 의존하는 제안 코드(`api.not_found`, `api.job_state_conflict`, `api.orchestrator_unavailable`, `api.dependency_unavailable`, `api.idempotency_key_required`, `api.cursor_invalid`, `api.payload_too_large`, `api.gone`, `api.precondition_failed`, `auth.tenant_mismatch`)가 바이블 §5.7에 없어 채택 전 400 `contract.violation` 대용이 많다 | 13 §3.3·01 미해결 이슈 2와 공동 ADR(minor) — 특히 503 두 코드는 §4.3 구현 전제 |
-| 14 | 세분 진행률(`page`·`chunk`)이 SSE에 없어 대형 스캔 PDF는 폴링을 병행해야 한다(12 미해결 이슈 15) | `job.progress.updated`(제안) 이벤트를 §5.7 카탈로그에 추가하거나 바이블 §14 문구를 "스테이지 경계 진행률"로 patch — 09-operations/04 실측 후 택1 |
+| 13 | `api.not_found`는 바이블 1.3.0에서 채택되어(AM-36) 이 목록에서 제외한다. 이 문서가 여전히 의존하는 제안 코드(`api.job_state_conflict`, `api.orchestrator_unavailable`, `api.dependency_unavailable`, `api.idempotency_key_required`, `api.cursor_invalid`, `api.payload_too_large`, `api.gone`, `api.precondition_failed`, `auth.tenant_mismatch`)가 바이블 §5.7에 없어 채택 전 400 `contract.violation` 대용이 많다 | 13 §3.3·01 미해결 이슈 2와 공동 ADR(minor) — 특히 503 두 코드는 §4.3 구현 전제 |
+| 14 | 세분 진행률(`page`·`chunk`)이 SSE에 없어 대형 스캔 PDF는 폴링을 병행해야 한다(12 미해결 이슈 15). 바이블 1.3.0은 §14 문구를 "스테이지 경계 진행률"로 확정했고(AM-20) `job.progress.updated`는 보류(AM-54, 근거 대기)로 남겼다 | 보류 유지 — 09-operations/04 실측으로 세분 진행률 수요가 확인되면 AM-54 재발의 |
 
 ## 참조
 

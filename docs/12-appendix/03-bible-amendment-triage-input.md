@@ -16,7 +16,7 @@ generated_by: tools/phase3/ledger.mjs
 
 ## 범위
 
-결과 JSON adr-fast.json, architecture.json, contracts-audit.json, contracts.json, finish.json, pipelines-pass1.json. 중복(앞 160자 동일)은 1건으로 병합. "바이블 관련" 판정은 정규식(바이블/§ 언급 + 개정·반영·추가·불일치 등 동사)이며 트리아지에서 재분류될 수 있다.
+결과 JSON adr-fast.json, architecture.json, audit-2026-09-23.json, contracts-audit.json, contracts.json, finish.json, pipelines-pass1.json. 중복(앞 160자 동일)은 1건으로 병합. "바이블 관련" 판정은 정규식(바이블/§ 언급 + 개정·반영·추가·불일치 등 동사)이며 트리아지에서 재분류될 수 있다.
 
 ## 1. 집계
 
@@ -253,7 +253,7 @@ generated_by: tools/phase3/ledger.mjs
 | 11 | `detect` 출력의 `lineage_refs = {}`(fetch 출력을 `source`에 넣지 않음) — 바이블 §5.2 "자기 자신 제외"·§4.2 detect 행(입출력 같은 schema_type)에서 도출되며 00 §3.2 표에 `detect` 행이 추가되어야 한다(00 > 02이지만 02 §1.2 결정이 바이블과 정합). |
 | 12 | `Enrichment.keywords[].weight`의 스키마 제약 = 00 소유 `common-types $defs/Enrichment`(현재 하한 없음)가 정본(00 > 06); 06 E-12의 `≥ 0`은 00 minor 제안으로 처리. |
 | 13 | `acl_hash`·`metadata_hash` 입력 정규화 규약은 바이블 §6.2가 침묵 → 02 §3("값 없는 선택 필드 제거")이 현행 정본이나 기본값 동치 문제는 바이블 §6.2 patch로 해소해야 한다. |
-| 14 | QueryRequest.top_k와 pack.k_max는 별개다: 바이블 §5.5 QueryRequest.top_k "기본 10(팩 k_max와 별개)"·§16 GL-08 "최종 K = pack.k_max"·§7.2 standard k_max 20이 정본이며, 09의 `pack.k_max = min(top_k, 프로파일 k_max)`(P-11)는 바이블 patch 전까지 비정본. 11 §2.2 `budget.k_max = 프로파일 query.pack.k_max`가 정본에 부합. |
+| 14 | QueryRequest.top_k와 pack.k_max는 별개다: 바이블 §5.5 QueryRequest.top_k "기본 10(팩 k_max와 별개)"·§16 G-08 "최종 K = pack.k_max"·§7.2 standard k_max 20이 정본이며, 09의 `pack.k_max = min(top_k, 프로파일 k_max)`(P-11)는 바이블 patch 전까지 비정본. 11 §2.2 `budget.k_max = 프로파일 query.pack.k_max`가 정본에 부합. |
 | 15 | k_max 상한: 바이블 §5.1 ContextPack "항목 20(초안)"·§5.5 budget.k_max → 11 `Budget.k_max 1..20`·`items maxItems 20`이 정본; 09 `PackPlan.k_max 1..50`은 20으로 정합해야 한다. |
 | 16 | ContextPack.content_hash: 바이블 §6.2 `H("pack", canonical_json(items))(타임스탬프·trace_id 제외)`와 §9.1 결정성("같은 RankedSet·설정이면 바이트 동일")이 정본 → `items[].acl.checked_at`은 해시 입력에서 제외되어야 하며 11 P-13의 `as_of` 조건 추가는 비정본. |
 | 17 | filters.effective_hash: 바이블 §6.2 "백엔드 전송 필터 트리(security+strategy+user+self_query)"·§5.5 CandidateSet.filters_applied "실제 전송 필터(감사)"·§5.5 QueryPlan "순수 데이터"가 정본 → QueryPlan.filters.effective_hash는 계획 트리의 불변 해시, 실전송(page 변환·완화 반영) 트리와 해시는 CandidateSet.filters_applied가 기록(생산자 10), ContextPack.diagnostics는 그 값을 복사. 09 §5.4의 QueryPlan 갱신 규칙은 비정본. `:as_of` 바인드 이름 직렬화는 09의 잠정 해석(바이블 §6.2 patch 대기). |

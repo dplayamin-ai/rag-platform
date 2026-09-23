@@ -2,8 +2,8 @@
 title: 리랭킹
 status: active
 owner: architecture
-version: 0.1.0
-last_updated: 2026-09-22
+version: 0.1.1
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - ../02-architecture/00-design-bible.md
@@ -248,7 +248,7 @@ sentence-transformers `CrossEncoder`·FlagEmbedding `FlagReranker` 기반 인프
 | 프로파일 | 모델 @ 서빙 | `top_n_in → top_n_out` | `max_tokens_per_text` | `timeout_ms` | `normalization` | 비고 |
 |----------|-------------|------------------------|----------------------:|-------------:|-----------------|------|
 | `lite` | `gte-multilingual-reranker-base` @ TEI CPU, 또는 생략 | 30→10 | 512 | 700 | `sigmoid` | 폴백 `reranker.flashrank`; llama.cpp `--rerank` + bge-v2-m3 GGUF는 검토 |
-| `standard` | `bge-reranker-v2-m3` @ TEI GPU | 100→20 | 512 | 300 | `sigmoid` | `gate{candidate: dragonkue/bge-reranker-v2-m3-ko, min_delta_pt: 2}` |
+| `standard` | `bge-reranker-v2-m3` @ TEI GPU | 100→20 | 512 | 300 | `sigmoid` | `gate{candidate: dragonkue/bge-reranker-v2-m3-ko, min_delta_pt: 2}`(바이블 §5.6 `GateSpec` 형식과 확인 결과 일치, CR-37) |
 | `premium` | `Qwen3-Reranker-4B` @ vLLM/SGLang; 선택 KURE-v2 MaxSim 1단 | (300→100 MaxSim 옵션) → 50→20 | 1024 | 600 | `identity`(확인 필요) 또는 `sigmoid` | `instruction` 사용; `quality` 변형 총 예산 2,500ms |
 | `korean-gov` | `standard`와 동일 + dragonkue ko A/B | 100→20 | 512 | 300 | `sigmoid` | 가중치·LICENSE 자체 미러링, `NO_CONTENT` |
 
@@ -309,7 +309,7 @@ query:
 | 항목 | `standard`(GPU) | `lite`(CPU) | 근거 |
 |------|-----------------|-------------|------|
 | 이미지 태그 | GPU 세대별(`86` A10/A40, `89` L4, `hopper` H100, 접미 없음 A100) | `cpu` | 05 서빙 스택 표 |
-| `--model-id` | `BAAI/bge-reranker-v2-m3` **revision 고정**(`--revision <sha>`, `models.lock`) | `Alibaba-NLP/gte-multilingual-reranker-base` | 바이블 §6.1 `model_id@revision`, D-02 `models.lock` |
+| `--model-id` | `BAAI/bge-reranker-v2-m3` **revision 고정**(`--revision <sha>`, `models.lock`) | `Alibaba-NLP/gte-multilingual-reranker-base` | 바이블 §6.1 1.3.0 `model_id` 표기(자체 호스팅 `{repo}@{revision}`; API 모델 `{provider}:{model}`은 이 문서의 여섯 백엔드가 모두 자체 호스팅이라 해당 없음, AM-11), D-02 `models.lock` |
 | 오프라인 | `HF_HUB_OFFLINE=1` + 모델 볼륨(`korean-gov` 필수: 가중치·LICENSE 자체 미러링) | 동일 | 바이블 §7.1 korean-gov |
 | `--max-client-batch-size` | ≥ `top_n_in`(128 권장) | ≥ 32 | §3.4 |
 | `--max-batch-tokens` | 65,536(초안) | 16,384 | §3.4 |
@@ -600,7 +600,7 @@ sequenceDiagram
 | 재시도 | **없음**. 300ms 예산 안에서 재시도는 예산을 두 번 쓰는 것이라 폴백이 낫다(임베더의 `embed.server_unavailable` 재시도는 수집 측 규칙이며 질의 측에는 적용하지 않는다) |
 | 서킷 | 백엔드(`backend_id`) 단위. 연속 실패 5회 또는 10초 창 실패율 50% 이상 → `open` 30초(호출 없이 폴백) → `half_open`에서 `health()` 탐침 1회 성공 시 `closed` |
 | 오토스케일 연동 | `open` 상태 비율은 `rag_rerank_fallback_total{outcome="circuit_open"}`로 노출되어 알림·KEDA 스케일의 입력 |
-| 폴백 SLO | `rag_rerank_fallback_total / 리랭크 대상 질의 수 < 1%`(초안; [09-operations/04](../09-operations/04-scaling-and-performance.md)(작성 예정)에서 확정) |
+| 폴백 SLO | `rag_rerank_fallback_total / 리랭크 대상 질의 수 < 1%`(초안; [09-operations/04](../09-operations/04-scaling-and-performance.md)에서 확정) |
 
 ### 13.3 폴백 결과 발췌
 
@@ -748,8 +748,8 @@ sequenceDiagram
 - [설계 바이블](../02-architecture/00-design-bible.md) — §1 우선순위, §3.1 D-07·D-16, §3.2 O-04·O-09, §3.3 ADR 0009·0010·0013·0019·0022·0023·0029·0030·0032·0034, §4.1 공통 규약, §4.3 `rerank` 행, §5.1 `RankedSet` 한계, §5.3 `Capabilities`·`ScoreBreakdown`·`DegradedEntry`, §5.5 `QueryPlan.rerank`·`late_interaction_rerank`·`RankedSet`, §5.7 `RerankBackend`·`RerankResponseSchema`·`ScoreNormalization`·`ExplainCode`·`DegradedComponent`·`DegradedReason`·오류 카탈로그 `rerank.*`, §6.1·§6.2·§6.5 명명·해시·메트릭, §7.1~§7.4 프로파일, §8.1 8·10·11단계, §8.2 `relevance_gate`, §8.3 지연 예산, §12 모듈 맵 `adapters/rerank`·`cli/`, §13.1 `calibrations` 표, §13.4 Valkey `rr:`
 - [기술 지형 종합: 선정 매트릭스](../07-tech-landscape/00-summary-and-selection-matrix.md) — J-2 판정, `reranker`·`llm_reranker`·`late_interaction_model`·`embedding_server` 행, 개방 결정 O-04, M2 게이트 목록, 리스크 1·2·9
 - [07 리트리벌 기법: 질의 이해·융합·리랭킹·후처리](../07-tech-landscape/07-retrieval-techniques-fusion-reranking.md) — 후보 표, §3.1~§3.5 리랭킹·서빙 매트릭스, 권고안 점수표, 어댑터 계약 제안, 실패 모드, 리소스 요구, O-04·O-09 의견, 브리프 충돌, 미해결 이슈 8·10
-- [05 임베딩 모델과 서빙](../07-tech-landscape/05-embedding-models-and-serving.md) — late interaction 후보 표(KURE-v2·BGE-M3 colbert), 서빙 스택(TEI·vLLM·SGLang·Infinity), 저장량 계산, 리소스 표
+- [05 임베딩 모델과 서빙](../07-tech-landscape/05-embedding-models-and-serving.md) — late interaction 후보 표(KURE-v2·BGE-M3 colbert), 서빙 스택 조사(TEI·vLLM·SGLang·Infinity — Infinity는 대안·기각: sparse 미지원·릴리스 정체, 브리프 D-16 개정 v1.1·ADR-0009), 저장량 계산, 리소스 표
 - 계약 문서: [00 계약 개요](../03-contracts/00-contract-overview.md)(§4.13 `ChannelScore`, §4.14 `ScoreBreakdown`, §5 `RankedResult`, §6 명명, 예시 5), [09 QueryRequest·QueryPlan](../03-contracts/09-query-request-and-query-plan.md)(§6.7 `RerankPlan`, §7.3 사전 저하, P-9·P-12), [10 CandidateSet·RankedSet](../03-contracts/10-candidate-set-and-ranked-set.md)(§1 표 `rerank` 행, §4.3 `RerankReport.skipped_reason` 값 공간, §6 `hydrate`, §7 리랭크 단계, §9 `explain`, §10 TREC run, §12 저장, RS-3·RS-6·RS-7·RS-9·RS-11, 미해결 이슈 4·19; `schemas/ranked-set.schema.json`), [11 ContextPack](../03-contracts/11-context-pack.md)(`confidence_tier`, `sufficiency`, `explain`), [13 오류 모델](../03-contracts/13-error-model.md)(`rerank.schema_mismatch`·`rerank.timeout` — §3.1·§3.2 행의 "5xx → `timeout`" 묶음은 patch 대상, 미해결 이슈 8), [15 컬렉션·프로파일·정책](../03-contracts/15-collection-profile-and-policy-contracts.md), [16 평가·피드백·사이드카](../03-contracts/16-eval-feedback-and-sidecar-contracts.md)(`query.rerank.gate`, EF-11)
 - 파이프라인 문서: [01 파이프라인 프레임워크](./01-pipeline-framework.md)(§2 `Stage`, §3 `StageContext`, §5.5 `invoke_inline`, §8.1 결정성 등급), [12 임베딩](./12-embedding.md)(§2 포트·베이스 분리, §5 클라이언트 정책, §10 질의 임베딩, §13 멀티벡터 비용, §14 처리량), [13 인덱싱](./13-indexing.md), [15 하이브리드 검색·융합](./15-hybrid-search-and-fusion.md), [17 후처리·컨텍스트 패킹](./17-post-processing-and-context-packing.md), [18 고급 검색](./18-advanced-retrieval-graph-raptor-agentic.md)
 - ADR: [0001 라이선스 등급표](../06-adr/0001-license-grade-table-and-d02-interpretation.md), [0009 임베딩 서빙](../06-adr/0009-embedding-serving-vllm-pooling-tei-inprocess.md), [0010 BGE-M3 근거·late_interaction 슬롯](../06-adr/0010-bge-m3-rationale-and-late-interaction-slot.md), [0013 융합·후처리 순서](../06-adr/0013-fusion-rrf-k60-then-convex-combination-and-postprocess-order.md), [0019 청크·토크나이저](../06-adr/0019-chunk-size-tokenizer-defaults-and-recount-stage.md), [0022 관측성](../06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md), [0023 평가 하네스](../06-adr/0023-evaluation-qrels-answer-spans-and-linear-ndcg.md), [0029 3-텍스트 규칙](../06-adr/0029-three-text-rule-and-deterministic-context-prefix.md), [0030 점수 원장](../06-adr/0030-single-coordinate-system-and-score-ledger.md), [0032 플러그인 SDK](../06-adr/0032-plugin-sdk-stage-protocol-and-conformance-kit.md), [0034 hydrate·PG 미의존](../06-adr/0034-retrieval-hot-path-postgres-independence-and-hydrate.md)
-- 평가·운영·API: [08-evaluation/02 메트릭·하네스](../08-evaluation/02-retrieval-metrics-and-harness.md), [08-evaluation/05 벤치마크 계획](../08-evaluation/05-benchmark-plan-and-baselines.md)(M1 필수 측정 §11.2), [08-evaluation/06 온라인 피드백](../08-evaluation/06-online-feedback-loop.md), [05-api/03 리트리벌 API](../05-api/03-retrieval-api.md); 문서 맵(브리프 §8) 경로이나 작성 예정(링크 검사 예외 등재 대상): [09-operations/04 확장·성능](../09-operations/04-scaling-and-performance.md)
+- 평가·운영·API: [08-evaluation/02 메트릭·하네스](../08-evaluation/02-retrieval-metrics-and-harness.md), [08-evaluation/05 벤치마크 계획](../08-evaluation/05-benchmark-plan-and-baselines.md)(M1 필수 측정 §11.2), [08-evaluation/06 온라인 피드백](../08-evaluation/06-online-feedback-loop.md), [05-api/03 리트리벌 API](../05-api/03-retrieval-api.md), [09-operations/04 확장·성능](../09-operations/04-scaling-and-performance.md)

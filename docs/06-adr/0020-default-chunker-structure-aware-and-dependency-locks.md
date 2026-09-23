@@ -6,7 +6,7 @@ deciders: architecture
 priority: P1
 related: ["D-19"]
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -96,8 +96,8 @@ depends_on:
 | (2) 초과 분할 | `token_counts[primary_tokenizer_id]`가 `leaf_max_tokens`를 넘는 리프는 `NormalizedBlock.sentence_spans` 경계 → semchunk(`offsets=True`) 순으로 분할, 구조 청크 오버랩 0(`fallback_overlap_ratio` 0.10은 `flat_text`만); `chunk.block_oversized` 경고(`warnings[]`, `stats.oversized_blocks`) | §3.2 O-09, §4.2, §5.7 |
 | (3) 동일 heading 병합 | `merge_min_tokens` 미달 인접 리프는 같은 `heading_path`일 때만 병합하며 `leaf_max_tokens`를 넘지 않는다; 결과 `item_kind ∈ {text, list_group, code, table, table_part, figure}`, `level=0` | §5.4 `Chunk`, §5.7 `ItemKind`·`ChunkLevel` |
 | (4) 부모 생성 | `heading_tree` 섹션 = `level=1`·`item_kind=parent`, `parent_max_tokens` 초과 시 섹션 내 순차 분할, `child_chunk_ids`·`parent_chunk_id` 상호 참조; 부모는 반환 단위만(임베딩 안 함, 불변식 (5)); `parent_expand`·`ChunkTextStore`의 원천 | §5.4, §8.2, §13.2 |
-| 표 행 그룹 | `table_row_group_tokens` 256, `header_row_indices` 반복, `item_kind=table_part`, `table_ref{table_block_id, header_row_indices[], row_range[2], col_range[2], serialization: enum(TableSerialization), html_ref}`; 색인 직렬화 `triplet`, 표시 `html`(1차)/`markdown`; `chunk.count_exceeded`는 행 그룹 확대 후 재시도, 최종 비재시도(세트 상한 청크 50,000) | §5.1, §5.4, §5.7 |
-| ID·불변식 | `span = "{first_block_id}:{char_start}-{last_block_id}:{char_end}"`, `chunk_id = H("chunk", doc_version, chunker_config_hash, str(level), span)`, `chunker_config_hash = H("config", canonical_json(config))`; 불변식 (1) `block_refs` 합집합 = `text` (2) `level=0 → token_counts[primary] ≤ leaf_max_tokens` (3) `context_prefix.* ⊄ text` (4) `parent_chunk_id` 세트 내 존재 (5) 부모 미임베딩 | §5.4 `Chunk`, §6.2 |
+| 표 행 그룹 | `table_row_group_tokens` 256, `header_row_indices` 반복, `item_kind=table_part`, `table_ref{table_block_id, header_row_indices[], row_range[2], col_range[2], serialization: enum(TableSerialization), html_ref}`; 역할 분담(03-contracts/05 미해결 이슈 14 정정): 색인 직렬화 `triplet`(`lexical_text`, BM25·sparse 입력), `Chunk.text` 기본 `markdown`(임베딩 입력·`IndexRecord.text` 8,192 UTF-8 바이트 한계·행 단위 `sentence_spans`·HTML 불가 렌더러 폴백을 겸함), 표시 1차 `html`은 `text`가 아니라 `table_ref.html_ref`(무손실 표 전체 HTML → 팩 `tables[].html`, `table_format_preference`)가 담당; `chunk.count_exceeded`는 행 그룹 확대 후 재시도, 최종 비재시도(세트 상한 청크 50,000) | §5.1, §5.4, §5.7 |
+| ID·불변식 | `span = "{first_block_id}:{char_start}-{last_block_id}:{char_end}"`, `chunk_id = H("chunk", doc_version, chunker_config_hash, str(level), span)`, `chunker_config_hash = H("config", canonical_json(config))`; `ordinal` = 같은 부모(`parent_chunk_id`; 없으면 문서) 아래 형제 순서(0-based, 바이블 §5.4 1.3.0 AM-09) — 부모 `text`는 자식 `text`를 `ordinal` 순으로 U+000A 결합; 불변식 (1) `block_refs` 합집합 = `text` (2) `level=0 → token_counts[primary] ≤ leaf_max_tokens` (3) `context_prefix.* ⊄ text` (4) `parent_chunk_id` 세트 내 존재 (5) 부모 미임베딩 | §5.4 `Chunk`, §6.2 |
 | 좌표 | `BlockRef.char_start/char_end`는 `Chunk.text`(display) 기준 코드포인트, `original_char_*`는 `NormalizedBlock.offset_map` 사상 결과; `sentence_spans`는 `text` 기준 | §5.3 `BlockRef`, §6.3 |
 | 토큰 카운터 | `ctx.token_counter`(`TokenCounter{tokenizer_id}`)만 사용, `primary_tokenizer_id = hf:BAAI/bge-m3`, `secondary_tokenizer_ids = ["tiktoken:o200k_base"]`, `Chunk.token_counts` 병기; §7.4 (4) `chunk.tokenizer` = 임베딩 모델 토크나이저 | §3.2 O-09, §4.1, §5.4, §7.4 |
 | 멱등성 | `stage_key = H("stage","chunk", scope_key, normalized.blake3, fingerprint)`, `fingerprint`에 `chunker_config_hash`·`primary_tokenizer_id` 포함 | §4.1, §4.2, §6.2 |
@@ -146,6 +146,7 @@ docling-chunker = ["docling-core[chunking]>=2.97,<3"]   # 2차 어댑터 chunker
 - Docling 어댑터가 CI 동등성 기준선으로 남아 자체 구현의 신규 코드 리스크(점수표 성숙도 3)를 상쇄하고, 골든셋에서 어댑터가 우세하면 1차·2차를 뒤집을 근거가 생긴다.
 - `table_ref` 보존으로 색인 직렬화(`triplet`)와 표시 직렬화(`html`/`markdown`)가 분리되어 표 조각의 자립성과 Context Pack `tables[].html` 렌더링을 동시에 얻는다.
 - Docling의 잦은 릴리스가 코어 런타임 이미지에 전파되지 않는다(`[docling-chunker]` extra는 평가 컨테이너만; 바이블 §15 #9).
+- 바이블 1.3.0(§4.1, AM-26)이 `chunk` 스테이지의 `requires_lineage = ("ParsedDocument",)`를 확정해, 이 청커가 `NormalizedBlock`에 없는 구조 필드(`Block.type`·`numbering_label`·`provenance`·`TableData`·`caption_of`)를 셸이 입력 봉투 `lineage_refs.parsed`에서 함께 로드한 `ctx.lineage["ParsedDocument"]`로 읽는 것이 계약상 확정 사실이 되었다(기본 청커 `structure_aware`가 구조 필드를 요구하므로 M1 필수). 이전까지 이 경로는 03-contracts/00 §3.2의 제안 수준이었다.
 
 ### 부정
 

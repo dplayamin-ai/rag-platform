@@ -2,7 +2,7 @@
 title: "수집: 페치와 소스 해석"
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -237,7 +237,7 @@ class FetchConfig(BaseModel):                          # 프로파일 ingest.fet
 
 위반은 1회 시도로 종료하고(비재시도, 재시도 예산 소모 없음) `rag_egress_denied_total{component="fetch"}`를 올린다. 정책은 스테이지가 아니라 `RuntimeServices.http`(https)·`SourceClientFactory`(제안; s3/gs/az/file) 팩토리가 테넌트 ID로 합성 정책(`compose_egress(profile.runtime.egress, tenants.policies.egress_policy)`, 15 §8)을 가져와 적용한다 — 스테이지는 정책 객체를 보지 않고 원장을 읽지 않는다(01-pipeline-framework §2.5).
 
-`EgressGuard`는 **1차** 방어다. 바이블 §10.3 E16과 06-orchestration §큐 표 `ingest-io` 행이 요구하는 **2차** 방어는 워커·릴레이 파드의 NetworkPolicy(사설 CIDR·클라우드 메타데이터 목적지 거부, 서비스 디스커버리 주소 — PostgreSQL·Qdrant·OpenSearch·Valkey·Temporal·사이드카·`clamd` — 만 허용)이며, [ADR-0038](../06-adr/0038-outbound-egress-policy-and-webhook-signing.md) 준수 확인 "배포 매니페스트 검사"(09-operations/01·05 체크리스트, 작성 예정)가 릴리스 차단 조건으로 검증한다. 2차 방어의 차단은 연결 타임아웃으로 나타나 `fetch.timeout` 재시도를 소모하므로(ADR-0038 대안 3), 1차 방어가 먼저 거부하는 것이 정상 경로다.
+`EgressGuard`는 **1차** 방어다. 바이블 §10.3 E16과 06-orchestration §큐 표 `ingest-io` 행이 요구하는 **2차** 방어는 워커·릴레이 파드의 NetworkPolicy(사설 CIDR·클라우드 메타데이터 목적지 거부, 서비스 디스커버리 주소 — PostgreSQL·Qdrant·OpenSearch·Valkey·Temporal·사이드카·`clamd` — 만 허용)이며, [ADR-0038](../06-adr/0038-outbound-egress-policy-and-webhook-signing.md) 준수 확인 "배포 매니페스트 검사"(09-operations/01·05 체크리스트)가 릴리스 차단 조건으로 검증한다. 2차 방어의 차단은 연결 타임아웃으로 나타나 `fetch.timeout` 재시도를 소모하므로(ADR-0038 대안 3), 1차 방어가 먼저 거부하는 것이 정상 경로다.
 
 ### 3.2 테넌트 제어 목적지와 운영자 설정 엔드포인트
 
@@ -293,7 +293,7 @@ class FetchConfig(BaseModel):                          # 프로파일 ingest.fet
 
 **결정:** `resolved_uri`는 "최종적으로 읽은 리소스"를 서명·자격 증명 없이 가리키는 값이다(원칙은 02-source-document S-10). `https`: 최종 홉 URL에서 아래 표의 서명 쿼리 키를 제거(키 비교는 대소문자 무시, 값은 검사하지 않음, 나머지 쿼리·순서는 보존). `s3`/`gs`/`az`: 정규화된 `source_uri`(퍼센트 인코딩 정규화, 중복 `/` 제거). `file`: realpath. `resolved_uri`는 `IndexRecord.source_uri`의 원천 후보이며(02 미해결 이슈 6) 로그·스팬·이벤트에는 호스트·경로만 남긴다(§11).
 
-02 미해결 이슈 12는 제거 키 목록의 **정본 위치**를 이 문서의 표 또는 `EgressPolicy.strip_query_keys`(N; **제안 필드명** — 15 §8·바이블 §5.3 `EgressPolicy`에 미등재, 02가 15 문서 소유로 제안)로 이관하라고 위임했다. 이 문서는 아래 표를 **제안 정본**으로 두며(`strip_query_keys` 필드가 15·바이블 §5.3에 채택되기 전까지), 02의 계약 모델 상수 `_PROVIDER_SIGNATURE_KEYS`는 이 표와 값이 같고 채택 후에는 이 정본을 로드한다(미해결 이슈 16). 제거 대상은 02 §7과 같게 **공급자 고유 서명 파라미터**로 한정한다 — `token`·`signature`·`key` 같은 범용 키는 정당한 원천 URL(예: 게시판 첨부 `?token=` 식별자)을 훼손할 수 있어 넣지 않고, 서명이 아닌 SAS 부속 파라미터(`se`·`sv`·`sp`·`sr`·`st` 등 만료·버전·권한 표기)는 비밀이 아니므로 남긴다.
+02 미해결 이슈 12가 위임한 제거 키 목록의 **정본 위치**는 해소됐다: `EgressPolicy.strip_query_keys`는 바이블 §5.3 1.3.0에 등재됐다(AM-30, 15 §8 정의 그대로). `max_bytes`·`connect_timeout_ms`·`allowed_ports`도 같은 개정으로 `EgressPolicy` 선택 필드로 등재된 사실이다(AM-30). 이 문서 아래 표는 `strip_query_keys`의 **기본 목록 정본**이며(테넌트가 재정의하지 않는 한 이 값을 쓴다), 02의 계약 모델 상수 `_PROVIDER_SIGNATURE_KEYS`는 이 표에서 로드한다(미해결 이슈 16 해소). 제거 대상은 02 §7과 같게 **공급자 고유 서명 파라미터**로 한정한다 — `token`·`signature`·`key` 같은 범용 키는 정당한 원천 URL(예: 게시판 첨부 `?token=` 식별자)을 훼손할 수 있어 넣지 않고, 서명이 아닌 SAS 부속 파라미터(`se`·`sv`·`sp`·`sr`·`st` 등 만료·버전·권한 표기)는 비밀이 아니므로 남긴다.
 
 | 공급자 | 제거하는 쿼리 키(v1, 확인 필요 as of 2026-09) | 남기는 키(예) |
 |--------|-----------------------------------------------|---------------|
@@ -389,14 +389,14 @@ FR-ING-09(Should)는 "요청자가 기대 해시 또는 크기를 제시한 경�
 | 원본 바이트 | `tenants/{tenant_id}/sources/{blake3[:2]}/{blake3}`, `Content-Type = media_type`, 오브젝트 사용자 메타데이터에 URI·콘텐츠 금지. **불변**(같은 키 = 같은 바이트; 덮어쓰기 no-op). 동일 키 존재 시 PUT 생략(HEAD 선행; 경합은 무해). 조건부 PUT(`If-None-Match: *`) 지원은 저장소별 확인 필요 | 바이블 §13.3, ADR-0037, 01-pipeline-framework §7.2 |
 | 재사용 범위 | 테넌트 내 공유(다른 문서·컬렉션이 같은 바이트를 가져와도 1회 저장). 테넌트 간 공유 없음(키 접두 `tenants/{tenant_id}/`, E5·E17) | ADR-0037 |
 | 보존 | 참조하는 `documents`가 하나라도 있으면 보존; 마지막 참조 삭제 후 30일 유예(`maintenance.cleanup.v1`); 컬렉션 "원본 미보존" 정책(FR-ING-08)은 처리 완료 후 삭제 → 이후 304 재사용 불가(§7.2 (5)) | [저장소 아키텍처](../02-architecture/04-storage-architecture.md) |
-| fetch 출력 `SourceDocument` | `stage_key`가 없으므로 셸이 **바이트 해시 키** `tenants/{tenant_id}/artifacts/source-document/{blake3[:2]}/{blake3}.json`에 저장(01-pipeline-framework §6.2 제안; 02 미해결 이슈 2의 `fetch_key` 안 대신 이 안을 채택). `ArtifactRef.stage_key` 생략, `artifacts` 행 없음(캐시 없음), `lineage(fetch 출력, IngestRequest 산출물, job_id)` 기록 | 바이블 §4.2, 01-pipeline-framework §6.2 |
+| fetch 출력 `SourceDocument` | `stage_key`가 없으므로 셸이 **바이트 해시 키** `tenants/{tenant_id}/artifacts/source-document/{blake3[:2]}/{blake3}.json`에 저장한다(바이블 §13.3 1.3.0, AM-19 채택; 02 미해결 이슈 2의 `fetch_key` 안 대신 이 안을 채택). `ArtifactRef.stage_key` 생략, `artifacts` 행 없음(캐시 없음), `lineage(fetch 출력, IngestRequest 산출물, job_id)` 기록 | 바이블 §4.2·§13.3, 01-pipeline-framework §6.2 |
 | 미디어 타입 | 원본: 판정 MIME(fetch 출력은 §6 규칙); 산출물: `application/vnd.rag.source-document+json` | 바이블 §6.4, 00 §9.3 |
 
 ---
 
 ## 6. 포맷 판별 1차(fetch 출력의 잠정값)
 
-`fetch`는 시그니처(매직 바이트)를 읽지 않는다. 판정은 `detect`(`parser` role `format_detector`, puremagic + ZIP/OLE 스니퍼)의 몫이며 [파싱 라우터와 포맷 판별](./03-parsing-router-and-format-detection.md)이 정본이다. fetch 출력은 하류 라우팅에 쓰이지 않는 **잠정값**만 채운다(02 §1.2: fetch 출력 `format_confidence = 0.0`, S-6).
+`fetch`는 시그니처(매직 바이트)를 읽지 않는다. 판정은 `detect`(`parser` role `format_detector`, puremagic + ZIP/OLE 스니퍼)의 몫이며 [파싱 라우터와 포맷 판별](./03-parsing-router-and-format-detection.md)이 정본이다. fetch 출력은 하류 라우팅에 쓰이지 않는 **잠정값**만 채운다 — `format`은 `unknown`(또는 아래 표의 힌트), `format_confidence = 0.0`, `media_type`은 잠정값, `container_flags`는 자리표로 **미판정**을 뜻한다(바이블 §4.2 `detect` 행·§5.4 `SourceDocument` 1.3.0, AM-06; 02 §1.2 S-6).
 
 | 필드 | fetch 출력 규칙 |
 |------|-----------------|
@@ -575,7 +575,8 @@ v1.1 설계안(부모 `fetch` 전개 + 워크플로우 자식 잡):
 | 자식 스팬 `rag.fetch.call` | 제안(01-pipeline-framework §9.1 `rag.{stage}.call` 확장; `kind="source"` 추가 제안) | 원천 호출 1회(홉 포함)당 하나. OTel HTTP 속성 `url.scheme`, `server.address`(호스트만), `http.response.status_code`; 쿼리·경로의 서명·`credentials_ref` 값 금지. 콘텐츠 캡처 끔 |
 | 메트릭 `rag_ingest_stage_duration_seconds{stage="fetch", outcome, queue="ingest-io"}` | 정본 | 셸 기록. `outcome ∈ {ok, failed}`(fetch는 `degraded`·`partial`·`cache_hit` 없음) |
 | 메트릭 `rag_egress_denied_total{component="fetch"}` | 정본 | `EgressGuard`가 증가 |
-| 메트릭 `rag_fetch_bytes_total{outcome}`, `rag_fetch_not_modified_total`, `rag_fetch_source_reused_total`, `rag_fetch_redirects_count`, `rag_fetch_malware_detected_total` | **제안**(바이블 §6.5 미등재; 라벨 `scheme` 추가도 제안 — 정본 라벨 집합에 없음) | 전송량·304 비율·바이트 재사용률·리다이렉트 분포 관측 |
+| 메트릭 `rag_fetch_bytes_total{outcome}` | 정본(바이블 §6.5 1.3.0, AM-41) | 전송량 관측 |
+| 메트릭 `rag_fetch_not_modified_total`, `rag_fetch_source_reused_total`, `rag_fetch_redirects_count`, `rag_fetch_malware_detected_total` | **제안**(바이블 §6.5 미등재; 라벨 `scheme` 추가도 제안 — 정본 라벨 집합에 없음) | 304 비율·바이트 재사용률·리다이렉트 분포 관측 |
 | 로그 | 정본 필드 `event, level, tenant_id_hash, job_id, trace_id, stage="fetch", code` | 호스트·경로만. 쿼리 문자열·헤더·userinfo·비밀 값·문서 바이트 금지(S-12). `fetch.egress_denied`는 거부 사유 범주(`scheme`, `host`, `port`, `cidr`, `redirect`, `dns_rebind`)를 `detail`에 남긴다 |
 | 이벤트 `ingest.document.fetched` | 정본 | `data`: `job_id, document_id, stage=fetch, doc_version, quality, artifact_blake3` + `collection_id, size_bytes, format, warning_count`(03-contracts/12 `IngestStageEventData`; `stage_key` 없음). 03-data-flow가 제안한 `conditional_304`는 12 문서 합의 사항 |
 | 잡 진행 | `jobs.stage=fetch`, `progress.unit=stage`; 바이트 진행률은 노출하지 않는다(`resumable=no`) | 바이블 §5.6 |
@@ -666,8 +667,8 @@ v1.1 설계안(부모 `fetch` 전개 + 워크플로우 자식 잡):
 - **결정:** E16의 CIDR·고정 연결·리다이렉트 판정은 테넌트 입력이 목적지를 정하는 `http(s)`에 전체 적용하고, `s3`·`gs`·`az`는 운영자 설정 엔드포인트를 서비스 디스커버리 주소로 간주해 스킴·`allowed_hosts`만 판정한다(BYO endpoint v1 미지원). `deny_cidrs` 축소 불가는 유지된다(ADR-0038 재검토 조건 2의 답).
 - **결정:** `http(s)`는 단일 리소스 GET이다 — robots.txt 무시, 자동 리다이렉트 끔·홉마다 재검사·다운그레이드 금지, TLS 항상 검증, 크기 상한은 디코딩 후 바이트에 스트림 도중 강제, `content_hash`는 전송 압축을 푼 표현 바이트.
 - **결정:** 비밀은 `credentials_ref`로만 다루고 팩토리가 KeyProvider로 해소한다; 워커 주변 자격 증명은 기본 금지(`allow_ambient_credentials=false`), `file://`은 `orchestrator=local` + 허용 루트 안에서만([ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md)).
-- **결정:** 원본은 로컬 스풀 + BLAKE3 증분 해시로 받아 `tenants/{tenant_id}/sources/{blake3}`에 불변 저장하고(멀티파트 스테이징 v1 미채택), fetch 출력 `SourceDocument`는 바이트 해시 키로 저장한다(01-pipeline-framework §6.2 제안 채택).
-- **결정:** `fetch`는 시그니처를 읽지 않으며 `format`은 힌트·확장자 기반 잠정값(`format_confidence=0.0`), 판정은 `detect`가 한다.
+- **결정:** 원본은 로컬 스풀 + BLAKE3 증분 해시로 받아 `tenants/{tenant_id}/sources/{blake3}`에 불변 저장하고(멀티파트 스테이징 v1 미채택), fetch 출력 `SourceDocument`(캐시 제외 스테이지)는 바이트 해시 키 `tenants/{tenant_id}/artifacts/source-document/{blake3[:2]}/{blake3}.json`으로 저장한다(바이블 §13.3 1.3.0, AM-19).
+- **결정:** `fetch`는 시그니처를 읽지 않으며 `format`은 힌트·확장자 기반 잠정값(`format_confidence=0.0`), `media_type`·`container_flags`도 잠정값(미판정), 판정은 `detect`가 한다(바이블 §4.2·§5.4 1.3.0, AM-06).
 - **결정:** `dedup_report`는 사실 기록이고 무변경 생략·payload 갱신·계속의 결정은 워크플로우가 한다(`decide_after_fetch` 로컬 액티비티 제안; [ADR-0005](../06-adr/0005-doc-version-content-hash-only-and-acl-payload-update.md), [ADR-0026](../06-adr/0026-index-commit-generation-saga-and-ledger.md)).
 - **결정:** v1 `fetch`는 컨테이너를 전개하지 않는다(단일 URI = 단일 문서). `split_hint=zip_members`는 v1.1 확장이며 §8 설계안(부모 전개 + 자식 잡 + `sources/` 재사용)과 안전 한계를 따른다.
 - **결정:** 악성 스캔은 `put_source` 전 훅(`MalwareScanner`, 기본 `none`; `clamd` 옵션은 C 등급 분리 컨테이너)이며 전용 오류 코드 채택 전에는 활성화되지 않는다. 무결성 힌트(`checksum_hint`)도 필드·코드 채택이 선행한다.
@@ -684,15 +685,15 @@ v1.1 설계안(부모 `fetch` 전개 + 워크플로우 자식 잡):
 | 5 | **스풀 vs 멀티파트 스테이징(§5.1)**: v1은 로컬 스풀만이다. `max_bytes`가 워커 디스크를 넘는 배포(대형 스캔 PDF 묶음)가 생기면 재검토 | 02 미해결 이슈 2의 `tenants/{tenant_id}/staging/{request_id}` 키를 바이블 §13.3에 예약(patch)하되 구현은 보류; 조건부 PUT 지원은 RustFS·SeaweedFS·`file://`별 확인 필요(as of 2026-09) |
 | 6 | **제안 오류 코드**: `fetch.tls_failed`(no), `fetch.checksum_mismatch`(no), `fetch.malware_detected`(no), `fetch.scanner_unavailable`(yes), `fetch.container_unsupported`(no), `fetch.store_failed`(yes; `put_source` 원본 저장 실패 — 02 미해결 이슈 7과 같은 이름) — 채택 전 대안은 §9.1·§8·§5.1(저장 실패는 코드 없이 셸 재시도) | 13-error-model §3.3 표에 02 미해결 이슈 7과 공동 등재 후 ADR minor(바이블 §5.7·`ErrorCodeCatalog`); `fetch.tls_failed`는 재시도 예산 낭비를 막고 `fetch.store_failed`는 `last_error`에 코드가 남게 하므로 조기 채택 권고 |
 | 7 | **악성 스캔 훅(§5.3)**: `MalwareScanner` 포트·`RAG_FETCH__CLAMD__ADDRESS`·Helm `optIn.clamav`는 바이블 §12·배포 매니페스트 미등재; ClamAV 라이선스·`clamd` 스트림 상한 기본값은 확인 필요(as of 2026-09) | 07-tech-landscape/12 보완 조사 → ADR-0001 등급표 적용 확인 → 바이블 §12 `security/malware_scanner` 등재(minor); 09-operations/05·01에 컨테이너·NetworkPolicy 규칙 |
-| 8 | **관측 제안(§11)**: `rag.fetch.call(kind="source")`, `rag_fetch_bytes_total{outcome}`, `rag_fetch_not_modified_total`, `rag_fetch_source_reused_total`, `rag_fetch_redirects_count`, `rag_fetch_malware_detected_total`, 라벨 `scheme`; 골든 정규화 제외 집합에 `fetched_at`·`fetch_report.duration_ms`·`bytes_per_sec` 추가 | 09-operations/03과 합의 후 ADR-0022 minor(바이블 §6.5); 01-pipeline-framework 미해결 이슈 9·11과 공동 |
+| 8 | **관측 제안(§11)**: `rag_fetch_bytes_total`은 해소(바이블 §6.5 1.3.0, AM-41). 남은 제안: `rag.fetch.call(kind="source")`, `rag_fetch_not_modified_total`, `rag_fetch_source_reused_total`, `rag_fetch_redirects_count`, `rag_fetch_malware_detected_total`, 라벨 `scheme`; 골든 정규화 제외 집합에 `fetched_at`·`fetch_report.duration_ms`·`bytes_per_sec` 추가 | 09-operations/03과 합의 후 ADR-0022 minor(바이블 §6.5); 01-pipeline-framework 미해결 이슈 9·11과 공동 |
 | 9 | **`sftp://`와 `smb` 플러그인 명명(§2.2·§3.5)**: `sftp`는 바이블 스킴 목록에 없다; `smb` 플러그인 패키지명이 01(`rag-plugin-smb`)과 05(`rag-plugin-smb-fetcher`, `fetcher.smbprotocol`)에서 다르다 | 05 §미해결 이슈 8과 함께 `rag-plugin-smb-fetcher` / `fetcher.smbprotocol`로 통일(01 patch); `sftp`는 수요 확인 후 바이블 §5.4 `source_uri` 스킴 목록 개정(minor) |
-| 10 | **fetch 출력 산출물 키(§5.4)**: 바이트 해시 키 `artifacts/source-document/{blake3[:2]}/{blake3}.json`을 채택했다(01-pipeline-framework 미해결 이슈 2 제안). 02 미해결 이슈 2의 `fetch_key` 안과 다르다 | 바이블 §13.3 patch("캐시 제외 스테이지 산출물은 바이트 해시 키")로 두 제안을 정리; 02 문서 §11 표 갱신 |
+| 10 | **fetch 출력 산출물 키(§5.4) — 해소.** 바이트 해시 키 `artifacts/source-document/{blake3[:2]}/{blake3}.json`(바이블 §13.3 1.3.0, AM-19). 02 미해결 이슈 2의 `fetch_key` 안과 다르므로 02 문서 §11 표 갱신 필요 | 바이블 §13.3 1.3.0 AM-19 |
 | 11 | **조건부 GET 스킴별 지원(§7.2 (3))**: `gs`·`az` 네이티브 조건 헤더, fsspec 계열의 ETag 노출·`IfNoneMatch` 전달 여부 확인 필요(as of 2026-09) | §2.4 조사 항목 3으로 확정; 미지원 스킴은 HEAD 비교로 통일(현 규칙) |
 | 12 | **`resolve_pin` 실현(§2.4 기준 5)**: httpx/httpcore의 `sni_hostname` 요청 확장으로 "해석 IP 연결 + 원 호스트명 SNI/`Host`"가 성립하는지 확인 필요(as of 2026-09) | 불가하면 ADR-0038 재검토 조건 1(전용 egress 프록시 또는 자체 전송 계층) |
 | 13 | **zip 컨테이너(§8)**: `SourceDocument.container_manifest_ref`(N), `ctx.artifacts.get_source(content_hash)`(테넌트 바인딩 읽기, `sources/`만), 06 자식 잡 생성 액티비티, 부모 잡 집계 규칙, 경고 코드(`parse.member_limit_exceeded` 후보) | v1.1 ADR 1건으로 묶어 발의; 채택 전 `zip_members`는 접수 거부. `json_array`의 "멤버 = 별개 문서"(01 §5.2)와 라우터 내부 분할(바이블 §7.3)의 긴장은 03 문서가 해소 |
 | 14 | **`allowed_hosts`의 오브젝트 스토리지 의미(§3.2)**: URI authority(버킷·컨테이너)에 적용한다고 정했으나 15 §8은 "호스트명"으로만 서술한다 | 15 문서 `allowed_hosts` 행에 "오브젝트 스토리지 스킴은 authority(버킷·컨테이너)에 적용" 명시(patch) |
 | 15 | **`ingest.document.fetched` 확장 키**: 03-data-flow가 제안한 `conditional_304`와 이 문서의 `not_modified`·`source_bytes_reused` 관측 요구 | 03-contracts/12 `IngestStageEventData` 선택 키로 `not_modified`(boolean) 추가 제안(minor); `data`에 URI는 넣지 않는다(E12) |
-| 16 | **서명 쿼리 키 목록의 정본 이관(§3.6)**: 02 계약 모델 상수 `_PROVIDER_SIGNATURE_KEYS`와 이 문서 §3.6 표가 같은 값을 두 곳에 갖는다(02 미해결 이슈 12 위임). `X-Goog-Credential`(서비스 계정 이메일)을 남기는 현 규칙은 02와 같지만 개인정보(이메일) 관점 재검토가 필요하다 | 이 문서 §3.6 표를 제안 정본으로 두고 02 상수가 이를 로드하도록 전환(02 minor); `EgressPolicy.strip_query_keys`(N, 제안 필드명)가 15 §8·바이블 §5.3에 채택되면 그곳으로 이관하고 이 표는 기본값 예시로 격하; `X-Goog-Credential` 제거 여부는 이관 시 02와 함께 결정 |
+| 16 | **서명 쿼리 키 목록의 정본 이관(§3.6) — 해소(바이블 §5.3 1.3.0, AM-30).** `EgressPolicy.strip_query_keys` 등재로 이 문서 §3.6 표가 기본값 정본, 02 상수는 로드처가 됐다. `X-Goog-Credential`(서비스 계정 이메일)을 남기는 현 규칙의 개인정보 재검토만 남음 | 02 상수가 §3.6 표를 로드하도록 전환(02 minor); `X-Goog-Credential` 제거 여부는 02와 함께 결정 |
 | 17 | **`put_source` 스트리밍 오버로드(§1.3·§2.1·§5.1)**: `DerivedArtifacts.put_source(data: bytes, *, media_type)`(02-component §2.3, 01-pipeline-framework §6.2)는 바이트만 받아 200MB 스풀을 메모리에 올려야 한다 | 파일 경로(또는 비동기 바이트 스트림)와 사전 계산 `blake3`를 받는 오버로드 `put_source(path_or_stream, *, media_type, blake3)`를 02-component §2.3 `DerivedArtifacts`·01 §6.2 포트 표·바이블 §12 `sdk/`에 추가(patch); 포트는 반환 `ArtifactRef.blake3 == blake3`를 검증(00 I-3, §5.1 8단계) |
 | 18 | **스킴 오류 코드 설명 불일치(§3.1)**: 13-error-model §3.2 `fetch.scheme_unsupported` 설명("`allowed_schemes` 밖 또는 플러그인 부재")과 02-source-document §7 표("스킴 미허용 → `fetch.scheme_unsupported`")가 정책 거부까지 이 코드에 넣어 바이블 §5.4 `source_uri` 행·§10.3 E16("비허용 스킴 → `fetch.egress_denied`")과 어긋난다 | 13 §3.2 설명을 "정책은 허용했으나 `fetcher` 능력(`input_formats`·`delegates`) 밖"으로, 02 §7 표의 "스킴 미허용" 행을 `fetch.egress_denied`로 patch; 15 §8은 바이블과 같아 현행 유지. 이 문서 §3.1 결정이 두 앵커를 모두 만족하는 단일 규칙 |
 | 19 | **`FetchConfig` 비예약 키의 등재(§2.3)**: `idle_read_timeout_ms`·`decoded_ratio_max`·`allow_ambient_credentials`·`per_host_concurrency`·`malware_scan`·`delegates`는 바이블 §7.3 `ingest.fetch`(`plugin`·`max_bytes`·`policy`)와 15 문서 프로파일 스키마(`profile.schema.json`, 15 소유)에 없다 | 15 프로파일 스키마의 `ingest.fetch`에 "예약 키 외 나머지는 플러그인 `config_schema`로 위임"을 명시(01 §2.3 규칙의 스키마 표현)하고, 바이블 §7.3 YAML 주석에 비예약 키 예시를 추가(patch); 등재 전까지 이 키들은 코어 플러그인 `fetcher.fsspec_httpx`의 설정으로만 취급하고 프로파일 계약으로 부르지 않는다 |

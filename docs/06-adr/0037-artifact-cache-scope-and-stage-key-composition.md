@@ -5,7 +5,7 @@ date: 2026-09-22
 deciders: architecture
 priority: P0
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 related: ["K5", "원칙 4"]
 depends_on:
@@ -78,7 +78,7 @@ depends_on:
 
 ## 결정
 
-**결정:** 멱등성 키 = 캐시 키 = 산출물 경로 = `stage_key`(잡 스코프 `tenant_id/collection_id/document_id` 포함; 봉투 없는 콘텐츠 전용 캐시만 스코프 없이 공유)(바이블 §2.1 K5). `stage_key = H("stage", stage_name, scope_key, input_ref.blake3, fingerprint)`, `scope_key = f"{tenant_id}/{collection_id}/{document_id}"`. `artifacts(tenant_id, stage_key)` 행 또는 산출물 경로에 `stage_key`가 있으면 실행 생략(`cache_hit=true`, 계보 기록). 계약 산출물은 봉투(`tenant_id`·`collection_id`·`document_id`·`acl`)를 품으므로 **잡 스코프 안에서만** 재사용한다 — 동일 바이트를 다른 테넌트·컬렉션·문서가 수집하면 재실행. 봉투가 없는 콘텐츠 전용 캐시만 스코프 없이 테넌트 내 공유: 원본 바이트 `sources/{blake3}`, 파생물 `H("derived", content_hash, sidecar_image_digest)`, 청크 단위 임베딩 `H("embed", embedding_space_id, "document", embed_text)`, LLM 보강 `H("llm-enrich", model_id, prompt_hash, embed_text)`. `fetch`는 캐시 대상이 아니다(바이블 §4.1·§6.2). `fetch`는 **캐시 없음**(`stage_key` 미적용, 항상 다운로드; `EgressPolicy` 적용 §10.3 E16). 검증자(`etag`|`last_modified`)가 있고 같은 `document_id`의 이전 `SourceDocument`가 있으면 조건부 GET(304 → 이전 원본 바이트 재사용, `SourceDocument` 봉투는 새로 발급); 검증자 부재 시 조건부 재수집 금지. 다운로드 후 `content_hash` 확정, 동일 `content_hash` 원본이 `sources/`에 있으면 바이트 저장만 생략(바이블 §4.2).
+**결정:** 멱등성 키 = 캐시 키 = 산출물 경로 = `stage_key`(잡 스코프 `tenant_id/collection_id/document_id` 포함; 봉투 없는 콘텐츠 전용 캐시만 스코프 없이 공유)(바이블 §2.1 K5). `stage_key = H("stage", stage_name, scope_key, input_hash, fingerprint)`(`input_hash` = `detect`·`parse`는 원본 `content_hash`, 그 외 스테이지는 직전 산출물의 `input_ref.blake3`; 바이블 §4.1 1.3.0, AM-05), `scope_key = f"{tenant_id}/{collection_id}/{document_id}"`. `artifacts(tenant_id, stage_key)` 행 또는 산출물 경로에 `stage_key`가 있으면 실행 생략(`cache_hit=true`, 계보 기록). 계약 산출물은 봉투(`tenant_id`·`collection_id`·`document_id`·`acl`)를 품으므로 **잡 스코프 안에서만** 재사용한다 — 동일 바이트를 다른 테넌트·컬렉션·문서가 수집하면 재실행. 봉투가 없는 콘텐츠 전용 캐시만 스코프 없이 테넌트 내 공유: 원본 바이트 `sources/{blake3}`, 파생물 `H("derived", content_hash, sidecar_image_digest or "", options_hash or "")`(바이블 §6.2 1.3.0, AM-40), 청크 단위 임베딩 `H("embed", embedding_space_id, "document", embed_text)`, LLM 보강 `H("llm-enrich", model_id, prompt_hash, embed_text)`(`embed_text`는 `generated` 제외 조립 결과, 문서·섹션 요약은 섹션 텍스트 해시; AM-12). `fetch`는 캐시 대상이 아니다(바이블 §4.1·§6.2). `fetch`는 **캐시 없음**(`stage_key` 미적용, 항상 다운로드; `EgressPolicy` 적용 §10.3 E16). 검증자(`etag`|`last_modified`)가 있고 같은 `document_id`의 이전 `SourceDocument`가 있으면 조건부 GET(304 → 이전 원본 바이트 재사용, `SourceDocument` 봉투는 새로 발급); 검증자 부재 시 조건부 재수집 금지. 다운로드 후 `content_hash` 확정, 동일 `content_hash` 원본이 `sources/`에 있으면 바이트 저장만 생략(바이블 §4.2).
 
 이에 따라 `reprocess.document.v1`은 원장 계보에서 `from_stage` 이전 산출물을 재사용하되 `stage_key`가 잡 스코프를 포함하므로 같은 문서의 산출물만 적중한다(§11.2). `artifacts` PK는 `(tenant_id, stage_key)`, `lineage` PK는 `(tenant_id, child_ref_blake3, parent_ref_blake3)`이며 둘 다 `stage_key`를 기록한다(§13.1, E17). `ArtifactRef.stage_key`(선택, hex64)는 생산 스테이지의 멱등성 키를 실어 계보를 자기 서술한다(§5.3). 산출물 경로는 `tenants/{tenant_id}/artifacts/{schema_type_kebab}/{stage_key[:2]}/{stage_key}.json`이고 `ArtifactRef.blake3`는 그 바이트의 해시다(§13.3).
 
@@ -86,12 +86,12 @@ depends_on:
 |-----------|---------|--------|------------------|------|
 | 계약 산출물(`SourceDocument`~`EmbeddedChunkSet`) | `stage_key` | 테넌트·컬렉션·문서(`scope_key`) | `tenants/{tenant_id}/artifacts/{schema_type_kebab}/{stage_key[:2]}/{stage_key}.json` + `artifacts(tenant_id, stage_key)` | 있음 |
 | 원본 바이트 | `content_hash = blake3_hex(원본 바이트)` | 테넌트 내 | `tenants/{tenant_id}/sources/{blake3[:2]}/{blake3}` | 없음 |
-| 파생물(HWPX 변환본·페이지 이미지·표 HTML·벤더 JSON·벡터 npz) | `H("derived", content_hash, sidecar_image_digest)` | 테넌트 내 | `tenants/{tenant_id}/derived/{kind}/{blake3[:2]}/{blake3}.{ext}` | 없음 |
+| 파생물(HWPX 변환본·페이지 이미지·표 HTML·벤더 JSON·벡터 npz) | `H("derived", content_hash, sidecar_image_digest or "", options_hash or "")`(AM-40) | 테넌트 내 | `tenants/{tenant_id}/derived/{kind}/{blake3[:2]}/{blake3}.{ext}` | 없음 |
 | 청크 임베딩 | `H("embed", embedding_space_id, "document", embed_text)` | 테넌트 내 | `embed` 스테이지 캐시(04-pipelines/12) | 없음 |
-| LLM 보강 | `H("llm-enrich", model_id, prompt_hash, embed_text)` | 테넌트 내(재청킹·타 컬렉션에 재사용) | `enrich` 스테이지 캐시(04-pipelines/11) | 없음 |
+| LLM 보강 | `H("llm-enrich", model_id, prompt_hash, embed_text)`(`embed_text` = `generated` 제외 조립 결과; 문서·섹션 요약은 섹션 텍스트 해시, AM-12) | 테넌트 내(재청킹·타 컬렉션에 재사용) | `enrich` 스테이지 캐시(04-pipelines/11) | 없음 |
 | `fetch` | 없음(`stage_key` 미적용) | — | 조건부 GET만; 바이트는 위 "원본 바이트" 규칙 | 봉투 매회 신규 |
 
-스테이지별 `stage_key` 구성은 바이블 §4.2 표 그대로다. `detect`·`parse`는 입력 해시로 `content_hash`를, 그 뒤는 직전 산출물의 `blake3`를 쓴다.
+스테이지별 `stage_key` 구성은 바이블 §4.2 표 그대로다. `detect`·`parse`는 입력 해시로 `content_hash`를, 그 뒤는 직전 산출물의 `blake3`를 쓴다(바이블 §4.1 1.3.0, AM-05).
 
 | 스테이지 | `stage_key` | 비고 |
 |----------|-------------|------|
@@ -109,7 +109,7 @@ depends_on:
 flowchart TD
     IN["입력 ArtifactRef + 잡 스코프(tenant_id, collection_id, document_id)"] --> IS{"stage_name == fetch?"}
     IS -->|예| FE["fetcher 실행(항상): EgressPolicy 검사 → 검증자·이전 SourceDocument 있으면 조건부 GET → content_hash 확정 → sources/에 없으면 바이트 저장 → 봉투 신규 발급"]
-    IS -->|아니오| SK["stage_key = H(stage, stage_name, scope_key, input_ref.blake3, fingerprint)"]
+    IS -->|아니오| SK["stage_key = H(stage, stage_name, scope_key, input_hash, fingerprint)"]
     SK --> LK{"artifacts(tenant_id, stage_key) 존재?"}
     LK -->|예| HIT["cache_hit=true · lineage 기록 · 기존 ArtifactRef 반환"]
     LK -->|아니오| RUN["스테이지 실행(봉투 없는 파생물·임베딩·LLM 보강은 콘텐츠 키로 재사용)"]
@@ -167,6 +167,7 @@ flowchart TD
 - `scope_key`의 세 구성요소는 모두 발급형 ULID(§6.1)이고 `document_id`는 API 접수 시 `(tenant_id, collection_id, external_id or source_uri)`로 확정된다(§5.4 `SourceDocument`, §11.2). 따라서 같은 원천을 같은 컬렉션에 다시 넣으면 같은 `document_id` → 같은 `scope_key`이며, `doc_version`이 같으면 `detect` 이후가 모두 적중한다. 문서 단위 건너뛰기(`dedup_policy=skip_if_same_hash`, §5.4 `IngestRequest`)는 이 스테이지 캐시와 별개인 잡 수준 결정이다.
 - `stage_key`에는 `index_generation`이 없다. 세대는 `index` 단계에서 원장 잠금 아래 할당되고 `record_id`에만 합성된다(§11.4, ADR-0004·ADR-0026). `from_stage=embed` 재색인은 `embed` 산출물을 적중시키되 새 세대로 적재한다.
 - 파생물의 조회 키(`H("derived", …)`)와 오브젝트 키(`derived/{kind}/{blake3}`)의 대응(색인 표 또는 키 규칙)은 [저장소 아키텍처](../02-architecture/04-storage-architecture.md)가 정한다. "테넌트 내 공유"는 오브젝트 키 접두 `tenants/{tenant_id}/`(E5)로 보장되며 테넌트 간 공유는 없다.
+- 캐시 제외 스테이지(`fetch`·`index`)의 산출물도 저장은 되지만 `stage_key`가 없어 오브젝트 키는 바이트 해시 키 `tenants/{tenant_id}/artifacts/{schema_type_kebab}/{blake3[:2]}/{blake3}.json`이고, LLM 보강 캐시는 `derived/llm_enrich/{key[:2]}/{key}.json`이다. 이미 점유된 `stage_key` 경로는 덮어쓰지 않는다 — 새 산출물이 기존과 정규화 동치면 기존 참조를 반환하고, 다르면(비결정성 버그) 바이트 해시 키 경로에 저장한 뒤 경고를 남긴다(바이블 §13.3 1.3.0, AM-19).
 - 셸만 `stage_key`를 계산하고 스테이지는 I/O·시간·난수를 직접 쓰지 않으므로(§4.1), 플러그인 작성자는 캐시 규칙을 구현하지 않는다. `LocalRunner`와 Temporal 셸은 같은 규칙을 공유한다(ADR-0003).
 
 ## 준수 확인 방법

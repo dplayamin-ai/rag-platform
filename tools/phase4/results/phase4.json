@@ -1,0 +1,131 @@
+{
+ "t1": {
+  "file": "C:\\Workspaces\\rag-platform\\docs\\12-appendix\\07-bible-amendment-triage-decisions.md",
+  "counts": {
+   "accepted_patch": 25,
+   "accepted_minor": 19,
+   "accepted_major": 0,
+   "rejected": 10,
+   "deferred": 12
+  },
+  "bible_version_target": "1.3.0",
+  "contracts_affected": true,
+  "summary": "I wrote the triage decisions document (533 lines). All 200 request rows have a verdict: 31 accepted as patch, 34 as minor, 0 as major, 14 deferred, 10 rejected, and 111 treated as document-internal with propagation instructions. The input list's \"bible section\" column mostly points to the source document's own section, so I judged each row on its content, and more than half turned out not to need a bible change. The counts above are per amendment item: 25 patch items (AM-01~25), 19 minor items (AM-26~44), 12 deferred items (AM-45~56), 10 rejections (R-01~10).\n\nBecause at least one minor was accepted, the bible target is 1.3.0 and the brief moves to v1.2.2 (document map patch only). No major was accepted. The two changes M1 actually needs can be written as additions:\n- AM-26: widen `requires_lineage` so `chunk` can read `ParsedDocument` (the default `structure_aware` chunker needs its structure fields).\n- AM-27: optional `StageContext.plan` and `artifacts` members.\n\nThe main decisions are:\n- **FR-MGT-01**: satisfied by adding the `/v1/tenants` endpoints (quotas and deactivation) plus API keys, plugins, schemas list, version, audit events, profiles, unmask and consistency-check to bible §14 (AM-39), with `TenantStatus` and `tenant.policies.changed` (AM-38).\n- **Catalogue additions**: 16 error codes (AM-36), `JobKind.delete_collection` and `collection.delete.v1` (AM-37), common-types promotion of shared subtypes (AM-35), optional fields on `StageError`/`ProblemDetails`, `RankedResult` and `NormalizedDocument`, and cache-key fixes in §6.2 (AM-40).\n- **Completeness review**: management API DTOs stay API-only views (AM-02). Traceability uses the machine-generated 06 matrix. The CLI's canonical section goes in 10-development/02.\n- **Deferred to ADR-0039+**: reindex mode B and green physical naming get open-decision numbers O-11 and O-12 (AM-21) but are deferred (AM-45). Also deferred: the `cancelling → succeeded` transition (with an interim rule written down), field renames and constraint tightening, and default-value changes still waiting on gate evidence.\n- **Contract audit (47 decisions)**: section 6.2 maps each one to either an AM item or the documents it must be propagated to.\n\nContracts are affected (contracts_affected=true): the changes add enums and optional fields to common-types and five contract schemas, with no removals, renames or new required fields. I decided `schema_version` stays at 1.0.0 because these changes land before M1, and M1 is when 1.0.0 starts. T3 applies the schema changes and must get ERROR 0 from `validate-contracts.mjs`.\n\nI did not edit the bible, brief, contracts or schemas, so I did not run the validator. Relative links in the new document point to files that exist."
+ },
+ "t2": {
+  "file": "C:\\Workspaces\\rag-platform\\docs\\12-appendix\\08-propagation-directives.md",
+  "bible_version": "1.3.0",
+  "brief_version": "1.2.2",
+  "contracts_affected": true,
+  "docs": 93,
+  "summary": "The bible, the brief and the propagation directives are all done. The contract validator currently reports one ERROR: `JobKind` is missing `delete_collection` in common-types. It clears once T3 adds that value, as AM-37 requires. I did not edit any schema. Everything else passes, except two pre-existing WARNs about 03-contracts/09 schema blocks being out of sync.\n\n**Bible (docs/02-architecture/00-design-bible.md, 1.2.1 → 1.3.0):**\n- Applied all AM-01~AM-44 as local edits. The AM-15 location (§7.3) was already correct in 1.2.1, so there was nothing to change for it.\n- §5.1 inventory: added the `SchemaDiffReport` row (35 types) and a footnote making management API DTOs API-only views.\n- Changed sections: §1.2, §2.2, §3.2 (O-11 and O-12 registered as open), §3.3 (ADR-0039 row), §4.1~4.4, §5.3~5.7 (`TenantStatus`, `CompatLevel`/`SchemaChangeKind`, `JobKind.delete_collection`, `tenant.policies.changed`, 16 new error codes), §6.1/6.2/6.5/6.7, §7.1/7.3, §8.1, §9.5, §10.1/10.3, §11.2/11.4, §12, §13.1/13.3, §14.\n- Added a 1.3.0 entry to the change history in the scope section, a v1.3.0 change table keyed by AM number under the decision summary, and five new items to the open-issues section (18~22). Closed open issue 11.\n- §16 is unchanged.\n\n**Things I decided on my own:**\n- The additive bundle takes ADR-0039. The release-versioning ADR that other docs had pencilled in as 0039 moves to 0040 or later.\n- I also registered `CompatLevel` and `SchemaChangeKind` in §5.7 alongside `SchemaDiffReport`. AM-01 did not explicitly list them.\n- I added `schema_version` 1.0.0 is kept, since no contract has shipped yet (before M1).\n\n**Brief (docs/00-vision/00-design-brief.md, 1.2.1 → 1.2.2):**\n- The §8 document map now matches the actual files: 07-tech-landscape 00~14, 12-appendix 02~08, the 06-adr README, openapi.yaml, 35 schema files and `schemas/README.md` (planned).\n- Added an O-11/O-12 note under §5, as AM-21 requires.\n- §4 is unchanged because no D-xx decision was amended, so the version stays at 1.2.2.\n\n**Propagation directives:** 93 documents, 525 checklist items, each with 3~15 items. That is more than the 40~70 you expected because every 03-contracts document, 8 ADRs and openapi.yaml are included. Schema changes are marked `[T3]` for the contracts agent.\n\n**Things to know before the next step:**\n- ADR-0039 is now cited in the bible, the brief and the directives, but the file does not exist yet, so the doc audit's A7 citation check will flag it until it is written. The 06-adr/README section of the directives covers writing it.\n- The audit's A2 report of missing frontmatter in 01-requirements/03 is wrong. The file has frontmatter; the auditor fails on its CRLF line endings. I rewrote that directive to say so."
+ },
+ "t3": {
+  "audit_summary": "바이블 v1.3.0 채택 항목(트리아지 §2.1/§2.2) 중 계약·스키마에 영향을 주는 AM-10·26·28~44 및 계약 감사 정본 결정(CR-01~47) 가운데 T3(스키마 담당) 태그 항목, 그리고 전파 지시서 03-contracts/* 절의 [T3] 표시 항목을 schemas/*.schema.json과 03-contracts/*.md의 '## 스키마' 블록·필드 표에 반영했다. 시작 시점에 이미 ERROR 1(JobKind 열거 불일치)·WARN 2(09 문서 스키마 블록 비동기화)였고, 이번 작업으로 ERROR 0/WARN 0을 달성했다(node tools/validate-contracts.mjs --root . 로 여러 차례 재검증, 최대 4회 한도 내에서 안정적으로 0 유지). 주요 변경: (1) schemas/common-types.schema.json — JobKind에 delete_collection(AM-37), EventType에 tenant.policies.changed(AM-38, 24→25종), ErrorCodeCatalog에 16종 추가(AM-36, 68→84종), TenantStatus 신설(AM-38), RankedResult에 token_count_primary·ordinal·text_truncated·pii_policy_applied 추가(AM-33), EgressPolicy에 strip_query_keys 추가(AM-30), 공용 타입 9종 승격(SecurityFilter·StrategyFilter·ChannelRunId·EmbeddingSpaceIds·TableRef·ProfileId·AnalyzerId·KebabName·ContractsCompat, AM-35) 및 Capabilities.contracts_compat을 그 $ref로 전환. (2) 승격에 따라 candidate-set·context-pack·query-plan·ranked-set·collection-spec·embedded-chunk-set·index-commit·index-record·chunk-set·normalized-document·schema-diff-report·plugin-meta의 로컬 $defs 사본을 삭제하고 common-types $ref로 전환(교차 참조 잔존 없음 확인). (3) CR-09에 따라 03~08 계약 스키마(normalized-document·chunk-set·enriched-chunk-set·embedded-chunk-set·index-commit·index-record) schema_version에 1.x 패턴 제약 추가. (4) 개별 필드 추가: profile.schema.json에 profile_hash(readOnly, AM-34)·PiiConfig.reject_entities(AM-43), enriched-chunk-set.schema.json에 BudgetUsed.charged_tokens(AM-32), cloud-event-envelope.schema.json의 IndexConsistencyMismatchData에 kind·observed_generations(요청#172, 트리아지 T3 지정), job-status.schema.json의 idempotency_key를 nullable로 완화(AM-44 배치 자식 잡 대응). (5) 원래 WARN 원인이었던 query-request/query-plan 스키마의 글로서리 접두 오기(§16 G-08 → GL-08, D4-1 누락분)를 정정. (6) 해당 12개 03-contracts 문서의 '## 스키마' JSON 블록을 실제 schemas/*.json과 동일하게 재동기화하고(deepEq 기준), 06·10·15 문서의 필드 표에 새 선택 필드 행(charged_tokens, token_count_primary/ordinal/text_truncated/pii_policy_applied, profile_hash, reject_entities, strip_query_keys)을 추가했으며, 15 문서 '## 미해결 이슈' 13행을 공용 타입 승격 완료로 갱신하고, 00 문서의 common-types 요약 문구($defs 개수)를 현행화했다. 12개 03-contracts 문서 frontmatter version을 patch 증가시키고 last_updated를 2026-09-23으로 갱신했다(status는 active 유지, ADR 없음). 스키마 파일 12종은 파일 전체를 JSON.stringify(2-space)로 재직렬화했으므로(원래는 leaf 객체를 한 줄로 압축하는 커스텀 포맷이었음) 포맷 스타일이 달라졌지만 내용은 동치(파서 검증 통과, $ref 전부 해결 확인)이다.",
+  "fixed": [
+   "schemas/common-types.schema.json: JobKind.delete_collection 추가 → 검증기 ERROR 해소(AM-37)",
+   "schemas/common-types.schema.json: EventType.tenant.policies.changed 추가, 25종(AM-38)",
+   "schemas/common-types.schema.json: ErrorCodeCatalog 16종 추가, 84종(AM-36)",
+   "schemas/common-types.schema.json: TenantStatus 열거 신설(AM-38)",
+   "schemas/common-types.schema.json: RankedResult에 token_count_primary·ordinal·text_truncated·pii_policy_applied 추가(AM-33)",
+   "schemas/common-types.schema.json: EgressPolicy.strip_query_keys 추가(AM-30)",
+   "schemas/common-types.schema.json: 공용 타입 9종(SecurityFilter·StrategyFilter·ChannelRunId·EmbeddingSpaceIds·TableRef·ProfileId·AnalyzerId·KebabName·ContractsCompat) 승격 및 Capabilities.contracts_compat $ref 전환(AM-35)",
+   "candidate-set·context-pack·query-plan·ranked-set·collection-spec·embedded-chunk-set·index-commit·index-record·chunk-set·normalized-document·schema-diff-report·plugin-meta.schema.json: 승격된 타입의 로컬 사본 제거 후 common-types $ref로 통일",
+   "normalized-document·chunk-set·enriched-chunk-set·embedded-chunk-set·index-commit·index-record.schema.json: schema_version에 1.x 패턴 제약 추가(CR-09)",
+   "profile.schema.json: profile_hash(readOnly, AM-34)·PiiConfig.reject_entities(AM-43) 추가",
+   "enriched-chunk-set.schema.json: BudgetUsed.charged_tokens 추가(AM-32)",
+   "cloud-event-envelope.schema.json: IndexConsistencyMismatchData.kind·observed_generations 추가(요청#172, 트리아지 T3 지정)",
+   "job-status.schema.json: idempotency_key nullable 완화(AM-44 배치 자식 잡)",
+   "query-request.schema.json·query-plan.schema.json: §16 GL-08 접두 오기 정정 → 기존 WARN 2건 해소",
+   "cloud-event-envelope.schema.json: 설명 문구의 유니코드 말줄임표(…) 제거(JSON 블록 파싱 경고 방지)",
+   "03-contracts/04·05·06·07·08·09·10·11·12·14·15 문서의 '## 스키마' JSON 블록을 schemas/*.json과 재동기화",
+   "03-contracts/06·10·15 문서 필드 표에 신규 선택 필드 행 추가(charged_tokens, RankedResult 4필드, profile_hash, reject_entities, strip_query_keys)",
+   "03-contracts/15 문서 '## 미해결 이슈' 13행을 공용 타입 승격 완료 상태로 갱신",
+   "03-contracts/00 문서의 common-types $defs 개수·1.3.0 반영 요약 갱신",
+   "위 12개 03-contracts 문서 frontmatter version patch 증가 + last_updated: 2026-09-23"
+  ],
+  "remaining": [
+   "03-contracts 16개 문서 전반의 순수 프로세스급 전파 항목(공통 지시 1~6: GL-/PL- 접두 재확인, 바이블/브리프 버전 인용 v1.3.0/v1.2.2로 교체, '제안'→'결정' 승격 문구, 전방 참조 제거, 카탈로그 개수 인용문 등)은 트리아지 문서 §0(줄 19)에서 P1(문서 전파) 담당으로 명시되어 있어 이번 T3(스키마 동기화) 범위에서 제외했다 — 별도 P1 사이클에서 처리 필요",
+   "03-contracts/01·02·03·13·16 문서는 이번 사이클에서 스키마·검증기 관점의 불일치가 없어 손대지 않았으나, 각 문서의 '제안'→'결정' 승격, GL-/PL- 접두, 예시 갱신 등 프로세스 문구는 미확인 상태로 남아 있다(P1 대상)",
+   "03-contracts/09 §5.4 effective_hash 해석 '제안' 문구를 '결정'으로 승격하는 작업, 03-contracts/12 audit.admin.action.action 어휘 확정 등 CR/AM과 연결되지만 스키마 변경이 없는 순수 서술 항목은 미반영(P1 대상)",
+   "EmbedConfig.sparse_bm25.avgdl·dense.prompts 명시적 등재(#30)는 additionalProperties:true로 이미 허용되어 있어 스키마 변경 없이 필드 표에만 기재하면 되므로 미반영 상태(P1 대상, [T3] 미태그)",
+   "schemas/schema-diff-report.schema.json이 바이블 §5.1 인벤토리 표에 아직 등재되지 않았다는 기존 INFO(§5.1 인벤토리에 없는 스키마 파일)는 바이블 본문(T2 소유) 수정 사항이라 범위 밖으로 남겨두었다",
+   "스키마 파일 12종의 포맷을 JSON.stringify(2-space)로 통일 재직렬화했으므로(원래의 한 줄-압축 커스텀 포맷과 달라짐) 이후 편집자가 diff 크기에 유의할 것"
+  ],
+  "validator_errors": 0
+ },
+ "p1": [
+  "Propagated bible v1.3.0 §16 (glossary reflection table) into docs/00-vision/03-glossary.md per docs/12-appendix/08-propagation-directives.md §1 (common instructions) and its 00-vision/03-glossary.md c",
+  "C:\\Workspaces\\rag-platform\\docs\\12-appendix\\08-propagation-directives.md의 \"1. 공통 지시\"와 세 문서(00-vision/01, 02, 04)의 \"### <경로>\" 절 지시 항목을 Grep으로 바이블/브리프/ADR 근거를 확인한 뒤 Edit로 국소 반영했다. 세 문서 모두 patch 버전(0.1.0",
+  "test",
+  "바이블 1.3.0 전파 지시서(docs/12-appendix/08-propagation-directives.md) §1 공통 지시와 02-architecture 4개 문서(01,02,03,04)의 §2 개별 체크리스트를 전부 처리했다. 각 항목을 바이블 해당 절(§2.2, §4.1, §4.2, §6.1, §7.1, §11.4, §12, §13.1, §13.",
+  "전파 지시서(docs/12-appendix/08-propagation-directives.md) §1 공통 지시 + §2의 02-architecture/05·06·07·08 절만 반영했다. 각 항목은 바이블 00-design-bible.md의 해당 절(§4.1, §6.1~6.2, §7.1, §10.1, §10.3, §11.2, §11.4, §13.1, §1",
+  "Applied the 바이블 1.3.0 전파 지시서's \"1. 공통 지시\" and the four per-document checklists (§2, 04-pipelines/01~04) to the four target documents. Verified each directive item against the bible 1.3.0 amendment tab",
+  "전파 지시서(docs/12-appendix/08-propagation-directives.md) §1 공통 지시와 §2의 04-pipelines/05·06·07·08 절 체크리스트를 각 항목마다 바이블(docs/02-architecture/00-design-bible.md) 해당 절 및 트리아지 결정(docs/12-appendix/07-bible-amend",
+  "전파 지시서(docs/12-appendix/08-propagation-directives.md)의 \"1. 공통 지시\"와 4개 파이프라인 문서(09~12)의 개별 체크리스트를 모두 처리했다. 각 항목은 Grep으로 바이블 §4.1/§4.2/§5.4/§5.7/§6.1/§6.2/§13.3/§7.3과 트리아지 결정(AM-05·07·09·11·12·19·22·26·",
+  "전파 지시서(docs/12-appendix/08-propagation-directives.md) §2의 04-pipelines/13·14·15·16 절 체크리스트를 각 문서에 반영했다. 항목마다 바이블(docs/02-architecture/00-design-bible.md) 해당 절을 Grep으로 확인한 뒤 국소 Edit로 처리했고, 처리한 항목은 전파 지",
+  "Applied all propagation-directive items (docs/12-appendix/08-propagation-directives.md §1 공통 지시 + §2 per-doc checklists) from bible v1.3.0 to the three 04-pipelines documents. All three frontmatters b",
+  "Propagated bible 1.3.0 / brief 1.2.2 changes into the four 05-api documents per docs/12-appendix/08-propagation-directives.md §1 (common) and §2 (per-doc checklists for 05-api/01-04). Every checklist ",
+  "Propagated design-bible 1.3.0 amendments (AM-13, AM-20, AM-28, AM-36, AM-37, AM-38, AM-39) and contract-audit decisions (CR-14, CR-15, CR-20, CR-22, CR-23, CR-32, CR-38, CR-42, CR-43) into the four as",
+  "Applied the 08-propagation-directives.md §2 06-adr checklist items (README.md, 0002, 0012, 0020, 0022, 0026) plus the §1 공통 지시 to those six documents only. Read the relevant bible 1.3.0 sections (§1.2",
+  "전파 지시서(docs/12-appendix/08-propagation-directives.md) §2의 ADR-0033·ADR-0037 항목을 각각 확인해 지시된 국소 수정만 적용했다. 기각 기술(PyMuPDF·pyhwp 등) 언급은 두 문서 모두 이미 \"대안·기각\"/옵트인 격리 문맥이 드러나 있어 변경하지 않았고, 두 문서 모두 \"## 미해결 이슈\" 섹션",
+  "Propagated bible v1.3.0 changes into the four 08-evaluation docs per docs/12-appendix/08-propagation-directives.md section 2 (08-evaluation/01-04) plus its section 1 common instructions. For each chec",
+  "전파 지시서 \"1. 공통 지시\"와 \"### 08-evaluation/05-benchmark-plan-and-baselines.md\" / \"### 08-evaluation/06-online-feedback-loop.md\" 절의 지시 항목을 모두 확인·반영했다. 공통 지시 6항목(GL-/PL- 접두, 바이블 버전 인용, 기각 기술 문맥, 제안→결정 승격, 전방",
+  "전파 지시서(docs/12-appendix/08-propagation-directives.md) §1 공통 지시 + §2의 09-operations 4개 문서 절을 반영했다. 각 문서에서 지시된 항목만 국소 수정했고, frontmatter version을 0.1.0→0.1.1(patch)로 올렸다(last_updated 2026-09-23 유지, statu",
+  "전파 지시서(docs/12-appendix/08-propagation-directives.md)의 \"1. 공통 지시\"와 09-operations/06·07·08 절의 지시 항목을 모두 확인하고, 바이블 개정 요청 트리아지 결정(07-bible-amendment-triage-decisions.md)·완전성 검토(01-phase3-completeness-rev",
+  "Propagated bible v1.3.0 / triage-decision instructions from docs/12-appendix/08-propagation-directives.md into the four target 10-development docs. For each doc I Grep'd only the relevant bible/triage",
+  "Applied the 08-propagation-directives.md checklist (§1 공통 지시 + §2 per-doc items) for the four assigned 10-development docs, cross-checking each item against the bible 1.3.0 AM table before editing. Al",
+  "전파 지시서(docs/12-appendix/08-propagation-directives.md) \"1. 공통 지시\"와 \"2. 문서별 지시\"의 11-roadmap/01-milestones.md, 02-epics-and-backlog.md, 03-risks-and-mitigations.md 절을 확인하고, 지시된 항목만 Grep으로 바이블/트리아지 근거를 확인",
+  "08-propagation-directives.md §2 `12-appendix/06-traceability-matrix.md` 절의 세 지시 항목(A1, A7, FR-MGT-01)을 모두 처리했다. 이 문서는 `generated_by: tools/traceability.mjs`인 기계 생성 문서이므로, 지시대로 본문을 직접 손대지 않고 생성기 스크립트를 "
+ ],
+ "p2": [
+  [
+   "docs/02-architecture/02-component-architecture.md: 999 → 899행. §5(설정 모델) §5.1~§5.4를 결정 요약 2~4문장 + [설정 레퍼런스](09-operations/02) 링크로 압축(그 문서가 이미 동일/상세 내용을 소유해 09-operations/02는 수정하지 않음). §5.1/§5.2 등 내부 섹션 번호는 유지해 외부 문서 8개 이상의 '§5.1·§5.2' 교차참조를 깨지 않았다. version 0.2.1→0.2.2.",
+   "docs/02-architecture/05-plugin-architecture.md: 978 → 899행. 02-component-architecture.md §2.2~§2.4와 '동일'하다고 이미 명시된 중복 Python 코드 블록(StageContext 내 TokenCounter/KoreanAnalyzer 재정의, Stage 5멤버 시그니처, IndexBackend 전체 메서드 주석, Fuser/Reranker/Postprocessor/Packer/PluginRegistry의 반복 시그니처)을 표/프로즈 참조로 축약. 의미 정보는 02 문서 또는 §3.1 요약 표에 그대로 남아 손실 없음. version 0.1.1→0.1.2.",
+   "docs/02-architecture/06-orchestration-and-workflows.md: 1023 → 899행. (1) §9(처리량·사이징, §9.1~§9.5 전문)를 09-operations/04-scaling-and-performance.md §9로 이관하고 이 절엔 결론 요약만 남김(전 문서 propagation-directives.md #159 지시와 일치). (2) §2.5 재색인 사가의 A-6/A-7/A-8 표를 04-pipelines/19 §5.2~§5.3(운영 절차 정본)로 위임하는 요약으로 압축, 원장 포인터 결정 문단은 유지(그 문서가 '정본은 06 §2.5'로 인용하는 부분). (3) ReindexCarriedState·StageActivityInput JSON 예시를 필드 나열/축약 표기로 압축. (4) PipelineContext 프로토콜 중복 정의(02 §2.2와 동일)를 제거. version 0.2.2→0.2.3.",
+   "docs/09-operations/04-scaling-and-performance.md: 707 → 775행(대상 아니었으나 06 §9 이관의 수신 문서로 편집). 06 §9.1~§9.5 전문을 새 '## 9. 워크플로우 처리량과 워커 사이징 상세'로 추가, 문서 내 기존 '06 §9.x' 교차참조 17곳을 자기참조 '§9.x'로 정정(06 §3.6·§8.2 등 무관 참조는 보존), 참조 절의 06 §9 인용을 이관 사실로 갱신, 06 §9.5 인용 오류(원문 '바이블 미해결 이슈 17'을 이관 중 실수로 '06 미해결 이슈 17'로 잘못 옮겼던 것)를 교정. version 0.1.0→0.1.1."
+  ],
+  [
+   "docs/02-architecture/07-multi-tenancy-and-security-architecture.md: 914 → 880행. §12.1 '삭제 요청 처리'의 시퀀스 다이어그램+SLA 표(전진 복구 사가·대상별 데드라인)가 [갱신·삭제·재인덱싱](04-pipelines/19) §4가 이미 소유한 더 상세한 동일 내용의 중복이라 2문단 요약+링크로 대체(테넌트 삭제 5단계 결정 문단은 유지). frontmatter version 0.2.2→0.2.3, last_updated 2026-09-23.",
+   "docs/04-pipelines/01-pipeline-framework.md: 1116 → 885행. 외부 문서가 §12/§13(및 §2.2·§2.4·§4.2·§5.1·§5.2·§11.1·§11.2)을 절 번호·클래스명으로 인용함을 확인한 뒤, 그 절 번호·표·코드·결정 문장은 전혀 건드리지 않고: (a) 장식용 구분선(빈줄-`---`-빈줄) 14개 제거, (b) §4.2 profiles/builtin/standard.yaml 발췌(바이블 §7.3 원문의 진짜 중복)와 그 PipelineProfile 예시 인스턴스를 요약 문장으로 대체, (c) §5.1 시퀀스 다이어그램(§5.2 코드와 완전 중복) 제거, (d) §11.1 stateDiagram을 동등 산문 문장으로 치환, (e) §11.2 ResumeCursor의 JSON 예시+공식 JSON Schema(표와 3중 중복)를 요약 문장으로 대체, (f) §4.3 팬아웃 다이어그램을 요약 문장+기존 표로 대체, (g) §12.2/§13의 순수 예시 JSON(GoldenCase 인스턴스, CLI 출력)을 이미 있는 클래스·옵션표를 가리키는 문장으로 대체. 미해결 이슈 20(문서 길이)을 해소 기록으로 갱신. frontmatter version 0.1.2→0.1.3.",
+   "docs/04-pipelines/17-post-processing-and-context-packing.md: 1083 → 871행. §6 '한국어 예시'(RankedSet→ContextPack→RenderedContext 전 구간 완전 JSON, 413행)가 문서의 1/3 이상을 차지하고 다른 문서에서 절 번호로 인용되지 않음을 확인한 뒤, 3건 중 가장 예시적인 d1(부모 확장 항목)만 각 단계 전문을 유지하고 d2/d3는 차이 나는 필드만 요약한 비교 문장/표로 대체. RenderedContext의 stable_prefix/volatile_suffix(=provider_payload를 그대로 반으로 접어 재수록한 진짜 중복)는 설명 문장만 남기고 제거. frontmatter version 0.1.2→0.1.3."
+  ],
+  [
+   "08-evaluation/04: §3.2/§4.1/§4.3/§4.4/§5.3에 흩어져 있던 프롬프트(P1 시스템·사용자, P2, P3, P4, P5-a, P5-b, P6) 전문 8개를 각 위치에서 1줄 참조 문장으로 줄이고, '## 부록 A. 판정 프롬프트 전문' 표(그룹 열 없이 프롬프트 ID·위치·전문 열, <br/>로 줄바꿈 보존)를 결정 사항 요약 앞에 신설. 원문 텍스트는 그대로(요약·축약 없이) 옮겼고 각 절의 판정 규칙·출력 스키마·해석 서술은 원위치에 남김.",
+   "08-evaluation/04: 이미 해소된(도달 불가능해진) '950행 — 900행 초과 절 이관' 임시 메모를 제거(작업 대상 그 자체였으므로).",
+   "08-evaluation/04: version 0.1.0 → 0.1.1, last_updated 2026-09-23.",
+   "09-operations/02: §2.2~§2.16(16개 하위 절, 각자 이름·타입·기본·설명·민감·지위 표)을 그룹 열이 있는 표 하나(새 '### 2.2 환경 변수 목록')로 병합(101개 변수 행 그대로 보존, 그룹 열에 옛 절 번호·이름 유지). §2.17(`answer`/`RELAY`/`MCP`)·§2.18(서드파티 패스스루)·§2.19(프로파일 소유 값)는 다른 문서(05-api/05-mcp-server.md 3곳, 10-development/02 1곳)가 그 번호를 정확히 인용하므로 번호를 그대로 두었다(§2.3~§2.16 사이 번호 공백은 의도됨; §2.13 인용 1곳만 이번 병합으로 부정확해짐 — open_issues 참고).",
+   "09-operations/02: §6.2 `POST /v1/profiles/validate` 실패 응답 JSON 예시에서 이미 §6.2 규칙 표에 동일 문자열로 존재하는 규칙 10·11 오류 항목 2개를 생략하고 규칙 1 항목(선택 필드 `plugin_id` 포함) 하나만 전체를 보이도록 축약(node -e JSON.parse로 유효성 검증 완료).",
+   "09-operations/02: 순수 장식용 '---' 구분선 9개(프론트매터 구분자 2개 제외) 제거, 인접 중복 빈 줄도 함께 정리.",
+   "09-operations/02: §4.1 lite 오버라이드 설명과 '결정 사항 요약'에 이번 병합을 설명하는 결정 문장 1개 추가. 병합으로 무효화된 내부 자기참조(§2.3/§2.11/§2.8) 2곳을 변수명 직접 인용으로 수정.",
+   "09-operations/02: version 0.1.1 → 0.1.2(이 세션 시작 전 이미 0.1.0→0.1.1로 미커밋 갱신된 상태였음), last_updated 2026-09-23.",
+   "11-roadmap/02: '### 3.2 백로그 표'(303행, 문서 자신이 \"정본은 §2의 해당 행\"이라고 명시한 70자 절단 파생 표)를 마일스톤×에픽별 ID(크기) 색인 46행으로 압축(모든 태스크 ID·크기 보존, 태스크 본문·의존·역할 열은 §2가 정본이므로 제거). §3.1 집계 표·§2 에픽 상세는 그대로 둠. 에픽별 파일 분할은 하지 않음(지시대로 열 축소로 처리).",
+   "11-roadmap/02: '결정 사항 요약'에 이번 압축 근거를 설명하는 결정 문장 1개 추가.",
+   "11-roadmap/02: version 0.1.1 → 0.1.2, last_updated 2026-09-23."
+  ]
+ ],
+ "p3": {
+  "sampled": 14,
+  "findings": 0,
+  "serious": 0,
+  "fixed": 0,
+  "byFile": []
+ },
+ "p4": {
+  "validator_errors": 0,
+  "audit_summary": "최종 상태(3회 반복 후 안정): validate-contracts errors=0/warnings=0(스키마 35, 계약 문서 17, infos=45는 기존 INFO 성격). audit-docs 최종: A1=0(대상 HANDOFF.md는 세션 중 병행 6A 워크플로우가 생성해 자연 해소, 직접 수정 없음), A2=0(CRLF 인코딩으로 인한 프런트매터 파서 오탐 수정), A3=214건 중 likely_ok=false 87건 전수 검토 완료 — 전부 감사기 휴리스틱(40자 창, 제한된 제외어 목록)의 오탐으로 확인, 실제 문서 수정 없음, A5=0(감사기 자체의 trailing-newline off-by-one 버그 수정; 대상 3개 문서는 이미 정확히 900행), A6/A8은 지시 범위 밖(불변), A7=1(ADR-0040 인용은 06-adr/README.md의 \"다음 ADR 번호 제안\" 절차 문맥으로, 지시문의 \"제안 문맥 허용\" 예외에 해당 — 수정 없음), A10: 바이블 §14 원문을 직접 읽어 대조한 결과 \"in_bible_not_in_openapi\" 4건은 모두 \"GET/POST/DELETE\" 등 다중 메서드·다중 경로 병기 행을 감사기가 기계적으로 전체 조합해 생긴 오탐(예: DELETE /v1/subscriptions, POST /v1/subscriptions/{})이며 실제 정의된 (메서드,경로) 쌍이 아님. openapi.yaml에는 이미 동일한 결론(오탐 설명, \"A10 파서 수정은 5단계로 이월\")이 주석으로 명시돼 있어 openapi.yaml·05-api 문서 변경 불필요. \"POST /mcp\"도 바이블 \"/mcp\" 행(메서드 \"—\")과 같은 연산으로 기존 문서에서 확인됨. 추적 매트릭스: FR 미인용 160건 중 20건을 카테고리별로 고르게 표본 추출해 ID 문자열이 아닌 실제 설계 문서 서술 내용 기준으로 대조 판정 — 18건 \"ID만 미인용\"(실질적으로 다른 문서가 다룸), 2건 \"실제 설계 갭(부분)\": FR-NRM-09(품질 지표 필드는 있으나 임계값 초과 시 경고·격리 정책 연결이 어느 문서에도 없음), FR-PRS-19(0바이트 문서를 오류가 아닌 유효한 빈 결과로 처리하기로 한 초안이 요구사항의 SHALL과 상충하며 미해결 이슈로 남음). 결과를 docs/12-appendix/06-traceability-matrix.md 끝에 \"## 표본 판정\" 절(수동 절로 명시)로 추가.",
+  "fixed": [
+   "docs/08-evaluation/04-llm-judge-and-generation-quality.md: CRLF→LF 줄바꿈 정규화로 A2 frontmatter 오탐(필수 필드 5종 '누락'으로 오검출) 해소; version 0.1.1→0.1.2, last_updated 2026-09-23 유지",
+   "tools/audit-docs.mjs: A5(900행 초과) 검사가 파일 끝 표준 trailing newline을 별도 줄로 세어 실제 900행 문서 3건을 901행으로 오검출하던 off-by-one 버그 수정(trailing \\n 하나 제거 후 계산)",
+   "docs/12-appendix/06-traceability-matrix.md: 미인용 FR 20건 표본 판정 결과를 문서 끝 '## 표본 판정' 절(수동 절 명시, 재생성 시 보존 안내 포함)로 추가; version 1.0.1→1.0.2, last_updated 2026-09-23",
+   "tools/phase4/results/audit-post.json, tools/phase4/results/audit-post.md: 최종 재실행 결과로 갱신"
+  ],
+  "remaining": [
+   "A3의 나머지 항목(likely_ok=true 포함 전체 214건)은 이번에 87건 표본만 상세 컨텍스트 검토했으며, 감사기의 REJECTED 휴리스틱(제한된 제외어 목록·40자 컨텍스트 창) 자체는 여전히 부정확 — 원한다면 tools/audit-docs.mjs REJECTED 로직을 보강(예: '대체'·'강등'·'제거' 등 추가, 창 확대)해 향후 오탐을 줄일 수 있음(이번 범위에서는 문서·감사기 모두 수정하지 않음, 5단계 이관 대상으로 판단)",
+   "traceability matrix의 나머지 미인용 FR 140건(및 NFR/UC 미인용 항목)은 전수 판정하지 않음 — 후속 단계 과제로 명시해 둠",
+   "FR-NRM-09: 정규화 품질 지표(quality/ocr_confidence/structure_confidence)와 임계값 기반 경고·격리(quarantine) 정책을 연결하는 설계가 없음 — 실제 갭이므로 04-pipelines/09-normalization-and-cleaning.md 또는 관련 ADR에서 후속 결정 필요",
+   "FR-PRS-19: 0바이트 문서 처리(현재 초안: quality=full 유효 결과) vs 요구사항 SHALL(구분되는 표준 오류 코드) 간 상충이 03-contracts/13-error-model.md §5.1 C4·04-pipelines/05-parser-pdf.md 미해결 이슈 4/9에 이미 미해결로 기록돼 있음 — 후속 단계에서 결정 필요",
+   "06-adr/README.md A7 관련 없음(정상); A6(review/draft 상태 2건), A8(확인 필요 1286건)은 이번 지시 범위 밖이라 그대로 둠"
+  ]
+ }
+}

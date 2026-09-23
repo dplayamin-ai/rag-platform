@@ -2,8 +2,8 @@
 title: 임베딩
 status: active
 owner: architecture
-version: 0.1.1
-last_updated: 2026-09-22
+version: 0.1.2
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - ../02-architecture/00-design-bible.md
@@ -43,7 +43,7 @@ depends_on:
 | 입력 → 출력 | `EnrichedChunkSet`(`ArtifactRef` 1개) → `EmbeddedChunkSet`(`vectors_ref` npz 파생물 + 청크별 `VectorBundle`) |
 | 확장 지점·격리 | `embedder`; `standard` 이상은 외부 HTTP(`embedding-server` vLLM pooling, TEI) = `sidecar`, `lite`·개발·하네스는 `in_process` |
 | 큐·정책 | `ingest-gpu-embed`, `start_to_close` 20m, `heartbeat` 60s, `max_attempts` 5(최대 간격 5m), `resumable=yes(heartbeat_details.batch_offset)`; 워커는 GPU를 쥐지 않는 HTTP 클라이언트(프로세스당 슬롯 8, [06 오케스트레이션](../02-architecture/06-orchestration-and-workflows.md)) |
-| 멱등성 키 | 세트 `stage_key = H("stage", "embed", scope_key, enriched.blake3, fingerprint)` — `fingerprint`는 `Stage.fingerprint()`가 돌려주는 Producer 지문 `H("producer", plugin_id, plugin_version, config_hash, image_digest or "", ",".join(model_ids))`(바이블 §4.1 지문 행·§4.2 `embed` 행·§6.2 `fingerprint`(Producer) 행; §2.1). `embedder_fingerprint = H("embedder", plugin_id, plugin_version, config_hash, image_digest or "", embedding_profile_hash)`(§6.2)는 `EmbeddedChunkSet`·`IndexCommit` 전파용 **별개 파생 키**로 `stage_key`에 쓰지 않는다([07](../03-contracts/07-embedded-chunk-set-and-index-record.md) §1·미해결 이슈 11); 청크 `H("embed", embedding_space_id, "document", embed_text)`(봉투 없음, 테넌트 내 공유) |
+| 멱등성 키 | 세트 `stage_key = H("stage", "embed", scope_key, enriched.blake3, fingerprint)` — `fingerprint`는 `Stage.fingerprint()`가 돌려주는 Producer 지문 `H("producer", plugin_id, plugin_version, config_hash, image_digest or "", ",".join(model_ids))`(바이블 §4.1 지문 행·§4.2 `embed` 행·§6.2 `fingerprint`(Producer) 행; §2.1). `embedder_fingerprint = H("embedder", plugin_id, plugin_version, config_hash, image_digest or "", embedding_profile_hash)`(§6.2)는 `EmbeddedChunkSet`·`IndexCommit` 전파용 **별개 파생 키**로 `stage_key`에 쓰지 않는다([07](../03-contracts/07-embedded-chunk-set-and-index-record.md) §1·미해결 이슈 11); `embedding_space_id`(공간 설정 해시, §6.2)는 이 둘과도 다른 **세 번째 키**로 청크 임베딩 캐시(`H("embed", embedding_space_id, "document", embed_text)`, 봉투 없음, 테넌트 내 공유)에만 쓴다 — `fingerprint`(stage_key 입력) vs `embedder_fingerprint`(하류 전파 키) vs `embedding_space_id`(공간·캐시 키)의 3중 구분은 바이블 1.3.0 patch(AM-05)로 명확화되었다 |
 | 비재시도 오류 | `embed.space_mismatch`, `embed.tokenizer_missing`; 재시도 `embed.server_unavailable`; 경고 `embed.token_overflow`(truncate) |
 | 이벤트 | `ingest.document.embedded` |
 | 결정성 등급 | `model_pinned`([01 파이프라인 프레임워크](./01-pipeline-framework.md) §8.1): `model_id@revision` + `image_digest` 고정, 수치 오차만 허용, 같은 공간 서빙 교체는 코사인 ≥ 0.9999 게이트 |
@@ -137,7 +137,7 @@ class Embedder(Protocol):
 | 6 | 호출 | 공간(플러그인)별 `embed_documents(batch)`; 재시도·서킷은 §5 | `embed.server_unavailable`(재시도) |
 | 7 | 검증·정규화 | dense 길이 = `dim`, ‖v‖₂ = 1 ± 1e-4(어댑터가 정규화했더라도 재검증), sparse `indices` 오름차순·유일·`values > 0`; 위반은 어댑터 버그 | `contract.violation`(비재시도) |
 | 8 | 재개 지점 | 배치마다 `ctx.heartbeat(ResumeCursor)`를 부르되 `done`·`batch_offset`은 **마지막으로 저장된 `partial_ref.batches_done`** 을 가리킨다(01 §11.3 "`done`은 `partial_ref`에 반영된 수와 일치"); N 배치마다 `partial_ref`(계획 포함)를 갱신하고 그때만 커서가 전진한다(§6.3). 배치 성공마다 청크 캐시 기록(§7) | — |
-| 9 | 봉투 `quality`·`warnings` | 입력 `EnrichedChunkSet.quality`를 **전파**하고 되돌리지 않는다. `VectorBundle.truncated=true`가 1건 이상이면 `quality=degraded` + 청크별 `Warning{code: embed.token_overflow, chunk_id}`([07](../03-contracts/07-embedded-chunk-set-and-index-record.md) §2.1·V-5; 바이블 §4.1 부분 성공 규약 "`quality: degraded` + `warnings[]`"). 바이블 §4.2 `embed` 행은 "truncate + 경고"만 적으므로 **초안**이며 07 미해결 이슈 12(§4.2 patch 제안)와 연동한다 | `quality`·`warnings` 불일치 → 07 V-5 검증기 `contract.violation` |
+| 9 | 봉투 `quality`·`warnings` | 입력 `EnrichedChunkSet.quality`를 **전파**하고 되돌리지 않는다. `VectorBundle.truncated=true`가 1건 이상이면 `quality=degraded` + 청크별 `Warning{code: embed.token_overflow, chunk_id}`([07](../03-contracts/07-embedded-chunk-set-and-index-record.md) §2.1·V-5; 바이블 §4.1 부분 성공 규약 "`quality: degraded` + `warnings[]`"). **해소(v1.3, AM-07):** 바이블 §4.2 `embed` 행이 "truncate + 경고 + 봉투 `quality=degraded`"로 갱신되어 이 규칙을 그대로 확정했다(§4.4도 정합) | `quality`·`warnings` 불일치 → 07 V-5 검증기 `contract.violation` |
 | 10 | 산출물 | dense·late_interaction 행렬을 npz로 `ctx.artifacts.put_derived(kind="vectors")`, `VectorBundle` 오프셋·sparse 인라인 조립, `stats`·`vector_layout` 계산 | — |
 
 ### 2.3 `Capabilities.extra` — 임베더 전용 필드(제안)
@@ -241,7 +241,7 @@ class Embedder(Protocol):
 | `Qwen/Qwen3-Embedding-4B` | Apache-2.0(A) | 81.37 | dense(MRL), 처리량 약 1/7 | `quality-max` |
 | `telepix/PIXIE-Splade-v1.5` | Apache-2.0(A) | sparse 리더보드 78.19(1위) | sparse만(149M) | `ko-quality` sparse |
 | `nlpai-lab/KURE-v2` | Apache-2.0(A; 카드 재확인) | MTEB(kor,v2) 0.8160(카드 자체 보고) | late interaction 128d | M2 슬롯 후보 |
-| jina v3/v4/v5, jina-colbert-v2, SPLADE-v3, kanana | CC-BY-NC / Qwen Research(D) | — | — | **제외**(BYO + `model_license_ack`만) |
+| jina v3/v4/v5, jina-colbert-v2, SPLADE-v3(`naver/splade-v3`, CC BY-NC-SA 4.0·영어 전용 BERT), kanana | CC-BY-NC / Qwen Research(D) | — | — | **대안·기각**(O-02 sparse 결정 "SPLADE-v3 제외"; [ADR-0014](../06-adr/0014-sparse-representation-bge-m3-lexical-leg-kept.md)) — BYO + `model_license_ack`만 |
 
 수치는 리더보드·카드 자체 보고이며 후보 선별에만 쓴다. 채택·교체는 내부 한국어 골든셋 게이트(바이블 §7.4)로만 결정한다(원칙 7).
 
@@ -541,7 +541,7 @@ ingest:
 | 2 이중 임베딩 | 현 서빙(A)과 후보 서빙(B)에서 같은 공간으로 임베딩 |
 | 3 판정 | dense: `min(cos(a_i, b_i)) ≥ 0.9999`; sparse: 인덱스 집합 Jaccard ≥ 0.99, 공통 인덱스 가중치 상대 오차 ≤ 1e-3(초안, 미해결 이슈 10); late_interaction: 토큰 벡터 쌍별 코사인 최솟값 ≥ 0.999(초안) |
 | 4 결과 | 통과 → 배포(`image_digest` 갱신, 지문 변경, 재색인 없음). 실패 → 배포 차단 또는 새 공간 blue/green. 결과는 `EvalReport.gate_result`로 기록 |
-| 5 자동화 | [10-development/05 CI·CD](../10-development/05-ci-cd.md)(작성 예정)의 서빙 이미지 승격 파이프라인 게이트; 수동 `rag eval equivalence --space <id> --candidate <url>`(제안) |
+| 5 자동화 | [10-development/05 CI·CD](../10-development/05-ci-cd.md)의 서빙 이미지 승격 파이프라인 게이트; 수동 `rag eval equivalence --space <id> --candidate <url>`(제안) |
 
 ## 12. sparse 인코딩과 렉시컬 필드의 책임 경계
 
@@ -590,7 +590,7 @@ vLLM `token_classify`(또는 `bge_m3_sparse_plugin`의 sparse 부분)는 토큰 
 | 포화식(D-15 고정) | `values[t] = tf(t) · (k1 + 1) / (tf(t) + k1 · (1 − b + b · dl / avgdl))`, `k1 = 1.2`, `b = 0.75`; `tf`·`dl`은 `index_text` 형태소 토큰 기준; bm25s 참조 구현 일치 테스트(허용 오차 1e-6) |
 | `avgdl`(제안) | v1은 **프로파일 상수** `ingest.embed.sparse_bm25.avgdl`(N, 초안 400 토큰)로 둔다. 컬렉션 통계로 두면 같은 `index_text`의 벡터가 코퍼스에 따라 달라져 청크 캐시·결정성(`model_pinned`)이 깨지고 공간 ID가 값을 설명하지 못한다. 컬렉션 통계 방식은 13 문서 실측 후 재검토(07 미해결 이슈 10); 프로파일 키 `ingest.embed.sparse_bm25.avgdl`은 15 `EmbedConfig`에 없어 미해결 이슈 18 |
 | 공간 입력(제안) | `model_id = "rag_platform/sparse_bm25"`, `revision = H("config", canonical_json({"k1": 1.2, "b": 0.75, "avgdl": 400, "dictionary_hash": <hex64>}))`, `dim = 4294967296`(해시 공간), `normalized = false`, `prompt_hash = H("config", "{}")`, `quantization = "none"`, `vocab_id = analyzer_id`. 사용자 사전 변경(`dictionary_hash`)이 공간을 바꾸도록 `revision`에 포함한다(07 §3 "분석기·사전 변경 → `sparse_bm25` 변경") |
-| 질의 측 | `retriever.qdrant_sparse_bm25`가 같은 `analyzer_id`·`dictionary_hash`로 질의를 토큰화하고 같은 해시로 `indices`를 만들며 `values = 1.0`(질의 TF 무시; 초안) → 서버 `modifier: idf`가 테넌트 IDF를 곱한다. `analyzer_id` 불일치 → `degraded{channel.lexical, analyzer_mismatch}`, `vocab_id` 불일치 → `embed.space_mismatch` |
+| 질의 측 | `retriever.qdrant_sparse_bm25`가 같은 `analyzer_id`·`dictionary_hash`로 질의를 토큰화하고 같은 해시로 `indices`를 만든다. **질의 측 `values` 규약은 이 문서가 정하지 않고 [04-pipelines/15](15-hybrid-search-and-fusion.md) §3.5(`tf_q(t)`)에 위임한다**(패치, #186) → 서버 `modifier: idf`가 테넌트 IDF를 곱한다. `analyzer_id` 불일치 → `degraded{channel.lexical, analyzer_mismatch}`, `vocab_id` 불일치 → `embed.space_mismatch` |
 
 ## 13. 멀티벡터(`late_interaction`) 저장 비용
 
@@ -610,7 +610,7 @@ vLLM `token_classify`(또는 `bge_m3_sparse_plugin`의 sparse 부분)는 토큰 
 
 ## 14. 처리량 목표(초안)
 
-모든 수치는 초안 목표이며 M1 벤치마크([08-evaluation/05](../08-evaluation/05-benchmark-plan-and-baselines.md), 작성 예정)로 확정한다. 근거는 [비기능 요구사항](../01-requirements/02-non-functional-requirements.md) §3.5 산정식·NFR-PERF-07·NFR-PERF-11과 08 배포 문서 §7.3이다.
+모든 수치는 초안 목표이며 M1 벤치마크([08-evaluation/05](../08-evaluation/05-benchmark-plan-and-baselines.md))로 확정한다. 근거는 [비기능 요구사항](../01-requirements/02-non-functional-requirements.md) §3.5 산정식·NFR-PERF-07·NFR-PERF-11과 08 배포 문서 §7.3이다.
 
 | 항목 | GPU(`standard`, L4/A10 급 fp16) | CPU(`lite`, 8 vCPU int8 ONNX) | 근거 |
 |------|---------------------------------|-------------------------------|------|
@@ -623,7 +623,7 @@ vLLM `token_classify`(또는 `bge_m3_sparse_plugin`의 sparse 부분)는 토큰 
 
 ## 15. 품질 검증: 임베딩 회귀 테스트
 
-**결정:** 임베더 어댑터는 (1) 고정 문장 쌍 코사인 회귀, (2) sparse 골든(FlagEmbedding 대조), (3) 프롬프트 분리 검사, (4) 동등성 게이트(§11.3), (5) 적합성 키트 `contract_roundtrip`·`idempotency`(기록형 HTTP 카세트) 다섯 가지를 CI에서 통과해야 한다(바이블 §12 `testing/`; ADR-0009 준수 확인 "적합성 키트"; [10-development/04 테스트 전략](../10-development/04-testing-strategy.md), 작성 예정).
+**결정:** 임베더 어댑터는 (1) 고정 문장 쌍 코사인 회귀, (2) sparse 골든(FlagEmbedding 대조), (3) 프롬프트 분리 검사, (4) 동등성 게이트(§11.3), (5) 적합성 키트 `contract_roundtrip`·`idempotency`(기록형 HTTP 카세트) 다섯 가지를 CI에서 통과해야 한다(바이블 §12 `testing/`; ADR-0009 준수 확인 "적합성 키트"; [10-development/04 테스트 전략](../10-development/04-testing-strategy.md)).
 
 | 테스트 | 고정물 | 판정(초안) | 실행 시점 |
 |--------|--------|------------|-----------|
@@ -650,7 +650,7 @@ vLLM `token_classify`(또는 `bge_m3_sparse_plugin`의 sparse 부분)는 토큰 
 }
 ```
 
-관측 지표(바이블 §6.5 정본 목록만): `rag_ingest_stage_duration_seconds{stage="embed"}`, `rag_embed_query_latency_seconds`, `rag_index_bytes_total{vector}`, `rag_eval_metric_value{metric}`; 스팬 `rag.ingest.embed`(속성은 Weaver 생성 `gen_ai.*` 상수; 콘텐츠 캡처 끔). 배치 토큰 수·캐시 적중률·서버 오류 수 전용 메트릭은 정본 목록에 없어 미해결 이슈 11로 제안한다.
+관측 지표(바이블 §6.5 정본 목록만): `rag_ingest_stage_duration_seconds{stage="embed"}`, `rag_embed_query_latency_seconds`, `rag_index_bytes_total{vector}`, `rag_eval_metric_value{metric}`, `rag_embed_batch_tokens_count{backend_id}`, `rag_embed_truncated_total{backend_id}`, `rag_embed_cache_total{outcome}`(1.3.0 추가, AM-41); 스팬 `rag.ingest.embed`(속성은 Weaver 생성 `gen_ai.*` 상수; 콘텐츠 캡처 끔). 서버 오류 수 전용 메트릭만 정본 목록에 없어 미해결 이슈 11로 남는다.
 
 ## 16. 실패 모드
 
@@ -660,7 +660,7 @@ vLLM `token_classify`(또는 `bge_m3_sparse_plugin`의 sparse 부분)는 토큰 
 | 서빙 모델 버전 불일치 | 다른 `model_id@revision`·차원·정규화 | `warmup()`·`health()` 대조 | `embed.space_mismatch`(비재시도), 배치 전체 거부, 워커 `/readyz=false` | 이미지·프로파일 정정; 잘못 적재된 세대는 `IndexCommit.embedder_fingerprint`로 식별 → `reprocess from_stage=embed` |
 | 프롬프트 불일치 | 색인·질의 프롬프트 상이 → nDCG 급락(조용한 회귀) | 프롬프트 분리 테스트, 야간 `rag_eval_metric_value` 회귀 | 어댑터가 프롬프트 소유, `prompt_hash`가 공간에 포함되어 구조적으로 차단 | 프로파일 프롬프트 고정 → 재색인 |
 | sparse 어휘 혼합 | bge-m3 인덱스에 PIXIE 질의 | `vocab_id` 대조 | `embed.space_mismatch`(비재시도) | 컬렉션 공간 확인 |
-| 토큰 초과 | 8192 초과 입력 | 어댑터 토큰 계수 | 절단 + `embed.token_overflow` 경고 + `truncated=true` + 세트 `quality=degraded`(오류 아님; 07 V-5 초안, 07 미해결 이슈 12) | 청커 설정·§2.3 로딩 검증 |
+| 토큰 초과 | 8192 초과 입력 | 어댑터 토큰 계수 | 절단 + `embed.token_overflow` 경고 + `truncated=true` + 세트 `quality=degraded`(오류 아님; 바이블 §4.2 1.3.0 확정, AM-07; 07 V-5) | 청커 설정·§2.3 로딩 검증 |
 | 토크나이저 부재 | `ctx.token_counters`에 `tokenizer_id` 없음 | 기동 시 | `embed.tokenizer_missing`(비재시도) | 프로파일 `chunk.tokenizer`·`secondary_tokenizers` 정정 |
 | 8192 토큰 배치 OOM | 서버 OOM·5xx | 서버 로그·429 | `batch_max_tokens` ↔ 서버 상한 정합, 4,096 초과 항목 단독 배치 | 상한 하향 |
 | 서빙 스택 미세 차이 | fp16/bf16·FA로 1e-3 수준 차이 | 동등성 게이트 | 게이트 통과 시 같은 공간, 실패 시 새 공간 | — |
@@ -676,7 +676,7 @@ vLLM `token_classify`(또는 `bge_m3_sparse_plugin`의 sparse 부분)는 토큰 
 - **결정:** 기본 임베딩 BGE-M3(dense 1024d + `sparse_learned` 단일 패스, `pooling=cls`), 대안은 A/B 등급 프로파일 옵션(`ko-quality`·`quality-max`·`late_interaction` M2), 교체 게이트 nDCG@10 +2p; jina 계열 등 D 등급은 BYO + `model_license_ack`만([ADR-0010](../06-adr/0010-bge-m3-rationale-and-late-interaction-slot.md), [ADR-0014](../06-adr/0014-sparse-representation-bge-m3-lexical-leg-kept.md), [ADR-0001](../06-adr/0001-license-grade-table-and-d02-interpretation.md)).
 - **결정:** 서빙은 vLLM 0.29 pooling(`BgeM3EmbeddingModel` + `bge_m3_sparse_plugin`, `POST /pooling`) + TEI 1.9(dense 전용·리랭커) + 인프로세스(sentence-transformers ONNX int8, `lite`·개발·하네스); Infinity 제외; `batch_max_tokens`(8,192/32,768/65,536)를 서버 배치 상한과 정합([ADR-0009](../06-adr/0009-embedding-serving-vllm-pooling-tei-inprocess.md)).
 - **결정:** 클라이언트는 짧은 내부 재시도(3회 ≤ 4s) + 서킷 브레이커 + Temporal 백오프, 폴백 모델 없음; 질의 경로는 캐시 미스 질의만 렉시컬 단독으로 저하한다(바이블 §4.4, 09 문서 F-12·F-20).
-- **결정:** 절단은 `text` 꼬리를 토큰 → 문장 경계로 자르고 접두어를 보존하며 `truncated=true` + `embed.token_overflow` 경고를 남기고, 봉투 `quality`는 입력을 전파하되 절단 1건 이상이면 `degraded`다(07 §2.1·V-5 초안, 07 미해결 이슈 12); 배치는 토큰 내림차순 그리디 동적 배치(4,096 토큰 초과 항목 단독)이고 계획은 첫 시도 실행 전 확정되어 `partial_ref`에 저장되며 재시도는 저장된 계획의 `ResumeCursor{unit: batch_offset}`부터 이어간다 — 재개 검증은 `enriched_blake3`·`fingerprint`·`partial_ref.blake3`이며 청크 캐시 상태와 무관하다(바이블 §4.2·§4.4; [06](../03-contracts/06-enriched-chunk-set.md) §4 규칙 5; [01](./01-pipeline-framework.md) §11.2·§11.3).
+- **결정:** 절단은 `text` 꼬리를 토큰 → 문장 경계로 자르고 접두어를 보존하며 `truncated=true` + `embed.token_overflow` 경고를 남기고, 봉투 `quality`는 입력을 전파하되 절단 1건 이상이면 `degraded`다(바이블 §4.2 1.3.0, AM-07; 07 §2.1·V-5); 배치는 토큰 내림차순 그리디 동적 배치(4,096 토큰 초과 항목 단독)이고 계획은 첫 시도 실행 전 확정되어 `partial_ref`에 저장되며 재시도는 저장된 계획의 `ResumeCursor{unit: batch_offset}`부터 이어간다 — 재개 검증은 `enriched_blake3`·`fingerprint`·`partial_ref.blake3`이며 청크 캐시 상태와 무관하다(바이블 §4.2·§4.4; [06](../03-contracts/06-enriched-chunk-set.md) §4 규칙 5; [01](./01-pipeline-framework.md) §11.2·§11.3).
 - **결정:** 청크 임베딩 캐시 키는 `H("embed", embedding_space_id, "document", embed_text)`(봉투 없음, 테넌트 내 공유)이고 조회 색인은 Valkey(미스는 미스로 취급, 적중 시 `EXPIRE` 갱신), 기록은 배치 단위 비동기다; 저장 위치 `derived/embed_cache/{cache_key}`는 바이블 §13.3 바이트 해시 규약과 달라 **제안**으로 둔다(미해결 이슈 7). 질의는 `qemb:{embedding_space_id}:{blake3_hex(utf8(dense_query_text))}` 24h이며 플랜은 `cache_keys.query_embedding`만 기록한다([ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md), 바이블 §13.4; [09](../03-contracts/09-query-request-and-query-plan.md) §6.5·§8.2).
 - **결정:** dense는 항상 L2 정규화, MRL 절단은 MRL 학습 모델만(`str(dim)`이 공간에 포함), 모델 측 양자화(`none`·`onnx_int8`·`output_int8`·`output_binary`)만 `embedding_space_id`에 들어가고 저장 양자화(Qdrant scalar/binary/TurboQuant + 리스코어)는 백엔드 설정이다([07](../03-contracts/07-embedded-chunk-set-and-index-record.md) §4).
 - **결정:** 벡터의 정체성은 공간이다 — 모델·revision·dim·프롬프트·모델 측 양자화·어휘 변경 = `embedding_profile_hash` 변경 = 컬렉션 blue/green 재색인(재파싱 없음, 필요 시 `recount`); 같은 공간의 서빙 교체만 코사인 ≥ 0.9999 동등성 게이트(골든 1,000)로 무재색인 전환([ADR-0009](../06-adr/0009-embedding-serving-vllm-pooling-tei-inprocess.md), [ADR-0019](../06-adr/0019-chunk-size-tokenizer-defaults-and-recount-stage.md)).
@@ -696,7 +696,7 @@ vLLM `token_classify`(또는 `bge_m3_sparse_plugin`의 sparse 부분)는 토큰 
 | 8 | (a) `embedding_space_id`의 `quantization` 어휘(`none`, `onnx_int8`, `output_int8`, `output_binary`)와 sparse 공간의 `str(dim)` = 어휘 크기 규약이 바이블 §6.2에 없고, 07 §3은 예시로 `"none"`·`"int8"`을 쓴다(둘 다 초안, 07 미해결 이슈 7) — 이 문서 어휘를 정본 제안으로 하고 07의 `int8` 예시는 `onnx_int8`로 대체 제안; (b) `EmbeddingSpace.revision`을 `models.lock` 해소 커밋 SHA만 허용하는 강화(§11.1; 바이블 §6.1은 "SHA 또는 태그", ADR-0009는 `latest`·`main`만 금지); (c) `EmbeddedChunkSet.pooling` = `dense` 공간 `pooling` 규칙(§9 규칙 (5)) | (a)·(b) 07 미해결 이슈 7과 공동으로 §6.2 `embedding_space_id` 행에 어휘·`str(dim)` 규약·SHA-only 입력 규칙 병기(patch); `xlm-roberta-250k` 어휘 크기 250,002는 모델 `tokenizer_config` 확인 후 고정; (c) 07 §2.1 `pooling` 행에 병기(patch) |
 | 9 | 슬롯별 플러그인이 다른 구성(`ko-quality`·`lite`)의 `Producer.plugin_id`(`embedder.pipeline`, 제안)·`image_digest`(dense 슬롯 digest) 규약이 07 §2.1("`embedder.{implementation}`")과 정합하지 않을 수 있다. 06 `enricher.pipeline`·09 `query_transformer.pipeline`도 같은 초안 규약을 각자 제안하고 있다 | 07 문서 `producer` 행에 합성 규약 병기; 06·09와 **단일 규약** `{extension_point}.pipeline`(플랫폼 합성 스테이지; 구성원은 `config_hash` 입력으로 표현)으로 바이블 §6.1 `plugin_id` 행 patch를 공동 발의(06 미해결 이슈 1·09 미해결 이슈 17과 병합) |
 | 10 | 동등성 게이트의 sparse·late_interaction 판정식(Jaccard ≥ 0.99, 상대 오차 ≤ 1e-3, 토큰 코사인 ≥ 0.999)은 초안이며 바이블 `equivalence_gate`는 `cosine_min`·`sample`만 갖는다 | M1 실측 후 `equivalence_gate{sparse_jaccard_min, sparse_rel_err_max, late_interaction_cosine_min}`(N) 제안; 15 문서 스키마 `additionalProperties: false` 완화 필요 |
-| 11 | 배치 토큰 수·캐시 적중률·서버 오류 수·절단 수 전용 메트릭이 바이블 §6.5 정본 목록에 없다 | `rag_embed_batch_tokens_count`, `rag_embed_cache_hit_ratio`, `rag_embed_server_errors_total{outcome}`, `rag_embed_truncated_total` 추가 제안(minor); 그때까지 `EmbeddedChunkSet.cache_hits`·`stats.truncated_count`와 서버 자체 메트릭으로 대체 |
+| 11 | **부분 해소(v1.3, AM-41).** 바이블 §6.5가 `rag_embed_batch_tokens_count{backend_id}`·`rag_embed_truncated_total{backend_id}`·`rag_embed_cache_total{outcome}`을 정본 목록에 추가했다(라벨은 `backend_id`/`outcome`이며 이 문서의 옛 제안명 `rag_embed_cache_hit_ratio`는 `rag_embed_cache_total{outcome}`로 대체된다). 서버 오류 수 메트릭만 남는다 | `rag_embed_server_errors_total{outcome}` 추가만 제안으로 남김(minor); 그때까지 서버 자체 메트릭으로 대체 |
 | 12 | `ResumeCursor` 배치 → 청크 환산(`partial_ref.chunks_done` 우선, 없으면 비례 추정)은 01 미해결 이슈 1의 이 문서 측 제안이다 | 01 문서 §11.3 진행률 행에 반영 |
 | 13 | vLLM `/pooling` 응답 스키마·`--io-processor-plugin` 인터페이스, `token_classify` sparse와 FlagEmbedding `lexical_weights`의 수치 동일성(특수 토큰·max 집계), KURE-v2 `token_embed` 서빙 가능성(05 미해결 이슈 1·17) | 계약 테스트 코퍼스(카세트) 제작 시 실측; 결과를 §4.1·§12.1에 반영하고 "확인 필요" 표기 제거 |
 | 14 | 질의 임베딩 전용 우선 큐(서버 기능)·`api` in-flight 상한 64·질의 요청 타임아웃 100ms(GPU)는 초안이다 | M1 부하 시험 후 09-operations/04에서 확정 |
@@ -713,5 +713,5 @@ vLLM `token_classify`(또는 `bge_m3_sparse_plugin`의 sparse 부분)는 토큰 
 - [05 임베딩·스파스·멀티벡터 모델과 서빙](../07-tech-landscape/05-embedding-models-and-serving.md) 후보 표, BGE-M3 심층 비교, 서빙 스택 비교, 양자화와 Matryoshka, 프로파일별 조합, 점수표·결정 논리, 어댑터 계약 제안, 표준 모델 매핑, 캐싱과 버전 고정, 실패 모드, 리소스 요구, 미해결 이슈 1·2·3·10·17
 - 계약: [00 계약 개요](../03-contracts/00-contract-overview.md) §2·§4.19·§4.20·§6·§7·§9.3, [06 EnrichedChunkSet](../03-contracts/06-enriched-chunk-set.md) §4·§11, [07 EmbeddedChunkSet·IndexRecord](../03-contracts/07-embedded-chunk-set-and-index-record.md) §2~§4·§8.3·불변식 V-1~V-6·미해결 이슈 7·10, [09 QueryRequest·QueryPlan](../03-contracts/09-query-request-and-query-plan.md) §8.2·미해결 이슈 3·10, [13 오류 모델](../03-contracts/13-error-model.md), [15 컬렉션·프로파일·정책 계약](../03-contracts/15-collection-profile-and-policy-contracts.md) §3.4 `embed` 행·`EmbedConfig`·P-8·P-12
 - 아키텍처·파이프라인: [01 파이프라인 프레임워크](./01-pipeline-framework.md) §2·§3·§7·§8·§11, [06 오케스트레이션과 워크플로우](../02-architecture/06-orchestration-and-workflows.md) 큐·슬롯 표, [08 배포 아키텍처](../02-architecture/08-deployment-architecture.md) §6·§7, [09 실패 모드와 복원력](../02-architecture/09-failure-modes-and-resilience.md) F-12·F-13·F-20·L6·미해결 이슈 16, [10 청킹 전략](./10-chunking-strategies.md), [11 보강](./11-enrichment.md), [13 인덱싱](./13-indexing.md), [14 질의 이해](./14-query-understanding.md), [15 하이브리드 검색과 융합](./15-hybrid-search-and-fusion.md), [16 리랭킹](./16-reranking.md), [19 갱신·삭제·재색인](./19-update-delete-and-reindexing.md)
-- 요구·운영·평가·개발: [비기능 요구사항](../01-requirements/02-non-functional-requirements.md) NFR-PERF-07·11·19, §3.5 산정식, NFR-SCAL-10, NFR-MNT-11, NFR-REL-14; 다음 여섯 문서는 브리프 §8 문서 맵의 경로이며 **작성 예정**(링크 검사 CI는 문서 생성 후 통과 확인): [09-operations/03 관측성](../09-operations/03-observability.md); [09-operations/04 확장과 성능](../09-operations/04-scaling-and-performance.md); [08-evaluation/02 리트리벌 메트릭과 하네스](../08-evaluation/02-retrieval-metrics-and-harness.md); [08-evaluation/05 벤치마크 계획](../08-evaluation/05-benchmark-plan-and-baselines.md); [10-development/04 테스트 전략](../10-development/04-testing-strategy.md); [10-development/05 CI·CD](../10-development/05-ci-cd.md)
+- 요구·운영·평가·개발: [비기능 요구사항](../01-requirements/02-non-functional-requirements.md) NFR-PERF-07·11·19, §3.5 산정식, NFR-SCAL-10, NFR-MNT-11, NFR-REL-14; [09-operations/03 관측성](../09-operations/03-observability.md); [09-operations/04 확장과 성능](../09-operations/04-scaling-and-performance.md); [08-evaluation/02 리트리벌 메트릭과 하네스](../08-evaluation/02-retrieval-metrics-and-harness.md); [08-evaluation/05 벤치마크 계획](../08-evaluation/05-benchmark-plan-and-baselines.md); [10-development/04 테스트 전략](../10-development/04-testing-strategy.md); [10-development/05 CI·CD](../10-development/05-ci-cd.md)
 - ADR: [ADR-0001 라이선스 등급표](../06-adr/0001-license-grade-table-and-d02-interpretation.md), [ADR-0009 임베딩 서빙](../06-adr/0009-embedding-serving-vllm-pooling-tei-inprocess.md), [ADR-0010 BGE-M3 근거·late_interaction 슬롯](../06-adr/0010-bge-m3-rationale-and-late-interaction-slot.md), [ADR-0012 경량 프로파일 sparse_bm25](../06-adr/0012-lite-profile-qdrant-only-client-bm25.md), [ADR-0014 sparse 표현](../06-adr/0014-sparse-representation-bge-m3-lexical-leg-kept.md), [ADR-0019 청크 토크나이저·recount](../06-adr/0019-chunk-size-tokenizer-defaults-and-recount-stage.md), [ADR-0021 한국어 분석기](../06-adr/0021-korean-analyzer-kiwi-promotion-and-interim-mecab-kss.md), [ADR-0029 3-텍스트 규칙](../06-adr/0029-three-text-rule-and-deterministic-context-prefix.md), [ADR-0031 프로파일 게이트](../06-adr/0031-profile-schema-extends-and-quality-gates.md), [ADR-0032 플러그인 SDK](../06-adr/0032-plugin-sdk-stage-protocol-and-conformance-kit.md), [ADR-0037 산출물 캐시 스코프](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md)

@@ -2,8 +2,8 @@
 title: 컴포넌트 아키텍처 (C4 Level 3)
 status: active
 owner: architecture
-version: 0.2.0
-last_updated: 2026-09-22
+version: 0.2.2
+last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
   - ./00-design-bible.md
@@ -30,6 +30,7 @@ depends_on:
 - 제외: 컨테이너 간 상호작용(C4 Level 2, [시스템 개요](./01-system-overview.md)와 바이블 §2), 계약 필드의 전문([계약 개요](../03-contracts/00-contract-overview.md)와 바이블 §5), 각 스테이지 알고리즘(04-pipelines), 워크플로우 상세([오케스트레이션](./06-orchestration-and-workflows.md)), 저장소 스키마([저장소](./04-storage-architecture.md)), 플러그인 패키징·배포 절차([플러그인](./05-plugin-architecture.md)), Kubernetes 매니페스트([배포](./08-deployment-architecture.md)).
 - 정본 규칙: 타입명·필드명·열거값·오류 코드·이벤트명은 바이블 §5·§5.7·§6을 그대로 쓴다. 이 문서가 새로 붙이는 이름(포트 프로토콜, 내부 데이터 클래스, 설정 클래스)은 본문에 "제안"으로 표기하고 `## 미해결 이슈`에 모아 바이블 반영 여부를 남긴다.
 - 수치는 모두 "초안 목표"다(바이블 §7.2·§8.3 값을 인용).
+- P2(2026-09-23) 900행 초과 대응: §5(설정 모델)의 전문을 [설정 레퍼런스](../09-operations/02-configuration-reference.md)로 이관하고 이 절은 요약만 남겼다(899행).
 
 다른 초안·제안서에서 쓰인 비공식 패키지 이름과 정본 이름의 대응은 다음과 같다. 이 문서 이후 모든 문서는 오른쪽 열만 쓴다.
 
@@ -69,7 +70,7 @@ depends_on:
 | `eval` | 하네스 `runner`(`LocalRunner` 재사용), TREC 입출력, `metrics_ranx`, `judge_ragas`, `span_hit`, `gates`, `datasets/` | 별도 검색 경로 |
 | `api` | FastAPI 앱·라우터(§14), RFC 9457 `problems`, `idempotency`, SSE `events`, `SecurityContext` 주입 미들웨어, 질의 파이프라인 인프로세스 실행 | 스테이지 로직, 워커 |
 | `mcp` | `McpToolAdapter`, 도구 3종(`search`, `get_document`, `list_collections`), `cursor_store` | 인증 정책(`security` 재사용) |
-| `cli` | `rag up/ingest/query/reprocess/reindex/eval/profile/plugin/cache/serve/mcp` | 비즈니스 로직 |
+| `cli` | 진입점 조립(명령 정본: [10-development/02 §CLI](../10-development/02-development-environment.md)) | 비즈니스 로직 |
 | `testing` | 적합성 키트(`contract_roundtrip`, `idempotency`, `security_invariants`, `renderer_citation_roundtrip`, `litm_order`, `fuser_equivalence`) | 프로덕션 경로 |
 
 ### 1.2 의존 방향과 import-linter 계약
@@ -680,7 +681,7 @@ class SidecarStage(ABC, Generic[In, Out]):
 | `eval` | `harness.run(dataset, profile, collection_id) -> EvalReport`(`LocalRunner`·`pipelines.query.run` 동일 경로), `trec.read_qrels/write_run`, `metrics_ranx.compute`, `judge_ragas.judge`, `span_hit.rate`, `gates.evaluate(report, profile.eval.gates)` | orchestration.local, retrieval, ranx, ir_measures, ragas, deepeval(`[eval]`) | `eval_*` 테이블(원장), 골든셋 산출물 |
 | `mcp` | `McpToolAdapter`(mcp SDK 격리층), `tools.search/get_document/list_collections`, `cursor_store`(Valkey `cursor:{tenant}:{ulid}` 10분) | security, retrieval, render, storage, mcp SDK 2.x | Valkey 커서 |
 | `api` | `create_app(settings) -> FastAPI`(라우터: §14 표), `problems.to_problem(exc) -> ProblemDetails`, `idempotency` 미들웨어, `events`(SSE), `deps.security_context`(E1~E3 → `SecurityContext` 주입) | 모두 | HTTP 연결, SSE 스트림, `jobs`·`idempotency_keys` INSERT |
-| `cli` | `rag up`, `rag ingest`, `rag query`, `rag reprocess`, `rag reindex`, `rag eval`, `rag profile validate|diff`, `rag plugin list --check-license`, `rag cache invalidate --stage`, `rag serve api|worker|relay|sidecar`, `rag mcp serve` | 모두 | 프로세스 기동 |
+| `cli` | 조립 지점(`rag serve api\|worker\|relay`, `rag mcp serve`, `rag ingest`·`rag query`·`rag eval`의 로컬 실행) — 명령·인자 정본: [10-development/02 §CLI](../10-development/02-development-environment.md) | 모두 | 프로세스 기동 |
 
 ## 4. 실행·동시성 모델
 
@@ -754,121 +755,23 @@ sequenceDiagram
 
 ## 5. 설정 모델
 
+이관 완료(P2, #169, 2026-09-23): §5.1~§5.4의 전문(환경 변수 표, `Settings` 필드 코드, 프로파일 YAML 스키마, 로딩·검증 절차)은 [설정 레퍼런스](../09-operations/02-configuration-reference.md) §1~§6으로 옮겼다(그 문서가 이미 더 상세한 내용을 갖고 있어 09-operations/02는 수정하지 않았다). 아래는 각 절의 결정만 남긴 요약이다.
+
 ### 5.1 두 층: `Settings`(배포)와 `Profile`(품질)
 
-**결정:** 설정은 두 층으로 나뉘며 서로 침범하지 않는다. `Settings`는 프로세스가 **어디에 연결되는지**(환경 변수, pydantic-settings, 접두 `RAG_`, 중첩 `__`; 바이블 §6.6)를, `Profile`은 파이프라인이 **무엇을 어떻게 하는지**(YAML, `extends` 단일 상속, `profile_hash`가 `IndexCommit`·`QueryPlan`·`ContextPack`에 기록; 바이블 §7)를 담는다. 환경 변수로 프로파일 값을 덮어쓰는 경로는 없다 — 그렇게 하면 `profile_hash`가 실제 동작을 대표하지 못한다(근거: [ADR-0031](../06-adr/0031-profile-schema-extends-and-quality-gates.md)).
-
-| 항목 | `Settings`(`rag_platform.settings`, 제안 — L5; 조립 지점 `api`·`orchestration`·`cli`·`eval`·`mcp`만 임포트하고 플러그인 SDK 표면(`sdk`)에는 두지 않는다) | `Profile`(`rag_platform.profiles`) |
-|------|------|------|
-| 원천 | 환경 변수 `RAG_*`, `.env`(개발), 비밀은 `credentials_ref` 간접 참조 | `builtin/{base,lite,standard,premium,korean-gov}.yaml`, 운영자 YAML(`RAG_PROFILE__PATH`), 원장 `profiles` 이력 |
-| 변경 효과 | 재기동; 산출물·해시에 영향 없음 | `version` 증가 → `profile_hash` 변경 → 컬렉션 blue/green |
-| 검증 시점 | 프로세스 기동(`Settings()` 생성 실패 = 기동 실패) | `rag profile validate`, `POST /v1/profiles/validate`, 컬렉션 생성·변경, 워커 기동 시 캐시 적재 |
-| 예 | `RAG_PG__DSN`, `RAG_OBJECT_STORE__URI`, `RAG_VALKEY__URL`, `RAG_TEMPORAL__ADDRESS`, `RAG_PROFILE__PATH`, `RAG_AUTH__OIDC_ISSUER`, `RAG_OTEL__EXPORTER_OTLP_ENDPOINT`, `RAG_OTEL__CONTENT_CAPTURE=none`, `RAG_SECRETS__PROVIDER` | `ingest.chunk.leaf_max_tokens`, `query.fusion.k`, `query.pack.renderer`, `runtime.queues` |
+**결정:** 설정은 두 층으로 나뉘며 서로 침범하지 않는다. `Settings`는 프로세스가 **어디에 연결되는지**(환경 변수 `RAG_*`, pydantic-settings, 바이블 §6.6)를, `Profile`은 파이프라인이 **무엇을 어떻게 하는지**(YAML, `extends` 단일 상속, `profile_hash`가 산출물에 기록; 바이블 §7)를 담는다. 환경 변수로 프로파일 값을 덮어쓰는 경로는 없다 — 그렇게 하면 `profile_hash`가 실제 동작을 대표하지 못한다(근거: [ADR-0031](../06-adr/0031-profile-schema-extends-and-quality-gates.md)). 두 층의 원천·변경 효과·검증 시점 표는 [설정 레퍼런스](../09-operations/02-configuration-reference.md) §1이 소유한다.
 
 ### 5.2 `Settings` 클래스
 
-바이블 §6.6이 이름을 확정한 변수는 필수 필드로, 그 외 필드는 이 문서의 제안(선택, 기본값 있음)이다. Valkey는 `lite`를 포함한 모든 프로파일의 필수 컨테이너(바이블 §2.2·§11.6; 레이트리밋 E3·MCP 커서 D-13·`aclrev` E9의 전제)이므로 **선택 설정이 아니다** — 구성 부재는 기동 실패, 런타임 불가만 `degraded`(바이블 §2.3)다.
-
-```python
-# src/rag_platform/settings.py  (제안 모듈, §1.1)
-import os
-from pathlib import Path
-from typing import Literal
-from pydantic import BaseModel, ConfigDict, SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
-class _Section(BaseModel):
-    model_config = ConfigDict(extra="forbid")       # 하위 키 오타(RAG_VALKEY__URLX)를 거부하려면 절 모델에도 forbid가 필요
-
-class PgSettings(_Section):
-    dsn: SecretStr                                  # RAG_PG__DSN (정본)
-    pool_min: int = 2                               # 제안
-    pool_max: int = 16                              # 제안
-
-class ObjectStoreSettings(_Section):
-    uri: str                                        # RAG_OBJECT_STORE__URI (정본): s3://bucket[/prefix] | file:///path
-    endpoint_url: str | None = None                 # 제안(RustFS/SeaweedFS)
-
-class ValkeySettings(_Section):
-    url: str                                        # RAG_VALKEY__URL (정본); 모든 프로파일 필수
-
-class TemporalSettings(_Section):
-    address: str | None = None                      # RAG_TEMPORAL__ADDRESS (정본); None → LocalRunner만(개발·CI, 바이블 §11.1 local)
-    namespace: str = "default"                      # 제안
-
-class ProfileSettings(_Section):
-    path: Path | None = None                        # RAG_PROFILE__PATH (정본); None → builtin
-    id: str = "lite"                                # 제안: builtin 프로파일 ID
-
-class AuthSettings(_Section):
-    oidc_issuer: str | None = None                  # RAG_AUTH__OIDC_ISSUER (정본)
-    audience: str | None = None                     # 제안
-    jwks_cache_ttl_s: int = 300                     # 제안
-
-class OtelSettings(_Section):
-    exporter_otlp_endpoint: str | None = None       # RAG_OTEL__EXPORTER_OTLP_ENDPOINT (정본)
-    content_capture: Literal["none"] = "none"       # RAG_OTEL__CONTENT_CAPTURE (정본; v1은 none만 허용)
-
-class SecretsSettings(_Section):
-    provider: Literal["env", "openbao", "aws_kms"] = "env"   # RAG_SECRETS__PROVIDER (정본)
-
-class SidecarSettings(_Section):                    # 제안: E16 서비스 디스커버리 주소만(SidecarStage.endpoint_env)
-    parser_workers_url: str | None = None
-    lo_sidecar_url: str | None = None
-    ocr_gpu_url: str | None = None
-    embedding_server_url: str | None = None
-    reranker_server_url: str | None = None
-
-class ServeSettings(_Section):                      # 제안: rag serve 인자와 동일
-    host: str = "0.0.0.0"
-    port: int = 8000
-    workers: int = 1                                # uvicorn 워커
-    processes: int = 1                              # ingest-cpu 프로세스 다중화(§4.2)
-    max_concurrent_activities: int = 1
-
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="RAG_", env_nested_delimiter="__", extra="forbid")
-    pg: PgSettings
-    object_store: ObjectStoreSettings
-    valkey: ValkeySettings
-    temporal: TemporalSettings = TemporalSettings()
-    profile: ProfileSettings = ProfileSettings()
-    auth: AuthSettings = AuthSettings()
-    otel: OtelSettings = OtelSettings()
-    secrets: SecretsSettings = SecretsSettings()
-    sidecar: SidecarSettings = SidecarSettings()
-    serve: ServeSettings = ServeSettings()
-
-def check_unknown_env(settings: Settings, environ: dict[str, str] = os.environ) -> list[str]:
-    """제안. RAG_ 접두 환경 변수 중 모델이 유도하는 유효 이름(RAG_{SECTION}__{FIELD})에 없는 것을 반환한다. 비어 있지 않으면 기동 실패."""
-    valid = {f"RAG_{s}__{f}".upper() for s, m in type(settings).model_fields.items() for f in m.annotation.model_fields}
-    return sorted(k for k in environ if k.startswith("RAG_") and k not in valid)
-```
-
-주의: pydantic-settings의 환경 변수 소스는 모델 필드에서 유도한 이름만 조회하므로 `extra="forbid"`는 `.env` 파일의 미지 키와(절 모델에 `forbid`를 둔 경우) `RAG_VALKEY__URLX` 같은 **하위 키** 오타만 거부한다. OS 환경 변수의 **최상위** 오타(`RAG_VALKY__URL`)는 읽히지 않은 채 조용히 무시되어 기동이 성공하므로, 조립 지점은 `check_unknown_env()`를 호출해 위반 시 기동을 중단한다. 비밀 값은 로그·트레이스에 기록하지 않는다(`SecretStr`, telemetry redaction).
+**결정:** `Settings`(`rag_platform.settings`, pydantic-settings, `env_prefix="RAG_"`, `env_nested_delimiter="__"`, `extra="forbid"`)는 절 모델 `PgSettings`·`ObjectStoreSettings`·`ValkeySettings`·`TemporalSettings`·`ProfileSettings`·`AuthSettings`·`OtelSettings`·`SecretsSettings`·`SidecarSettings`·`ServeSettings`로 구성된다. Valkey는 `lite`를 포함한 모든 프로파일의 필수 컨테이너이므로 선택 설정이 아니다 — 구성 부재는 기동 실패, 런타임 불가만 `degraded`(바이블 §2.3). `RAG_OTEL__CONTENT_CAPTURE`는 `Literal["none"]`(v1 고정). OS 환경 변수의 최상위 오타(`RAG_VALKY__URL`)는 pydantic이 조용히 무시하므로 조립 지점이 `check_unknown_env()`를 호출해 기동을 중단시킨다. 필드 전문·환경 변수 표는 [설정 레퍼런스](../09-operations/02-configuration-reference.md) §2가 소유한다.
 
 ### 5.3 프로파일 YAML 스키마 개요
 
-프로파일의 정본 YAML은 바이블 §7.3, 최상위 키는 §5.6 `Profile` 표다. 이 문서는 **어느 모듈이 어느 키를 소비하는지**만 매핑한다.
-
-| 최상위 키 | 소비 모듈 | 소비 시점 |
-|-----------|-----------|-----------|
-| `schema_version`, `profile_id`, `version`, `extends`, `tier` | `profiles.loader` | 로딩(`extends` 해소 후 `profile_hash`) |
-| `license_policy{max_grade, territory}` | `plugins.license_gate` | 로딩 검증 (1) |
-| `runtime{orchestrator, queues, tenant_concurrent_jobs_max, acl_propagation_slo, outbox_lag_slo, egress}` | `orchestration.context`(큐·`StagePolicy`), `orchestration.dispatcher`(동시성), `orchestration.outbox`(SLO), `security.egress_policy`(E16) | 워커 기동·잡 접수 |
-| `ingest.{fetch,parse,normalize,chunk,recount,enrich,embed,index}` | `plugins.registry.build`(각 `plugin` + `config_schema`), `adapters.parse.router`(`parse.router`), `orchestration.context`(`policy: StagePolicy`) | 액티비티 실행마다(캐시된 해소 결과) |
-| `query.{transform, channels, fusion, hydrate, rerank, postprocess, pack, latency_budget_ms}` | `retrieval.planner`(채널·예산·필터), `retrieval.fusion`, `retrieval.hydrate`, `retrieval.postprocess`, `retrieval.pack`, `render` | 질의마다(api 프로세스 캐시) |
-| `security{authn, authz, rate_limit, tenant_isolation_tier, tiering}` | `security.*`, `adapters.index`(격리 등급) | api 기동, 컬렉션 생성 |
-| `observability{content_capture, tenant_id_hash}` | `telemetry.redaction` | 기동 |
-| `eval{datasets, gates}` | `eval.gates`, `eval.harness` | 하네스 실행 |
-| 게이트 값 `{value, gate}` | `profiles.validate`(형식), `eval.gates`(판정) | 로딩·하네스 |
+정본 스키마는 [`schemas/profile.schema.json`](../../schemas/profile.schema.json), 최상위 키는 바이블 §5.6 `Profile` 표다. 최상위 키 ↔ 소비 모듈 매핑, 주석 예시, 내장 프로파일 4종 파일 전문은 [설정 레퍼런스](../09-operations/02-configuration-reference.md) §3~§4가 소유한다.
 
 ### 5.4 로딩·해소·검증 순서
 
-1. `profiles.load`: 파일 또는 builtin → `extends` 체인 해소(`base → lite → standard → premium`, `korean-gov extends standard`) → 깊은 병합(배열 교체) → 기본값 채움 → `Profile` 계약 검증.
-2. `profiles.validate`(§7.4 12규칙): 모든 `plugin` 값이 등록된 entry point이고 라이선스 등급·`territory`·`linkage` 조건을 만족하는지(1), 요구 능력 ↔ `capabilities()`(2), `fusion.k` 필수(3), 토크나이저 일치(4), late chunking ↔ mean pooling(5), `ocr.version/model/lang`(6), `relaxable_keys`에 보안·전략 키 금지(7), `embedding_space_ids` 재계산 일치(8), `lite`의 플랫폼 측 `korean_analyzer`(9), `parse.router`가 `SourceFormat` 13값 전부(10), `hydrate.top_n ≥ max(rerank.top_n_in, pack.k_max)`(11), `deny_cidrs` 기본 목록 포함(12). 위반 = `profile.invalid`(ProblemDetails `errors[]`에 규칙 번호).
-3. `profile_hash = H("profile", canonical_json(해소 결과))`. 컬렉션은 `CollectionSpec.profile_hash`에 바인딩된다.
-4. 워커·api 프로세스는 기동 시 해소 결과를 메모리에 적재하고, `collection.profile.changed` 이벤트로 `collspec:{collection_id}` 캐시를 무효화한다(검색 핫패스는 원장을 읽지 않는다, §13.1).
+**결정:** 로딩은 `profiles.load`(파일 또는 builtin → `extends` 체인 해소 → 깊은 병합 → 기본값 채움 → 계약 검증) → `profiles.validate`(§7.4 12규칙) → `profile_hash = H("profile", canonical_json(해소 결과))` → 워커·`api` 프로세스가 기동 시 캐시 적재, `collection.profile.changed`로 무효화 순서다. 12규칙 전문·오류 매핑은 [설정 레퍼런스](../09-operations/02-configuration-reference.md) §6.2가 소유한다.
 
 ## 6. 오류 전파 경계
 
@@ -944,7 +847,7 @@ def check_unknown_env(settings: Settings, environ: dict[str, str] = os.environ) 
 
 | 이미지 | 기본 설치 | extras(`pyproject.toml`, §6.7) | 포함 금지 |
 |--------|-----------|--------------------------------|-----------|
-| `rag-platform`(코어) | `contracts`·`sdk`·…·`cli` 전부(A 등급 순수 Python 의존만); `standard` 이상 `api`·`worker`는 `[temporal,opensearch]`, `eval-harness`는 `[temporal,opensearch,eval]` | `[temporal]`(temporalio), `[opensearch]`(opensearch-py), `[kiwi]`(kiwipiepy ≥ 0.24, Apache-2.0 확인 필요 as of 2026-09), `[docling-chunker]`, `[gpu]`(paddle·CUDA 런타임은 `ocr-gpu` 이미지로 분리), `[eval]`(ranx·ir_measures·ragas·deepeval) | PyMuPDF·pyhwp·H2Orestart 등 C 등급, Grafana 계열 pip 의존 |
+| `rag-platform`(코어) | `contracts`·`sdk`·…·`cli` 전부(A 등급 순수 Python 의존만); `standard` 이상 `api`·`worker`는 `[temporal,opensearch]`, `eval-harness`는 `[temporal,opensearch,eval]` | `[temporal]`(temporalio), `[opensearch]`(opensearch-py), `[kiwi]`(kiwipiepy ≥ 0.24, Apache-2.0 확인 필요 as of 2026-09), `[docling-chunker]`, `[gpu]`(paddle·CUDA 런타임은 `ocr-gpu` 이미지로 분리), `[eval]`(ranx·ir_measures·ragas·deepeval) | PyMuPDF·pyhwp(둘 다 AGPL, 대안·기각 — [ADR-0006](../06-adr/0006-pdf-fast-path-pypdfium2-pdftext-replaces-pymupdf.md), [ADR-0007](../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md))·H2Orestart 등 C 등급, Grafana 계열 pip 의존 |
 | `parser-workers`, `ocr-gpu`(사이드카, `sidecars/`) | Java 21 + hwplib + hwp2hwpx + hwpxlib + Tika / PaddleOCR PP-OCRv5 server + `POST /v1/convert` | — | Python 코어(계약 JSON만 공유) |
 
 Python 버전은 D-01에 따라 3.12/3.13으로 고정하고 파서 워커 이미지는 3.13 상한을 넘기지 않는다(근거: [ADR-0035](../06-adr/0035-python-version-and-toolchain-pins.md)).
@@ -957,21 +860,21 @@ Python 버전은 D-01에 따라 3.12/3.13으로 고정하고 파서 워커 이�
 - **결정:** `IndexBackend`는 인덱스를 바꾸는 유일한 인터페이스이고 `Retriever`와 분리된다. `search`·`retrieve`는 `tenant_id` 조건 없는 필터를 거부한다([ADR-0027](../06-adr/0027-security-context-injection-and-acl-enforcement-points.md)); 세대 사가는 `adapters/index/saga`의 액티비티 함수 집합으로 구현하고 상태는 원장에 둔다([ADR-0026](../06-adr/0026-index-commit-generation-saga-and-ledger.md)).
 - **결정:** 수집 스테이지는 제네릭 액티비티 `stage.{name}` 하나(`StageShell.execute`)로 실행되고, 질의 스테이지는 바이블 §11.1대로 모든 프로파일에서 `LocalContext`(`orchestration.local`, `QueryContext` 구현)가 `api` 프로세스 안에서 실행한다(`invoke → StageShell.invoke_inline`, 저장·계보 없음). 검색 핫패스는 PostgreSQL을 읽지 않는다([ADR-0034](../06-adr/0034-retrieval-hot-path-postgres-independence-and-hydrate.md)).
 - **결정:** I/O는 `asyncio`, CPU 바운드는 프로세스 경계다. `ingest-cpu` 워커는 프로세스 다중화 + 프로세스당 슬롯 1, `Stage.run`은 전용 스레드에서 실행해 하트비트·취소를 메인 루프가 유지하며, GIL을 장시간 해제하지 않는 네이티브 호출은 `helper_process`로 승격한다. 격리 사다리 `in_process / helper_process / sidecar`는 프로파일이 고르고 검증기가 거부한다([ADR-0033](../06-adr/0033-sidecar-convert-contract-and-isolation-ladder.md)).
-- **결정:** 설정은 `Settings`(환경, `RAG_*`; 제안 모듈 `rag_platform.settings`, 플러그인 SDK 표면 밖)와 `Profile`(YAML, `profile_hash`)의 두 층이며 환경 변수가 프로파일 값을 덮어쓰는 경로는 없다. Valkey 연결은 모든 프로파일의 필수 설정이다([ADR-0031](../06-adr/0031-profile-schema-extends-and-quality-gates.md)).
+- **결정:** 설정은 `Settings`(환경, `RAG_*`; 모듈 `rag_platform.settings`, 바이블 §12 1.3.0 등재, 플러그인 SDK 표면 밖)와 `Profile`(YAML, `profile_hash`)의 두 층이며 환경 변수가 프로파일 값을 덮어쓰는 경로는 없다. Valkey 연결은 모든 프로파일의 필수 설정이다([ADR-0031](../06-adr/0031-profile-schema-extends-and-quality-gates.md)).
 - **결정:** 오류 모델은 `StageError` 하나이며 11개 경계(B1~B11)에서의 변환 주체와 규칙을 §6.1로 고정한다. 질의 측 부분 실패는 예외가 아닌 데이터(`degraded[]`, `channel_runs[].error`, `rerank.applied=false`)다([ADR-0018](../06-adr/0018-api-rest-sse-mcp-no-grpc-rfc9457.md)).
 - **결정:** 배포 단위는 단일 Python 이미지 + CLI 역할 플래그이며, 모듈 ↔ 프로세스 매트릭스(§7.1)를 벗어난 임포트는 이미지 빌드 시 `import-linter`와 기동 시 지연 임포트 검사로 막는다.
 
 ## 미해결 이슈
 
 1. **바이블 §12 `|` 표기와 `security` 사용 범위 문장.** import-linter `layers` 계약에서 `|`는 "같은 계층·상호 독립"이므로 바이블의 `plugins | adapters | pipelines | retrieval | render`와 `orchestration | ledger | storage | security | profiles | eval`을 그대로 옮기면 바이블 자신이 요구하는 의존(`pipelines.query` → `retrieval`·`render`, 디스패처 → 원장, 하네스 → `LocalRunner`, 레이트리밋 → Valkey)이 위반된다. 이 문서의 11계층 정밀화(또는 `:` 표기)를 바이블 §12에 반영할지 architecture 소유자 확인 필요; `eval`을 `orchestration`과 같은 계층(`:`)으로 낮출 수 있는지도 10-development/01과 합의한다. 같은 §12 마지막 문단의 "`security`는 `api`·`retrieval`·`adapters/index`에서만 사용"에 `adapters/retrieve`(E8 백엔드 토큰은 읽기 경로), `mcp`, 조립 지점(`orchestration.context`·`orchestration.outbox`)을 더하는 patch 갱신을 제안한다(§1.2 표 3행, §3.4). 새 최상위 모듈 `settings/`(§5)의 트리 등재는 이슈 9.
-2. **`StageContext` 확장 멤버.** 바이블 §4.1은 `ctx.token_counter`, `ctx.analyzer`, `ctx.now()`, `ctx.lineage[...]`"만"을 적었다. 이 문서는 `security`, `plan`(질의 측 `QueryPlan`; 질의 측 5종 확장 지점이 `run(inp, ctx)` 하나로 통일되기 위한 조건), `artifacts`(`DerivedArtifacts`), `heartbeat()/resume_details`, `remaining_ms()`, 스코프 ID를 추가했고, 질의 측 `collection_id=None`·컬렉션 범위는 `ctx.security.collection_ids`로 읽는다고 정했다. 특히 `artifacts` 없이는 파서가 `TableData.html_ref`·페이지 이미지 같은 `derived` 참조를 `ParsedDocument`에 넣을 수 없다. 바이블 §4.1 표 갱신(patch) 제안. `QueryContext`(§2.2; `PipelineContext`의 질의 측 확장 3멤버)도 §11.1 문장("검색 경로는 항상 `LocalContext`")과 함께 등재가 필요하다.
+2. **`StageContext` 확장 멤버.** `plan`·`artifacts`는 해소(바이블 1.3.0 §4.1 선택 멤버로 등재, AM-27). 나머지 확장(`security`, `heartbeat()/resume_details`, `remaining_ms()`, 스코프 ID)은 여전히 이 문서 제안이며 바이블 §4.1 표 추가 갱신이 필요하다. `QueryContext`(§2.2; `PipelineContext`의 질의 측 확장 3멤버)도 §11.1 문장("검색 경로는 항상 `LocalContext`")과 함께 등재가 필요하다.
 3. **`RuntimeServices`·포트 프로토콜 이름.** `KeyValueCache`, `AclRevocationHints`, `BackendTokenIssuer`, `EgressGuard`, `HttpClientFactory`, `TokenCounterFactory`, `BackendClientFactory`(`RuntimeServices.backends`), `DerivedArtifacts`, `Tracer`(= `opentelemetry.trace.Tracer` 별칭), `RuntimeServices.registry`는 이 문서의 제안이다. 바이블 §12 `sdk/` 행에 등재 여부 확정 필요.
 4. **내부 데이터 타입 이름.** `ChannelSpec`(= `QueryPlan.channels[]`), `QueryVariant`(= `rewritten_queries[]`), `ChannelRun`(= `CandidateSet.channel_runs[]`), `RetrieveInput{channel, variant}`, `EffectiveFilter`, `BackendSearchRequest`, `BackendHit`, `DocumentScope`, `Morpheme`, `RevocationHint`, `ResolvedTarget`, `CitationMap`은 계약 스키마 `$defs` 또는 `sdk` 내부 타입으로 03-contracts/09·10·11 문서와 이름을 맞춰야 한다. [플러그인 아키텍처](./05-plugin-architecture.md)는 같은 것을 `PlanChannel`·`RewrittenQuery`로, 리트리버를 `search(channel, variant, plan, security, ctx)`로, 퓨저를 `fuse(candidates, fusion, top_n)`으로 적었다 — 정본은 03-contracts/09·10의 `$defs` 클래스명으로 두고, 시그니처는 이 문서의 `run(inp, ctx)`(§2.2 결정)로 05 문서를 개정하는 것을 합의 대상으로 명시한다.
 5. **`ParseRouterStage`의 위치와 `detect` 서브스테이지의 타임아웃 강제.** 바이블 §12 트리에 라우터 파일이 없다. `adapters/parse/router.py`(이 문서) 대신 `pipelines/`나 `sdk/`가 적절한지, 그리고 `stage.parse` 액티비티 안에서 `detect`의 1m 타임아웃을 셸이 별도 데드라인으로 강제하는 방식이 §4.4 표의 의도와 일치하는지 04-pipelines/03에서 확정. 라우터가 체인 멤버를 만들기 위해 `RuntimeServices.registry`를 두었다(§2.3).
 6. **미분류 예외의 오류 코드.** 카탈로그에 "예상치 못한 내부 오류" 코드가 없어 셸이 `StageError`를 만들 수 없다(§6.1 B2). [오류 모델](../03-contracts/13-error-model.md) §3.3이 제안한 `api.internal_error`(500, 모든 스테이지·`api`) 채택과 합쳐 바이블 §5.7에 제안한다. 추가 전까지는 Temporal 기본 재시도 + `last_error`에 예외 타입만 기록.
 7. **동시성 초안값.** `ingest-io` 슬롯 32, `ingest-cpu` 프로세스 수 = vCPU·슬롯 1, GPU 큐 슬롯 4, `ingest-llm` 슬롯 8, uvicorn 워커 = vCPU, `to_thread` 전환 임계(토큰 카운트 항목 20개, 형태소 분석 4,000자), `helper_process` 승격 임계(하트비트 간격의 절반)는 모두 초안 목표이며 09-operations/04 부하 실측(`temporalio/omes`)으로 확정.
 8. **Python 3.13 자유 스레딩(free-threaded) 빌드.** 채택 시 `ingest-cpu`의 프로세스 다중화를 스레드로 대체할 수 있으나 Docling·mecab-ko·ONNX Runtime 휠의 호환은 확인 필요(as of 2026-09). D-01 범위 안에서 ADR-0035 개정 후보.
-9. **`Settings`의 위치·제안 필드와 저장소 클라이언트.** `Settings`를 새 최상위 모듈 `rag_platform.settings`(L5, `security | profiles`와 같은 계층)에 두었다 — 바이블 §12 트리에 없는 모듈이므로 트리 등재(patch) 또는 `orchestration/settings.py`로의 격하 여부를 architecture 소유자가 확정한다. 바이블 §6.6이 확정한 8개 변수 외의 필드(`pool_*`, `sidecar.*_url`, `serve.*`, `auth.audience` 등)와 `check_unknown_env()`는 09-operations/02 설정 레퍼런스에서 확정한다. `ledger`의 드라이버·ORM·마이그레이션 도구(제안 SQLAlchemy 2.x async + asyncpg + alembic)와 `storage.artifact_store`의 S3 구현 라이브러리(`obstore` 대 `boto3`/`aiobotocore`)는 브리프·바이블·매트릭스에 선정이 없으므로 04-storage-architecture·10-development/01·04-pipelines/02 `uri_fetcher` 조사에서 확정.
+9. **`Settings`의 위치(해소)·나머지 제안 필드와 저장소 클라이언트.** 최상위 모듈 `rag_platform.settings`(L5, `security | profiles`와 같은 계층) 등재는 해소(바이블 §12 1.3.0 트리, AM-22). 바이블 §6.6이 확정한 8개 변수 외의 필드(`pool_*`, `sidecar.*_url`, `serve.*`, `auth.audience` 등)와 `check_unknown_env()`는 09-operations/02 설정 레퍼런스에서 확정한다. `ledger`의 드라이버·ORM·마이그레이션 도구(제안 SQLAlchemy 2.x async + asyncpg + alembic)와 `storage.artifact_store`의 S3 구현 라이브러리(`obstore` 대 `boto3`/`aiobotocore`)는 브리프·바이블·매트릭스에 선정이 없으므로 04-storage-architecture·10-development/01·04-pipelines/02 `uri_fetcher` 조사에서 확정.
 10. **스테이지에 노출되는 포트의 테넌트 스코프.** `ctx.artifacts`는 `DerivedArtifacts`(테넌트 바인딩, 쓰기 전용)로 좁혔고 적합성 키트 `security_invariants`에 "어댑터가 받은 포트로 타 테넌트 키를 만들 수 없다" 항목을 둔다. 반면 `hydrate`·`ChunkTextStore`의 Valkey 캐시(`ptxt:`)는 여전히 `RuntimeServices.kv` 생성자 주입이며 캐시 키에 `tenant_id`가 들어가므로, 요청 스코프 검증(E17)이 생성자 주입만으로 충분한지 07-multi-tenancy 문서에서 재검토.
 11. **셸 모듈 파일명.** 바이블 §12는 `orchestration/context.py`, [오케스트레이션과 워크플로우](./06-orchestration-and-workflows.md)의 스케치는 `orchestration/stage_shell.py`를 쓴다. 이 문서는 바이블 이름(`orchestration.context.StageShell`)을 따르며 06 문서의 파일명 정정을 요청한다.
 

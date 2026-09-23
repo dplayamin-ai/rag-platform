@@ -2,7 +2,7 @@
 title: 저장소 구조
 status: active
 owner: architecture
-version: 0.1.0
+version: 0.1.1
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -84,6 +84,8 @@ rag-platform/
 ├── pyproject.toml                  # 배포 패키지 rag-platform + [tool.uv.workspace] 루트 (§3.2)
 ├── uv.lock                         # 단일 잠금(3.12·3.13 공통 해소), CI `uv lock --check`
 ├── .python-version                 # 개발 기본 인터프리터(값은 10-development/02 확정)
+├── justfile                        # 태스크 러너(바이블 §12 1.3.0, AM-22). 레시피 목록은 10-development/02 §CLI
+├── .pre-commit-config.yaml         # pre-commit 훅(바이블 §12 1.3.0, AM-22). 훅 목록은 10-development/02·03
 ├── Dockerfile                      # 코어 단일 이미지(uv 멀티스테이지; 02-architecture/08 §3.3)
 ├── LICENSE                         # Apache-2.0
 ├── NOTICE                          # 제3자 고지(한컴 고지 문자열 CI 검사 포함; 바이블 §7.1 korean-gov 행)
@@ -96,7 +98,7 @@ rag-platform/
 │   ├── contracts/  sdk/  plugins/  adapters/  pipelines/  retrieval/  render/
 │   ├── orchestration/  ledger/  storage/  security/  profiles/  korean/  eval/
 │   ├── telemetry/  api/  mcp/  testing/  cli/
-│   └── settings.py                 # (제안, 02 §5.2 단일 모듈·02 미해결 이슈 9) 배포 설정 Settings(RAG_*); 패키지화 여부는 미해결 이슈 2
+│   └── settings/                   # pydantic-settings 배포 설정(RAG_*, §6.6); security·profiles와 같은 층(바이블 §12 1.3.0, AM-22). 내부 모듈 구성은 02 §5.2
 ├── schemas/                        # JSON Schema 2020-12 정본(손 작성). 35개 파일, 03-contracts 문서가 1:1 소유
 ├── docs/                           # 설계 문서(브리프 §8 문서 맵). 05-api/openapi.yaml은 생성물(§6 표 openapi.yaml 행)
 ├── plugins/                        # 별도 배포 플러그인(A/B 등급만), 각각 워크스페이스 멤버
@@ -131,6 +133,7 @@ rag-platform/
 | 경로 | 책임(소유하는 것) | 소유하지 않는 것 | 정본·소유 문서 | 지위 |
 |------|------------------|------------------|----------------|------|
 | `pyproject.toml`, `uv.lock` | 배포 패키지 `rag-platform` 메타데이터, extras 6종, 워크스페이스 멤버 목록, 정적 검사 설정(ruff·mypy·import-linter) | 플러그인 자체 메타(`plugins/*/pyproject.toml`) | 바이블 §6.7·§12, ADR-0035 | 바이블 |
+| `justfile`, `.pre-commit-config.yaml` | 태스크 러너 레시피, pre-commit 훅 정의 | CI 잡 정의(`.github/workflows/`) | 바이블 §12 1.3.0(AM-22), 10-development/02 §CLI | 바이블 |
 | `src/rag_platform/` | 코어 패키지 전부(계약·커널·어댑터·핫패스·셸·원장·API·CLI) | 별도 배포 플러그인, 사이드카 코드 | 바이블 §12, 02 §1·§3 | 바이블 |
 | `schemas/` | JSON Schema 2020-12 정본 파일. `common-types.schema.json`은 03-contracts/00만, 나머지는 각 계약 문서가 소유 | Pydantic 모델(`contracts/`), 스키마 파생 코드 | 바이블 §5.1, [계약 개요](../03-contracts/00-contract-overview.md) §2 | 바이블 |
 | `docs/` | 설계 문서 세트(브리프 §8 문서 맵), ADR, 생성물 `05-api/openapi.yaml` | 코드 주석·docstring | 브리프 §8·§9 | 브리프 |
@@ -153,11 +156,11 @@ rag-platform/
 | 모듈 | 계층(02 §1.2) | 소유 | 대표 파일(바이블 §12; `sdk`·`plugins` 행은 02 §2.2~§2.4·05 §6.3, `settings` 행은 02 §5.2) |
 |------|---------------|------|----------------------|
 | `contracts` | L0 | Pydantic v2 계약 모델 전부(바이블 §5.1), `enums.py`(§5.7 단일 소스), `versioning.py`, `schemas/`로의 export | `common.py`, `parsed_document.py`, `context_pack.py`, `policies.py` |
-| `sdk` | L1 | `Stage`·`StageContext`·`PipelineContext` 프로토콜, `SidecarStage`, `TokenCounter`, 포트 프로토콜, `hash_of`(`H()`) | `stage.py`, `pipeline.py`, `ports.py`, `index_backend.py` |
+| `sdk` | L1 | `Stage`·`StageContext`·`PipelineContext` 프로토콜, `SidecarStage`, `TokenCounter`, `DerivedArtifacts`(파생물 쓰기 포트), 포트 프로토콜, `hash_of`(`H()`) | `stage.py`, `pipeline.py`, `ports.py`, `index_backend.py`(바이블 §12 1.3.0, AM-27) |
 | `telemetry` | L1 | OTel 트레이서·미터, Weaver 생성 상수(`gen_ai.*`·`retrieval.*`·`rag.*`), 메트릭 이름 상수, redaction | `otel/`(생성물, §6 표 Weaver 행), `metrics.py`, `redaction.py` |
 | `korean` | L1 | `UserDictEntry[]` → Kiwi·Nori·synonym 사전 생성기, 팽창률 계수 | — |
 | `plugins` | L2 | entry point 레지스트리, `PluginMeta` 검증, `license_gate`, `capabilities_check` | `registry.py` |
-| `adapters` | L2 | 벤더 어댑터 10종(`fetch`, `parse`, `normalize`, `chunk`, `enrich`, `embed`, `index`, `query`, `retrieve`, `rerank`) + `llm` | `parse/hwpx_python_hwpx.py`, `index/qdrant/`, `rerank/tei_cross_encoder.py` |
+| `adapters` | L2 | 벤더 어댑터 10종(`fetch`, `parse`, `normalize`, `chunk`, `enrich`, `embed`, `index`, `query`, `retrieve`, `rerank`) + `llm` | `parse/router.py`(`ParseRouterStage`: 라우터·폴백 체인), `parse/hwpx_hwpxlib_sidecar.py`(암호화 HWPX), `parse/hwpx_python_hwpx.py`, `index/qdrant/`, `rerank/tei_cross_encoder.py`(바이블 §12 1.3.0, AM-22) |
 | `retrieval` | L2 | 검색 핫패스(PostgreSQL 미의존): planner, filters, channels, fusion, hydrate, rerank(호출), `postprocess/*`, `pack/*` | `pack/citation_align.py` |
 | `render` | L2 | `Renderer` 9종 렌더러, `citation_map` | `anthropic_search_result.py` |
 | `pipelines` | L3 | `ingest.run`, `reindex.run`, `query.run`(`PipelineContext`만 의존) | `ingest.py`, `reindex.py`, `query.py` |
@@ -165,11 +168,11 @@ rag-platform/
 | `ledger` | L4 | PostgreSQL 원장 모델·리포지토리·`migrations/`·`reconcile`·`consistency_check`·`usage` | `migrations/` |
 | `security` | L5 | `principal_resolver`, `authz_cedar`, `security_context`, `rate_limit`, `acl_recheck`, `egress_policy`, `backend_token`, `key_provider`, `audit` | — |
 | `profiles` | L5 | `loader`(extends 해소), `schema`, `validate`, `profile_hash`, `builtin/{base,lite,standard,premium,korean-gov}.yaml` | `builtin/` |
-| `settings`(제안) | L5 | 배포 설정 `Settings`(pydantic-settings, `RAG_*`) | `settings.py`(02 §5.2는 단일 모듈; 패키지 `settings/`로의 확장은 이 문서가 제안하지 않으며 필요 시 미해결 이슈 2에서 다룬다) |
+| `settings` | L5 | 배포 설정 `Settings`(pydantic-settings, `RAG_*`) | `settings/`(바이블 §12 1.3.0, AM-22; 내부 모듈 구성은 02 §5.2) |
 | `orchestration` | L6 | 셸 `context.py`, `temporal/*`, `local/runner.py`, `dispatcher.py`, `outbox/*` | — |
 | `eval` | L7 | 하네스 runner, TREC 입출력, `metrics_ranx`, `judge_ragas`, `span_hit`, `gates`, `datasets/` | — |
 | `mcp` | L8 | `McpToolAdapter`, 도구 3종, `cursor_store` | — |
-| `api` | L9 | FastAPI 라우터(바이블 §14), `problems`, `idempotency`, `events`(SSE) | — |
+| `api` | L9 | FastAPI 라우터(바이블 §14: `ingest`·`query`·`render`·`answer`·`jobs`·`documents`·`collections`·`profiles`·`tenants`·`api_keys`·`plugins`·`schemas`·`version`·`audit_events`·`eval`·`feedback`·`subscriptions`), `problems`, `idempotency`, `events`(SSE) — `api_keys`·`plugins`·`schemas`·`version`·`audit_events`는 API 전용 뷰 DTO의 단일 출처(§5.1, AM-02·AM-39) | — |
 | `cli` | L10 | `rag up/ingest/query/reprocess/reindex/eval/profile/plugin/cache/serve/mcp` | — |
 | `testing` | (배포 포함, 계층 외) | 적합성 키트 6모듈, `golden`(04-pipelines/01 제안), 가짜 `StageContext`·`RuntimeServices` | `contract_roundtrip.py` |
 
@@ -357,12 +360,12 @@ rag-platform = { workspace = true }
 
 ### 4.1 방향
 
-**결정:** 코어 모듈의 의존 방향은 바이블 §12 규칙 `contracts ← sdk ← plugins | adapters | pipelines | retrieval | render ← orchestration | ledger | storage | security | profiles | eval ← api | mcp | cli`을 따르고, 같은 계층 안의 실제 의존은 02 §1.2의 11계층 정밀화로 표현한다. 역방향은 어디에서도 허용되지 않으며 import-linter가 CI에서 강제한다(바이블 §12; [ADR-0003](../06-adr/0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md), [ADR-0035](../06-adr/0035-python-version-and-toolchain-pins.md)).
+**결정:** 코어 모듈의 의존 방향은 바이블 §12 1.3.0 규칙 `contracts ← sdk ← plugins | adapters | pipelines | retrieval | render ← orchestration | ledger | storage | security | profiles | settings | eval ← api | mcp | cli`을 따르고, 같은 계층 안의 실제 의존은 02 §1.2의 11계층 정밀화로 표현한다. 역방향은 어디에서도 허용되지 않으며 import-linter가 CI에서 강제한다(바이블 §12; [ADR-0003](../06-adr/0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md), [ADR-0035](../06-adr/0035-python-version-and-toolchain-pins.md)).
 
 ```mermaid
 flowchart TB
     L10["cli"] --> L9["api"] --> L8["mcp"] --> L7["eval"] --> L6["orchestration"]
-    L6 --> L5["security | profiles | settings(제안)"]
+    L6 --> L5["security | profiles | settings"]
     L5 --> L4["storage | ledger"]
     L4 --> L3["pipelines"]
     L3 --> L2["plugins | adapters | retrieval | render"]
@@ -629,7 +632,7 @@ flowchart LR
 ## 결정 사항 요약
 
 - **결정:** 코어는 단일 저장소 `rag-platform`(uv 워크스페이스, 배포 패키지 `rag-platform`, import `rag_platform`)이고, C 등급 이미지·플러그인은 별도 저장소 `rag-platform-gpl-sidecars`에서 독립 릴리스한다. 본 저장소는 `optIn.*` 값과 이미지 참조만 둔다(바이블 §6.7·§12; [ADR-0001](../06-adr/0001-license-grade-table-and-d02-interpretation.md), [ADR-0007](../06-adr/0007-hwp5-java-sidecar-first-pyhwp-demoted.md)).
-- **결정:** 최상위 레이아웃은 바이블 §12 트리(`pyproject.toml`, `schemas/`, `src/rag_platform/`, `sidecars/`, `plugins/`, `sdk/{python,typescript}`, `deploy/{helm,compose}`, `tests/`)에 브리프 §8의 `docs/`와 바이블 §11.6의 `samples/`를 더한 것이다. `tools/`, `examples/`, `tests/{golden,unit,integration,e2e}`, `settings.py`(02 §5.2), `models.lock`, `.github/`는 제안이다. 작업 지시의 다중 패키지 이름은 §2.4 표로 정본 모듈에 대응시킨다.
+- **결정:** 최상위 레이아웃은 바이블 §12 트리(`pyproject.toml`, `justfile`, `.pre-commit-config.yaml`, `schemas/`, `src/rag_platform/`(`settings/` 포함), `sidecars/`, `plugins/`, `sdk/{python,typescript}`, `deploy/{helm,compose}`, `tests/`)에 브리프 §8의 `docs/`와 바이블 §11.6의 `samples/`를 더한 것이다. `tools/`, `examples/`, `tests/{golden,unit,integration,e2e}`, `models.lock`, `.github/`는 제안이다. 작업 지시의 다중 패키지 이름은 §2.4 표로 정본 모듈에 대응시킨다.
 - **결정:** 워크스페이스 멤버는 루트·`sdk/python`·`plugins/*`이고 사이드카·TypeScript SDK는 비멤버다. 잠금은 `uv.lock` 하나, `requires-python = ">=3.12,<3.14"`, extras 6종 철자 고정([ADR-0035](../06-adr/0035-python-version-and-toolchain-pins.md)).
 - **결정:** 의존 방향은 바이블 §12 규칙과 02 §1.2 11계층 정밀화를 따르고 import-linter 5계약(02 §1.2의 `layers` + `forbidden` 3 + ADR-0035 준수 표 (4)의 C 등급 차단 `forbidden`)으로 CI에서 강제한다. 플러그인은 `rag_platform.sdk`·`rag_platform.contracts`만, 클라이언트 SDK는 `contracts`만, 사이드카는 JSON 계약만 공유한다([ADR-0003](../06-adr/0003-orchestrator-neutral-pipeline-and-non-durable-local-runner.md), [ADR-0032](../06-adr/0032-plugin-sdk-stage-protocol-and-conformance-kit.md), [ADR-0033](../06-adr/0033-sidecar-convert-contract-and-isolation-ladder.md)).
 - **결정:** 명명은 바이블 §6.7·[ADR-0036](../06-adr/0036-naming-and-identifier-conventions.md)을 따른다. `rag-platform` 접두는 코어와 코어 동반물(위성 저장소·Helm 차트·클라이언트 SDK)에, 확장 지점 구현은 `rag-plugin-{name}`에 쓴다. 클라이언트 SDK 패키지명(`rag-platform-client`, `@rag-platform/client`)은 제안이다.
@@ -639,7 +642,7 @@ flowchart LR
 ## 미해결 이슈
 
 1. **`rag schema` 서브커맨드와 export 모듈 이름.** 03-contracts/14가 제안한 `rag schema export|diff|check-artifacts`는 바이블 §12 `cli/` 목록에 없다. 확정 전 CI 명령은 `python -m rag_platform.contracts.export`(모듈명도 이 문서 제안)를 쓴다. `rag openapi export`류 CLI 추가 여부와 함께 바이블 §12 CLI 목록 개정(minor)을 architecture 소유자에게 제안한다.
-2. **바이블 §12 미등재 디렉터리·모듈의 등재.** `tools/`, `examples/`, `tests/{golden,unit,integration,e2e}`, `src/rag_platform/settings.py`(02 §5.2 단일 모듈·02 미해결 이슈 9; 하위 절 모델이 늘어 패키지 `settings/`가 필요해지면 그때 별도 제안), `sidecars/sparse-encoder`(08 §3.1), `.github/`, `samples/`(§11.6에 경로만 암시)를 바이블 §12 트리에 patch로 등재할지 확정한다. `sparse-encoder`는 두 가지가 더 걸린다: (a) 바이블 §12·§6.7의 `sidecars/` 불변식("모두 `POST /v1/convert`")을 따르지 않는 모델 서빙 이미지이므로 `sidecars/` 밖(예: `serving/sparse-encoder-server/`, 이 문서 제안)에 두는 것이 불변식을 지키는 방향이고, (b) 08 §3.1 이미지명 `sparse-encoder-server` ≠ 디렉터리명 `sparse-encoder`가 §5 "디렉터리명 = 이미지명" 규약과 어긋나므로 08에 디렉터리명을 `sidecars/sparse-encoder-server/`로(또는 이미지명을 `sparse-encoder`로) 통일하는 개정을 요청한다. 08 미해결 이슈 17(엔드포인트 이름)과 함께 확정한다.
+2. **바이블 §12 미등재 디렉터리·모듈의 등재.** `tools/`, `examples/`, `tests/{golden,unit,integration,e2e}`, `sidecars/sparse-encoder`(08 §3.1), `.github/`, `samples/`(§11.6에 경로만 암시)를 바이블 §12 트리에 patch로 등재할지 확정한다. `src/rag_platform/settings/`는 바이블 §12 1.3.0에 패키지로 등재되어 해소(v1.3, AM-22); 내부 하위 모듈 구성은 02 §5.2가 확정한다. `sparse-encoder`는 두 가지가 더 걸린다: (a) 바이블 §12·§6.7의 `sidecars/` 불변식("모두 `POST /v1/convert`")을 따르지 않는 모델 서빙 이미지이므로 `sidecars/` 밖(예: `serving/sparse-encoder-server/`, 이 문서 제안)에 두는 것이 불변식을 지키는 방향이고, (b) 08 §3.1 이미지명 `sparse-encoder-server` ≠ 디렉터리명 `sparse-encoder`가 §5 "디렉터리명 = 이미지명" 규약과 어긋나므로 08에 디렉터리명을 `sidecars/sparse-encoder-server/`로(또는 이미지명을 `sparse-encoder`로) 통일하는 개정을 요청한다. 08 미해결 이슈 17(엔드포인트 이름)과 함께 확정한다.
 3. **클라이언트 SDK의 의존 범위.** `sdk/python`이 계약 모델 재사용을 위해 `rag-platform` 전체에 의존하면 클라이언트 설치가 FastAPI·서버 의존을 끌어온다. 대안은 (a) `contracts`를 경량 배포 패키지 `rag-platform-contracts`로 분리(바이블 §12 단일 패키지 원칙과 충돌, major 논의) 또는 (b) 03-contracts/14 §9의 "관용 모드 재생성"을 코드젠으로 해석해 `sdk/python`을 `schemas/` 기반 생성물로 두는 것이다. 05-api/06과 합의해 확정한다.
 4. **`models.lock`의 위치.** ADR-0001·08은 저장소 내 파일로 다루고 바이블 §13.3은 오브젝트 스토리지 `models/…/models.lock`을 적는다. 저장소 루트 사본을 정본으로 하고 미러 사본은 `rag models mirror`(08 제안)가 복사하는 관계로 두되, 파일 형식(TOML 또는 JSON Lines)은 09-operations/02·05에서 확정한다.
 5. **빌드 백엔드·마이그레이션 도구·S3 클라이언트 선정.** hatchling(+ hatch-vcs 버전 유도), Alembic(SQLAlchemy 2.x async + asyncpg), obstore 대 boto3/aiobotocore는 07-tech-landscape에 비교 조사가 없어 이 문서가 단정하지 않는다(확인 필요 as of 2026-09). 02 §3.3 `ledger`·`storage` 행과 02 미해결 이슈 9는 이 선정을 "04-storage-architecture·10-development/01"에 위임했으나, 이 문서는 조사 근거 없이 선정할 수 없어 **위임을 반려**한다 — 02 미해결 이슈 9의 담당 문서를 04-storage-architecture(드라이버·ORM·마이그레이션·S3 클라이언트) 및 10-development/02(빌드 백엔드)로 갱신해 달라고 02 소유자에게 요청하며, 확정 뒤 §3.2 예시를 갱신한다.

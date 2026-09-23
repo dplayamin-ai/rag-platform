@@ -4,8 +4,8 @@ status: accepted
 date: 2026-09-22
 deciders: architecture
 owner: architecture
-version: 0.1.0
-last_updated: 2026-09-22
+version: 0.1.1
+last_updated: 2026-09-23
 priority: P0
 related: ["D-04"]
 depends_on:
@@ -21,7 +21,7 @@ depends_on:
 
 # ADR-0002: ParsedDocument provenance: element_path·char offset 필수, page/bbox nullable
 
-> 상태 accepted(2026-09-22) · 우선순위 P0 · 관련 결정 D-04(`amended`, 브리프 v1.1) · 형식 MADR. 이 ADR은 설계 바이블 §3.1 D-04 행과 §5.3 `Provenance`·`BlockRef` 표에 이미 확정된 결정 하나를 근거·대안과 함께 기록한다. 바이블 표를 바꾸지 않으며(바이블 §1.1), 새 필드·열거값을 만들지 않는다.
+> 상태 accepted(2026-09-22) · 우선순위 P0 · 관련 결정 D-04(`amended`, 브리프 v1.1) · 형식 MADR. 이 ADR은 설계 바이블 1.3.0 §3.1 D-04 행과 §5.3 `Provenance`·`BlockRef` 표(1.3.0에서 `section_index` 의미 확장, AM-29)에 이미 확정된 결정 하나를 근거·대안과 함께 기록한다. 바이블 표를 바꾸지 않으며(바이블 §1.1), 새 필드·열거값을 만들지 않는다.
 
 ## 맥락과 문제
 
@@ -124,7 +124,7 @@ HWPX 블록(흐름 포맷, `page`·`bbox` null)의 `Block` 예시. 본 예시의
   "source": "text_layer",
   "confidence": null,
   "provenance": {
-    "element_path": "/hml/body/section[0]/p[37]",
+    "element_path": "/hp:sec[0]/hp:p[37]",
     "char_start": 0,
     "char_end": 37,
     "page": null,
@@ -160,7 +160,7 @@ PDF 블록을 가리키는 `BlockRef` 예시(Docling `self_ref` 경로, 4쪽, �
 
 ### 중립
 
-- `section_index`(HWPX `secPr` 구역)와 `TableCell.provenance`는 선택(N)이다. 흐름 문서에서 "위치"를 표현하려는 소비자는 `heading_path`·`numbering_path`·`section_index`를 쓴다.
+- `section_index`(선택 N)와 `TableCell.provenance`는 선택이다. 바이블 1.3.0(§5.3, AM-29)은 `section_index`의 의미를 "구역 인덱스: HWPX `secPr`, OOXML `w:sectPr`"로 확장해 DOC/DOCX 어댑터(04-pipelines/06)도 같은 필드를 채울 수 있다. 흐름 문서에서 "위치"를 표현하려는 소비자는 `heading_path`·`numbering_path`·`section_index`를 쓴다.
 - 기술 지형 02의 "0-based UTF-8 코드포인트 오프셋" 문구는 바이블 §6.3의 "유니코드 코드포인트"로 정정된 것으로 본다(UTF-8은 인코딩이고 오프셋 단위는 코드포인트다). 02 문서 개정 시 문구를 맞춘다.
 - bbox를 청킹 신호로 쓰는 기법(기술 지형 04의 S2 Chunking류)은 bbox가 non-null인 페이지 포맷에서만 적용 가능하다. 이는 결정의 결과일 뿐 계약 변경 사유가 아니다.
 

@@ -34,7 +34,7 @@ depends_on: ["02-phase4-5-plan.md", "00-progress-report.md", "../02-architecture
 | 산출물 | 내용 | 근거 문서 |
 |--------|------|-----------|
 | 모노레포 초기화 | `pyproject.toml`(uv workspace), 패키지 레이아웃 `src/rag_platform/`, `plugins/`, `sidecars/`, `deploy/compose/`, `tests/`, `schemas/`(기존), `tools/` | [저장소 구조](../10-development/01-repository-structure.md), [개발 환경](../10-development/02-development-environment.md) |
-| 툴체인 | ruff, mypy strict, import-linter 계층 규칙(contracts ← core ← stages ← workflows ← api), pre-commit | [코딩 표준](../10-development/03-coding-standards.md), ADR-0035 |
+| 툴체인 | ruff, mypy strict, import-linter 계층 규칙은 **바이블 §12 의존 방향 그대로**(`contracts ← sdk ← plugins \| adapters \| pipelines \| retrieval \| render ← orchestration \| ledger \| storage \| security \| profiles \| settings \| eval ← api \| mcp \| cli`), pre-commit, justfile | [코딩 표준](../10-development/03-coding-standards.md), 바이블 §12, ADR-0035 |
 | 계약 패키지 | `schemas/*.schema.json` → Pydantic v2 모델 생성(datamodel-code-generator 또는 자체 생성기), `common-types` 열거 → `StrEnum`, 생성 스크립트와 CI 검사(스키마 변경 시 재생성 강제) | [계약 개요](../03-contracts/00-contract-overview.md), 바이블 §5.7 |
 | 코어 스텁 | `Stage` Protocol, `PipelineContext`/`LocalContext`, `ArtifactStore`(file://), `PluginRegistry`(entry points), 프로파일 로더(`profile.schema.json` 검증) | [컴포넌트 아키텍처](../02-architecture/02-component-architecture.md), [플러그인 아키텍처](../02-architecture/05-plugin-architecture.md), [파이프라인 프레임워크](../04-pipelines/01-pipeline-framework.md) |
 | CI | PR: lint·type·unit·contract·스키마 diff·라이선스 게이트(pip-licenses + liccheck)·문서 감사(`tools/audit-docs.mjs`) | [CI/CD](../10-development/05-ci-cd.md) |
@@ -120,7 +120,7 @@ depends_on: ["02-phase4-5-plan.md", "00-progress-report.md", "../02-architecture
 | D6-4 | 공개 저장소·문서 라이선스 | GitHub 조직명·저장소명 확정. 코드 Apache-2.0, 문서도 Apache-2.0(단일 라이선스로 단순화) |
 | D6-5 | 사람 체크포인트 | 골든셋 검수(6C), 스파이크 결과 검토(6D), 공개 판단(6G) 세 곳. 그 외는 자율 진행 |
 
-## 5. 일정(벽시계, 사람 체크포인트 제외)
+## 5. 일정(실제 경과 시간, 사람 체크포인트 제외)
 
 | 하위 단계 | 소요 | 의존 |
 |-----------|------|------|
