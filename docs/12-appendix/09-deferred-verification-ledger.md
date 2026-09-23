@@ -22,19 +22,20 @@ Windows VDI(Docker·WSL·GPU 없음)에서 작성했지만 이 머신에서는 �
 
 | 항목 | 건수 |
 |------|-----:|
-| 전체 보류 항목 | 3 |
+| 전체 보류 항목 | 4 |
 | 층 2 — `needs_docker` | 1 |
-| 층 2b — `needs_model` | 0 |
+| 층 2b — `needs_model` | 1 |
 | 층 3 — `needs_gpu` | 0 |
 | 네트워크 — `needs_network` | 1 |
 | 미분류(마커 언급 없이 `# DEFERRED:`만 있음) | 1 |
-| `# DEFERRED:` 주석에서 수집 | 1 |
+| `# DEFERRED:` 주석에서 수집 | 2 |
 | pytest 속성 마커에서 수집 | 2 |
 
 ## 2. 보류 항목
 
 | 위치 | 층 | 무엇 | 어디서·어떻게 검증 | 기대 결과 | 상태 |
 |---|---|---|---|---|---|
+| src/rag_platform/adapters/parse/html_trafilatura_docling.py:729 (class _State) | 2b (모델 가중치) | needs_model — 실제 Docling 표 재구조화 연동은 모델 가중치가 있는 환경(사이드카)에서 별도 후속 WP로 구현한다. 이 스테이지는 표를 원본 `rowspan`/`colspan`에서 직접(native) 세우므로 정상 경로에서는 이 함수가 호출되지 않는다. | 모델 가중치 접근이 가능한 머신에서 실제 모델을 내려받아 `uv run pytest -m needs_model` (VDI에서는 다운로드 금지, 사용자 결정) | 실제 서빙 모델의 출력이 결정적 가짜 구현(`FakeEmbedder` 등)이 지키는 계약(차원·정규화 등)과 일치한다; 검색 품질 수치(nDCG 등)는 별도로 골든셋에서 측정한다 | 미검증 |
 | tests/adapters/index/test_qdrant_local.py:401 (test_server_mode_isolation) | 2 (Docker/Linux) | `@pytest.mark.needs_docker` — 인접한 `# DEFERRED:` 주석 없음(코드 규약 위반, 보강 필요) | Docker/Linux 머신에서 compose lite 기동 후 `uv run pytest -m needs_docker` (`tools/verify/run-deferred.sh` 또는 `.ps1`) | 실제 백엔드(PostgreSQL/Valkey/Qdrant 등)에서 인메모리 대역(`testing.doubles.*`)과 동일한 계약 동작을 확인하고 적합성 테스트를 통과한다 | 미검증 |
 | tests/adapters/parse/test_hwpx.py:513 (test_public_samples_still_match_origin) | 네트워크 | `@pytest.mark.needs_network` — 인접한 `# DEFERRED:` 주석 없음(코드 규약 위반, 보강 필요) | 외부 네트워크 접근이 허용된 환경에서 `uv run pytest -m needs_network` | 외부 서비스 호출이 성공하고 실패·재시도 경로가 계약대로 동작한다 | 미검증 |
 | tests/adapters/parse/test_hwpx.py:516 | 미분류(마커 언급 없음, 수동 분류 필요) | 외부 네트워크 가능 환경(프록시 허용 CI 야간 잡)에서 `uv run python tools/dev.py test-deferred`로 korea.kr 원본을 다시 받아 MANIFEST sha256과 대조한다. 원본 교체·삭제 시 표본 갱신 신호다. | `# DEFERRED:` 주석에 마커(`needs_docker`/`needs_model`/`needs_gpu`/`needs_network`)를 명시한 뒤 재생성 | 분류 후 결정 | 미검증 |

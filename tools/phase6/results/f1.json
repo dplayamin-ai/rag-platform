@@ -1,0 +1,80 @@
+{
+ "batch": "F1",
+ "tasks": [
+  {
+   "wp": [
+    "C:\\Workspaces\\rag-platform\\docs\\13-implementation\\wp\\WP-101-fetch-fsspec-httpx.md"
+   ],
+   "tests": {
+    "passed": 27,
+    "failed": 0,
+    "deferred": 5
+   },
+   "issues": 7
+  },
+  {
+   "wp": [
+    "docs/13-implementation/wp/WP-102-format-detector-and-parse-router.md"
+   ],
+   "tests": {
+    "passed": 43,
+    "failed": 0,
+    "deferred": 0
+   },
+   "issues": 7
+  },
+  {
+   "wp": [
+    "C:\\Workspaces\\rag-platform\\docs\\13-implementation\\wp\\WP-103-parse-text-markdown-csv.md"
+   ],
+   "tests": {
+    "passed": 23,
+    "failed": 0,
+    "deferred": 0
+   },
+   "issues": 4
+  },
+  {
+   "wp": [
+    "C:\\Workspaces\\rag-platform\\docs\\13-implementation\\wp\\WP-104-parse-html-trafilatura.md"
+   ],
+   "tests": {
+    "passed": 22,
+    "failed": 0,
+    "deferred": 0
+   },
+   "issues": 4
+  },
+  {
+   "wp": [
+    "docs/13-implementation/wp/WP-105-parse-pdf-fast-pypdfium2.md"
+   ],
+   "tests": {
+    "passed": 29,
+    "failed": 0,
+    "deferred": 0
+   },
+   "issues": 4
+  },
+  {
+   "wp": [
+    "docs/13-implementation/wp/WP-106-normalize-korean.md"
+   ],
+   "tests": {
+    "passed": 16,
+    "failed": 0,
+    "deferred": 3
+   },
+   "issues": 3
+  }
+ ],
+ "verify": {
+  "tests": {
+   "passed": 636,
+   "failed": 0,
+   "deferred": 31
+  },
+  "summary": "배치 F1 검증 완료. 모든 게이트 통과: ruff check(All checks passed), ruff format(재포맷 10개 파일 후 전체 통과), mypy src(178 파일 오류 0), lint-imports(6/6 KEPT), pytest(636 passed / 0 failed / 27 xfailed / 4 deselected [needs_docker·needs_model 마커]), check-headers.mjs(247 파일 위반 0), gen-deferred-ledger.mjs(4건: docker 1·model 1·network 1·미분류 1) 정상 재생성.\\n\\n적용한 최소 수정:\\n1) ruff format — 10개 파일 재포맷(fsspec_httpx.py, korean/unicode"
+ },
+ "review": null
+}

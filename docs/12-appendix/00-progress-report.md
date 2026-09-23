@@ -270,6 +270,19 @@ RRF k=60 → convex 2단계(O-01), BGE-M3 sparse + lexical 유지(O-02), GraphRA
 
 미해결 이관: xfail 40건(6B 선행 수정), `compose.lite.yaml` 부재(6F), 바이블 §12 같은 층 내 의존(pipelines.query → retrieval·render 등)이 import-linter `|` 독립 해석과 충돌할 가능성(구현 시 계층 계약 조정 필요), CLAUDE.md §4 구 구조 서술(6B/6D 검증 단계에서 갱신). 이어서 헤더 주석 소급 적용(`wf-header-pass.js`) → 6B·6D(`wf-6bd.js`).
 
+### 7.2g 6B·6D 완료(2026-09-23 22:10, Run `wf_0755d3ae-470`, 1시간 26분, 에이전트 8, 실패 0, 0.26B 토큰)
+
+| 단계 | 결과 |
+|------|------|
+| S0 의존성 | python-hwpx·qdrant-client·fsspec·lxml·charset-normalizer·markdown-it-py·trafilatura·pypdfium2, extra `kiwi`(kiwipiepy 0.23.2 LGPL — Apache 버전 0.24 미출시, 라이선스 검토 이슈), dev respx. Windows 휠 전부 확보 |
+| 6B 적합성 키트(Sonnet 3) | `testing/`: contract_roundtrip·idempotency·security_invariants·fuser_equivalence(골든 벡터)·litm_order·renderer_citation_roundtrip, 확장 지점 14종 적합성 기반 클래스, 프로파일 4종 로딩·`profile_hash` 안정성. 생성기에 `ContractModel` 베이스 추가(xfail 40 → 27; 잔여는 문서 예시 오류·중첩 nullable) |
+| 6D HWPX(Opus) | `adapters/parse/hwpx_python_hwpx.py` + `owpml_adapter.py`. 공공누리 표본 3건(기재부·복지부·개인정보위) + 합성 1건, 테스트 28. 파서 문서 "확인 필요" 20곳 실측 갱신. **설계 갭 발견 11건**(예: `Figure.artifact` 필수 vs 크기 초과 시 생략 규칙 충돌, `StageContext.source_bytes` 포트 부재, Hancom 기본 `repeatHeader=1`로 header_inferred 판정 왜곡, `opf:title` 신뢰 정책, 장르·표 역할 휴리스틱 오탐) — `tools/phase6/results/6bd.json` d[0].issues |
+| 6D Qdrant(Opus) | 로컬 모드 백엔드·필터 변환(tenant·acl 사전 필터 없으면 예외)·결정적 point_id·형태소 BM25 sparse, 테스트 12. 서버 모드는 `needs_docker`(Windows 바이너리 실행은 권한 정책으로 차단). 갭 8건(IndexBackend 포트 시그니처 ↔ 문서 13 불일치, 서버 RRF k=61 등가, ACL visible_set 정책 확인, analyzer_id 라벨) |
+| 6D 임베더(Sonnet) | TEI·vLLM pooling 어댑터 골격(모의 HTTP), FakeEmbedder 플러그인, 테스트 31. 실 서버·모델 항목 7곳은 `needs_model`/`needs_docker` 보류 |
+| 검증 | ruff·mypy(168)·import-linter 6/6·pytest **476 통과·27 xfail**, `tools/verify/check-headers.mjs` 신설(229파일 위반 0), 보류 원장 3건, CLAUDE.md §4·README 상태 갱신 |
+
+토큰: 6A 2차 0.44B(초기 보고의 1.9B는 알림의 출력 토큰 필드를 오독한 값이며 PAYMENT.MD 기준으로 정정), 헤더 패스 0.06B, 6B·6D 0.26B → 6단계 누적 0.76B(검문선 1B 이하, 축소 없이 진행). 전체 누적 **9.74B**. 6E·6F는 "작업 패키지 우선 구현"(한 에이전트가 WP 문서를 쓰고 바로 구현·테스트)으로 합쳐 배치 F1~F5로 실행한다(`tools/phase6/wf-6f.js`, 배치마다 커밋).
+
 ### 7.3 재개 절차(새 세션)
 
 1. 파일 상태를 먼저 본다: `docs/03-contracts/*.md`의 `status`(review = 리뷰 통과·미수정 또는 리뷰 대기, active = 수정 완료), `schemas/*.json` 수, `docs/06-adr/README.md` 존재 여부, `docs/04-pipelines/*.md` 수. `node tools/validate-contracts.mjs --root C:\Workspaces\rag-platform`로 오류 수를 확인.
