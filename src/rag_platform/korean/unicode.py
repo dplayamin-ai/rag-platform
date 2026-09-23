@@ -5,7 +5,9 @@
 치환(NBSP→공백, 같은 길이로 합성되는 NFC 클러스터)은 `offset_map` 구간을 쪼개지 않도록 `working` 버퍼에
 직접 반영하고, 길이가 바뀌는 편집(삭제·길이가 다른 합성)만 `Edit`으로 기록해 `apply_edits`가 최종
 `display_text`·`offset_map`을 조립한다. `fold_lexical`은 N11 렉시컬 뷰의 문자 단위 NFKC 폴딩(호환 자모
-보존)만 이 WP 범위에서 담당한다.
+보존)만 이 WP 범위에서 담당한다. 문서·질의 양쪽(N1 파싱 정규화 + `query_transformer.korean_normalize`)이
+공유해 `korean`(L1, 바이블 §12) 층에 둔다 — `retrieval`·`adapters`는 독립 형제 계층이라 서로 직접
+import할 수 없다(F4 배치 검증: `retrieval.planner` → `adapters.query.korean_normalize` 위반 해소).
 설계 근거: 04-pipelines/09 §3.1 N1(U1~U5 규칙표)·§4(연산 3종·`offset_map` 정규형·예시); 바이블 §5.4
 `NormalizedBlock.offset_map`(`[display_start, original_start, length]`); 계약
 `contracts/normalized_document`(`OffsetMapItem` 각 항목 `min_length=3`).

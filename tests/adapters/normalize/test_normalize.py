@@ -24,7 +24,6 @@ from typing import Any
 import pytest
 
 from rag_platform.adapters.normalize.korean.layout import merge_linebreaks
-from rag_platform.adapters.normalize.korean.unicode import Edit, apply_edits, clean_unicode, fold_lexical
 from rag_platform.adapters.normalize.stage import NormalizerChainConfig, NormalizerChainStage
 from rag_platform.contracts import common_types as ct
 from rag_platform.contracts.normalized_document import NormalizedDocument, ParsedRef
@@ -35,6 +34,7 @@ from rag_platform.contracts.parsed_document import (
     ParsedDocument,
     ParserFingerprint,
 )
+from rag_platform.korean.unicode import Edit, apply_edits, clean_unicode, fold_lexical
 from rag_platform.sdk.stage import StageError
 
 _HEX64 = "0" * 64

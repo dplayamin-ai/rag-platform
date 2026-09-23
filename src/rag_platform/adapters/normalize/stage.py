@@ -30,7 +30,6 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel, ConfigDict
 
 from rag_platform.adapters.normalize.korean.layout import merge_linebreaks
-from rag_platform.adapters.normalize.korean.unicode import apply_edits, clean_unicode, fold_lexical
 from rag_platform.contracts import common_types as ct
 from rag_platform.contracts.normalized_document import (
     Annotations,
@@ -44,6 +43,7 @@ from rag_platform.contracts.normalized_document import (
     PiiReport,
 )
 from rag_platform.contracts.normalized_document.NormalizedDocument import GenreSource
+from rag_platform.korean.unicode import apply_edits, clean_unicode, fold_lexical
 from rag_platform.sdk.hashing import blake3_hex, hash_of
 from rag_platform.sdk.stage import StageError
 

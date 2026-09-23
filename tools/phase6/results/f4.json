@@ -1,0 +1,61 @@
+{
+ "batch": "F4",
+ "tasks": [
+  {
+   "wp": [
+    "C:\\Workspaces\\rag-platform\\docs\\13-implementation\\wp\\WP-401-planner-and-filters.md"
+   ],
+   "tests": {
+    "passed": 31,
+    "failed": 0,
+    "deferred": 0
+   },
+   "issues": 8
+  },
+  {
+   "wp": [
+    "C:\\Workspaces\\rag-platform\\docs\\13-implementation\\wp\\WP-402-channels-fusion-hydrate.md"
+   ],
+   "tests": {
+    "passed": 17,
+    "failed": 0,
+    "deferred": 4
+   },
+   "issues": 6
+  },
+  {
+   "wp": [
+    "docs/13-implementation/wp/WP-403-postprocess-and-pack.md"
+   ],
+   "tests": {
+    "passed": 16,
+    "failed": 0,
+    "deferred": 1
+   },
+   "issues": 5
+  },
+  {
+   "wp": [
+    "C:\\Workspaces\\rag-platform\\docs\\13-implementation\\wp\\WP-404-render-and-query-pipeline.md"
+   ],
+   "tests": {
+    "passed": 7,
+    "failed": 0,
+    "deferred": 1
+   },
+   "issues": 5
+  }
+ ],
+ "verify": {
+  "tests": {
+   "passed": 804,
+   "failed": 0,
+   "deferred": 31
+  },
+  "summary": "C:\\Workspaces\\rag-platform에서 F4 배치 검증자 역할로 5개 명령(ruff check/format, mypy src, lint-imports, pytest -q)과 두 verify 스크립트를 실행해 전부 통과시켰다.\\n\\n주요 조치:\\n1) import-linter 계층 위반 5건 해소 — retrieval.planner→adapters.query.{korean_normalize,rule_router}, retrieval.hydrate→adapters.index.qdrant.filters, adapters.retrieve.{qdrant_dense,qdrant_sparse_bm25}→retrieval.channels. 순수 로직(정규화/라우팅/유니코드 유틸)은 새 korean/ 모듈로, "
+ },
+ "review": {
+  "findings": 13,
+  "serious": 6
+ }
+}

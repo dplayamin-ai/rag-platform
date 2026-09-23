@@ -29,10 +29,14 @@ _IDENTIFIER_FIELDS = ("chunk_id", "collection_id", "document_id")
 
 
 def _field(record: Any, name: str) -> Any:
-    """`record`(매핑 또는 속성 객체)에서 `name` 필드를 읽는다."""
-    if isinstance(record, Mapping):
-        return record[name]
-    return getattr(record, name)
+    """`record`(매핑 또는 속성 객체)에서 `name` 필드를 읽는다.
+
+    값이 pydantic `RootModel`(`CiteId`/`Hex64`/`Ulid` 등) 실인스턴스면 `.root`로 순수 값을 벗긴다 —
+    벗기지 않으면 호출부의 `str(...)`가 `repr`(예 `"root='d2'"`)을 내 값이 깨진다. 순수 dict/JSON을
+    넘기는 매핑 경로는 이미 원시 값이라 `hasattr(value, "root")`가 거짓이라 그대로 통과한다.
+    """
+    value = record[name] if isinstance(record, Mapping) else getattr(record, name)
+    return value.root if hasattr(value, "root") else value
 
 
 def assert_cite_ids_bijective_with_items(items: Sequence[Any]) -> None:

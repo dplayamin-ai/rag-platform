@@ -124,9 +124,11 @@ class PipelineContext(Protocol):
 class StageContext(Protocol):
     """pipeline-framework.md §3.1 member table (subset realized by `LocalContext`, ingest side).
 
-    `security`/`plan`/`token_counters`/`analyzer`/`substages` are declared for stage-facing type
-    compatibility; `LocalContext` fills the ingest-only subset it needs and leaves the query-only
-    members (`security`, `plan`) `None` (bible §4.1: "수집 측은 None").
+    `plan`/`token_counter`/`analyzer` are declared for stage-facing type compatibility;
+    `LocalContext` fills the ingest-only subset it needs and leaves the query-only member (`plan`)
+    `None` (bible §4.1: "수집 측은 None"). `security`(query측 `SecurityContext`)는 이 Protocol의
+    멤버가 아니다 — `retrieval.planner.plan(request, security, ...)`처럼 스테이지 함수의 명시적
+    인자로 받는다(F4 배치 검증: 문서-코드 불일치 정정, 이전 판의 이 독스트링이 틀렸다).
 
     F3 배치 검증 open_issue 통합: `own_input_ref`/`commit_id`/`index_generation`/`profile_id`/
     `dense_vectors`는 WP-106(`normalize`의 `ctx.parsed_ref`)이 처음 임시로 쓰고 이후 WP들(`chunk`의

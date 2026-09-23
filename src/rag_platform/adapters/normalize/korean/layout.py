@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from rag_platform.adapters.normalize.korean.unicode import Edit
+from rag_platform.korean.unicode import Edit
 
 if TYPE_CHECKING:
     from collections.abc import Callable

@@ -81,7 +81,10 @@ query:
     dedup: {cosine_threshold: 0.95, minhash: {num_perm: 128, seed: 42, scheme: affine32, threshold: 0.8}}
     mmr: {lambda: 0.7}
     parent_expand: {ratio_threshold: 0.5, max_parent_tokens: 2048, text_store: artifact_store}
-  pack: {k_max: 20, max_context_tokens: 24000, reserved_answer_tokens: 4000, ordering: litm_alternating, renderer: anthropic_search_result, instructions_template_id: rag-answer-ko@1,
+  # k_max/max_context_tokens/reserved_answer_tokens = 바이블 §7.2 표 `lite` 열(10/12,000/2,000; 04-
+  # pipelines/14 §9.2·미해결 이슈 20에도 "lite 10"으로 재확인) — F4 배치 검증으로 `standard` 값(20/
+  # 24,000/4,000) 오기를 정정.
+  pack: {k_max: 10, max_context_tokens: 12000, reserved_answer_tokens: 2000, ordering: litm_alternating, renderer: anthropic_search_result, instructions_template_id: rag-answer-ko@1,
          tokenizer: {provider: anthropic, model: "claude-placeholder", count_method: approximate, calibration_ratio: null, safety_margin: 0.10},
          table_format_preference: [html, markdown, json], overflow_policy: [downgrade_tables, truncate], confidence_tiers: {high: 0.7, medium: 0.4}}
   latency_budget_ms: {total: 800, plan: 60, retrieve: 120, rerank: 250, postprocess: 60, pack: 40}
