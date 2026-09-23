@@ -21,7 +21,10 @@ from typing import Protocol, runtime_checkable
 class TokenCounter(Protocol):
     """Bible §4.1 `ctx.token_counter`: a single tokenizer-bound counting interface (O-09)."""
 
-    tokenizer_id: str
+    @property
+    def tokenizer_id(self) -> str:
+        """Identify the tokenizer this counter is bound to (read-only: frozen-dataclass-safe)."""
+        ...
 
     def count(self, text: str) -> int:
         """Return the token count of `text` under this tokenizer."""

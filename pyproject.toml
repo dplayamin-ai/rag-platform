@@ -238,7 +238,7 @@ warn_required_dynamic_aliases = true
 
 # Vendor stubs missing: module-level ignore_missing_imports only (ADR-0035 compliance table).
 [[tool.mypy.overrides]]
-module = ["blake3.*", "pypdfium2.*", "lxml.*"]
+module = ["blake3.*", "pypdfium2.*", "lxml.*", "kiwipiepy.*"]
 ignore_missing_imports = true
 
 # Generated from schemas/ by tools/contracts_gen.py (03 sec. 2.2). Three datamodel-code-generator

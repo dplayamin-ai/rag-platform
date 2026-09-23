@@ -1,0 +1,47 @@
+{
+ "batch": "F2",
+ "tasks": [
+  {
+   "wp": [
+    "C:\\Workspaces\\rag-platform\\docs\\13-implementation\\wp\\WP-201-chunk-structure-aware.md"
+   ],
+   "tests": {
+    "passed": 19,
+    "failed": 0,
+    "deferred": 6
+   },
+   "issues": 5
+  },
+  {
+   "wp": [
+    "C:\\Workspaces\\rag-platform\\docs\\13-implementation\\wp\\WP-202-chunk-table-rows-and-recount.md"
+   ],
+   "tests": {
+    "passed": 16,
+    "failed": 0,
+    "deferred": 0
+   },
+   "issues": 4
+  },
+  {
+   "wp": [
+    "C:\\Workspaces\\rag-platform\\docs\\13-implementation\\wp\\WP-203-enrich-deterministic.md"
+   ],
+   "tests": {
+    "passed": 21,
+    "failed": 0,
+    "deferred": 0
+   },
+   "issues": 5
+  }
+ ],
+ "verify": {
+  "tests": {
+   "passed": 692,
+   "failed": 0,
+   "deferred": 27
+  },
+  "summary": "F2 batch validation complete — all five checks now pass cleanly. Fixes applied:\\n\\n1. `uv run ruff check .` — passed on first run, no changes needed.\\n2. `uv run ruff format --check .` — 3 files needed reformatting (structure_aware.py, korean_keywords.py, tests/adapters/enrich/test_enrich.py); ran `uv run ruff format .` to fix. Re-check: 249 files already formatted.\\n3. `uv run mypy src` — 11 erro"
+ },
+ "review": null
+}
