@@ -1,0 +1,352 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "ChunkSet",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_id": "01J9ZQ5C0Q3N4P5R6S7T8V9WXY",
+  "producer": {
+    "plugin_id": "chunker.token_counter_hf",
+    "plugin_version": "1.0.0",
+    "config_hash": "ea57f6a21bd467dc16881af4938b382fb47c94b07c079500adb72b5699ccc689",
+    "image_digest": null
+  },
+  "quality": "full",
+  "warnings": [],
+  "created_at": "2026-09-22T11:05:40.120Z",
+  "lineage_refs": {
+    "source": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/source-document/1a/1a7adedcd74edb7b268e36a90a9c69997e9f5693d37b4790431de3a1ef5a7dd7.json",
+      "blake3": "dc07aa9b659913348a67cb0fb938efbd2e980bc00d1ea29362a52ca5881e3e6c",
+      "media_type": "application/vnd.rag.source-document+json",
+      "schema_type": "SourceDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 2980,
+      "stage_key": "1a7adedcd74edb7b268e36a90a9c69997e9f5693d37b4790431de3a1ef5a7dd7"
+    },
+    "parsed": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/parsed-document/aa/aa6b4107b04a03f09e72035de6ca09867363b8e932a9a18161dd3752d76a272f.json",
+      "blake3": "a8d15fd9d60b37a5d7ea37b823b39e8c1e79a25a6ed377afb70d094ff5db228c",
+      "media_type": "application/vnd.rag.parsed-document+json",
+      "schema_type": "ParsedDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 1306221,
+      "stage_key": "aa6b4107b04a03f09e72035de6ca09867363b8e932a9a18161dd3752d76a272f"
+    },
+    "normalized": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/normalized-document/f2/f2578176234263ab21068cdd4159a9d85cfdcff79d7567b51db2d608ea7bd82b.json",
+      "blake3": "2ee82fff955f2676b98c517d629ce774a4c79c330fa87afc68868a6664b27b11",
+      "media_type": "application/vnd.rag.normalized-document+json",
+      "schema_type": "NormalizedDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 1544090,
+      "stage_key": "f2578176234263ab21068cdd4159a9d85cfdcff79d7567b51db2d608ea7bd82b"
+    }
+  },
+  "chunk_set_id": "01J9ZR8C9D0E1F2G3H4J5K6M7N",
+  "document_id": "01J9ZR7Q8S9T0V1W2X3Y4Z5A6B",
+  "doc_version": "b9b15b7de020e717bc2432b2afaddd83864a54c476dbd0adb034b44d8cac316c",
+  "normalized_ref": {
+    "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/normalized-document/f2/f2578176234263ab21068cdd4159a9d85cfdcff79d7567b51db2d608ea7bd82b.json",
+    "blake3": "2ee82fff955f2676b98c517d629ce774a4c79c330fa87afc68868a6664b27b11",
+    "media_type": "application/vnd.rag.normalized-document+json",
+    "schema_type": "NormalizedDocument",
+    "schema_version": "1.0.0",
+    "size_bytes": 1544090,
+    "stage_key": "f2578176234263ab21068cdd4159a9d85cfdcff79d7567b51db2d608ea7bd82b"
+  },
+  "document_hash": "2ee82fff955f2676b98c517d629ce774a4c79c330fa87afc68868a6664b27b11",
+  "chunker_id": "chunker.structure_aware",
+  "chunker_config_hash": "2564a8c52df61925119742131d43eaa5685886a7561c8dfc32263eea0a760045",
+  "primary_tokenizer_id": "hf:BAAI/bge-m3",
+  "secondary_tokenizer_ids": [
+    "tiktoken:o200k_base",
+    "hf:nlpai-lab/KURE-v1"
+  ],
+  "genre_route": "outline_report",
+  "analyzer_id": "mecab-ko:1.3.7:ko-dic-2.1.1",
+  "dictionary_hash": "8f36b6948fcc8f77bb02c9980990d5e20d3313dbe673ea2a95438ff525b190cb",
+  "language": "ko",
+  "pii_policy_applied": "mask",
+  "stats": {
+    "leaf_count": 2,
+    "parent_count": 1,
+    "table_part_count": 2,
+    "summary_count": 0,
+    "oversized_blocks": 0
+  },
+  "chunks": [
+    {
+      "chunk_id": "87c9e8466ca85bcf7b3d5ecea6cbb3301b16ee7c8aa6b91a15874608fc4acf3e",
+      "span": "0e8c82cd9b265f6875db190ec883a78d:5-0e8c82cd9b265f6875db190ec883a78d:20",
+      "item_kind": "table_part",
+      "level": 0,
+      "parent_chunk_id": "1020cf1ec40ed3072563d215863a09226b98a80484b143d0d2a9f50804b9b7eb",
+      "ordinal": 0,
+      "text": "| 사업명 | 예산액(백만원) | 집행액(백만원) | 집행률(%) | 비고 |\n| --- | --- | --- | --- | --- |\n| 디지털 민원 플랫폼 고도화 | 12,500 | 9,375 | 75.0 | 2단계 시스템 구축 완료, 3단계 착수 |\n| 공공데이터 개방 확대 | 8,200 | 5,330 | 65.0 | 개방 데이터셋 1,200종 추가 등록 |\n| 지방행정 정보시스템 클라우드 전환 | 21,000 | 12,600 | 60.0 | 1차 이관 대상 32개 시스템 전환 완료 |",
+      "lexical_text": "사업명: 디지털 민원 플랫폼 고도화; 예산액(백만원): 12,500; 집행액(백만원): 9,375; 집행률(%): 75.0; 비고: 2단계 시스템 구축 완료, 3단계 착수\n사업명: 공공데이터 개방 확대; 예산액(백만원): 8,200; 집행액(백만원): 5,330; 집행률(%): 65.0; 비고: 개방 데이터셋 1,200종 추가 등록\n사업명: 지방행정 정보시스템 클라우드 전환; 예산액(백만원): 21,000; 집행액(백만원): 12,600; 집행률(%): 60.0; 비고: 1차 이관 대상 32개 시스템 전환 완료",
+      "heading_path": [
+        "Ⅱ. 사업별 집행 현황"
+      ],
+      "numbering_path": [
+        "Ⅱ"
+      ],
+      "block_refs": [
+        {
+          "block_id": "0e8c82cd9b265f6875db190ec883a78d",
+          "element_path": "#/tables/0",
+          "char_start": 0,
+          "char_end": 277,
+          "original_char_start": 32,
+          "original_char_end": 197,
+          "page": 3,
+          "bbox": [
+            56.7,
+            120.4,
+            538.6,
+            402.9
+          ]
+        }
+      ],
+      "sentence_spans": [
+        [
+          0,
+          43
+        ],
+        [
+          76,
+          142
+        ],
+        [
+          143,
+          204
+        ],
+        [
+          205,
+          277
+        ]
+      ],
+      "token_counts": {
+        "hf:BAAI/bge-m3": 168,
+        "tiktoken:o200k_base": 231,
+        "hf:nlpai-lab/KURE-v1": 168
+      },
+      "lang": "ko",
+      "table_ref": {
+        "table_block_id": "0e8c82cd9b265f6875db190ec883a78d",
+        "header_row_indices": [
+          0
+        ],
+        "row_range": [
+          1,
+          4
+        ],
+        "col_range": [
+          0,
+          5
+        ],
+        "serialization": "markdown",
+        "html_ref": {
+          "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/derived/table_html/a6/a6d3b377b251fba2a21020b2d1b0491104de93e95cce5255d85734bca455ab95.html",
+          "blake3": "a6d3b377b251fba2a21020b2d1b0491104de93e95cce5255d85734bca455ab95",
+          "media_type": "text/html",
+          "size_bytes": 4210
+        }
+      },
+      "context_prefix": {
+        "deterministic": "2026년도 주요사업 예산 집행 현황 › Ⅱ. 사업별 집행 현황 › 표 1 사업별 예산 집행 현황(2026년 6월 말 기준)",
+        "generated": null,
+        "generated_by": null
+      },
+      "text_source": "text_layer",
+      "ocr_confidence_min": null,
+      "content_hash": "00c2dcf9235704cb47ed7008a99cbb7c88b0c0c8b7e0d009ba00d41b1dbdaedb"
+    },
+    {
+      "chunk_id": "181d3ba689a666832795549a0ff033d07a116394f5da8b1c477203690e5721e9",
+      "span": "0e8c82cd9b265f6875db190ec883a78d:20-0e8c82cd9b265f6875db190ec883a78d:35",
+      "item_kind": "table_part",
+      "level": 0,
+      "parent_chunk_id": "1020cf1ec40ed3072563d215863a09226b98a80484b143d0d2a9f50804b9b7eb",
+      "ordinal": 1,
+      "text": "| 사업명 | 예산액(백만원) | 집행액(백만원) | 집행률(%) | 비고 |\n| --- | --- | --- | --- | --- |\n| 재난안전통신망 운영 | 15,300 | 13,005 | 85.0 | 기지국 유지보수 및 단말 보급 |\n| 주민등록 전산 고도화 | 6,400 | 4,480 | 70.0 | 본인확인 API 연계 완료 |\n| 정보보호 인프라 강화 | 9,800 | 6,860 | 70.0 | 망분리 장비 교체 및 보안관제 확대 |",
+      "lexical_text": "사업명: 재난안전통신망 운영; 예산액(백만원): 15,300; 집행액(백만원): 13,005; 집행률(%): 85.0; 비고: 기지국 유지보수 및 단말 보급\n사업명: 주민등록 전산 고도화; 예산액(백만원): 6,400; 집행액(백만원): 4,480; 집행률(%): 70.0; 비고: 본인확인 API 연계 완료\n사업명: 정보보호 인프라 강화; 예산액(백만원): 9,800; 집행액(백만원): 6,860; 집행률(%): 70.0; 비고: 망분리 장비 교체 및 보안관제 확대",
+      "heading_path": [
+        "Ⅱ. 사업별 집행 현황"
+      ],
+      "numbering_path": [
+        "Ⅱ"
+      ],
+      "block_refs": [
+        {
+          "block_id": "0e8c82cd9b265f6875db190ec883a78d",
+          "element_path": "#/tables/0",
+          "char_start": 0,
+          "char_end": 251,
+          "original_char_start": 198,
+          "original_char_end": 337,
+          "page": 3,
+          "bbox": [
+            56.7,
+            120.4,
+            538.6,
+            402.9
+          ]
+        }
+      ],
+      "sentence_spans": [
+        [
+          0,
+          43
+        ],
+        [
+          76,
+          134
+        ],
+        [
+          135,
+          190
+        ],
+        [
+          191,
+          251
+        ]
+      ],
+      "token_counts": {
+        "hf:BAAI/bge-m3": 158,
+        "tiktoken:o200k_base": 219,
+        "hf:nlpai-lab/KURE-v1": 158
+      },
+      "lang": "ko",
+      "table_ref": {
+        "table_block_id": "0e8c82cd9b265f6875db190ec883a78d",
+        "header_row_indices": [
+          0
+        ],
+        "row_range": [
+          4,
+          7
+        ],
+        "col_range": [
+          0,
+          5
+        ],
+        "serialization": "markdown",
+        "html_ref": {
+          "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/derived/table_html/a6/a6d3b377b251fba2a21020b2d1b0491104de93e95cce5255d85734bca455ab95.html",
+          "blake3": "a6d3b377b251fba2a21020b2d1b0491104de93e95cce5255d85734bca455ab95",
+          "media_type": "text/html",
+          "size_bytes": 4210
+        }
+      },
+      "context_prefix": {
+        "deterministic": "2026년도 주요사업 예산 집행 현황 › Ⅱ. 사업별 집행 현황 › 표 1 사업별 예산 집행 현황(2026년 6월 말 기준)",
+        "generated": null,
+        "generated_by": null
+      },
+      "text_source": "text_layer",
+      "ocr_confidence_min": null,
+      "content_hash": "48964c7f2649d4a049fc637eb3cd6e176faf290441b02c433d44ff3ebf683899"
+    },
+    {
+      "chunk_id": "1020cf1ec40ed3072563d215863a09226b98a80484b143d0d2a9f50804b9b7eb",
+      "span": "0e8c82cd9b265f6875db190ec883a78d:5-0e8c82cd9b265f6875db190ec883a78d:35",
+      "item_kind": "parent",
+      "level": 1,
+      "parent_chunk_id": null,
+      "child_chunk_ids": [
+        "87c9e8466ca85bcf7b3d5ecea6cbb3301b16ee7c8aa6b91a15874608fc4acf3e",
+        "181d3ba689a666832795549a0ff033d07a116394f5da8b1c477203690e5721e9"
+      ],
+      "ordinal": 0,
+      "text": "| 사업명 | 예산액(백만원) | 집행액(백만원) | 집행률(%) | 비고 |\n| --- | --- | --- | --- | --- |\n| 디지털 민원 플랫폼 고도화 | 12,500 | 9,375 | 75.0 | 2단계 시스템 구축 완료, 3단계 착수 |\n| 공공데이터 개방 확대 | 8,200 | 5,330 | 65.0 | 개방 데이터셋 1,200종 추가 등록 |\n| 지방행정 정보시스템 클라우드 전환 | 21,000 | 12,600 | 60.0 | 1차 이관 대상 32개 시스템 전환 완료 |\n| 재난안전통신망 운영 | 15,300 | 13,005 | 85.0 | 기지국 유지보수 및 단말 보급 |\n| 주민등록 전산 고도화 | 6,400 | 4,480 | 70.0 | 본인확인 API 연계 완료 |\n| 정보보호 인프라 강화 | 9,800 | 6,860 | 70.0 | 망분리 장비 교체 및 보안관제 확대 |",
+      "lexical_text": "사업명: 디지털 민원 플랫폼 고도화; 예산액(백만원): 12,500; 집행액(백만원): 9,375; 집행률(%): 75.0; 비고: 2단계 시스템 구축 완료, 3단계 착수\n사업명: 공공데이터 개방 확대; 예산액(백만원): 8,200; 집행액(백만원): 5,330; 집행률(%): 65.0; 비고: 개방 데이터셋 1,200종 추가 등록\n사업명: 지방행정 정보시스템 클라우드 전환; 예산액(백만원): 21,000; 집행액(백만원): 12,600; 집행률(%): 60.0; 비고: 1차 이관 대상 32개 시스템 전환 완료\n사업명: 재난안전통신망 운영; 예산액(백만원): 15,300; 집행액(백만원): 13,005; 집행률(%): 85.0; 비고: 기지국 유지보수 및 단말 보급\n사업명: 주민등록 전산 고도화; 예산액(백만원): 6,400; 집행액(백만원): 4,480; 집행률(%): 70.0; 비고: 본인확인 API 연계 완료\n사업명: 정보보호 인프라 강화; 예산액(백만원): 9,800; 집행액(백만원): 6,860; 집행률(%): 70.0; 비고: 망분리 장비 교체 및 보안관제 확대",
+      "heading_path": [
+        "Ⅱ. 사업별 집행 현황"
+      ],
+      "numbering_path": [
+        "Ⅱ"
+      ],
+      "block_refs": [
+        {
+          "block_id": "0e8c82cd9b265f6875db190ec883a78d",
+          "element_path": "#/tables/0",
+          "char_start": 0,
+          "char_end": 453,
+          "original_char_start": 32,
+          "original_char_end": 337,
+          "page": 3,
+          "bbox": [
+            56.7,
+            120.4,
+            538.6,
+            402.9
+          ]
+        }
+      ],
+      "sentence_spans": [
+        [
+          0,
+          43
+        ],
+        [
+          76,
+          142
+        ],
+        [
+          143,
+          204
+        ],
+        [
+          205,
+          277
+        ],
+        [
+          278,
+          336
+        ],
+        [
+          337,
+          392
+        ],
+        [
+          393,
+          453
+        ]
+      ],
+      "token_counts": {
+        "hf:BAAI/bge-m3": 301,
+        "tiktoken:o200k_base": 412,
+        "hf:nlpai-lab/KURE-v1": 301
+      },
+      "lang": "ko",
+      "table_ref": {
+        "table_block_id": "0e8c82cd9b265f6875db190ec883a78d",
+        "header_row_indices": [
+          0
+        ],
+        "row_range": [
+          1,
+          7
+        ],
+        "col_range": [
+          0,
+          5
+        ],
+        "serialization": "markdown",
+        "html_ref": {
+          "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/derived/table_html/a6/a6d3b377b251fba2a21020b2d1b0491104de93e95cce5255d85734bca455ab95.html",
+          "blake3": "a6d3b377b251fba2a21020b2d1b0491104de93e95cce5255d85734bca455ab95",
+          "media_type": "text/html",
+          "size_bytes": 4210
+        }
+      },
+      "context_prefix": {
+        "deterministic": "2026년도 주요사업 예산 집행 현황 › Ⅱ. 사업별 집행 현황 › 표 1 사업별 예산 집행 현황(2026년 6월 말 기준)",
+        "generated": null,
+        "generated_by": null
+      },
+      "text_source": "text_layer",
+      "ocr_confidence_min": null,
+      "content_hash": "59602e2cc4e004598f74db9e288c14ea963c90c8168513eb6d09b22ab89f0898"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "code": "parse.conversion_failed",
+  "type": "urn:rag:error:parse.conversion_failed",
+  "retryable": false,
+  "stage": "parse",
+  "plugin_id": "parser.hwp5_hwp_hwpx_parser",
+  "detail": "parser chain exhausted after 3 adapters (parser.hwp5_java_sidecar, parser.hwp5_unhwp, parser.hwp5_hwp_hwpx_parser)",
+  "message": "Conversion failed",
+  "occurred_at": "2026-09-22T10:03:51.120Z",
+  "attempt": 3,
+  "location": {
+    "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+    "document_id": "01J9ZQ7D3E4F5G6H7J8K9M0N1P"
+  },
+  "cause": {
+    "code": "parse.sidecar_unavailable",
+    "type": "urn:rag:error:parse.sidecar_unavailable",
+    "retryable": true,
+    "stage": "parse",
+    "plugin_id": "parser.hwp5_java_sidecar",
+    "detail": "GET /healthz on parser-workers returned HTTP 503 for 3 consecutive probes",
+    "message": "Parser sidecar unavailable",
+    "occurred_at": "2026-09-22T10:02:44.008Z",
+    "attempt": 3
+  }
+}

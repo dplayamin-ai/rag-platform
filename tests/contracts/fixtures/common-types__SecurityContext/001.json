@@ -1,0 +1,19 @@
+{
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "principals": [
+    "user:kim.minsu@example.go.kr",
+    "group:mois_records",
+    "tenant:*"
+  ],
+  "collection_ids": [
+    "01J9ZQ5A1B2C3D4E5F6G7H8J9K"
+  ],
+  "as_of": "2026-09-22T09:00:00.000Z",
+  "classification_max": "confidential",
+  "policy_version": "2026-09-15.3",
+  "auth_method": "oidc",
+  "visible_set": [
+    "public",
+    "tenant"
+  ]
+}

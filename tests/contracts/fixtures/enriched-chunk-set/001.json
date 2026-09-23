@@ -1,0 +1,234 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "EnrichedChunkSet",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+  "producer": {
+    "plugin_id": "enricher.pipeline",
+    "plugin_version": "1.0.0",
+    "config_hash": "767a2bd076dd1c6a1b4e373140b64a591402724e2146fe4018c7dbc26919c3d4",
+    "image_digest": null,
+    "model_ids": []
+  },
+  "quality": "full",
+  "warnings": [],
+  "created_at": "2026-09-22T09:12:30.000Z",
+  "lineage_refs": {
+    "source": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/source-document/67/679b627d4ff10f91e30a12eae1b09bf2b18d8fd12a442570132a10cdfbc36135.json",
+      "blake3": "ba88f8d8da81cb79e31154aa6abb24705479726e7bbff0c6fa69e8bf24fe06de",
+      "media_type": "application/vnd.rag.source-document+json",
+      "schema_type": "SourceDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 3268,
+      "stage_key": "679b627d4ff10f91e30a12eae1b09bf2b18d8fd12a442570132a10cdfbc36135"
+    },
+    "parsed": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/parsed-document/29/29c704ed012770f91619e1efee115a28679ab1a8204f6a1f6f7dcc61c51a341c.json",
+      "blake3": "6cb8cafdd02298a8b049ad58f954d89ec6805c5a2a89288a1a461fc050aa013d",
+      "media_type": "application/vnd.rag.parsed-document+json",
+      "schema_type": "ParsedDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 1843200,
+      "stage_key": "29c704ed012770f91619e1efee115a28679ab1a8204f6a1f6f7dcc61c51a341c"
+    },
+    "normalized": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/normalized-document/cd/cd07a1b2aeb847ac2ac36e6f62c368c337cd1bdd5770ed7cc044a568b6178bfa.json",
+      "blake3": "47bffc4a51c8952f36c971cd028c6f3e521b58fe82416b481479ad16cc0033db",
+      "media_type": "application/vnd.rag.normalized-document+json",
+      "schema_type": "NormalizedDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 1912004,
+      "stage_key": "cd07a1b2aeb847ac2ac36e6f62c368c337cd1bdd5770ed7cc044a568b6178bfa"
+    },
+    "chunk_set": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/chunk-set/4c/4c4085d68adef58175a54fa7af053cff30fb67d3ffeb81e5a8898e1da0f93727.json",
+      "blake3": "0c85e534d010f11da5e2f5ee712658297df1a73e4e25d73bb5f36e6262b63f9d",
+      "media_type": "application/vnd.rag.chunk-set+json",
+      "schema_type": "ChunkSet",
+      "schema_version": "1.0.0",
+      "size_bytes": 655360,
+      "stage_key": "4c4085d68adef58175a54fa7af053cff30fb67d3ffeb81e5a8898e1da0f93727"
+    }
+  },
+  "chunk_set_id": "01JAB3C4D5E6F7G8H9JKMNPQST",
+  "document_id": "01JAB3C4D5E6F7G8H9JKMNPQRS",
+  "doc_version": "cf266a7a804b27e9ed1133df8e05ef4eec7ea1a28f1ca63f61a1cf838c7f0118",
+  "chunk_set_ref": {
+    "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/chunk-set/4c/4c4085d68adef58175a54fa7af053cff30fb67d3ffeb81e5a8898e1da0f93727.json",
+    "blake3": "0c85e534d010f11da5e2f5ee712658297df1a73e4e25d73bb5f36e6262b63f9d",
+    "media_type": "application/vnd.rag.chunk-set+json",
+    "schema_type": "ChunkSet",
+    "schema_version": "1.0.0",
+    "size_bytes": 655360,
+    "stage_key": "4c4085d68adef58175a54fa7af053cff30fb67d3ffeb81e5a8898e1da0f93727"
+  },
+  "enricher_fingerprint": "4b06e250f79429847c96c7c69ab7761bc06efa22b48f704271faad00bb52c479",
+  "policy_hash": "49372aebf8e0e381c5a4b0e919ceff37f54f8a6562e5a9d090edceaee0657e3d",
+  "status": "complete",
+  "budget_used": {
+    "provider": null,
+    "model_id": null,
+    "llm_tokens_in": 0,
+    "llm_tokens_out": 0,
+    "cost_usd": 0,
+    "calls": 0,
+    "budget_remaining_tokens": 0
+  },
+  "enrichments": {
+    "accd3831b9b08ad5da5cc41404a645a22e59f8775c60d99b72e073d8cb9cc445": {
+      "embed_text": "공공기관 정보보호 업무 지침(행정안전부고시 제2026-12호) › Ⅲ. 정보보호 조직 › 제5조(정보보호 책임자의 지정)\n① 공공기관의 장은 정보보호 업무를 총괄하는 정보보호 책임자를 지정하여야 한다.\n② 제1항에 따른 정보보호 책임자는 「개인정보 보호법」 제31조에 따른 개인정보 보호책임자를 겸임할 수 있다.",
+      "index_text": "공공기관 정보보호 업무 지침(행정안전부고시 제2026-12호) › III. 정보보호 조직 › 제5조(정보보호 책임자의 지정)\n1 공공기관의 장은 정보보호 업무를 총괄하는 정보보호 책임자를 지정하여야 한다.\n2 제1항에 따른 정보보호 책임자는 「개인정보 보호법」 제31조에 따른 개인정보 보호책임자를 겸임할 수 있다.",
+      "strip_offsets": {
+        "text_start_in_embed": 68,
+        "text_start_in_index": 70
+      },
+      "keywords": [
+        {
+          "term": "개인정보 보호법",
+          "weight": 1,
+          "source": "analyzer_nnp"
+        },
+        {
+          "term": "정보보호",
+          "weight": 1,
+          "source": "analyzer_nng"
+        },
+        {
+          "term": "정보보호책임자",
+          "weight": 1,
+          "source": "user_dict"
+        },
+        {
+          "term": "개인정보",
+          "weight": 0.67,
+          "source": "analyzer_nng"
+        },
+        {
+          "term": "책임자",
+          "weight": 0.67,
+          "source": "analyzer_nng"
+        },
+        {
+          "term": "공공기관",
+          "weight": 0.33,
+          "source": "analyzer_nng"
+        },
+        {
+          "term": "지정",
+          "weight": 0.33,
+          "source": "analyzer_nng"
+        }
+      ],
+      "entities": [
+        {
+          "name": "개인정보 보호법",
+          "type": "law",
+          "canonical_id": "law:개인정보보호법",
+          "confidence": 0.93,
+          "span": {
+            "chunk_id": "accd3831b9b08ad5da5cc41404a645a22e59f8775c60d99b72e073d8cb9cc445",
+            "char_start": 66,
+            "char_end": 74
+          },
+          "extractor": "gliner2"
+        },
+        {
+          "name": "공공기관의 장",
+          "type": "role",
+          "canonical_id": null,
+          "confidence": 0.71,
+          "span": {
+            "chunk_id": "accd3831b9b08ad5da5cc41404a645a22e59f8775c60d99b72e073d8cb9cc445",
+            "char_start": 2,
+            "char_end": 9
+          },
+          "extractor": "gliner2"
+        }
+      ],
+      "law_refs": [
+        "개인정보 보호법/제31조"
+      ],
+      "risk_flags": [],
+      "risk_score": 0,
+      "pii_entity_counts": {},
+      "status": "complete"
+    },
+    "8c6a18523ac6d630b32b5221c01e7529feee0e376290a0d6a902200e9e83ce63": {
+      "embed_text": "공공기관 정보보호 업무 지침(행정안전부고시 제2026-12호) › Ⅴ. 별표 › [별표 1] 정보보호 교육 이수 기준\n| 대상 | 교육 시간 | 주기 |\n| --- | --- | --- |\n| 정보보호 책임자 | 연 12시간 이상 | 매년 |\n| 정보보호 담당자 | 연 8시간 이상 | 매년 |",
+      "index_text": "공공기관 정보보호 업무 지침(행정안전부고시 제2026-12호) › V. 별표 › [별표 1] 정보보호 교육 이수 기준\n| 대상 | 교육 시간 | 주기 |\n| --- | --- | --- |\n| 정보보호 책임자 | 연 12시간 이상 | 매년 |\n| 정보보호 담당자 | 연 8시간 이상 | 매년 |",
+      "strip_offsets": {
+        "text_start_in_embed": 66,
+        "text_start_in_index": 66
+      },
+      "keywords": [
+        {
+          "term": "시간",
+          "weight": 1,
+          "source": "analyzer_nng"
+        },
+        {
+          "term": "정보보호",
+          "weight": 1,
+          "source": "analyzer_nng"
+        },
+        {
+          "term": "교육",
+          "weight": 0.5,
+          "source": "analyzer_nng"
+        },
+        {
+          "term": "담당자",
+          "weight": 0.5,
+          "source": "analyzer_nng"
+        },
+        {
+          "term": "책임자",
+          "weight": 0.5,
+          "source": "analyzer_nng"
+        }
+      ],
+      "entities": [],
+      "risk_flags": [],
+      "risk_score": 0,
+      "pii_entity_counts": {},
+      "status": "complete"
+    },
+    "abba2acf57afc1cc41de4a1bb2d7d6a9df6f2768f7b8407ed386d57943ed521a": {
+      "embed_text": "공공기관 정보보호 업무 지침(행정안전부고시 제2026-12호) › Ⅲ. 정보보호 조직\n제5조(정보보호 책임자의 지정)\n① 공공기관의 장은 정보보호 업무를 총괄하는 정보보호 책임자를 지정하여야 한다.\n② 제1항에 따른 정보보호 책임자는 「개인정보 보호법」 제31조에 따른 개인정보 보호책임자를 겸임할 수 있다.",
+      "index_text": "공공기관 정보보호 업무 지침(행정안전부고시 제2026-12호) › III. 정보보호 조직\n제5조(정보보호 책임자의 지정)\n1 공공기관의 장은 정보보호 업무를 총괄하는 정보보호 책임자를 지정하여야 한다.\n2 제1항에 따른 정보보호 책임자는 「개인정보 보호법」 제31조에 따른 개인정보 보호책임자를 겸임할 수 있다.",
+      "strip_offsets": {
+        "text_start_in_embed": 48,
+        "text_start_in_index": 50
+      },
+      "keywords": [
+        {
+          "term": "정보보호",
+          "weight": 1,
+          "source": "analyzer_nng"
+        },
+        {
+          "term": "책임자",
+          "weight": 0.75,
+          "source": "analyzer_nng"
+        },
+        {
+          "term": "개인정보",
+          "weight": 0.5,
+          "source": "analyzer_nng"
+        }
+      ],
+      "entities": [],
+      "risk_flags": [],
+      "risk_score": 0,
+      "pii_entity_counts": {},
+      "status": "complete"
+    }
+  },
+  "stats": {
+    "chunks_enriched": 3,
+    "llm_cache_hits": 0,
+    "entities_total": 2,
+    "chunks_partial": 0
+  }
+}

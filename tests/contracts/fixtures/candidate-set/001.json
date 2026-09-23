@@ -1,0 +1,529 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "CandidateSet",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_ids": [
+    "01J9ZQ5A1B2C3D4E5F6G7H8J9K"
+  ],
+  "producer": {
+    "plugin_id": "retriever.pipeline",
+    "plugin_version": "1.0.0",
+    "config_hash": "d2ce22b58e7485b2ffb7d6a6cd8384a28c5a5b87008b92db61b0d6b59cbaaa78",
+    "image_digest": null
+  },
+  "warnings": [],
+  "degraded": [],
+  "created_at": "2026-09-22T09:00:00.212Z",
+  "candidate_set_id": "01JA0QCS9K1M3N5P7Q9R1S3T5V",
+  "plan_id": "01JA0QPN4N6P8R0S2T4V6W8X0Y",
+  "query_id": "01JA0QRY7M3N5P7R9S1T3V5W7X",
+  "channel_runs": [
+    {
+      "channel_run_id": "dense:01J9ZQ5A1B2C3D4E5F6G7H8J9K:01JA0QRY7M3N5P7R9S1T3V5W7X",
+      "channel": "dense",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "variant_id": "01JA0QRY7M3N5P7R9S1T3V5W7X",
+      "retriever_id": "retriever.qdrant_dense",
+      "backend_id": "index_backend.qdrant",
+      "collection_alias": "col_01J9ZQ5A1B2C3D4E5F6G7H8J9K_vec",
+      "embedding_profile_hash": "de7d4c05c207ffe91c292282ddb163d55a673013a1fdcac313ee2c12c586b47a",
+      "index_generation_seen": [
+        2,
+        3
+      ],
+      "status": "ok",
+      "took_ms": 61,
+      "returned": 5,
+      "total_hits": 5,
+      "truncated": false,
+      "candidates": [
+        {
+          "record_id": "a2695d15bdf0c6e0426f57d36cbe10fdd9604c50e0b20a0273528afa2c6d8eea",
+          "chunk_id": "99b3c59bde72b6a0b0192424ac34ae4622b593a158cb7c25328e8237f3c5385d",
+          "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+          "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+          "doc_version": "a1250dd7b7b14fa1657fa03e5fd9982d71dab3dc71ef15caa1e79a964631cc4f",
+          "item_kind": "text",
+          "level": 0,
+          "parent_chunk_id": "f50fab3fa65259876ac96cd2fb2cd157c1e7f40a6d02fde6e8983a900c40ec73",
+          "score": 0.8312,
+          "rank": 1,
+          "payload_slim": {
+            "heading_path": [
+              "제3장 문서의 접수·처리",
+              "제18조(문서의 접수·처리)"
+            ],
+            "page_start": null,
+            "page_end": null,
+            "doc_date": "2025-03-04",
+            "acl_classification": "internal",
+            "acl_hash": "d059434ec5580f3e2772b5279661b5ffc6cbf636b0671d340c92ebcf3d6c506b",
+            "token_count_primary": 71,
+            "text_preview": "문서는 처리과에서 접수하여야 하며, 접수한 문서에는 접수일시와 접수등록번호를 전자적으로 표시하여야 한다. 처리과는 접수한 문서를 지체 없이 처리담당자에게 배부한다.",
+            "content_hash": "34bab037b637f29b8d6fff274f8df867862848651ce8dab899f3a8391bc89040",
+            "text_source": "text_layer"
+          }
+        },
+        {
+          "record_id": "d36af022d40a7d1c3ae3b315b4290cffefd8cdf3942675cf672117824650f765",
+          "chunk_id": "f3794b59c626e8cd730f3d85096bfe2df73474d11e41016fd66ebf6eb9bd6671",
+          "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+          "document_id": "01J9ZQ7D2F4G6H8J0K2M4N6P8Q",
+          "doc_version": "6abf4fec5e440a6d9623a128c7d108275b99f7d49ef2658021baa3ef231b8261",
+          "item_kind": "text",
+          "level": 0,
+          "parent_chunk_id": "0238b2d9fbbe0bd5196a9fe4f7b892422c6a388d0de5f831500fff5c4ac4bca9",
+          "score": 0.8107,
+          "rank": 2,
+          "payload_slim": {
+            "heading_path": [
+              "제4장 문서의 접수",
+              "4.2 접수 절차"
+            ],
+            "page_start": 45,
+            "page_end": 45,
+            "doc_date": "2025-06-30",
+            "acl_classification": "internal",
+            "acl_hash": "e99ad153286918e090e10394f656df6eb0e275de5431840463a0b807ec00cf8c",
+            "token_count_primary": 68,
+            "text_preview": "접수 담당자는 문서관리시스템에서 문서를 접수하고 접수등록번호를 부여한다. 접수된 문서는 처리과 배부함으로 자동 배부되며, 처리과 담당자는 배부 목록을 확인한다.",
+            "content_hash": "4f377be1881ec66e3f523ab7097ce6f5d839603ef3ed10a1c5f0c09a9454c861",
+            "text_source": "text_layer"
+          }
+        },
+        {
+          "record_id": "bf4b1318da8e6eb0c227e466374a2cd2ff3e051ceba175d96e94e24601559c95",
+          "chunk_id": "8357174596f358ddaf53909b0f4cb464eabaa7254d583faf328637eca689bb0d",
+          "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+          "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+          "doc_version": "a1250dd7b7b14fa1657fa03e5fd9982d71dab3dc71ef15caa1e79a964631cc4f",
+          "item_kind": "text",
+          "level": 0,
+          "parent_chunk_id": "f50fab3fa65259876ac96cd2fb2cd157c1e7f40a6d02fde6e8983a900c40ec73",
+          "score": 0.7964,
+          "rank": 3,
+          "payload_slim": {
+            "heading_path": [
+              "제3장 문서의 접수·처리",
+              "제18조(문서의 접수·처리)"
+            ],
+            "page_start": null,
+            "page_end": null,
+            "doc_date": "2025-03-04",
+            "acl_classification": "internal",
+            "acl_hash": "d059434ec5580f3e2772b5279661b5ffc6cbf636b0671d340c92ebcf3d6c506b",
+            "token_count_primary": 52,
+            "text_preview": "처리담당자는 배부받은 문서를 검토하여 처리기한을 정하고, 공람이 필요한 문서는 관계 직원이 공람할 수 있도록 하여야 한다.",
+            "content_hash": "740ebd29a89b95b570677f145bd144ad5a9f4f921902a6d270eb28127872b45c",
+            "text_source": "text_layer"
+          }
+        },
+        {
+          "record_id": "72b499b28def7e6ecc900076bd16132f622e451bd0a198458b432dcda8d5004c",
+          "chunk_id": "3ece32701125c43955fd020ddf3fa75e5a33eb8791e182df671a4f82362d3a30",
+          "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+          "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+          "doc_version": "a1250dd7b7b14fa1657fa03e5fd9982d71dab3dc71ef15caa1e79a964631cc4f",
+          "item_kind": "text",
+          "level": 0,
+          "parent_chunk_id": "7f8e26747f3408f164d41604c2bdbf13f9177b0c0e805f58b817f34d784fdddf",
+          "score": 0.7421,
+          "rank": 4,
+          "payload_slim": {
+            "heading_path": [
+              "제3장 문서의 접수·처리",
+              "제19조(문서의 반송 및 이송)"
+            ],
+            "page_start": null,
+            "page_end": null,
+            "doc_date": "2025-03-04",
+            "acl_classification": "internal",
+            "acl_hash": "d059434ec5580f3e2772b5279661b5ffc6cbf636b0671d340c92ebcf3d6c506b",
+            "token_count_primary": 74,
+            "text_preview": "행정기관은 접수한 문서에 형식상의 흠이 있으면 그 문서를 발송한 행정기관에 반송할 수 있다. 접수한 문서가 다른 행정기관의 소관 사항인 경우에는 지체 없이 이송하여야 한다.",
+            "content_hash": "c867726348b260802ac8c864f5a2c24ea46f7169aeb5627bae423c8b7c752e39",
+            "text_source": "text_layer"
+          }
+        },
+        {
+          "record_id": "8939f7fc5963865747ee8a544e5971b69eea766d42b90abde71df15a694c92bb",
+          "chunk_id": "d9ec3b981f97bf90300da2e8430130eab040fa1cc173596fe917bee8fb8c529b",
+          "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+          "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+          "doc_version": "a1250dd7b7b14fa1657fa03e5fd9982d71dab3dc71ef15caa1e79a964631cc4f",
+          "item_kind": "text",
+          "level": 0,
+          "parent_chunk_id": "8369686b0d3132a09237c249833e09733c9d83bc8e611ff674a0196146f1b9e8",
+          "score": 0.7188,
+          "rank": 5,
+          "payload_slim": {
+            "heading_path": [
+              "제2장 문서의 작성 및 발송",
+              "제17조(문서의 발송)"
+            ],
+            "page_start": null,
+            "page_end": null,
+            "doc_date": "2025-03-04",
+            "acl_classification": "internal",
+            "acl_hash": "d059434ec5580f3e2772b5279661b5ffc6cbf636b0671d340c92ebcf3d6c506b",
+            "token_count_primary": 46,
+            "text_preview": "문서는 처리과에서 발송하되, 전자문서는 행정정보시스템 또는 업무관리시스템상에서 발송하여야 한다.",
+            "content_hash": "160d5387bcaee47b2c29a27b3ef9e8b4cfc3a18b6c0f1d21d90d433de69d95f7",
+            "text_source": "text_layer"
+          }
+        }
+      ]
+    },
+    {
+      "channel_run_id": "sparse:01J9ZQ5A1B2C3D4E5F6G7H8J9K:01JA0QRY7M3N5P7R9S1T3V5W7X",
+      "channel": "sparse",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "variant_id": "01JA0QRY7M3N5P7R9S1T3V5W7X",
+      "retriever_id": "retriever.qdrant_sparse",
+      "backend_id": "index_backend.qdrant",
+      "collection_alias": "col_01J9ZQ5A1B2C3D4E5F6G7H8J9K_vec",
+      "embedding_profile_hash": "de7d4c05c207ffe91c292282ddb163d55a673013a1fdcac313ee2c12c586b47a",
+      "index_generation_seen": [
+        2,
+        3
+      ],
+      "status": "ok",
+      "took_ms": 58,
+      "returned": 5,
+      "total_hits": 5,
+      "truncated": false,
+      "candidates": [
+        {
+          "record_id": "d36af022d40a7d1c3ae3b315b4290cffefd8cdf3942675cf672117824650f765",
+          "chunk_id": "f3794b59c626e8cd730f3d85096bfe2df73474d11e41016fd66ebf6eb9bd6671",
+          "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+          "document_id": "01J9ZQ7D2F4G6H8J0K2M4N6P8Q",
+          "doc_version": "6abf4fec5e440a6d9623a128c7d108275b99f7d49ef2658021baa3ef231b8261",
+          "item_kind": "text",
+          "level": 0,
+          "parent_chunk_id": "0238b2d9fbbe0bd5196a9fe4f7b892422c6a388d0de5f831500fff5c4ac4bca9",
+          "score": 14.92,
+          "rank": 1,
+          "payload_slim": {
+            "heading_path": [
+              "제4장 문서의 접수",
+              "4.2 접수 절차"
+            ],
+            "page_start": 45,
+            "page_end": 45,
+            "doc_date": "2025-06-30",
+            "acl_classification": "internal",
+            "acl_hash": "e99ad153286918e090e10394f656df6eb0e275de5431840463a0b807ec00cf8c",
+            "token_count_primary": 68,
+            "text_preview": "접수 담당자는 문서관리시스템에서 문서를 접수하고 접수등록번호를 부여한다. 접수된 문서는 처리과 배부함으로 자동 배부되며, 처리과 담당자는 배부 목록을 확인한다.",
+            "content_hash": "4f377be1881ec66e3f523ab7097ce6f5d839603ef3ed10a1c5f0c09a9454c861",
+            "text_source": "text_layer"
+          }
+        },
+        {
+          "record_id": "a2695d15bdf0c6e0426f57d36cbe10fdd9604c50e0b20a0273528afa2c6d8eea",
+          "chunk_id": "99b3c59bde72b6a0b0192424ac34ae4622b593a158cb7c25328e8237f3c5385d",
+          "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+          "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+          "doc_version": "a1250dd7b7b14fa1657fa03e5fd9982d71dab3dc71ef15caa1e79a964631cc4f",
+          "item_kind": "text",
+          "level": 0,
+          "parent_chunk_id": "f50fab3fa65259876ac96cd2fb2cd157c1e7f40a6d02fde6e8983a900c40ec73",
+          "score": 14.37,
+          "rank": 2,
+          "payload_slim": {
+            "heading_path": [
+              "제3장 문서의 접수·처리",
+              "제18조(문서의 접수·처리)"
+            ],
+            "page_start": null,
+            "page_end": null,
+            "doc_date": "2025-03-04",
+            "acl_classification": "internal",
+            "acl_hash": "d059434ec5580f3e2772b5279661b5ffc6cbf636b0671d340c92ebcf3d6c506b",
+            "token_count_primary": 71,
+            "text_preview": "문서는 처리과에서 접수하여야 하며, 접수한 문서에는 접수일시와 접수등록번호를 전자적으로 표시하여야 한다. 처리과는 접수한 문서를 지체 없이 처리담당자에게 배부한다.",
+            "content_hash": "34bab037b637f29b8d6fff274f8df867862848651ce8dab899f3a8391bc89040",
+            "text_source": "text_layer"
+          }
+        },
+        {
+          "record_id": "bf4b1318da8e6eb0c227e466374a2cd2ff3e051ceba175d96e94e24601559c95",
+          "chunk_id": "8357174596f358ddaf53909b0f4cb464eabaa7254d583faf328637eca689bb0d",
+          "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+          "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+          "doc_version": "a1250dd7b7b14fa1657fa03e5fd9982d71dab3dc71ef15caa1e79a964631cc4f",
+          "item_kind": "text",
+          "level": 0,
+          "parent_chunk_id": "f50fab3fa65259876ac96cd2fb2cd157c1e7f40a6d02fde6e8983a900c40ec73",
+          "score": 13.05,
+          "rank": 3,
+          "payload_slim": {
+            "heading_path": [
+              "제3장 문서의 접수·처리",
+              "제18조(문서의 접수·처리)"
+            ],
+            "page_start": null,
+            "page_end": null,
+            "doc_date": "2025-03-04",
+            "acl_classification": "internal",
+            "acl_hash": "d059434ec5580f3e2772b5279661b5ffc6cbf636b0671d340c92ebcf3d6c506b",
+            "token_count_primary": 52,
+            "text_preview": "처리담당자는 배부받은 문서를 검토하여 처리기한을 정하고, 공람이 필요한 문서는 관계 직원이 공람할 수 있도록 하여야 한다.",
+            "content_hash": "740ebd29a89b95b570677f145bd144ad5a9f4f921902a6d270eb28127872b45c",
+            "text_source": "text_layer"
+          }
+        },
+        {
+          "record_id": "34a36f0746144d763292131eb8b501ec3f332dad47ec00bdfb792354073ebc91",
+          "chunk_id": "a518fa9d29b6b226df63308e56556e235df2a5ceb32c74f6bf41590999bea1ef",
+          "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+          "document_id": "01J9ZQ7D2F4G6H8J0K2M4N6P8Q",
+          "doc_version": "6abf4fec5e440a6d9623a128c7d108275b99f7d49ef2658021baa3ef231b8261",
+          "item_kind": "text",
+          "level": 0,
+          "parent_chunk_id": "678b4d0774ed9d7934e416c17eaf07704146d6855dd79b8a1b079d560d22ec22",
+          "score": 11.48,
+          "rank": 4,
+          "payload_slim": {
+            "heading_path": [
+              "제4장 문서의 접수",
+              "4.3 배부 및 공람"
+            ],
+            "page_start": 46,
+            "page_end": 46,
+            "doc_date": "2025-06-30",
+            "acl_classification": "internal",
+            "acl_hash": "e99ad153286918e090e10394f656df6eb0e275de5431840463a0b807ec00cf8c",
+            "token_count_primary": 63,
+            "text_preview": "배부받은 문서는 처리담당자가 지정된 후 공람 대상자를 설정하여 전자적으로 공람한다. 공람이 끝난 문서는 접수 문서 대장에 처리 결과를 기록한다.",
+            "content_hash": "258bf1615e7b43fd30ae3b9ff7c6a262a1178b48934e7dd11bf31fc2907b1235",
+            "text_source": "text_layer"
+          }
+        },
+        {
+          "record_id": "72b499b28def7e6ecc900076bd16132f622e451bd0a198458b432dcda8d5004c",
+          "chunk_id": "3ece32701125c43955fd020ddf3fa75e5a33eb8791e182df671a4f82362d3a30",
+          "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+          "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+          "doc_version": "a1250dd7b7b14fa1657fa03e5fd9982d71dab3dc71ef15caa1e79a964631cc4f",
+          "item_kind": "text",
+          "level": 0,
+          "parent_chunk_id": "7f8e26747f3408f164d41604c2bdbf13f9177b0c0e805f58b817f34d784fdddf",
+          "score": 10.91,
+          "rank": 5,
+          "payload_slim": {
+            "heading_path": [
+              "제3장 문서의 접수·처리",
+              "제19조(문서의 반송 및 이송)"
+            ],
+            "page_start": null,
+            "page_end": null,
+            "doc_date": "2025-03-04",
+            "acl_classification": "internal",
+            "acl_hash": "d059434ec5580f3e2772b5279661b5ffc6cbf636b0671d340c92ebcf3d6c506b",
+            "token_count_primary": 74,
+            "text_preview": "행정기관은 접수한 문서에 형식상의 흠이 있으면 그 문서를 발송한 행정기관에 반송할 수 있다. 접수한 문서가 다른 행정기관의 소관 사항인 경우에는 지체 없이 이송하여야 한다.",
+            "content_hash": "c867726348b260802ac8c864f5a2c24ea46f7169aeb5627bae423c8b7c752e39",
+            "text_source": "text_layer"
+          }
+        }
+      ]
+    },
+    {
+      "channel_run_id": "lexical:01J9ZQ5A1B2C3D4E5F6G7H8J9K:01JA0QRY7M3N5P7R9S1T3V5W7X",
+      "channel": "lexical",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "variant_id": "01JA0QRY7M3N5P7R9S1T3V5W7X",
+      "retriever_id": "retriever.opensearch_bm25",
+      "backend_id": "index_backend.opensearch",
+      "collection_alias": "col_01J9ZQ5A1B2C3D4E5F6G7H8J9K_lex",
+      "embedding_profile_hash": "de7d4c05c207ffe91c292282ddb163d55a673013a1fdcac313ee2c12c586b47a",
+      "index_generation_seen": [
+        2,
+        3
+      ],
+      "status": "ok",
+      "took_ms": 96,
+      "returned": 5,
+      "total_hits": 5,
+      "truncated": false,
+      "candidates": [
+        {
+          "record_id": "bf4b1318da8e6eb0c227e466374a2cd2ff3e051ceba175d96e94e24601559c95",
+          "chunk_id": "8357174596f358ddaf53909b0f4cb464eabaa7254d583faf328637eca689bb0d",
+          "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+          "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+          "doc_version": "a1250dd7b7b14fa1657fa03e5fd9982d71dab3dc71ef15caa1e79a964631cc4f",
+          "item_kind": "text",
+          "level": 0,
+          "parent_chunk_id": "f50fab3fa65259876ac96cd2fb2cd157c1e7f40a6d02fde6e8983a900c40ec73",
+          "score": 21.73,
+          "rank": 1,
+          "payload_slim": {
+            "heading_path": [
+              "제3장 문서의 접수·처리",
+              "제18조(문서의 접수·처리)"
+            ],
+            "page_start": null,
+            "page_end": null,
+            "doc_date": "2025-03-04",
+            "acl_classification": "internal",
+            "acl_hash": "d059434ec5580f3e2772b5279661b5ffc6cbf636b0671d340c92ebcf3d6c506b",
+            "token_count_primary": 52,
+            "text_preview": "처리담당자는 배부받은 문서를 검토하여 처리기한을 정하고, 공람이 필요한 문서는 관계 직원이 공람할 수 있도록 하여야 한다.",
+            "content_hash": "740ebd29a89b95b570677f145bd144ad5a9f4f921902a6d270eb28127872b45c",
+            "text_source": "text_layer"
+          }
+        },
+        {
+          "record_id": "a2695d15bdf0c6e0426f57d36cbe10fdd9604c50e0b20a0273528afa2c6d8eea",
+          "chunk_id": "99b3c59bde72b6a0b0192424ac34ae4622b593a158cb7c25328e8237f3c5385d",
+          "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+          "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+          "doc_version": "a1250dd7b7b14fa1657fa03e5fd9982d71dab3dc71ef15caa1e79a964631cc4f",
+          "item_kind": "text",
+          "level": 0,
+          "parent_chunk_id": "f50fab3fa65259876ac96cd2fb2cd157c1e7f40a6d02fde6e8983a900c40ec73",
+          "score": 20.15,
+          "rank": 2,
+          "payload_slim": {
+            "heading_path": [
+              "제3장 문서의 접수·처리",
+              "제18조(문서의 접수·처리)"
+            ],
+            "page_start": null,
+            "page_end": null,
+            "doc_date": "2025-03-04",
+            "acl_classification": "internal",
+            "acl_hash": "d059434ec5580f3e2772b5279661b5ffc6cbf636b0671d340c92ebcf3d6c506b",
+            "token_count_primary": 71,
+            "text_preview": "문서는 처리과에서 접수하여야 하며, 접수한 문서에는 접수일시와 접수등록번호를 전자적으로 표시하여야 한다. 처리과는 접수한 문서를 지체 없이 처리담당자에게 배부한다.",
+            "content_hash": "34bab037b637f29b8d6fff274f8df867862848651ce8dab899f3a8391bc89040",
+            "text_source": "text_layer"
+          }
+        },
+        {
+          "record_id": "34a36f0746144d763292131eb8b501ec3f332dad47ec00bdfb792354073ebc91",
+          "chunk_id": "a518fa9d29b6b226df63308e56556e235df2a5ceb32c74f6bf41590999bea1ef",
+          "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+          "document_id": "01J9ZQ7D2F4G6H8J0K2M4N6P8Q",
+          "doc_version": "6abf4fec5e440a6d9623a128c7d108275b99f7d49ef2658021baa3ef231b8261",
+          "item_kind": "text",
+          "level": 0,
+          "parent_chunk_id": "678b4d0774ed9d7934e416c17eaf07704146d6855dd79b8a1b079d560d22ec22",
+          "score": 18.62,
+          "rank": 3,
+          "payload_slim": {
+            "heading_path": [
+              "제4장 문서의 접수",
+              "4.3 배부 및 공람"
+            ],
+            "page_start": 46,
+            "page_end": 46,
+            "doc_date": "2025-06-30",
+            "acl_classification": "internal",
+            "acl_hash": "e99ad153286918e090e10394f656df6eb0e275de5431840463a0b807ec00cf8c",
+            "token_count_primary": 63,
+            "text_preview": "배부받은 문서는 처리담당자가 지정된 후 공람 대상자를 설정하여 전자적으로 공람한다. 공람이 끝난 문서는 접수 문서 대장에 처리 결과를 기록한다.",
+            "content_hash": "258bf1615e7b43fd30ae3b9ff7c6a262a1178b48934e7dd11bf31fc2907b1235",
+            "text_source": "text_layer"
+          }
+        },
+        {
+          "record_id": "8939f7fc5963865747ee8a544e5971b69eea766d42b90abde71df15a694c92bb",
+          "chunk_id": "d9ec3b981f97bf90300da2e8430130eab040fa1cc173596fe917bee8fb8c529b",
+          "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+          "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+          "doc_version": "a1250dd7b7b14fa1657fa03e5fd9982d71dab3dc71ef15caa1e79a964631cc4f",
+          "item_kind": "text",
+          "level": 0,
+          "parent_chunk_id": "8369686b0d3132a09237c249833e09733c9d83bc8e611ff674a0196146f1b9e8",
+          "score": 17.04,
+          "rank": 4,
+          "payload_slim": {
+            "heading_path": [
+              "제2장 문서의 작성 및 발송",
+              "제17조(문서의 발송)"
+            ],
+            "page_start": null,
+            "page_end": null,
+            "doc_date": "2025-03-04",
+            "acl_classification": "internal",
+            "acl_hash": "d059434ec5580f3e2772b5279661b5ffc6cbf636b0671d340c92ebcf3d6c506b",
+            "token_count_primary": 46,
+            "text_preview": "문서는 처리과에서 발송하되, 전자문서는 행정정보시스템 또는 업무관리시스템상에서 발송하여야 한다.",
+            "content_hash": "160d5387bcaee47b2c29a27b3ef9e8b4cfc3a18b6c0f1d21d90d433de69d95f7",
+            "text_source": "text_layer"
+          }
+        },
+        {
+          "record_id": "d36af022d40a7d1c3ae3b315b4290cffefd8cdf3942675cf672117824650f765",
+          "chunk_id": "f3794b59c626e8cd730f3d85096bfe2df73474d11e41016fd66ebf6eb9bd6671",
+          "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+          "document_id": "01J9ZQ7D2F4G6H8J0K2M4N6P8Q",
+          "doc_version": "6abf4fec5e440a6d9623a128c7d108275b99f7d49ef2658021baa3ef231b8261",
+          "item_kind": "text",
+          "level": 0,
+          "parent_chunk_id": "0238b2d9fbbe0bd5196a9fe4f7b892422c6a388d0de5f831500fff5c4ac4bca9",
+          "score": 16.88,
+          "rank": 5,
+          "payload_slim": {
+            "heading_path": [
+              "제4장 문서의 접수",
+              "4.2 접수 절차"
+            ],
+            "page_start": 45,
+            "page_end": 45,
+            "doc_date": "2025-06-30",
+            "acl_classification": "internal",
+            "acl_hash": "e99ad153286918e090e10394f656df6eb0e275de5431840463a0b807ec00cf8c",
+            "token_count_primary": 68,
+            "text_preview": "접수 담당자는 문서관리시스템에서 문서를 접수하고 접수등록번호를 부여한다. 접수된 문서는 처리과 배부함으로 자동 배부되며, 처리과 담당자는 배부 목록을 확인한다.",
+            "content_hash": "4f377be1881ec66e3f523ab7097ce6f5d839603ef3ed10a1c5f0c09a9454c861",
+            "text_source": "text_layer"
+          }
+        }
+      ]
+    }
+  ],
+  "filters_applied": {
+    "security": {
+      "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+      "collection_ids": [
+        "01J9ZQ5A1B2C3D4E5F6G7H8J9K"
+      ],
+      "principals": [
+        "user:kim.minsu@example.go.kr",
+        "group:mois_records",
+        "tenant:*"
+      ],
+      "visible_set": [
+        "public",
+        "tenant"
+      ],
+      "as_of": "2026-09-22T09:00:00.000Z",
+      "is_current": true,
+      "classification_max": "internal"
+    },
+    "strategy": {
+      "level_in": [
+        0
+      ],
+      "item_kinds": [
+        "text",
+        "list_group",
+        "code",
+        "table",
+        "table_part",
+        "figure"
+      ]
+    },
+    "user": null,
+    "self_query": null,
+    "effective_hash": "502f7c01076d09835c24189294516cb59e3865e5b938934a8a5c0eae27bb1079"
+  },
+  "security_context_hash": "363551659bec81e933be223986f0d3dfebfd8410f90f01e991ac0714372072ae",
+  "total_unique": 6,
+  "total_latency_ms": 96
+}

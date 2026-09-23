@@ -1,0 +1,26 @@
+{
+  "specversion": "1.0",
+  "id": "01JAB3EA0B1C2D3E4F5G6H7J8N",
+  "source": "urn:rag:worker",
+  "type": "job.state.changed",
+  "time": "2026-09-22T09:14:03.611Z",
+  "subject": "tenant/01J9ZQ4K7X2M8N3P5R6S7T8V9W/job/01JAB3C0D1E2F3G4H5J6K7M8N9",
+  "datacontenttype": "application/json",
+  "tenantid": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "data": {
+    "job_id": "01JAB3C0D1E2F3G4H5J6K7M8N9",
+    "kind": "ingest_document",
+    "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+    "from_state": "running",
+    "to_state": "succeeded",
+    "stage": "publish",
+    "attempts": 1,
+    "progress": {
+      "done": 8,
+      "total": 8,
+      "unit": "stage"
+    },
+    "document_id": "01JAB3C4D5E6F7G8H9JKMNPQRS",
+    "index_commit_id": "01JAB3E9F0G1H2J3K4M5N6P7Q8"
+  }
+}

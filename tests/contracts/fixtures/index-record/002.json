@@ -1,0 +1,112 @@
+{
+  "schema_version": "1.0.0",
+  "record_id": "24f999b0094f7552f102528b4a0372f4022f74ffe4a672d4f6dd4a29f1dc830d",
+  "point_id": "db1a3a90-3ecd-5149-ac82-e55092ceb0bf",
+  "chunk_id": "abba2acf57afc1cc41de4a1bb2d7d6a9df6f2768f7b8407ed386d57943ed521a",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+  "document_id": "01JAB3C4D5E6F7G8H9JKMNPQRS",
+  "doc_version": "cf266a7a804b27e9ed1133df8e05ef4eec7ea1a28f1ca63f61a1cf838c7f0118",
+  "commit_id": "01JAB3D0E1F2G3H4J5K6M7N8P9",
+  "index_generation": 1,
+  "is_current": true,
+  "item_kind": "parent",
+  "level": 1,
+  "parent_chunk_id": null,
+  "ordinal": 2,
+  "vectors": {},
+  "index_text": "공공기관 정보보호 업무 지침(행정안전부고시 제2026-12호) › III. 정보보호 조직\n1 공공기관의 장은 정보보호 업무를 총괄하는 정보보호 책임자를 지정하여야 한다.\n2 제1항에 따른 정보보호 책임자는 「개인정보 보호법」 제31조에 따른 개인정보 보호책임자를 겸임할 수 있다.",
+  "lexical_terms": [
+    "개인정보",
+    "정보보호",
+    "책임자"
+  ],
+  "text": "① 공공기관의 장은 정보보호 업무를 총괄하는 정보보호 책임자를 지정하여야 한다.\n② 제1항에 따른 정보보호 책임자는 「개인정보 보호법」 제31조에 따른 개인정보 보호책임자를 겸임할 수 있다.",
+  "text_preview": "① 공공기관의 장은 정보보호 업무를 총괄하는 정보보호 책임자를 지정하여야 한다.\n② 제1항에 따른 정보보호 책임자는 「개인정보 보호법」 제31조에 따른 개인정보 보호책임자를 겸임할 수 있다.",
+  "text_truncated": false,
+  "context_prefix": "공공기관 정보보호 업무 지침(행정안전부고시 제2026-12호) › Ⅲ. 정보보호 조직",
+  "block_refs": [
+    {
+      "block_id": "016587088098eea227b3dfa43199b8ff",
+      "element_path": "/hp:sec[0]/hp:p[57]",
+      "char_start": 0,
+      "char_end": 44,
+      "original_char_start": 0,
+      "original_char_end": 44,
+      "page": null,
+      "bbox": null,
+      "section_index": 0
+    },
+    {
+      "block_id": "cbfdcb052f6eede843b3e64a1d080583",
+      "element_path": "/hp:sec[0]/hp:p[58]",
+      "char_start": 45,
+      "char_end": 106,
+      "original_char_start": 0,
+      "original_char_end": 61,
+      "page": null,
+      "bbox": null,
+      "section_index": 0
+    }
+  ],
+  "sentence_spans": [
+    [
+      0,
+      44
+    ],
+    [
+      45,
+      106
+    ]
+  ],
+  "heading_path": [
+    "Ⅲ. 정보보호 조직"
+  ],
+  "numbering_path": [
+    "Ⅲ"
+  ],
+  "title": "공공기관 정보보호 업무 지침(행정안전부고시 제2026-12호)",
+  "source_uri": "s3://mois-records/notices/2026/mois-notice-2026-12.hwpx",
+  "external_id": "MOIS-NOTICE-2026-12",
+  "doc_date": "2026-03-02",
+  "doc_type": "notice",
+  "department": "정보보호정책과",
+  "tags": [
+    "정보보호",
+    "고시",
+    "공공기관"
+  ],
+  "lang": "ko",
+  "genre": "law_article",
+  "custom": {
+    "notice_no": "2026-12",
+    "in_force": true
+  },
+  "page_start": null,
+  "page_end": null,
+  "text_source": "text_layer",
+  "ocr_confidence_min": null,
+  "acl_allow": [
+    "group:mois_records",
+    "group:mois_infosec"
+  ],
+  "acl_deny": [],
+  "acl_visibility": "tenant",
+  "acl_classification": "internal",
+  "acl_embargo_until": null,
+  "acl_expires_at": null,
+  "acl_hash": "e026bc4a2e0d31ee2d6a19a43420a77bd5abb7fbb69bba7c5fbeae7085fa5ac3",
+  "content_hash": "c66d18a8f7b1533e2a306d0f2185322d164f7824a13b61d28a8aa6bdd3a3462b",
+  "token_count_primary": 61,
+  "risk_score": 0,
+  "pii_policy_applied": "mask",
+  "embedding_space_ids": {
+    "dense": "cd72859ad1bd275b6f0b592d7e0a4619f8757fddb1586b1a6b714fd0458cf8a3",
+    "sparse_learned": "9b453733ce94d33fabdcdb3e8a762e9b01586ce89dcb959e24227c9571872706"
+  },
+  "embedding_profile_hash": "b9ff31b9802e4e0d7c9b40e929f07c0be24668eaff92ab3e14b7e24a9943dccf",
+  "analyzer_id": "mecab-ko:1.3.7:ko-dic-2.1.1",
+  "dictionary_hash": "e3d5c46ddafc1106adda1b62fe0678c8e019289452382e8341b692f1eb52d2d0",
+  "chunk_set_blake3": "0c85e534d010f11da5e2f5ee712658297df1a73e4e25d73bb5f36e6262b63f9d",
+  "updated_at": "2026-09-22T09:13:40.000Z"
+}

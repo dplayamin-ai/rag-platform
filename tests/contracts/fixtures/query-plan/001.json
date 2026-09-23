@@ -1,0 +1,381 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "QueryPlan",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_ids": [
+    "01J9ZQ5A1B2C3D4E5F6G7H8J9K"
+  ],
+  "producer": {
+    "plugin_id": "query_transformer.pipeline",
+    "plugin_version": "1.0.0",
+    "config_hash": "d4c3b2a1f0e9d8c7b6a594837261504938271605f4e3d2c1b0a9988776655443",
+    "image_digest": null,
+    "model_ids": []
+  },
+  "warnings": [],
+  "degraded": [
+    {
+      "component": "rerank",
+      "reason": "latency_budget",
+      "detail": "budget.max_latency_ms=500 < profile total 800: rerank.top_n_in 100 -> 50"
+    },
+    {
+      "component": "hydrate",
+      "reason": "latency_budget",
+      "detail": "hydrate.top_n 100 -> 50 (follows rerank.top_n_in)"
+    }
+  ],
+  "created_at": "2026-09-22T09:05:12.190Z",
+  "plan_id": "01JA0PN000002R5S6T7V8W9X0Y",
+  "query_id": "01JA0QRY0002H9J0K1M2N3P4Q5",
+  "security_context": {
+    "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+    "principals": [
+      "group:mois_all",
+      "group:mois_records",
+      "tenant:*",
+      "user:kim.minsu@example.go.kr"
+    ],
+    "collection_ids": [
+      "01J9ZQ5A1B2C3D4E5F6G7H8J9K"
+    ],
+    "as_of": "2026-09-22T09:05:12.184Z",
+    "classification_max": "confidential",
+    "policy_version": "2026-09-15.3",
+    "auth_method": "oidc",
+    "visible_set": [
+      "public",
+      "tenant"
+    ]
+  },
+  "profile_id": "standard",
+  "profile_hash": "3f9c2a7e1b4d6f8a0c2e4b6d8f1a3c5e7b9d1f3a5c7e9b0d2f4a6c8e1b3d5f7a",
+  "original_query": "2025년에 개정된 정보공개 처리 규정에서 비공개 결정 통지 기한과 이의신청 절차",
+  "normalized_query": "2025년에 개정된 정보공개 처리 규정에서 비공개 결정 통지 기한과 이의신청 절차",
+  "dense_query_text": "2025년에 개정된 정보공개 처리 규정에서 비공개 결정 통지 기한과 이의신청 절차",
+  "analyzer_id": "mecab-ko:1.3.7:ko-dic-2.1.1",
+  "dictionary_hash": "8d1c7e4a2f6b9c3e5a7d1f9b3c6e8a2d4f7b9e1c3a5d7f9b2e6c8a1d3f5b7e9c",
+  "route": "single",
+  "complexity": "single_step",
+  "strategy": "hybrid",
+  "rewritten_queries": [
+    {
+      "variant_id": "01JA0QRY0002H9J0K1M2N3P4Q5",
+      "text": "2025년에 개정된 정보공개 처리 규정에서 비공개 결정 통지 기한과 이의신청 절차",
+      "role": "original",
+      "weight": 1.0,
+      "channels": [
+        "dense",
+        "sparse",
+        "lexical"
+      ]
+    },
+    {
+      "variant_id": "01JA0VAR00002ABC1DEF2GHJ3K",
+      "text": "정보공개 청구 처리 기한 10일 연장 비공개 결정 통지 이의신청 절차 2025년 개정 규정",
+      "role": "rewrite",
+      "weight": 0.5,
+      "channels": [
+        "dense",
+        "sparse",
+        "lexical"
+      ]
+    }
+  ],
+  "lexical_terms": [
+    {
+      "term": "2025",
+      "weight": 1.0,
+      "tag": "SN"
+    },
+    {
+      "term": "개정",
+      "weight": 1.0,
+      "tag": "NNG"
+    },
+    {
+      "term": "정보공개",
+      "weight": 1.5,
+      "tag": "USER_DICT"
+    },
+    {
+      "term": "처리",
+      "weight": 1.0,
+      "tag": "NNG"
+    },
+    {
+      "term": "규정",
+      "weight": 1.0,
+      "tag": "NNG"
+    },
+    {
+      "term": "비공개",
+      "weight": 1.0,
+      "tag": "NNG"
+    },
+    {
+      "term": "결정",
+      "weight": 1.0,
+      "tag": "NNG"
+    },
+    {
+      "term": "통지",
+      "weight": 1.0,
+      "tag": "NNG"
+    },
+    {
+      "term": "기한",
+      "weight": 1.0,
+      "tag": "NNG"
+    },
+    {
+      "term": "이의신청",
+      "weight": 1.5,
+      "tag": "USER_DICT"
+    },
+    {
+      "term": "절차",
+      "weight": 1.0,
+      "tag": "NNG"
+    }
+  ],
+  "filters": {
+    "security": {
+      "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+      "collection_ids": [
+        "01J9ZQ5A1B2C3D4E5F6G7H8J9K"
+      ],
+      "principals": [
+        "group:mois_all",
+        "group:mois_records",
+        "tenant:*",
+        "user:kim.minsu@example.go.kr"
+      ],
+      "visible_set": [
+        "public",
+        "tenant"
+      ],
+      "as_of": "2026-09-22T09:05:12.184Z",
+      "is_current": true,
+      "classification_max": "confidential"
+    },
+    "strategy": {
+      "level_in": [
+        0
+      ],
+      "item_kinds": [
+        "text",
+        "list_group",
+        "code",
+        "table",
+        "table_part",
+        "figure"
+      ]
+    },
+    "user": {
+      "and": [
+        {
+          "field": "doc_type",
+          "op": "eq",
+          "value": "regulation"
+        },
+        {
+          "field": "department",
+          "op": "in",
+          "value": [
+            "행정안전부",
+            "행정안전부 정보공개정책과"
+          ]
+        },
+        {
+          "not": {
+            "field": "tags",
+            "op": "contains_any",
+            "value": [
+              "초안",
+              "폐지"
+            ]
+          }
+        }
+      ]
+    },
+    "self_query": {
+      "and": [
+        {
+          "field": "doc_date",
+          "op": "gte",
+          "value": "2025-01-01"
+        },
+        {
+          "field": "doc_date",
+          "op": "lte",
+          "value": "2025-12-31"
+        }
+      ]
+    },
+    "relaxable_keys": [
+      "doc_date",
+      "tags"
+    ],
+    "effective_hash": "c0ffee0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+  },
+  "channels": [
+    {
+      "channel": "dense",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "retriever_id": "retriever.qdrant_dense",
+      "backend_id": "index_backend.qdrant",
+      "collection_alias": "col_01J9ZQ5A1B2C3D4E5F6G7H8J9K_vec",
+      "embedding_profile_hash": "a1b2c3d4e5f60718293a4b5c6d7e8f900f1e2d3c4b5a69788796a5b4c3d2e1f0",
+      "index_generation_min": 1,
+      "top_k": 100,
+      "timeout_ms": 250,
+      "weight": 1.0,
+      "embedding_space_id": "5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4e",
+      "enabled": true
+    },
+    {
+      "channel": "sparse",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "retriever_id": "retriever.qdrant_sparse",
+      "backend_id": "index_backend.qdrant",
+      "collection_alias": "col_01J9ZQ5A1B2C3D4E5F6G7H8J9K_vec",
+      "embedding_profile_hash": "a1b2c3d4e5f60718293a4b5c6d7e8f900f1e2d3c4b5a69788796a5b4c3d2e1f0",
+      "index_generation_min": 1,
+      "top_k": 100,
+      "timeout_ms": 250,
+      "weight": 1.0,
+      "embedding_space_id": "b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4d",
+      "enabled": true
+    },
+    {
+      "channel": "lexical",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "retriever_id": "retriever.opensearch_bm25",
+      "backend_id": "index_backend.opensearch",
+      "collection_alias": "col_01J9ZQ5A1B2C3D4E5F6G7H8J9K_lex",
+      "embedding_profile_hash": "a1b2c3d4e5f60718293a4b5c6d7e8f900f1e2d3c4b5a69788796a5b4c3d2e1f0",
+      "index_generation_min": 1,
+      "top_k": 100,
+      "timeout_ms": 250,
+      "weight": 1.0,
+      "enabled": true
+    }
+  ],
+  "fusion": {
+    "method": "rrf",
+    "k": 60,
+    "weights": {
+      "dense": 1.0,
+      "sparse": 1.0,
+      "lexical": 1.0
+    },
+    "variant_query_weight": 0.5
+  },
+  "hydrate": {
+    "top_n": 50,
+    "backend_id": "index_backend.qdrant",
+    "with_vectors": false
+  },
+  "rerank": {
+    "enabled": true,
+    "plugin_id": "reranker.tei_cross_encoder",
+    "model_id": "BAAI/bge-reranker-v2-m3@c1f8d7e2",
+    "backend": "tei",
+    "response_schema": "tei",
+    "top_n_in": 50,
+    "top_n_out": 20,
+    "max_tokens_per_text": 512,
+    "timeout_ms": 300,
+    "normalization": "sigmoid"
+  },
+  "postprocess": {
+    "order": [
+      "relevance_gate",
+      "dedup",
+      "mmr",
+      "parent_expand",
+      "dedup"
+    ],
+    "relevance_gate": {
+      "tau": 0.3
+    },
+    "dedup": {
+      "cosine_threshold": 0.95,
+      "minhash": {
+        "num_perm": 128,
+        "seed": 42,
+        "scheme": "affine32",
+        "threshold": 0.8
+      }
+    },
+    "mmr": {
+      "lambda": 0.7
+    },
+    "parent_expand": {
+      "enabled": true,
+      "ratio_threshold": 0.5,
+      "max_parent_tokens": 2048,
+      "text_store": "artifact_store"
+    },
+    "sentence_window": {
+      "enabled": false,
+      "n": 2
+    },
+    "compress": {
+      "enabled": false,
+      "method": null
+    }
+  },
+  "pack": {
+    "k_max": 20,
+    "max_context_tokens": 16000,
+    "reserved_answer_tokens": 4000,
+    "tokenizer": {
+      "provider": "anthropic",
+      "model": "<target-model-id>",
+      "name": "anthropic:<target-model-id>"
+    },
+    "count_method": "exact_api",
+    "renderer": "anthropic_search_result",
+    "ordering": "litm_alternating",
+    "table_format_preference": [
+      "html",
+      "markdown",
+      "json"
+    ],
+    "overflow_policy": [
+      "downgrade_tables",
+      "truncate"
+    ],
+    "expose_confidence": false,
+    "confidence_tiers": {
+      "high": 0.7,
+      "medium": 0.4
+    }
+  },
+  "latency_budget_ms": {
+    "total": 500,
+    "plan": 60,
+    "retrieve": 120,
+    "rerank": 125,
+    "postprocess": 60,
+    "pack": 40
+  },
+  "budget": {
+    "max_tool_calls": 3,
+    "llm_calls_allowed": false
+  },
+  "cache_keys": {
+    "query_embedding": "qemb:5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4e:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "plan": "plan:01J9ZQ4K7X2M8N3P5R6S7T8V9W:3f9c2a7e1b4d6f8a0c2e4b6d8f1a3c5e7b9d1f3a5c7e9b0d2f4a6c8e1b3d5f7a:9b74c9897bac770ffd1b8a0e6a7b1e4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a87",
+    "self_query": null
+  },
+  "explain": true,
+  "planner_fingerprint": "7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b",
+  "session_id": "01JA0SESS0001ABCDEFGHJKMNP",
+  "exclude_ids": [
+    "1f2e3d4c5b6a798877665544332211ffeeddccbbaa99887766554433221100ab",
+    "ab12cd34ef56ab7890cd12ef34ab56cd78ef90ab12cd34ef56ab78cd90ef12ab"
+  ]
+}

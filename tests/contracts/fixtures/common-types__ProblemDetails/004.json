@@ -1,0 +1,11 @@
+{
+  "type": "urn:rag:error:auth.forbidden",
+  "title": "권한 없음",
+  "status": 403,
+  "detail": "principal is not authorized for action document:update_acl (policy_version 2026-09-01.3)",
+  "instance": "/v1/documents/01J9ZQ7D3E4F5G6H7J8K9M0N1P/acl",
+  "code": "auth.forbidden",
+  "retryable": false,
+  "trace_id": "0af7651916cd43dd8448eb211c80319c",
+  "request_id": "01J9ZQ9J0B1C2D3E4F5G6H7J8K"
+}

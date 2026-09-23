@@ -1,0 +1,11 @@
+{
+  "type": "urn:rag:error:api.idempotency_payload_mismatch",
+  "title": "Idempotency payload mismatch",
+  "status": 422,
+  "detail": "Idempotency-Key was first used with a different request fingerprint for POST /v1/ingest; send the same body or use a new key",
+  "instance": "/v1/ingest",
+  "code": "api.idempotency_payload_mismatch",
+  "retryable": false,
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "request_id": "01J9ZQ9D1E2F3G4H5J6K7M8N9P"
+}

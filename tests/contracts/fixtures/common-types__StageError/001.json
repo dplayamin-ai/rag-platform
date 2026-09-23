@@ -1,0 +1,14 @@
+{
+  "code": "parse.document_encrypted",
+  "type": "urn:rag:error:parse.document_encrypted",
+  "retryable": false,
+  "stage": "parse",
+  "plugin_id": "parser.hwp5_java_sidecar",
+  "detail": "HWP 5.0 FileHeader encrypted flag set and credentials_ref is absent",
+  "artifact_ref": {
+    "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/sources/3e/3e5f7092b4d6e8f0a1c2e3b4d5f6071829a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8",
+    "blake3": "3e5f7092b4d6e8f0a1c2e3b4d5f6071829a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8",
+    "media_type": "application/x-hwp",
+    "size_bytes": 4718592
+  }
+}

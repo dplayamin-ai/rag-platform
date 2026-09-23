@@ -1,0 +1,19 @@
+{
+  "source": {
+    "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/source-document/a3/a3f1c2e4d5b6978012345678abcdef90fedcba98765432100f1e2d3c4b5a6978.json",
+    "blake3": "a3f1c2e4d5b6978012345678abcdef90fedcba98765432100f1e2d3c4b5a6978",
+    "media_type": "application/vnd.rag.source-document+json",
+    "schema_type": "SourceDocument",
+    "schema_version": "1.0.0",
+    "size_bytes": 4096
+  },
+  "parsed": {
+    "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/parsed-document/9a/9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b.json",
+    "blake3": "7c1e9f3a5b2d8046a1c3e5f7092b4d6e8f0a1c2e3b4d5f60718293a4b5c6d7e8",
+    "media_type": "application/vnd.rag.parsed-document+json",
+    "schema_type": "ParsedDocument",
+    "schema_version": "1.0.0",
+    "size_bytes": 1843200,
+    "stage_key": "9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
+  }
+}

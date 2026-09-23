@@ -1,0 +1,12 @@
+{
+  "isolation_modes": [
+    "in_process"
+  ],
+  "supports_resumable": true,
+  "contracts_compat": ">=1.0,<2.0",
+  "model_ids": [
+    "BAAI/bge-m3@5617a9f61b028d2c8b26b8d0ad4b4ae4b4e4c1f6"
+  ],
+  "requires_gpu": true,
+  "extra": null
+}

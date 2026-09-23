@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "IndexCommit",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+  "producer": {
+    "plugin_id": "index_backend.pipeline",
+    "plugin_version": "1.0.0",
+    "config_hash": "569b180dc80a300402e4030e42049e7fd387825ca29302fb5079436406872e10",
+    "image_digest": null,
+    "model_ids": []
+  },
+  "quality": "full",
+  "warnings": [],
+  "created_at": "2026-09-23T01:05:00.000Z",
+  "lineage_refs": {},
+  "commit_id": "01JAD1K2M3N4P5Q6R7S8T9V0W1",
+  "document_id": "01JAB3C4D5E6F7G8H9JKMNPQRS",
+  "doc_version": "cf266a7a804b27e9ed1133df8e05ef4eec7ea1a28f1ca63f61a1cf838c7f0118",
+  "job_id": "01JAD1J0K1M2N3P4Q5R6S7T8V9",
+  "kind": "delete",
+  "previous_commit_id": "01JAB3E9F0G1H2J3K4M5N6P7Q8",
+  "supersedes_commit_ids": [
+    "01JAB3E9F0G1H2J3K4M5N6P7Q8"
+  ],
+  "status": "committed",
+  "index_generation": 4,
+  "profile_id": "standard",
+  "profile_hash": "48c116a18a2b3aacad3221f5439a839df1cacb0000c85c03c8a499208c2c70b2",
+  "parser_fingerprint_hash": "9b4b46a4d2f2d3b11ce488e6fef406b5138687edae55ccca574f518623ec7bab",
+  "normalizer_fingerprint": "645b83bf6c26fc74c6ae0b83438fbd1b85832c8fb705ab014d268db4f9081d03",
+  "chunker_config_hash": "2fe596c7bc0b53338f84008612e6ecb7a97b19362183108b3b752bddf7f3dd11",
+  "enricher_fingerprint": "4b06e250f79429847c96c7c69ab7761bc06efa22b48f704271faad00bb52c479",
+  "embedder_fingerprint": "755a703235d6245ec6f57898ef386582e648a5a6ea94744d96ece44ca4cf3da9",
+  "embedding_space_ids": {
+    "dense": "cd72859ad1bd275b6f0b592d7e0a4619f8757fddb1586b1a6b714fd0458cf8a3",
+    "sparse_learned": "9b453733ce94d33fabdcdb3e8a762e9b01586ce89dcb959e24227c9571872706"
+  },
+  "embedding_profile_hash": "b9ff31b9802e4e0d7c9b40e929f07c0be24668eaff92ab3e14b7e24a9943dccf",
+  "analyzer_id": "mecab-ko:1.3.7:ko-dic-2.1.1",
+  "dictionary_hash": "e3d5c46ddafc1106adda1b62fe0678c8e019289452382e8341b692f1eb52d2d0",
+  "record_count": 0,
+  "commit_hash": "19b5d1a1fa8c80b1f9fee43f1997305688d496b4c81c8c5c141f2fc63f7fdbe1",
+  "backend_results": [
+    {
+      "backend_id": "index_backend.qdrant",
+      "backend_version": "1.19.0",
+      "physical_name": "rag_vec_b9ff31b9802e",
+      "alias": "col_01J9ZQ5A1B2C3D4E5F6G7H8J9K_vec",
+      "upserted": 0,
+      "deleted": 2,
+      "duration_ms": 96,
+      "status": "ok"
+    },
+    {
+      "backend_id": "index_backend.opensearch",
+      "backend_version": "3.8.0",
+      "physical_name": "rag_lex_e6df9c850d31",
+      "alias": "col_01J9ZQ5A1B2C3D4E5F6G7H8J9K_lex",
+      "upserted": 0,
+      "deleted": 2,
+      "duration_ms": 121,
+      "status": "ok"
+    }
+  ],
+  "artifact_refs": {},
+  "stats": {
+    "bytes_dense": 0,
+    "bytes_sparse": 0,
+    "bytes_lexical": 0,
+    "bytes_late_interaction": 0,
+    "leaf_count": 0,
+    "parent_count": 0,
+    "llm_tokens": 0,
+    "wall_seconds": 0.31
+  },
+  "events_emitted": [
+    "01JAD1K5X6Y7Z8A9B0C1D2E3F4"
+  ],
+  "started_at": "2026-09-23T01:05:00.000Z",
+  "committed_at": "2026-09-23T01:05:00.310Z",
+  "updated_at": "2026-09-23T01:05:00.310Z"
+}

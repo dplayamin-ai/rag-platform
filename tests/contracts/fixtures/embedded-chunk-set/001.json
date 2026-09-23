@@ -1,0 +1,191 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "EmbeddedChunkSet",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+  "producer": {
+    "plugin_id": "embedder.vllm_pooling_bge_m3",
+    "plugin_version": "1.0.0",
+    "config_hash": "326eb6381f6a948652bb3418a39977bea40403ac96af6fe6995367db2ff31b18",
+    "image_digest": "sha256:03e8d1917fe8c5b7323db73d443c16ab88d6005ee62dc5c595d4c62d3240c3b6",
+    "model_ids": [
+      "BAAI/bge-m3@5617a9f61b028d2c8b26b8d0ad4b4ae4b4e4c1f6"
+    ]
+  },
+  "quality": "full",
+  "warnings": [],
+  "created_at": "2026-09-22T09:13:05.000Z",
+  "lineage_refs": {
+    "source": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/source-document/5e/5e0b7c1d9a2f4e6b8c3d1f0a7e9b5c2d4f6a8b0c1e3d5f7a9b2c4d6e8f0a1b3c.json",
+      "blake3": "1f3e5d7c9b2a4c6e8f0a1b3d5c7e9f2a4b6c8d0e1f3a5b7c9d2e4f6a8b0c1d3e",
+      "media_type": "application/vnd.rag.source-document+json",
+      "schema_type": "SourceDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 3264,
+      "stage_key": "5e0b7c1d9a2f4e6b8c3d1f0a7e9b5c2d4f6a8b0c1e3d5f7a9b2c4d6e8f0a1b3c"
+    },
+    "parsed": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/parsed-document/29/29c704ed012770f91619e1efee115a28679ab1a8204f6a1f6f7dcc61c51a341c.json",
+      "blake3": "6cb8cafdd02298a8b049ad58f954d89ec6805c5a2a89288a1a461fc050aa013d",
+      "media_type": "application/vnd.rag.parsed-document+json",
+      "schema_type": "ParsedDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 1843200,
+      "stage_key": "29c704ed012770f91619e1efee115a28679ab1a8204f6a1f6f7dcc61c51a341c"
+    },
+    "normalized": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/normalized-document/cd/cd07a1b2aeb847ac2ac36e6f62c368c337cd1bdd5770ed7cc044a568b6178bfa.json",
+      "blake3": "47bffc4a51c8952f36c971cd028c6f3e521b58fe82416b481479ad16cc0033db",
+      "media_type": "application/vnd.rag.normalized-document+json",
+      "schema_type": "NormalizedDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 1912004,
+      "stage_key": "cd07a1b2aeb847ac2ac36e6f62c368c337cd1bdd5770ed7cc044a568b6178bfa"
+    },
+    "chunk_set": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/chunk-set/4c/4c4085d68adef58175a54fa7af053cff30fb67d3ffeb81e5a8898e1da0f93727.json",
+      "blake3": "0c85e534d010f11da5e2f5ee712658297df1a73e4e25d73bb5f36e6262b63f9d",
+      "media_type": "application/vnd.rag.chunk-set+json",
+      "schema_type": "ChunkSet",
+      "schema_version": "1.0.0",
+      "size_bytes": 655360,
+      "stage_key": "4c4085d68adef58175a54fa7af053cff30fb67d3ffeb81e5a8898e1da0f93727"
+    },
+    "enriched": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/enriched-chunk-set/aa/aa2e9caa6781f0094f6c274fd215d499760dc36a3612e379237ced0f2e890015.json",
+      "blake3": "8871ce62323758a49120db08e67e782f657719a14d1a40f36d729381a1fcfcce",
+      "media_type": "application/vnd.rag.enriched-chunk-set+json",
+      "schema_type": "EnrichedChunkSet",
+      "schema_version": "1.0.0",
+      "size_bytes": 9216,
+      "stage_key": "aa2e9caa6781f0094f6c274fd215d499760dc36a3612e379237ced0f2e890015"
+    }
+  },
+  "chunk_set_id": "01JAB3C4D5E6F7G8H9JKMNPQST",
+  "document_id": "01JAB3C4D5E6F7G8H9JKMNPQRS",
+  "doc_version": "cf266a7a804b27e9ed1133df8e05ef4eec7ea1a28f1ca63f61a1cf838c7f0118",
+  "enriched_ref": {
+    "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/enriched-chunk-set/aa/aa2e9caa6781f0094f6c274fd215d499760dc36a3612e379237ced0f2e890015.json",
+    "blake3": "8871ce62323758a49120db08e67e782f657719a14d1a40f36d729381a1fcfcce",
+    "media_type": "application/vnd.rag.enriched-chunk-set+json",
+    "schema_type": "EnrichedChunkSet",
+    "schema_version": "1.0.0",
+    "size_bytes": 9216,
+    "stage_key": "aa2e9caa6781f0094f6c274fd215d499760dc36a3612e379237ced0f2e890015"
+  },
+  "embedding_space_ids": {
+    "dense": "cd72859ad1bd275b6f0b592d7e0a4619f8757fddb1586b1a6b714fd0458cf8a3",
+    "sparse_learned": "9b453733ce94d33fabdcdb3e8a762e9b01586ce89dcb959e24227c9571872706"
+  },
+  "embedding_profile_hash": "b9ff31b9802e4e0d7c9b40e929f07c0be24668eaff92ab3e14b7e24a9943dccf",
+  "embedder_fingerprint": "755a703235d6245ec6f57898ef386582e648a5a6ea94744d96ece44ca4cf3da9",
+  "mode": "document",
+  "pooling": "cls",
+  "vectors_ref": {
+    "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/derived/vectors/39/39f94868a15f00659890c86f46c10a113dc4b8aec3f0f8bb13195d13d92b8093.npz",
+    "blake3": "39f94868a15f00659890c86f46c10a113dc4b8aec3f0f8bb13195d13d92b8093",
+    "media_type": "application/x-npz",
+    "size_bytes": 8704
+  },
+  "vector_layout": {
+    "format": "npz",
+    "dense": {
+      "array_key": "dense",
+      "dtype": "float32",
+      "normalized": true,
+      "shape": [
+        2,
+        1024
+      ]
+    }
+  },
+  "vectors": {
+    "accd3831b9b08ad5da5cc41404a645a22e59f8775c60d99b72e073d8cb9cc445": {
+      "dense": {
+        "name": "dense",
+        "dim": 1024,
+        "offset": 0
+      },
+      "sparse_learned": {
+        "name": "sparse_learned",
+        "vocab_id": "xlm-roberta-250k",
+        "indices": [
+          6,
+          1071,
+          5384,
+          14028,
+          21607,
+          29857,
+          36941,
+          45372,
+          61273,
+          91388,
+          130210,
+          213452
+        ],
+        "values": [
+          0.0412,
+          0.2231,
+          0.1876,
+          0.3319,
+          0.1544,
+          0.0987,
+          0.2765,
+          0.1203,
+          0.0891,
+          0.1658,
+          0.0734,
+          0.0512
+        ]
+      },
+      "embed_text_hash": "5f264be72afef2442586b51940a831e9d66569112783d287e54ddccc3c9ca3d2",
+      "truncated": false
+    },
+    "8c6a18523ac6d630b32b5221c01e7529feee0e376290a0d6a902200e9e83ce63": {
+      "dense": {
+        "name": "dense",
+        "dim": 1024,
+        "offset": 1
+      },
+      "sparse_learned": {
+        "name": "sparse_learned",
+        "vocab_id": "xlm-roberta-250k",
+        "indices": [
+          6,
+          1071,
+          3120,
+          5384,
+          18342,
+          29857,
+          40211,
+          77605,
+          130210,
+          198734
+        ],
+        "values": [
+          0.0388,
+          0.2617,
+          0.1105,
+          0.1442,
+          0.2974,
+          0.1211,
+          0.0866,
+          0.1573,
+          0.0699,
+          0.0454
+        ]
+      },
+      "embed_text_hash": "f6d51fa62f807595114c9367e9e42cc7755a43ad62b6abb60abc939e67dbff76",
+      "truncated": false
+    }
+  },
+  "cache_hits": 0,
+  "stats": {
+    "vectors_total": 2,
+    "bytes_dense": 8192,
+    "bytes_sparse": 176,
+    "bytes_late_interaction": 0,
+    "truncated_count": 0
+  }
+}

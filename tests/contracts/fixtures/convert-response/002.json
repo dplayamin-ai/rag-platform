@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0.0",
+  "output": null,
+  "derived": [],
+  "warnings": [],
+  "error": {
+    "code": "parse.document_encrypted",
+    "type": "urn:rag:error:parse.document_encrypted",
+    "retryable": false,
+    "stage": "parse",
+    "plugin_id": "parser.hwp5_java_sidecar",
+    "detail": "OWPML package is encrypted and credentials_ref did not open it",
+    "message": "Document is encrypted",
+    "occurred_at": "2026-09-22T09:12:33.412Z",
+    "attempt": 1,
+    "location": {
+      "document_id": "01J9ZQ5C3D4E5F6G7H8J9K0M1N"
+    }
+  },
+  "took_ms": 210,
+  "producer": {
+    "plugin_id": "parser.hwp5_java_sidecar",
+    "plugin_version": "0.1.0",
+    "config_hash": "fb767290b288d213f22c8a7046a16eb632596af83fd09ed448d91b08a376f89a",
+    "image_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "model_ids": []
+  }
+}

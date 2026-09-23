@@ -1,0 +1,562 @@
+[
+  {
+    "fixture": "candidate-set/001.json",
+    "schema": "candidate-set",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/10-candidate-set-and-ranked-set.md",
+    "source_heading": "예시 2 — `CandidateSet`(3채널 런, 원 질의 변형, 단일 컬렉션)"
+  },
+  {
+    "fixture": "chunk-set/001.json",
+    "schema": "chunk-set",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/05-chunk-set.md",
+    "source_heading": "예시 1 — 공공기관 HWPX 훈령(흐름 포맷): `law_article` 라우팅, 리프 2개(제5조 ①·②) + 부모 1개(제5조)"
+  },
+  {
+    "fixture": "chunk-set/002.json",
+    "schema": "chunk-set",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/05-chunk-set.md",
+    "source_heading": "예시 2 — 디지털 PDF 예산 보고서의 표: `table_part` 2개 + 표 부모 1개, `recount` 출력"
+  },
+  {
+    "fixture": "cloud-event-envelope/001.json",
+    "schema": "cloud-event-envelope",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/00-contract-overview.md",
+    "source_heading": "예시 8: `CloudEventEnvelope` — `ingest.document.parsed`"
+  },
+  {
+    "fixture": "cloud-event-envelope/002.json",
+    "schema": "cloud-event-envelope",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/12-jobs-events-and-status.md",
+    "source_heading": "예시 3 — `ingest.document.indexed`: 행정안전부 HWPX 고시(`standard`), 세대 3 커밋 완료([08 예시 1](./08-index-commit.md)의 커밋 `01JAB3E9F0G1H2J3K4M5N6P7Q8`과 같은 `doc_version`·`commit_hash`·`record_count`)"
+  },
+  {
+    "fixture": "cloud-event-envelope/003.json",
+    "schema": "cloud-event-envelope",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/12-jobs-events-and-status.md",
+    "source_heading": "예시 4 — `job.state.changed`: 예시 3과 같은 트랜잭션에서 기록된 `running → succeeded`(`publish` 스테이지; 이 잡의 마지막 `event_id`)"
+  },
+  {
+    "fixture": "cloud-event-envelope/004.json",
+    "schema": "cloud-event-envelope",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/12-jobs-events-and-status.md",
+    "source_heading": "예시 5 — `acl.document.updated`: 같은 고시 문서에 담당 부서 그룹을 추가한 ACL 갱신(`acl.update.v1`)이 양 백엔드 payload 갱신을 마친 뒤"
+  },
+  {
+    "fixture": "cloud-event-envelope/005.json",
+    "schema": "cloud-event-envelope",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+    "source_heading": "예시 4 — `CloudEventEnvelope`(바이블 §5.3)의 `dataschema` 생략"
+  },
+  {
+    "fixture": "collection-spec/001.json",
+    "schema": "collection-spec",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+    "source_heading": "예시 1 — `CollectionSpec`: 행정안전부 훈령·예규 컬렉션(`korean-gov`, `index_per_tenant`, PII 토큰화·암호화)"
+  },
+  {
+    "fixture": "common-types__Acl/001.json",
+    "schema": "common-types",
+    "def_name": "Acl",
+    "source_doc": "docs/03-contracts/00-contract-overview.md",
+    "source_heading": "예시 2: `Acl` — 공공기관 내부 문서(부서 그룹 + 담당자, 공개 유예)"
+  },
+  {
+    "fixture": "common-types__ArtifactRef/001.json",
+    "schema": "common-types",
+    "def_name": "ArtifactRef",
+    "source_doc": "docs/03-contracts/00-contract-overview.md",
+    "source_heading": "예시 1: `ArtifactRef` — 행정안전부 HWPX 공문서의 `ParsedDocument` 산출물(`LineageRefs`에 실린 형태)"
+  },
+  {
+    "fixture": "common-types__BlockRef/001.json",
+    "schema": "common-types",
+    "def_name": "BlockRef",
+    "source_doc": "docs/03-contracts/00-contract-overview.md",
+    "source_heading": "예시 9: `BlockRef`와 그로부터 생성된 `Provenance` — HWPX 본문 단락(흐름 포맷, 페이지·bbox 없음)"
+  },
+  {
+    "fixture": "common-types__Capabilities/001.json",
+    "schema": "common-types",
+    "def_name": "Capabilities",
+    "source_doc": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+    "source_heading": "예시 5 — `Capabilities`: `embedder.vllm_pooling_bge_m3`(외부 서빙, GPU, 재개 가능)"
+  },
+  {
+    "fixture": "common-types__EgressPolicy/001.json",
+    "schema": "common-types",
+    "def_name": "EgressPolicy",
+    "source_doc": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+    "source_heading": "예시 8 — `EgressPolicy`: 공공기관 테넌트 정책(`.go.kr` 접미 + 자체 S3 버킷, `max_redirects` 축소, 공유 주소 대역 추가 거부)"
+  },
+  {
+    "fixture": "common-types__FilterNode/001.json",
+    "schema": "common-types",
+    "def_name": "FilterNode",
+    "source_doc": "docs/03-contracts/00-contract-overview.md",
+    "source_heading": "예시 4: `FilterNode` — 2025년 이후 행정안전부 규정 문서, 초안 태그 제외"
+  },
+  {
+    "fixture": "common-types__LineageRefs/001.json",
+    "schema": "common-types",
+    "def_name": "LineageRefs",
+    "source_doc": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+    "source_heading": "예시 3 — `LineageRefs`에 실린 `ArtifactRef`(바이블 §5.3)의 버전 정보"
+  },
+  {
+    "fixture": "common-types__ProblemDetails/001.json",
+    "schema": "common-types",
+    "def_name": "ProblemDetails",
+    "source_doc": "docs/03-contracts/00-contract-overview.md",
+    "source_heading": "예시 7: `ProblemDetails` — `POST /v1/ingest` 계약 위반(400)"
+  },
+  {
+    "fixture": "common-types__ProblemDetails/002.json",
+    "schema": "common-types",
+    "def_name": "ProblemDetails",
+    "source_doc": "docs/03-contracts/01-ingest-request.md",
+    "source_heading": "예시 6 — 422 `api.idempotency_payload_mismatch`(`ProblemDetails`, 13 문서 스키마)"
+  },
+  {
+    "fixture": "common-types__ProblemDetails/003.json",
+    "schema": "common-types",
+    "def_name": "ProblemDetails",
+    "source_doc": "docs/03-contracts/13-error-model.md",
+    "source_heading": "예시 1 — 400 `contract.violation` + `errors[]`(요청 검증, `POST /v1/ingest`)"
+  },
+  {
+    "fixture": "common-types__ProblemDetails/004.json",
+    "schema": "common-types",
+    "def_name": "ProblemDetails",
+    "source_doc": "docs/03-contracts/13-error-model.md",
+    "source_heading": "예시 2 — 403 `auth.forbidden`(`Accept-Language: ko`, `PATCH /v1/documents/{document_id}/acl`)"
+  },
+  {
+    "fixture": "common-types__ProblemDetails/005.json",
+    "schema": "common-types",
+    "def_name": "ProblemDetails",
+    "source_doc": "docs/03-contracts/13-error-model.md",
+    "source_heading": "예시 3 — 503 `retrieve.unavailable` + `Retry-After`(`POST /v1/query`, 전 채널 실패)"
+  },
+  {
+    "fixture": "common-types__Provenance/001.json",
+    "schema": "common-types",
+    "def_name": "Provenance",
+    "source_doc": "docs/03-contracts/00-contract-overview.md",
+    "source_heading": "예시 9: `BlockRef`와 그로부터 생성된 `Provenance` — HWPX 본문 단락(흐름 포맷, 페이지·bbox 없음)"
+  },
+  {
+    "fixture": "common-types__ScoreBreakdown/001.json",
+    "schema": "common-types",
+    "def_name": "ScoreBreakdown",
+    "source_doc": "docs/03-contracts/00-contract-overview.md",
+    "source_heading": "예시 5: `ScoreBreakdown` — dense·lexical 적중, RRF k=60, 리랭크 적용"
+  },
+  {
+    "fixture": "common-types__SecurityContext/001.json",
+    "schema": "common-types",
+    "def_name": "SecurityContext",
+    "source_doc": "docs/03-contracts/00-contract-overview.md",
+    "source_heading": "예시 3: `SecurityContext` — OIDC 사용자 질의"
+  },
+  {
+    "fixture": "common-types__StageError/001.json",
+    "schema": "common-types",
+    "def_name": "StageError",
+    "source_doc": "docs/03-contracts/00-contract-overview.md",
+    "source_heading": "예시 6: `StageError` — 암호화된 HWP 5.0 문서(비재시도)"
+  },
+  {
+    "fixture": "common-types__StageError/002.json",
+    "schema": "common-types",
+    "def_name": "StageError",
+    "source_doc": "docs/03-contracts/13-error-model.md",
+    "source_heading": "예시 4 — `StageError`: 공공기관 HWPX 암호화 문서(`parse.document_encrypted`, `JobStatus.last_error`)"
+  },
+  {
+    "fixture": "common-types__StageError/003.json",
+    "schema": "common-types",
+    "def_name": "StageError",
+    "source_doc": "docs/03-contracts/13-error-model.md",
+    "source_heading": "예시 5 — `StageError`: HWP 5.0 폴백 체인 소진(`parse.conversion_failed` + `cause`)"
+  },
+  {
+    "fixture": "common-types__StagePolicy/001.json",
+    "schema": "common-types",
+    "def_name": "StagePolicy",
+    "source_doc": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+    "source_heading": "예시 6 — `StagePolicy`: `parse`(텍스트) 행(§4.4)의 완성형"
+  },
+  {
+    "fixture": "common-types__TieringPolicy/001.json",
+    "schema": "common-types",
+    "def_name": "TieringPolicy",
+    "source_doc": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+    "source_heading": "예시 7 — `TieringPolicy`: `standard` 기본(초안 목표)"
+  },
+  {
+    "fixture": "context-pack/001.json",
+    "schema": "context-pack",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/11-context-pack.md",
+    "source_heading": "예시 1 — `ContextPack`: 한국어 공문서 청크 3개(`standard`, `anthropic_search_result`, K=3 → 렌더 순서 `[r2, r3, r1]`)"
+  },
+  {
+    "fixture": "convert-request/001.json",
+    "schema": "convert-request",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 15 — `ConvertRequest`: HWP 5.0 → HWPX 변환 요청(`parser-workers`, 비밀 없음)"
+  },
+  {
+    "fixture": "convert-response/001.json",
+    "schema": "convert-response",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 16 — `ConvertResponse`: 예시 15의 성공 응답(HWPX 변환본 + 변환 보고서 파생물; `{kind}` 철자는 §9 제안)"
+  },
+  {
+    "fixture": "convert-response/002.json",
+    "schema": "convert-response",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 17 — `ConvertResponse`: 암호화된 공공기관 HWPX(제공된 `credentials_ref`로 열리지 않음 → `output=null` + `parse.document_encrypted`)"
+  },
+  {
+    "fixture": "embedded-chunk-set/001.json",
+    "schema": "embedded-chunk-set",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/07-embedded-chunk-set-and-index-record.md",
+    "source_heading": "예시 1 — `EmbeddedChunkSet`: 행정안전부 HWPX 고시(`standard`, BGE-M3 dense + `sparse_learned`, vLLM pooling)"
+  },
+  {
+    "fixture": "enriched-chunk-set/001.json",
+    "schema": "enriched-chunk-set",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/06-enriched-chunk-set.md",
+    "source_heading": "예시 1 — 행정안전부 HWPX 고시(`standard`, LLM 보강 끔, `complete`)"
+  },
+  {
+    "fixture": "enriched-chunk-set/002.json",
+    "schema": "enriched-chunk-set",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/06-enriched-chunk-set.md",
+    "source_heading": "예시 2 — 사내 PDF 보고서(`premium`, 컬렉션 LLM 옵트인, 예산 소진으로 `partial`)"
+  },
+  {
+    "fixture": "eval-dataset/001.json",
+    "schema": "eval-dataset",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 1 — `EvalDataset`: 한국어 공공문서 골든셋 `ko-public-v1`(HWPX·PDF 공문서, 사람 라벨, 공공누리 제1유형)"
+  },
+  {
+    "fixture": "eval-dataset__AnswerSpanRecord/001.json",
+    "schema": "eval-dataset",
+    "def_name": "AnswerSpanRecord",
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 4 — `AnswerSpanRecord`: `answer_spans.jsonl` 한 행(HWPX 본문 단락, 흐름 포맷이라 페이지 없음)"
+  },
+  {
+    "fixture": "eval-dataset__QrelsRecord/001.json",
+    "schema": "eval-dataset",
+    "def_name": "QrelsRecord",
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 3 — `QrelsRecord`: `qrels.jsonl` 한 행(TREC `kopub-0001 0 01J9ZQ6M0N1P2Q3R4S5T6V7W8X 3`)"
+  },
+  {
+    "fixture": "eval-dataset__TopicRecord/001.json",
+    "schema": "eval-dataset",
+    "def_name": "TopicRecord",
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 2 — `TopicRecord`: `topics.jsonl` 한 행(행정안전부 고시 질의)"
+  },
+  {
+    "fixture": "eval-report/001.json",
+    "schema": "eval-report",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 8 — `EvalReport`: 예시 6 런의 리포트(게이트 통과, Holm 보정 비교, TREC run 첨부)"
+  },
+  {
+    "fixture": "eval-report/002.json",
+    "schema": "eval-report",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 9 — `EvalReport`: 후보 프로파일 `standard-ko-hybrid`의 회귀(`max_regression`·`min` 실패, `judged@10` 경고)"
+  },
+  {
+    "fixture": "eval-report__PerQueryRecord/001.json",
+    "schema": "eval-report",
+    "def_name": "PerQueryRecord",
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 10 — `PerQueryRecord`: `per_query.jsonl` 한 행"
+  },
+  {
+    "fixture": "eval-run/001.json",
+    "schema": "eval-run",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 5 — `EvalRun`: `standard` 프로파일 야간 런(`running`, `POST /v1/eval/runs` 직후)"
+  },
+  {
+    "fixture": "eval-run/002.json",
+    "schema": "eval-run",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 6 — `EvalRun`: 같은 런의 종결 상태(`completed`, 베이스라인·판정 모델 지정)"
+  },
+  {
+    "fixture": "eval-run__IndexCommitRecord/001.json",
+    "schema": "eval-run",
+    "def_name": "IndexCommitRecord",
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 7 — `IndexCommitRecord`: `index_commits.jsonl` 한 행(커밋 1,000개 초과 코퍼스)"
+  },
+  {
+    "fixture": "feedback-event/001.json",
+    "schema": "feedback-event",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 11 — `FeedbackEvent`: LLM 응답이 인용한 항목(`cited`, 인터리빙 실험 귀속)"
+  },
+  {
+    "fixture": "feedback-event/002.json",
+    "schema": "feedback-event",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 12 — `FeedbackEvent`: 담당자 평점과 코멘트(`rated`, 전화번호가 `mask` 정책으로 치환됨)"
+  },
+  {
+    "fixture": "index-commit/001.json",
+    "schema": "index-commit",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/08-index-commit.md",
+    "source_heading": "예시 1 — 행정안전부 HWPX 고시, `standard`, 세대 3 `committed`"
+  },
+  {
+    "fixture": "index-commit/002.json",
+    "schema": "index-commit",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/08-index-commit.md",
+    "source_heading": "예시 2 — 사내 PDF 보고서, `premium`, 세대 5 `rolled_back`(플립 후 보상)"
+  },
+  {
+    "fixture": "index-commit/003.json",
+    "schema": "index-commit",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/08-index-commit.md",
+    "source_heading": "예시 3 — 예시 1 문서의 삭제(`kind=delete`, 세대 4 `committed`)"
+  },
+  {
+    "fixture": "index-record/001.json",
+    "schema": "index-record",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/07-embedded-chunk-set-and-index-record.md",
+    "source_heading": "예시 2 — `IndexRecord`(리프): 제5조 본문 청크, 세대 1, 플립 완료(`is_current=true`)"
+  },
+  {
+    "fixture": "index-record/002.json",
+    "schema": "index-record",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/07-embedded-chunk-set-and-index-record.md",
+    "source_heading": "예시 3 — `IndexRecord`(부모, `vector_payload` 저장 방식): 제5조 섹션, 벡터 없음"
+  },
+  {
+    "fixture": "ingest-request/001.json",
+    "schema": "ingest-request",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/01-ingest-request.md",
+    "source_heading": "예시 1 — 공공기관 HWPX 규정 문서 1건(`POST /v1/ingest`, 제한 공개·공개 유예·콜백)"
+  },
+  {
+    "fixture": "ingest-request/002.json",
+    "schema": "ingest-request",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/01-ingest-request.md",
+    "source_heading": "예시 2 — 배치(`POST /v1/ingest/batch`): 보도자료 PDF(공개) + 연차보고서 PDF(필터 메타·PII 토큰화·거부 주체)"
+  },
+  {
+    "fixture": "ingest-request/003.json",
+    "schema": "ingest-request",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/01-ingest-request.md",
+    "source_heading": "예시 2 — 배치(`POST /v1/ingest/batch`): 보도자료 PDF(공개) + 연차보고서 PDF(필터 메타·PII 토큰화·거부 주체)"
+  },
+  {
+    "fixture": "ingest-request/004.json",
+    "schema": "ingest-request",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/01-ingest-request.md",
+    "source_heading": "예시 3 — 재처리 옵션: 암호화 ZIP 묶음(`credentials_ref`) + `reindex_always` + `zip_members` + `profile_overrides` + `deadline_at`"
+  },
+  {
+    "fixture": "ingest-request__IngestAccepted/001.json",
+    "schema": "ingest-request",
+    "def_name": "IngestAccepted",
+    "source_doc": "docs/03-contracts/01-ingest-request.md",
+    "source_heading": "예시 4 — 202 `IngestAccepted`(예시 1의 응답; 같은 키 재전송의 200 본문도 동일)"
+  },
+  {
+    "fixture": "ingest-request__IngestBatchAccepted/001.json",
+    "schema": "ingest-request",
+    "def_name": "IngestBatchAccepted",
+    "source_doc": "docs/03-contracts/01-ingest-request.md",
+    "source_heading": "예시 5 — 202 `IngestBatchAccepted`(예시 2의 응답)"
+  },
+  {
+    "fixture": "job-status/001.json",
+    "schema": "job-status",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/12-jobs-events-and-status.md",
+    "source_heading": "예시 1 — `JobStatus` `running`: 조달청 스캔 PDF 입찰공고, `premium` GPU OCR, 페이지 진행률, 직전 시도 실패(`parse.sidecar_unavailable`) 후 재시도 중"
+  },
+  {
+    "fixture": "job-status/002.json",
+    "schema": "job-status",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/12-jobs-events-and-status.md",
+    "source_heading": "예시 2 — `JobStatus` `failed`: 지방자치단체 배포 HWPX 공문서가 암호화되어 `credentials_ref` 없이 즉시 실패([13 예시 4](./13-error-model.md)와 같은 오류)"
+  },
+  {
+    "fixture": "normalized-document/001.json",
+    "schema": "normalized-document",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/04-normalized-document.md",
+    "source_heading": "예시 1 — 행정안전부 HWPX 지침(`law_article`, `mask`, zero-width 제거, 머리말 문단, 연락처 표 셀 뷰)"
+  },
+  {
+    "fixture": "normalized-document/002.json",
+    "schema": "normalized-document",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/04-normalized-document.md",
+    "source_heading": "예시 2 — 스캔 PDF 채용 공고(OCR, 개조식 `ㅇ` 글머리, 항목 기호 `㉠㉡㉢` 접기, `tokenize`/`encrypt`, 전각 전화번호 탐지, NFD 합성, 전각·한자 렉시컬 뷰, 분리기 폴백)"
+  },
+  {
+    "fixture": "parsed-document/001.json",
+    "schema": "parsed-document",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/03-parsed-document.md",
+    "source_heading": "예시 1 — 행정안전부 HWPX 공문(흐름 포맷: 제목·개조식 본문·병합 셀 표·캡션·각주·필드·메모)"
+  },
+  {
+    "fixture": "parsed-document/002.json",
+    "schema": "parsed-document",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/03-parsed-document.md",
+    "source_heading": "예시 2 — 스캔 PDF 고시(페이지 포맷: OCR 블록·셀 bbox·페이지 타임아웃 저하)"
+  },
+  {
+    "fixture": "plugin-meta/001.json",
+    "schema": "plugin-meta",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+    "source_heading": "예시 3 — `PluginMeta`: `parser.hwpx_python_hwpx`(A 등급, 인프로세스)"
+  },
+  {
+    "fixture": "plugin-meta/002.json",
+    "schema": "plugin-meta",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+    "source_heading": "예시 4 — `PluginMeta`: `index_backend.qdrant`(`extra = IndexBackendCapabilities`)"
+  },
+  {
+    "fixture": "profile/001.json",
+    "schema": "profile",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/15-collection-profile-and-policy-contracts.md",
+    "source_heading": "예시 2 — `Profile`: `standard` 전문(바이블 §7.3 정본 YAML의 JSON 표현, 필수 키 전부)"
+  },
+  {
+    "fixture": "query-plan/001.json",
+    "schema": "query-plan",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/09-query-request-and-query-plan.md",
+    "source_heading": "예시 3 — `QueryPlan`(예시 2의 계획 전문, `standard`, `mecab-ko` 공백기 분석기)"
+  },
+  {
+    "fixture": "query-request/001.json",
+    "schema": "query-request",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/09-query-request-and-query-plan.md",
+    "source_heading": "예시 1 — `QueryRequest`(단순: 필수 + 대상 모델)"
+  },
+  {
+    "fixture": "query-request/002.json",
+    "schema": "query-request",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/09-query-request-and-query-plan.md",
+    "source_heading": "예시 2 — `QueryRequest`(필터 + 대화 + 세션 + 예산 + explain)"
+  },
+  {
+    "fixture": "ranked-set/001.json",
+    "schema": "ranked-set",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/10-candidate-set-and-ranked-set.md",
+    "source_heading": "예시 3 — `RankedSet(stage=reranked, hydrated=true)`"
+  },
+  {
+    "fixture": "rendered-context/001.json",
+    "schema": "rendered-context",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/11-context-pack.md",
+    "source_heading": "예시 2 — `RenderedContext`(`anthropic_search_result`, user 최상위 경로): 예시 1의 팩"
+  },
+  {
+    "fixture": "rendered-context/002.json",
+    "schema": "rendered-context",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/11-context-pack.md",
+    "source_heading": "예시 3 — `RenderedContext`(`markdown`, `bracket_id` + `delimit`): 같은 팩"
+  },
+  {
+    "fixture": "schema-diff-report/001.json",
+    "schema": "schema-diff-report",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+    "source_heading": "예시 1 — `SchemaDiffReport`: 한국어 공문서 골든 예시가 있는 `parsed-document` minor 변경(통과)"
+  },
+  {
+    "fixture": "schema-diff-report/002.json",
+    "schema": "schema-diff-report",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/14-schema-versioning-and-compatibility.md",
+    "source_heading": "예시 2 — `SchemaDiffReport`: minor로 선언했으나 파괴적 변경인 `chunk-set` 제안(실패)"
+  },
+  {
+    "fixture": "source-document/001.json",
+    "schema": "source-document",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/02-source-document.md",
+    "source_heading": "예시 1 — 행정안전부 HWPX 공문(`s3://`, 제한 공개·공개 유예, 최초 수집; detect 출력, 스키마 유효, ID는 형식 규약을 지키는 플레이스홀더)"
+  },
+  {
+    "fixture": "source-document/002.json",
+    "schema": "source-document",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/02-source-document.md",
+    "source_heading": "예시 2 — 국세청 보도자료 PDF(`https://`, 리다이렉트 1회, 조건부 GET 후 내용 변경, PII 토큰화; detect 출력, 스키마 유효)"
+  },
+  {
+    "fixture": "user-dict-entry/001.json",
+    "schema": "user-dict-entry",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 13 — `UserDictEntry`: 테넌트 전역 기관명(고유명사, 약칭 동의어)"
+  },
+  {
+    "fixture": "user-dict-entry/002.json",
+    "schema": "user-dict-entry",
+    "def_name": null,
+    "source_doc": "docs/03-contracts/16-eval-feedback-and-sidecar-contracts.md",
+    "source_heading": "예시 14 — `UserDictEntry`: 컬렉션 복합명사(Nori 분해 규칙 `정보공개청구서 정보 공개 청구서`, 자동 추출 후 검수)"
+  }
+]

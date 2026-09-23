@@ -1,0 +1,43 @@
+{
+  "plugin_id": "index_backend.qdrant",
+  "extension_point": "index_backend",
+  "role": null,
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "license_grade": "A",
+  "territory": [],
+  "linkage": "pure_python",
+  "isolation_supported": [
+    "in_process"
+  ],
+  "model_ids": [],
+  "model_license_ack_required": false,
+  "sidecar_image": null,
+  "contracts_compat": ">=1.0,<2.0",
+  "capabilities": {
+    "isolation_modes": [
+      "in_process"
+    ],
+    "supports_resumable": false,
+    "contracts_compat": ">=1.0,<2.0",
+    "requires_gpu": false,
+    "extra": {
+      "supports_server_bm25": false,
+      "korean_analyzer": false,
+      "supports_server_fusion": [
+        "rrf",
+        "dbsf"
+      ],
+      "tenant_isolation": [
+        "payload_filter",
+        "shard_key",
+        "index_per_tenant"
+      ],
+      "supports_alias_swap": true,
+      "supports_multivector": true,
+      "max_vector_dim": 65536,
+      "max_multivector_elements": null,
+      "supports_payload_only_points": null
+    }
+  }
+}

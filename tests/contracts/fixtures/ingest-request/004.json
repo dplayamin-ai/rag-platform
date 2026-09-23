@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0.0",
+  "request_id": "01J9ZQ9C0D1E2F3G4H5J6K7M8N",
+  "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+  "source_uri": "s3://mois-records/archives/2026/q3-notices-bundle.zip",
+  "media_type_hint": "application/zip",
+  "external_id": "MOIS-NOTICE-2026-Q3-BUNDLE",
+  "metadata": {
+    "title": "2026년 3분기 공고문 묶음",
+    "doc_type": "notice",
+    "department": "행정안전부",
+    "language_hint": "ko",
+    "genre": "form"
+  },
+  "acl": {
+    "allow_principals": [
+      "group:mois_records"
+    ],
+    "visibility": "tenant",
+    "classification": "internal"
+  },
+  "credentials_ref": "openbao:secret/data/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/sources/archive-zip-password",
+  "dedup_policy": "reindex_always",
+  "split_hint": "zip_members",
+  "profile_overrides": {
+    "parse.pdf.route": "pdf_fast_cpu",
+    "enrich.generated_prefix": {
+      "enabled": false
+    }
+  },
+  "priority": 2,
+  "deadline_at": "2026-09-23T09:00:00.000Z",
+  "requested_at": "2026-09-22T09:10:00.000Z"
+}

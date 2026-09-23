@@ -1,0 +1,17 @@
+{
+  "query_id": "kopub-0001",
+  "metrics": {
+    "ndcg@10": 0.9197,
+    "recall@20": 1.0,
+    "mrr": 1.0,
+    "span_hit_rate@10": 1.0,
+    "judged@10": 0.8
+  },
+  "top_doc_ids": [
+    "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+    "01J9ZQ7B8C9D0E1F2G3H4J5K6M"
+  ],
+  "span_hit_ranks": [
+    1
+  ]
+}

@@ -1,0 +1,317 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "NormalizedDocument",
+  "tenant_id": "01J9ZR0A2B3C4D5E6F7G8H9JKM",
+  "collection_id": "01J9ZR1N2P3Q4R5S6T7V8W9XYZ",
+  "producer": {
+    "plugin_id": "normalizer.korean_default",
+    "plugin_version": "1.0.0",
+    "config_hash": "718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60",
+    "image_digest": null,
+    "model_ids": [
+      "spacy/ko_core_news_lg@3.8.0"
+    ]
+  },
+  "quality": "degraded",
+  "warnings": [
+    {
+      "code": "normalize.segmenter_fallback",
+      "message": "sentence splitter raised; regex boundaries used",
+      "block_id": "1234567890abcdef1234567890abcdef"
+    }
+  ],
+  "created_at": "2026-09-22T10:01:02.003Z",
+  "lineage_refs": {
+    "source": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZR0A2B3C4D5E6F7G8H9JKM/artifacts/source-document/1b/1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a.json",
+      "blake3": "1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a",
+      "media_type": "application/vnd.rag.source-document+json",
+      "schema_type": "SourceDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 3880
+    },
+    "parsed": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZR0A2B3C4D5E6F7G8H9JKM/artifacts/parsed-document/4e/4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d.json",
+      "blake3": "3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c",
+      "media_type": "application/vnd.rag.parsed-document+json",
+      "schema_type": "ParsedDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 92110,
+      "stage_key": "4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d"
+    }
+  },
+  "document_id": "01J9ZR2K3M4N5P6Q7R8S9TVWXY",
+  "doc_version": "0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9",
+  "parsed_ref": {
+    "uri": "s3://rag-artifacts/tenants/01J9ZR0A2B3C4D5E6F7G8H9JKM/artifacts/parsed-document/4e/4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d.json",
+    "blake3": "3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c",
+    "media_type": "application/vnd.rag.parsed-document+json",
+    "schema_type": "ParsedDocument",
+    "schema_version": "1.0.0",
+    "size_bytes": 92110,
+    "stage_key": "4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d"
+  },
+  "normalizer_fingerprint": "5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e",
+  "analyzer_id": "kiwi:0.24.0:cong",
+  "dictionary_hash": "60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f",
+  "language": "ko",
+  "genre": "outline_report",
+  "genre_source": "heuristic",
+  "blocks": [
+    {
+      "block_id": "c0ffee0123456789abcdef0123456789",
+      "display_text": "２０２６년도 職員 채용 公告",
+      "lexical_text": "2026년도 직원 채용 공고",
+      "offset_map": [
+        [
+          0,
+          0,
+          15
+        ],
+        [
+          15,
+          15,
+          0
+        ]
+      ],
+      "sentence_spans": [
+        {
+          "start": 0,
+          "end": 15,
+          "sub_spans": []
+        }
+      ],
+      "lang": "ko",
+      "boilerplate": false,
+      "text_source": "ocr",
+      "confidence": 0.93
+    },
+    {
+      "block_id": "1234567890abcdef1234567890abcdef",
+      "display_text": "지원자는 접수 기간(2026. 10. 1. ∼ 2026. 10. 15.) 내에 응모해야 한다.",
+      "lexical_text": "지원자는 접수 기간(2026. 10. 1. ~ 2026. 10. 15.) 내에 응모해야 한다.",
+      "offset_map": [
+        [
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          4,
+          50
+        ],
+        [
+          52,
+          54,
+          0
+        ]
+      ],
+      "sentence_spans": [
+        {
+          "start": 0,
+          "end": 52,
+          "sub_spans": []
+        }
+      ],
+      "lang": "ko",
+      "boilerplate": false,
+      "text_source": "ocr",
+      "confidence": 0.87
+    },
+    {
+      "block_id": "ab12cd34ef5601728394a5b6c7d8e9f0",
+      "display_text": "ㅇ 접수 방법: 채용 누리집 온라인 접수",
+      "lexical_text": "ㅇ 접수 방법: 채용 누리집 온라인 접수",
+      "offset_map": [
+        [
+          0,
+          0,
+          22
+        ],
+        [
+          22,
+          22,
+          0
+        ]
+      ],
+      "sentence_spans": [
+        {
+          "start": 0,
+          "end": 22,
+          "sub_spans": []
+        }
+      ],
+      "lang": "ko",
+      "boilerplate": false,
+      "text_source": "ocr",
+      "confidence": 0.9
+    },
+    {
+      "block_id": "e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
+      "display_text": "ㅇ 전형 단계: ㉠ 서류 심사 ㉡ 면접 ㉢ 신체검사",
+      "lexical_text": "ㅇ 전형 단계: ㄱ 서류 심사 ㄴ 면접 ㄷ 신체검사",
+      "offset_map": [
+        [
+          0,
+          0,
+          28
+        ],
+        [
+          28,
+          28,
+          0
+        ]
+      ],
+      "sentence_spans": [
+        {
+          "start": 0,
+          "end": 28,
+          "sub_spans": []
+        }
+      ],
+      "lang": "ko",
+      "boilerplate": false,
+      "text_source": "ocr",
+      "confidence": 0.91
+    },
+    {
+      "block_id": "cd34ef5601728394a5b6c7d8e9f0ab12",
+      "display_text": "ㅇ 문의: 인사담당 <KR_PHONE:e9b1c7a2f4d3>",
+      "lexical_text": "ㅇ 문의: 인사담당 <KR_PHONE:e9b1c7a2f4d3>",
+      "offset_map": [
+        [
+          0,
+          0,
+          11
+        ],
+        [
+          11,
+          11,
+          23
+        ],
+        [
+          34,
+          23,
+          0
+        ]
+      ],
+      "sentence_spans": [
+        {
+          "start": 0,
+          "end": 34,
+          "sub_spans": []
+        }
+      ],
+      "lang": "ko",
+      "boilerplate": false,
+      "text_source": "ocr",
+      "confidence": 0.9
+    },
+    {
+      "block_id": "fedcba0987654321fedcba0987654321",
+      "display_text": "- 1 -",
+      "lexical_text": "- 1 -",
+      "offset_map": [
+        [
+          0,
+          0,
+          5
+        ],
+        [
+          5,
+          5,
+          0
+        ]
+      ],
+      "sentence_spans": [
+        {
+          "start": 0,
+          "end": 5,
+          "sub_spans": []
+        }
+      ],
+      "lang": "ko",
+      "boilerplate": true,
+      "furniture_reason": "repeated_header",
+      "text_source": "ocr",
+      "confidence": 0.99
+    }
+  ],
+  "heading_tree": [
+    {
+      "block_id": "c0ffee0123456789abcdef0123456789",
+      "level": 0,
+      "path": [
+        "２０２６년도 職員 채용 公告"
+      ]
+    }
+  ],
+  "derived_meta": {
+    "dates": [
+      "2026-10-01",
+      "2026-10-15"
+    ],
+    "entities_normalized": [
+      {
+        "block_id": "1234567890abcdef1234567890abcdef",
+        "kind": "date",
+        "char_start": 11,
+        "char_end": 23,
+        "value": "2026-10-01"
+      },
+      {
+        "block_id": "1234567890abcdef1234567890abcdef",
+        "kind": "date",
+        "char_start": 26,
+        "char_end": 39,
+        "value": "2026-10-15"
+      }
+    ]
+  },
+  "annotations": {
+    "pii_spans": [
+      {
+        "block_id": "cd34ef5601728394a5b6c7d8e9f0ab12",
+        "entity_type": "KR_PHONE",
+        "start": 11,
+        "end": 34,
+        "score": 0.91,
+        "operator": "tokenize"
+      }
+    ]
+  },
+  "pii_report": {
+    "policy_applied": "tokenize",
+    "entity_counts": {
+      "KR_PHONE": 1
+    },
+    "detector_version": "presidio_ko:1.0.0;presidio-analyzer:2.2.364;spacy/ko_core_news_lg:3.8.0",
+    "tokenize_mode_applied": "encrypt"
+  },
+  "normalization_report": {
+    "removed_control_chars": 0,
+    "nfd_composed": 2,
+    "hanja_replaced": 4,
+    "spacing_corrected": true,
+    "boilerplate_removed": [
+      "- 1 -"
+    ]
+  },
+  "stats": {
+    "block_count": 6,
+    "body_block_count": 5,
+    "furniture_block_count": 1,
+    "display_chars": 156,
+    "lexical_chars": 156,
+    "sentence_count": 6,
+    "pii_span_count": 1,
+    "analyzer_token_count": 70
+  },
+  "table_cell_views": []
+}

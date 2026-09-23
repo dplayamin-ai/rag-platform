@@ -1,0 +1,23 @@
+{
+  "specversion": "1.0",
+  "id": "01JAB3EA0B1C2D3E4F5G6H7J8M",
+  "source": "urn:rag:worker",
+  "type": "ingest.document.indexed",
+  "time": "2026-09-22T09:14:03.611Z",
+  "subject": "tenant/01J9ZQ4K7X2M8N3P5R6S7T8V9W/document/01JAB3C4D5E6F7G8H9JKMNPQRS",
+  "datacontenttype": "application/json",
+  "tenantid": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "data": {
+    "job_id": "01JAB3C0D1E2F3G4H5J6K7M8N9",
+    "document_id": "01JAB3C4D5E6F7G8H9JKMNPQRS",
+    "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+    "stage": "index",
+    "doc_version": "cf266a7a804b27e9ed1133df8e05ef4eec7ea1a28f1ca63f61a1cf838c7f0118",
+    "quality": "full",
+    "commit_id": "01JAB3E9F0G1H2J3K4M5N6P7Q8",
+    "index_generation": 3,
+    "commit_hash": "4ac76a64e56e19ccb129349f1516da74259cdfd88bcfe086951e66f1d5a28bc2",
+    "record_count": 2,
+    "job_state": "succeeded"
+  }
+}

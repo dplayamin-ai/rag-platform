@@ -1,0 +1,21 @@
+{
+  "specversion": "1.0",
+  "id": "01J9ZQ8N9P0Q1R2S3T4V5W6X7Y",
+  "source": "urn:rag:worker",
+  "type": "ingest.document.parsed",
+  "time": "2026-09-22T09:00:05.120Z",
+  "subject": "tenant/01J9ZQ4K7X2M8N3P5R6S7T8V9W/document/01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+  "datacontenttype": "application/json",
+  "tenantid": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "data": {
+    "job_id": "01J9ZQ7B8C9D0E1F2G3H4J5K6M",
+    "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+    "doc_version": "3e5f7092b4d6e8f0a1c2e3b4d5f6071829a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8",
+    "stage": "parse",
+    "quality": "full",
+    "block_count": 412,
+    "page_count": null,
+    "artifact_blake3": "7c1e9f3a5b2d8046a1c3e5f7092b4d6e8f0a1c2e3b4d5f60718293a4b5c6d7e8",
+    "stage_key": "9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "type": "urn:rag:error:contract.violation",
+  "title": "Contract violation",
+  "status": 400,
+  "detail": "2 field(s) of the request body violate urn:rag:schema:ingest-request:1; see errors[].location.pointer",
+  "instance": "/v1/ingest",
+  "code": "contract.violation",
+  "retryable": false,
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "request_id": "01J9ZQ8R2S3T4V5W6X7Y8Z9A0B",
+  "errors": [
+    {
+      "code": "contract.violation",
+      "type": "urn:rag:error:contract.violation",
+      "retryable": false,
+      "stage": "api",
+      "detail": "string does not match pattern ^[0-9A-HJKMNP-TV-Z]{26}$",
+      "message": "Contract violation",
+      "location": {
+        "pointer": "/collection_id"
+      }
+    },
+    {
+      "code": "contract.violation",
+      "type": "urn:rag:error:contract.violation",
+      "retryable": false,
+      "stage": "api",
+      "detail": "value is not a YYYY-MM-DD date",
+      "message": "Contract violation",
+      "location": {
+        "pointer": "/metadata/doc_date"
+      }
+    }
+  ]
+}

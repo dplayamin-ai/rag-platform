@@ -1,0 +1,228 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "IndexCommit",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_id": "01JAC7D8E9F0G1H2J3K4M5N6P7",
+  "producer": {
+    "plugin_id": "index_backend.pipeline",
+    "plugin_version": "1.0.0",
+    "config_hash": "7e43608d2a9aece1d55f1ee5b673341f755e5fa38436f08d4e99f60c3f6ce483",
+    "image_digest": null,
+    "model_ids": []
+  },
+  "quality": "degraded",
+  "warnings": [],
+  "created_at": "2026-09-22T10:42:58.000Z",
+  "lineage_refs": {
+    "source": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/source-document/97/97b06d4ea42f05073b2a092f6eed6a7d356308bbc31c051a8f0040efa3ee79e0.json",
+      "blake3": "4bd92b567947e64d2a08cd4e8fd450a0df89ff6148652505ab8c8aa0dde4d878",
+      "media_type": "application/vnd.rag.source-document+json",
+      "schema_type": "SourceDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 3688,
+      "stage_key": "97b06d4ea42f05073b2a092f6eed6a7d356308bbc31c051a8f0040efa3ee79e0"
+    },
+    "parsed": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/parsed-document/d4/d43a1f43b4ff9bf4c1b2d042f117531add42e48e1a7873286d23693805f4dc12.json",
+      "blake3": "a8b95e117c944a03b1e5fefcaf7e60e1b5ad4335a388463dcb7f3a32ed614437",
+      "media_type": "application/vnd.rag.parsed-document+json",
+      "schema_type": "ParsedDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 3120044,
+      "stage_key": "d43a1f43b4ff9bf4c1b2d042f117531add42e48e1a7873286d23693805f4dc12"
+    },
+    "normalized": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/normalized-document/a3/a3a979f69e32b4c0e67c59d4979cf6c78df5c5ebe992ba2ddfe2c9c23970214a.json",
+      "blake3": "4f2ab7c97596d1af4b733b12e4828669533ead07b064ccc06aad0e1dddfff47e",
+      "media_type": "application/vnd.rag.normalized-document+json",
+      "schema_type": "NormalizedDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 3201120,
+      "stage_key": "a3a979f69e32b4c0e67c59d4979cf6c78df5c5ebe992ba2ddfe2c9c23970214a"
+    },
+    "chunk_set": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/chunk-set/eb/eb72850fea0d0a333c4363c4b0990ce90437730898b3a4d1dcbb6c9e7be21036.json",
+      "blake3": "c7a912f9d1b2bd01dfa9236917b6abba5a8d7aec4b7d0df6f181440714f6486f",
+      "media_type": "application/vnd.rag.chunk-set+json",
+      "schema_type": "ChunkSet",
+      "schema_version": "1.0.0",
+      "size_bytes": 917504,
+      "stage_key": "eb72850fea0d0a333c4363c4b0990ce90437730898b3a4d1dcbb6c9e7be21036"
+    },
+    "enriched": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/enriched-chunk-set/7b/7bd617794d9e648b335b7fb08aeba6e88baddec4993e0ace212bb9afd4385951.json",
+      "blake3": "f1c9b402e0f2c230e08ad5a0f3d4ce063fc511db20d6d8e24a0d848de1ce05ab",
+      "media_type": "application/vnd.rag.enriched-chunk-set+json",
+      "schema_type": "EnrichedChunkSet",
+      "schema_version": "1.0.0",
+      "size_bytes": 31744,
+      "stage_key": "7bd617794d9e648b335b7fb08aeba6e88baddec4993e0ace212bb9afd4385951"
+    },
+    "embedded": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/embedded-chunk-set/a6/a69fbd9e36c436026caa0df2a18f1b45e1987034f6786090d5698a0368093b2d.json",
+      "blake3": "4a484b578a6938a57a23cdcf58ae0af2f063cd8b55b144e3a8f791cd88147031",
+      "media_type": "application/vnd.rag.embedded-chunk-set+json",
+      "schema_type": "EmbeddedChunkSet",
+      "schema_version": "1.0.0",
+      "size_bytes": 14336,
+      "stage_key": "a69fbd9e36c436026caa0df2a18f1b45e1987034f6786090d5698a0368093b2d"
+    }
+  },
+  "commit_id": "01JAC7F1G2H3J4K5M6N7P8Q9R0",
+  "document_id": "01JAC7D8E9F0G1H2J3K4M5N6P8",
+  "doc_version": "0e8ad5379bd2a65ff226b9a85397887bc04b3af51efe5a0ec0f85d372a3cbd90",
+  "job_id": "01JAC7D9E0F1G2H3J4K5M6N7P8",
+  "kind": "upsert",
+  "previous_commit_id": "01JAC5B6C7D8E9F0G1H2J3K4M5",
+  "supersedes_commit_ids": [
+    "01JAC5B6C7D8E9F0G1H2J3K4M5"
+  ],
+  "status": "rolled_back",
+  "index_generation": 5,
+  "profile_id": "premium",
+  "profile_hash": "713f059e0fadb0938fb8faef9718b7bec7be2235a45db0917b3034259c2641db",
+  "parser_fingerprint_hash": "bc3fc9916124ffb5fe071347802b0c0ba36adf2cf38603d4c1dc73c630ae9037",
+  "normalizer_fingerprint": "54243312ae14bb265009058024026f87c1503a0caf9d83a91f5106ce12a7273d",
+  "chunker_config_hash": "a53ac6a312f413c66d5c415c221a7ba564146028a272e8999b83efbecd2e5576",
+  "enricher_fingerprint": "b5c246e65ad587e5c8741132528da1fa55ef04b06c1537062bc8df21d5c630ca",
+  "embedder_fingerprint": "add27264ccb640e1373035df19cbe9af5222d7a89684cabb27258ab11e6d3a3a",
+  "embedding_space_ids": {
+    "dense": "7bc4f9cf4576f28b689beb66c371075ec28079fa55864e1acbef1bc9c7f5112b",
+    "sparse_learned": "e6a0dc6e05ba3aeb5819e77b972e8bc47f7365de778f0b3af0ef5de7bd9d6f50"
+  },
+  "embedding_profile_hash": "7ea2aa9c13f602c514ae50800d6f3399fb9373e4aa5ed5e5d89ed8be8e6a2f1e",
+  "analyzer_id": "mecab-ko:1.3.7:ko-dic-2.1.1",
+  "dictionary_hash": "982d4df704a99b662ad04be262fc19c27506454b7ec76a474b68aa2e0c347b8d",
+  "record_count": 2,
+  "commit_hash": "4f1477aabbc6a7adc4e4d182838c1dd3e70abcd559f2e16e9f17dd33faf61822",
+  "backend_results": [
+    {
+      "backend_id": "index_backend.qdrant",
+      "backend_version": "1.19.0",
+      "physical_name": "rag_vec_7ea2aa9c13f6",
+      "alias": "col_01JAC7D8E9F0G1H2J3K4M5N6P7_vec",
+      "upserted": 2,
+      "deleted": 2,
+      "duration_ms": 9412,
+      "status": "compensated"
+    },
+    {
+      "backend_id": "index_backend.opensearch",
+      "backend_version": "3.8.0",
+      "physical_name": "rag_lex_61978f863bdd",
+      "alias": "col_01JAC7D8E9F0G1H2J3K4M5N6P7_lex",
+      "upserted": 2,
+      "deleted": 2,
+      "duration_ms": 611,
+      "status": "compensated"
+    }
+  ],
+  "artifact_refs": {
+    "source": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/source-document/97/97b06d4ea42f05073b2a092f6eed6a7d356308bbc31c051a8f0040efa3ee79e0.json",
+      "blake3": "4bd92b567947e64d2a08cd4e8fd450a0df89ff6148652505ab8c8aa0dde4d878",
+      "media_type": "application/vnd.rag.source-document+json",
+      "schema_type": "SourceDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 3688,
+      "stage_key": "97b06d4ea42f05073b2a092f6eed6a7d356308bbc31c051a8f0040efa3ee79e0"
+    },
+    "parsed": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/parsed-document/d4/d43a1f43b4ff9bf4c1b2d042f117531add42e48e1a7873286d23693805f4dc12.json",
+      "blake3": "a8b95e117c944a03b1e5fefcaf7e60e1b5ad4335a388463dcb7f3a32ed614437",
+      "media_type": "application/vnd.rag.parsed-document+json",
+      "schema_type": "ParsedDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 3120044,
+      "stage_key": "d43a1f43b4ff9bf4c1b2d042f117531add42e48e1a7873286d23693805f4dc12"
+    },
+    "normalized": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/normalized-document/a3/a3a979f69e32b4c0e67c59d4979cf6c78df5c5ebe992ba2ddfe2c9c23970214a.json",
+      "blake3": "4f2ab7c97596d1af4b733b12e4828669533ead07b064ccc06aad0e1dddfff47e",
+      "media_type": "application/vnd.rag.normalized-document+json",
+      "schema_type": "NormalizedDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 3201120,
+      "stage_key": "a3a979f69e32b4c0e67c59d4979cf6c78df5c5ebe992ba2ddfe2c9c23970214a"
+    },
+    "chunk_set": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/chunk-set/eb/eb72850fea0d0a333c4363c4b0990ce90437730898b3a4d1dcbb6c9e7be21036.json",
+      "blake3": "c7a912f9d1b2bd01dfa9236917b6abba5a8d7aec4b7d0df6f181440714f6486f",
+      "media_type": "application/vnd.rag.chunk-set+json",
+      "schema_type": "ChunkSet",
+      "schema_version": "1.0.0",
+      "size_bytes": 917504,
+      "stage_key": "eb72850fea0d0a333c4363c4b0990ce90437730898b3a4d1dcbb6c9e7be21036"
+    },
+    "enriched": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/enriched-chunk-set/7b/7bd617794d9e648b335b7fb08aeba6e88baddec4993e0ace212bb9afd4385951.json",
+      "blake3": "f1c9b402e0f2c230e08ad5a0f3d4ce063fc511db20d6d8e24a0d848de1ce05ab",
+      "media_type": "application/vnd.rag.enriched-chunk-set+json",
+      "schema_type": "EnrichedChunkSet",
+      "schema_version": "1.0.0",
+      "size_bytes": 31744,
+      "stage_key": "7bd617794d9e648b335b7fb08aeba6e88baddec4993e0ace212bb9afd4385951"
+    },
+    "embedded": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/embedded-chunk-set/a6/a69fbd9e36c436026caa0df2a18f1b45e1987034f6786090d5698a0368093b2d.json",
+      "blake3": "4a484b578a6938a57a23cdcf58ae0af2f063cd8b55b144e3a8f791cd88147031",
+      "media_type": "application/vnd.rag.embedded-chunk-set+json",
+      "schema_type": "EmbeddedChunkSet",
+      "schema_version": "1.0.0",
+      "size_bytes": 14336,
+      "stage_key": "a69fbd9e36c436026caa0df2a18f1b45e1987034f6786090d5698a0368093b2d"
+    }
+  },
+  "stats": {
+    "bytes_dense": 8192,
+    "bytes_sparse": 3480,
+    "bytes_lexical": 7040,
+    "bytes_late_interaction": 0,
+    "leaf_count": 2,
+    "parent_count": 0,
+    "llm_tokens": 1936,
+    "wall_seconds": 22.15
+  },
+  "compensation": {
+    "reason": "index.partial_commit",
+    "failed_at_status": "flipping_vector",
+    "deleted_counts": {
+      "index_backend.qdrant": 2,
+      "index_backend.opensearch": 2
+    },
+    "restored_generation": 4,
+    "completed_at": "2026-09-22T10:43:20.150Z"
+  },
+  "error": {
+    "code": "index.partial_commit",
+    "type": "urn:rag:error:index.partial_commit",
+    "retryable": false,
+    "stage": "index",
+    "plugin_id": "index_backend.qdrant",
+    "detail": "set_payload(is_current) failed after 5 attempts at flipping_vector; previous generation 4 restored on both backends",
+    "message": "Partial commit",
+    "occurred_at": "2026-09-22T10:43:20.150Z",
+    "attempt": 5,
+    "location": {
+      "collection_id": "01JAC7D8E9F0G1H2J3K4M5N6P7",
+      "document_id": "01JAC7D8E9F0G1H2J3K4M5N6P8"
+    },
+    "cause": {
+      "code": "index.backend_unavailable",
+      "type": "urn:rag:error:index.backend_unavailable",
+      "retryable": true,
+      "stage": "index",
+      "plugin_id": "index_backend.qdrant",
+      "detail": "grpc UNAVAILABLE: connection refused",
+      "message": "Index backend unavailable",
+      "occurred_at": "2026-09-22T10:43:11.020Z",
+      "attempt": 5
+    }
+  },
+  "events_emitted": [
+    "01JAC7F4A5B6C7D8E9F0G1H2J3"
+  ],
+  "started_at": "2026-09-22T10:42:58.000Z",
+  "updated_at": "2026-09-22T10:43:20.150Z"
+}

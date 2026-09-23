@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "entry_id": "01J9ZQ9E2F3G4H5J6K7M8N9P0Q",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+  "surface": "정보공개청구서",
+  "pos": "NNG",
+  "reading": null,
+  "synonyms": [],
+  "decompound": [
+    "정보",
+    "공개",
+    "청구서"
+  ],
+  "weight": 1.5,
+  "source": "mined",
+  "updated_at": "2026-09-22T08:31:12.000Z"
+}

@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "SchemaDiffReport",
+  "contract": "parsed-document",
+  "schema_id": "urn:rag:schema:parsed-document:1",
+  "base_version": "1.0.0",
+  "head_version": "1.1.0",
+  "declared_level": "minor",
+  "computed_level": "minor",
+  "passed": true,
+  "changes": [
+    {
+      "kind": "property_added_optional",
+      "level": "minor",
+      "path": "/properties/metadata/properties/document_number",
+      "detail": "공문서 문서번호(선택, string). 필터·헤더 표기용 제안 필드",
+      "before": null,
+      "after": {
+        "type": "string",
+        "maxLength": 64
+      }
+    },
+    {
+      "kind": "annotation_changed",
+      "level": "patch",
+      "path": "/properties/parser_chain/description",
+      "detail": "설명 보강: 실제 시도 순서임을 명시",
+      "before": "실제 시도 순서",
+      "after": "실제 시도 순서(폴백 체인에서 실제로 실행된 파서 plugin_id를 순서대로)"
+    }
+  ],
+  "golden_examples": {
+    "checked": 6,
+    "passed": 6,
+    "failed": []
+  },
+  "enum_check": {
+    "passed": true,
+    "mismatches": []
+  },
+  "generated_at": "2026-09-22T09:00:00.000Z",
+  "tool_version": "0.1.0"
+}

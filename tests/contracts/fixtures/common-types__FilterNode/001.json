@@ -1,0 +1,40 @@
+{
+  "and": [
+    {
+      "field": "doc_type",
+      "op": "eq",
+      "value": "regulation"
+    },
+    {
+      "field": "doc_date",
+      "op": "gte",
+      "value": "2025-01-01"
+    },
+    {
+      "or": [
+        {
+          "field": "department",
+          "op": "eq",
+          "value": "행정안전부"
+        },
+        {
+          "field": "custom.law_name",
+          "op": "contains_any",
+          "value": [
+            "개인정보 보호법",
+            "공공기록물 관리에 관한 법률"
+          ]
+        }
+      ]
+    },
+    {
+      "not": {
+        "field": "tags",
+        "op": "contains_any",
+        "value": [
+          "draft"
+        ]
+      }
+    }
+  ]
+}

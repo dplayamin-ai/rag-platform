@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0.0",
+  "run_id": "01J9ZRBC3D4E5F6G7H8J9K0M1N",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "dataset_id": "01J9ZR0D4T7V9W2X4Y6Z8A0B1C",
+  "profile_hash": "99eed77b9ca00c415a9fdd1532d6274cb9eb1e312d1985667c7c32d720e050ad",
+  "query_count": 312,
+  "metrics": {
+    "ndcg@10": 0.794,
+    "recall@20": 0.921,
+    "mrr": 0.731,
+    "span_hit_rate@10": 0.847,
+    "judged@10": 0.66
+  },
+  "comparison": {
+    "baseline_run_id": "01J9ZR5E3H7K9M2N4P6Q8S0T1V",
+    "deltas": {
+      "ndcg@10": -0.018,
+      "recall@20": -0.006,
+      "span_hit_rate@10": -0.011
+    },
+    "p_values": {
+      "ndcg@10": 0.012,
+      "recall@20": 0.61,
+      "span_hit_rate@10": 0.27
+    },
+    "correction": "holm",
+    "stat_test": "fisher_randomization"
+  },
+  "gate_result": {
+    "passed": false,
+    "failed_gates": [
+      {
+        "gate_path": "eval.gates.ndcg@10",
+        "metric": "ndcg@10",
+        "condition": "max_regression",
+        "expected": 0.01,
+        "observed": 0.018,
+        "dataset": "ko-public-v1",
+        "severity": "fail",
+        "detail": "regression 0.018 exceeds max_regression 0.01 with holm-corrected p 0.012 < 0.05"
+      },
+      {
+        "gate_path": "eval.gates.ndcg@10",
+        "metric": "ndcg@10",
+        "condition": "min",
+        "expected": 0.8,
+        "observed": 0.794,
+        "dataset": "ko-public-v1",
+        "severity": "fail"
+      }
+    ],
+    "warned_gates": [
+      {
+        "gate_path": "eval.gates.judged@10",
+        "metric": "judged@10",
+        "condition": "warn_below",
+        "expected": 0.7,
+        "observed": 0.66,
+        "dataset": "ko-public-v1",
+        "severity": "warn",
+        "detail": "pooling bias suspected; enqueue unjudged top-10 documents for labeling"
+      }
+    ]
+  },
+  "artifacts_ref": {
+    "uri": "s3://rag-artifacts/eval/runs/01J9ZRBC3D4E5F6G7H8J9K0M1N/per_query.jsonl",
+    "blake3": "694c8778047973db07fb1145f40f6bb9882a96fe0b59309e3d4c6b6e84185de0",
+    "media_type": "application/x-ndjson",
+    "size_bytes": 183104
+  },
+  "created_at": "2026-09-23T02:39:05.004Z"
+}

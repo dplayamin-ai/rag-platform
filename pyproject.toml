@@ -1,0 +1,358 @@
+# RAG Platform core distribution and uv workspace root.
+# Canon: design bible sec. 6.7 (names), sec. 12 (module map and dependency direction); ADR-0035 (Python and
+# toolchain pins); 10-development/01 sec. 3.2 (root pyproject), 03 sec. 2.2/sec. 3.1 (ruff/mypy), 04 sec. 21 (pytest
+# markers); phase-6 plan (docs/12-appendix/05) sec. 8 (three-tier verification markers).
+# Exact resolved versions live in uv.lock (CI: `uv lock --check`).
+
+[project]
+name = "rag-platform"
+description = "Open-source RAG platform: parse, chunk, embed, hybrid-index, and retrieve LLM-ready Context Packs"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.12,<3.14" # D-01, ADR-0035: 3.12/3.13 only; 3.14 after compatibility review
+dynamic = ["version"]            # derived from VCS tags (hatch-vcs); release tagging is 10-development/08
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: Apache Software License",
+  "Typing :: Typed",
+]
+# Phase 6A minimal runtime set. Adapter dependencies (fastapi, semchunk, tiktoken, python-hwpx, mcp,
+# cloudevents, structlog, ...) are added by the work package that introduces the code importing them
+# (pin-and-bump, ADR-0035; a new dependency must be A-grade and support both 3.12 and 3.13).
+dependencies = [
+  "pydantic>=2,<3",
+  "pydantic-settings>=2,<3",
+  "python-ulid>=3,<4", # import name `ulid`; issued IDs (bible sec. 6.1, ADR-0004 ULID exception)
+  "blake3>=1,<2",      # H() content keys (bible sec. 6.2)
+  "pyyaml>=6,<7",      # profile YAML loader (bible sec. 7.3)
+  "jsonschema>=4.18",  # Draft 2020-12 validation with the `referencing` registry
+  "httpx>=0.27,<1",
+  "anyio>=4,<5",
+]
+
+[project.optional-dependencies]
+# Bible sec. 6.7 extras (spelling is fixed). Contents are filled in by the work packages that add the
+# corresponding adapters; kept empty here so the single uv.lock resolves on every platform.
+# `[kiwi]` stays empty until an Apache-2.0 kiwipiepy>=0.24.0 wheel is confirmed on PyPI
+# (10-development/02 sec. 2.2, 01 open issue 15).
+kiwi = []
+docling-chunker = []
+gpu = [] # CUDA/Paddle runtimes live in the sidecars/ocr-gpu image, never in the core package
+opensearch = []
+temporal = []
+eval = []
+
+[project.scripts]
+rag = "rag_platform.cli:main"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "hypothesis>=6.100",
+  "ruff>=0.8",
+  "mypy>=1.13",
+  "import-linter>=2.1",
+  "datamodel-code-generator>=0.26",
+  "types-pyyaml",     # stubs for mypy strict (stubs before ignore_missing_imports, ADR-0035)
+  "types-jsonschema",
+]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"] # build backend choice: 10-development/01 open issue 5
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "0.0.0" # untagged or git-less checkouts (VDI zip hand-off) still build
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rag_platform"]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.uv.workspace]
+# `sdk/python` joins the member list when the client SDK package is created (10-development/01 sec. 3.1).
+members = ["plugins/rag-plugin-*"]
+exclude = ["sidecars/*"]
+
+# ---------------------------------------------------------------------------------------------
+# ruff (10-development/03 sec. 2.2 rule set)
+# ---------------------------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+src = ["src", "tests", "plugins", "sdk/python", "tools"]
+extend-exclude = [
+  "src/rag_platform/telemetry/otel",             # Weaver output (01 sec. 6), not linted
+  "src/rag_platform/ledger/migrations/versions", # migration autogenerate output
+  "build",
+  "docs",                                        # design documents; code blocks are illustrative
+  "samples/cache",
+]
+
+[tool.ruff.lint]
+select = [
+  "E", "W", "F",          # pycodestyle, pyflakes
+  "I",                    # isort
+  "N",                    # pep8-naming
+  "UP",                   # pyupgrade
+  "B",                    # bugbear
+  "A", "C4", "PIE", "SIM", "RET", "RSE", "PERF", "FURB", "RUF",
+  "ANN",                  # missing annotations (pairs with mypy strict)
+  "D",                    # pydocstyle (Google convention)
+  "DTZ",                  # naive datetime
+  "T10", "T20",           # debugger, print
+  "G", "LOG",             # logging format
+  "EM", "TRY", "BLE",     # exception messages, tryceratops, blind except
+  "S",                    # bandit
+  "ASYNC",                # blocking calls inside async functions
+  "ARG", "FBT",           # unused arguments, boolean traps
+  "PTH",                  # pathlib
+  "ERA",                  # commented-out code
+  "TID",                  # banned-api (TID251), relative imports (TID252)
+  "TC",                   # type-only imports under TYPE_CHECKING
+  "PT",                   # pytest style
+  "PL",                   # pylint subset
+  "TD", "FIX",            # TODO format
+  "INP",                  # missing __init__.py
+]
+ignore = [
+  "COM812", "ISC001",     # conflict with ruff format
+  "D203", "D213",         # conflict with Google style (D211/D212 are used)
+  "ANN401",               # Any is needed at adapter boundaries (reason comment required)
+  "PLR0913",              # argument count is managed with models and keyword-only arguments
+  "TRY003",               # catalog detail text is assembled at the call site
+  "FIX002",               # TODO itself is allowed; its format is enforced by TD rules
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "D", "ANN", "PLR2004", "ARG", "FBT", "INP001", "TID251"]
+"tools/**" = ["T201", "TID251", "INP001", "D", "S603", "S607"] # repository tooling runs subprocesses
+# Shell, entry-point and infrastructure layers may read clocks, entropy and environment directly
+# (03 sec. 5, sec. 9, sec. 10); contracts, sdk, adapters, pipelines, retrieval and render may not.
+"src/rag_platform/orchestration/**" = ["TID251"]
+"src/rag_platform/ledger/**" = ["TID251"]
+"src/rag_platform/storage/**" = ["TID251"]
+"src/rag_platform/security/**" = ["TID251"]
+"src/rag_platform/settings/**" = ["TID251"]
+"src/rag_platform/eval/**" = ["TID251"]
+"src/rag_platform/api/**" = ["TID251"]
+"src/rag_platform/mcp/**" = ["TID251"]
+"src/rag_platform/cli/**" = ["TID251"]
+"src/rag_platform/sdk/hashing.py" = ["TID251"] # the single blake3 import site (H(), 03 sec. 10.2)
+# Generated from schemas/ by tools/contracts_gen.py; hash and time validators (03 sec. 2.2).
+# TID252 (relative imports) and TC (TYPE_CHECKING-only imports): datamodel-code-generator emits
+# package-relative imports between sibling contract modules and Pydantic needs the referenced
+# models at runtime (not just for annotations), so ruff's TYPE_CHECKING hoist would break
+# validation. N999/A001/A004/S105: generator-assigned names (nested disambiguation packages,
+# the bible sec. 5.3 `Warning` type, enum values that happen to contain "token"/"secret") trip
+# naming/shadowing/bandit heuristics that do not apply to generated schema-derived code.
+"src/rag_platform/contracts/**" = [
+  "TID251", "TID252", "TC", "D", "N815", "N999", "E501", "RUF", "UP", "A001", "A004", "S105",
+]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+# Bible sec. 4.1 purity: stages and the hot path do not read time, entropy, environment or secrets directly.
+"datetime.datetime.now".msg = "Use ctx.now() in stages; datetime.now(UTC) only in shell/api (03 sec. 10.1)"
+"datetime.datetime.utcnow".msg = "Deprecated and naive; use ctx.now() or datetime.now(UTC) (03 sec. 10.1)"
+"time.time".msg = "Use ctx.now(); monotonic timers belong to the shell (03 sec. 10.1)"
+"random".msg = "Stages are deterministic; issued IDs come from the shell (03 sec. 10.2)"
+"secrets".msg = "Only the shell/api issue entropy (03 sec. 10.2)"
+"uuid.uuid4".msg = "Issued IDs are ULIDs from the shell; content keys use hash_of() (03 sec. 10.2)"
+"os.environ".msg = "Configuration is injected via Settings/RuntimeServices (03 sec. 9)"
+"os.getenv".msg = "Configuration is injected via Settings/RuntimeServices (03 sec. 9)"
+"blake3".msg = "Use rag_platform.sdk.hash_of / blake3_hex (03 sec. 10.2)"
+"fitz".msg = "C-grade (AGPL) import forbidden (D-02, ADR-0001)"
+"pymupdf".msg = "C-grade (AGPL) import forbidden (D-02, ADR-0001)"
+"hwp5".msg = "C-grade (AGPL) import forbidden (D-02, ADR-0001)"
+"opentelemetry.trace.get_tracer".msg = "Plugins do not create spans; use @instrumented_call (03 sec. 8)"
+"logging.getLogger".msg = "Use structlog.get_logger() (03 sec. 7)"
+
+[tool.ruff.lint.isort]
+known-first-party = ["rag_platform"]
+required-imports = ["from __future__ import annotations"]
+combine-as-imports = true
+split-on-trailing-comma = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pep8-naming]
+classmethod-decorators = ["pydantic.field_validator", "pydantic.model_validator"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+# ---------------------------------------------------------------------------------------------
+# mypy (10-development/03 sec. 3.1)
+# ---------------------------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+mypy_path = "src"
+# Default target when run without arguments; workspace members are checked by passing their
+# source directories with `--config-file pyproject.toml` (03 sec. 3.1).
+packages = ["rag_platform"]
+explicit_package_bases = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool", "possibly-undefined"]
+show_error_codes = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+# Vendor stubs missing: module-level ignore_missing_imports only (ADR-0035 compliance table).
+[[tool.mypy.overrides]]
+module = ["blake3.*"]
+ignore_missing_imports = true
+
+# Generated from schemas/ by tools/contracts_gen.py (03 sec. 2.2). Three datamodel-code-generator
+# output patterns are sound Pydantic v2 at runtime but rejected by mypy strict as static Python:
+# (1) `constr(pattern=...)` used as a dict *key* type (open objects with a key pattern, e.g.
+#     IngestRequest.metadata.custom) is a function call, not a type expression (`valid-type`,
+#     cascading into `misc` on the enclosing `RootModel[...]`); (2) allOf-composed discriminator
+#     subclasses narrow a parent enum-typed field to `Literal["value"]` (`assignment`), which is
+#     sound for a fixed discriminant but not Liskov-safe in general; (3) a `StrEnum` member named
+#     after a bible §4 stage that collides with a `str` method (`FromStage.index`) shadows the
+#     inherited method (`assignment`). None of these apply outside generated contract code.
+[[tool.mypy.overrides]]
+module = ["rag_platform.contracts.*"]
+disable_error_code = ["valid-type", "misc", "assignment"]
+
+# ---------------------------------------------------------------------------------------------
+# import-linter: bible sec. 12 dependency direction, ADR-0035 compliance table (1)-(4),
+# 10-development/01 sec. 3.2 contract (5) and sec. 4.2, 02-architecture/02 sec. 1.2 forbidden sets.
+# ---------------------------------------------------------------------------------------------
+[tool.importlinter]
+root_package = "rag_platform"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+id = "layers"
+name = "Layered architecture (bible sec. 12 dependency direction; `|` = same layer, independent)"
+type = "layers"
+# Bible sec. 12: contracts <- sdk <- plugins | adapters | pipelines | retrieval | render
+#   <- orchestration | ledger | storage | security | profiles | settings | eval <- api | mcp | cli.
+# `telemetry` and `korean` are not named in the sec. 12 arrow; they sit beside `sdk` (layer L1,
+# 10-development/01 sec. 2.3, 02-architecture/02 sec. 1.2). `testing` is outside the stack (01 sec. 2.3).
+layers = [
+  "rag_platform.api | rag_platform.mcp | rag_platform.cli",
+  "rag_platform.orchestration | rag_platform.ledger | rag_platform.storage | rag_platform.security | rag_platform.profiles | rag_platform.settings | rag_platform.eval",
+  "rag_platform.plugins | rag_platform.adapters | rag_platform.pipelines | rag_platform.retrieval | rag_platform.render",
+  "rag_platform.sdk | rag_platform.telemetry | rag_platform.korean",
+  "rag_platform.contracts",
+]
+
+[[tool.importlinter.contracts]]
+id = "pipelines-orchestrator-neutral"
+name = "pipelines/retrieval/render (and adapters, sdk, contracts) never import temporalio, fastapi or ledger (D-17)"
+type = "forbidden"
+source_modules = [
+  "rag_platform.pipelines",
+  "rag_platform.retrieval",
+  "rag_platform.render",
+  "rag_platform.adapters",
+  "rag_platform.sdk",
+  "rag_platform.contracts",
+]
+forbidden_modules = [
+  "temporalio",
+  "fastapi",
+  "starlette",
+  "rag_platform.ledger",
+  "rag_platform.orchestration",
+]
+
+[[tool.importlinter.contracts]]
+id = "adapters-no-storage"
+name = "adapters never import storage/security (ArtifactRef load/save is the shell job; bible sec. 12)"
+type = "forbidden"
+source_modules = ["rag_platform.adapters"]
+forbidden_modules = ["rag_platform.storage", "rag_platform.security"]
+
+[[tool.importlinter.contracts]]
+id = "contracts-pure"
+name = "contracts import only pydantic and the standard library (02-architecture/02 sec. 1.2)"
+type = "forbidden"
+source_modules = ["rag_platform.contracts"]
+forbidden_modules = [
+  "httpx",
+  "anyio",
+  "yaml",
+  "qdrant_client",
+  "opensearchpy",
+  "temporalio",
+  "fastapi",
+  "starlette",
+  "sqlalchemy",
+  "valkey",
+  "pydantic_settings",
+]
+
+[[tool.importlinter.contracts]]
+id = "no-c-grade"
+name = "No C-grade (GPL/AGPL) imports anywhere in the core (D-02, ADR-0001, ADR-0035 table (4))"
+type = "forbidden"
+source_modules = ["rag_platform"]
+forbidden_modules = ["fitz", "pymupdf", "hwp5"]
+
+[[tool.importlinter.contracts]]
+id = "testing-not-in-production"
+name = "Production entry points never import the conformance kit (10-development/01 sec. 4.2)"
+type = "forbidden"
+source_modules = ["rag_platform.api", "rag_platform.mcp", "rag_platform.orchestration"]
+forbidden_modules = ["rag_platform.testing"]
+
+# ---------------------------------------------------------------------------------------------
+# pytest (10-development/04 sec. 21 markers + phase-6 plan sec. 8 three-tier verification markers)
+# ---------------------------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+xfail_strict = true
+addopts = [
+  "--strict-markers",
+  "--strict-config",
+  "--import-mode=importlib",
+  "-ra",
+  # Deferred tiers are excluded by default; `uv run python tools/dev.py test-deferred` selects them.
+  "-m", "not needs_docker and not needs_model and not needs_gpu and not needs_network",
+]
+markers = [
+  # three-tier verification (phase-6 plan sec. 8); each marked test carries a `# DEFERRED:` comment
+  "needs_docker: requires Docker/Linux services (PostgreSQL, Valkey, Qdrant server, TEI); tier 2",
+  "needs_model: requires downloaded model weights (downloads are forbidden on the VDI); tier 2b",
+  "needs_gpu: requires a CUDA GPU; tier 3",
+  "needs_network: requires outbound network access to external services",
+  # layer markers (10-development/04 sec. 2), attached from the directory by tests/conftest.py
+  "unit: pure unit test",
+  "contract: contract snapshot, invariant or hash-vector test",
+  "component: adapter or stage component test",
+  "integration: test against real backing services",
+  "e2e: end-to-end scenario",
+  "perf: performance measurement",
+  "quality: retrieval or answer quality gate",
+  "chaos: fault injection",
+  "security: tenant isolation and egress checks",
+  # attribute markers (10-development/04 sec. 21)
+  "model: needs a real model (see needs_model)",
+  "gpu: needs a GPU (see needs_gpu)",
+  "sidecar: needs a live sidecar server",
+  "slow: excluded from the PR gate, run nightly",
+  "quarantine: flaky test under quarantine",
+]

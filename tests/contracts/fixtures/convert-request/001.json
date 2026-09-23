@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "input": {
+    "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/sources/9f/9f3a7c1e5b2d4f6a8c0e2b4d6f8a1c3e5b7d9f1a3c5e7b9d1f3a5c7e9b1d3f5a",
+    "blake3": "9f3a7c1e5b2d4f6a8c0e2b4d6f8a1c3e5b7d9f1a3c5e7b9d1f3a5c7e9b1d3f5a",
+    "media_type": "application/x-hwp",
+    "size_bytes": 1843200
+  },
+  "options": {
+    "target": "hwpx",
+    "keep_distribution_text": false
+  },
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "document_id": "01J9ZQ5B2C3D4E5F6G7H8J9K0M",
+  "deadline_ms": 840000,
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "credentials_ref": null
+}

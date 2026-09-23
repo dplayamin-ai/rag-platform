@@ -1,0 +1,50 @@
+# pre-commit hooks (10-development/02 §7.3): fast checks only. mypy, pytest and the license gate
+# are not hooks; `just check` / `uv run python tools/dev.py check` and CI enforce them.
+# Install with `uvx pre-commit install` (pre-commit is not a dependency of the core lock).
+# Tool hooks run through `uv run` so that ruff and import-linter use the versions pinned in uv.lock
+# instead of a second pin in this file.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-json
+      - id: check-yaml
+        args: ["--allow-multiple-documents"]
+      - id: check-toml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: ["--maxkb=1024"] # samples/ and test fixtures: 1 MB per file (10-development/04 §6.3)
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types_or: [python, pyi]
+      - id: lint-imports
+        name: import-linter (bible §12 layers, forbidden contracts, C-grade import ban)
+        entry: uv run lint-imports
+        language: system
+        pass_filenames: false
+        files: ^(src|plugins|sdk/python)/.*\.py$
+      - id: uv-lock-check
+        name: uv lock --check
+        entry: uv lock --check
+        language: system
+        pass_filenames: false
+        files: (^|/)(pyproject\.toml|uv\.lock)$
+      - id: validate-contracts
+        name: schemas/ + 03-contracts machine checks (only when node is installed)
+        entry: sh -c 'if command -v node >/dev/null 2>&1; then node tools/validate-contracts.mjs --root . --quiet; else echo "node not found; CI runs this check"; fi'
+        language: system
+        pass_filenames: false
+        files: ^(schemas/|docs/03-contracts/|docs/02-architecture/00-design-bible\.md)

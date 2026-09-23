@@ -1,0 +1,6 @@
+{
+  "shard_key_threshold_chunks": 1000000,
+  "threshold_qps": null,
+  "index_per_tenant": "opt_in",
+  "promotion_window": "24h"
+}

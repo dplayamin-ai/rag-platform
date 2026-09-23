@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0.0",
+  "request_id": "01J9ZQ7B8C9D0E1F2G3H4J5K6M",
+  "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+  "source_uri": "s3://mois-records/regulations/2026/records-management-rule-2026-09.hwpx",
+  "media_type_hint": "application/hwp+zip",
+  "external_id": "MOIS-REG-2026-0917",
+  "external_version": "\"3f2a9c1e\"",
+  "metadata": {
+    "title": "공공기록물 관리에 관한 법률 시행규칙 일부개정안",
+    "authors": [
+      "행정안전부 국가기록원"
+    ],
+    "doc_date": "2026-09-17",
+    "doc_type": "regulation",
+    "department": "행정안전부",
+    "language_hint": "ko",
+    "tags": [
+      "기록물",
+      "시행규칙",
+      "개정안"
+    ],
+    "genre": "law_article",
+    "custom": {
+      "law_name": "공공기록물 관리에 관한 법률",
+      "revision_no": 12,
+      "is_draft": true
+    }
+  },
+  "acl": {
+    "allow_principals": [
+      "group:mois_records",
+      "user:kim.minsu@example.go.kr"
+    ],
+    "deny_principals": [],
+    "visibility": "restricted",
+    "classification": "internal",
+    "embargo_until": "2026-10-01T00:00:00.000Z",
+    "expires_at": null
+  },
+  "pii_policy": "mask",
+  "allow_distribution_documents": false,
+  "llm_enrichment_allowed": false,
+  "priority": 5,
+  "callback": {
+    "webhook_url": "https://hooks.example.go.kr/rag/ingest",
+    "events": [
+      "job.state.changed",
+      "ingest.document.indexed",
+      "ingest.document.failed"
+    ]
+  },
+  "requested_at": "2026-09-22T09:00:00.000Z"
+}

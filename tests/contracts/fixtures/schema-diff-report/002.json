@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "SchemaDiffReport",
+  "contract": "chunk-set",
+  "schema_id": "urn:rag:schema:chunk-set:1",
+  "base_version": "1.0.0",
+  "head_version": "1.1.0",
+  "declared_level": "minor",
+  "computed_level": "major",
+  "passed": false,
+  "changes": [
+    {
+      "kind": "property_removed",
+      "level": "major",
+      "path": "/properties/secondary_tokenizer_ids",
+      "detail": "개명 제안(secondary_tokenizer_ids → tokenizer_ids)은 제거 + 추가로 분류된다",
+      "before": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "after": null
+    },
+    {
+      "kind": "property_added_required",
+      "level": "major",
+      "path": "/properties/tokenizer_ids",
+      "detail": "새 필수 속성",
+      "before": null,
+      "after": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "minItems": 1
+      }
+    },
+    {
+      "kind": "constraint_tightened",
+      "level": "major",
+      "path": "/properties/chunks/maxItems",
+      "detail": "제약 강화는 모든 계약에서 major: 저장된 1.0.0 산출물(청크 20,000 초과)이 새 스키마에서 무효가 된다(§2.1)",
+      "before": 50000,
+      "after": 20000
+    }
+  ],
+  "golden_examples": {
+    "checked": 4,
+    "passed": 0,
+    "failed": [
+      "tests/contracts/golden/chunk-set/1.0.0/mois-official-notice-hwpx.json",
+      "tests/contracts/golden/chunk-set/1.0.0/law-article-hwpx.json",
+      "tests/contracts/golden/chunk-set/1.0.0/scanned-gazette-pdf.json",
+      "tests/contracts/golden/chunk-set/1.0.0/press-release-html.json"
+    ]
+  },
+  "enum_check": {
+    "passed": true,
+    "mismatches": []
+  },
+  "generated_at": "2026-09-22T09:05:00.000Z",
+  "tool_version": "0.1.0"
+}

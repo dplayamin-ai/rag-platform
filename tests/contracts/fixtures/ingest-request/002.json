@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0.0",
+  "request_id": "01J9ZQ8R2S3T4V5W6X7Y8Z9A0B",
+  "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+  "source_uri": "https://open.example.go.kr/files/2026/press/press-release-2026-09-15.pdf",
+  "media_type_hint": "application/pdf",
+  "external_id": "MOIS-PR-2026-0915",
+  "metadata": {
+    "title": "2026년 지방자치단체 데이터 개방 확대 계획 발표",
+    "doc_date": "2026-09-15",
+    "doc_type": "press_release",
+    "department": "행정안전부",
+    "language_hint": "ko",
+    "tags": [
+      "보도자료",
+      "데이터개방"
+    ],
+    "genre": "narrative"
+  },
+  "acl": {
+    "allow_principals": [
+      "tenant:*"
+    ],
+    "visibility": "public",
+    "classification": "public"
+  },
+  "requested_at": "2026-09-22T09:05:00.000Z"
+}

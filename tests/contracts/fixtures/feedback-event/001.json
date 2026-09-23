@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "feedback_id": "01J9ZS1F2G3H4J5K6M7N8P9Q0R",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "query_id": "01J9ZS0Q1R2S3T4V5W6X7Y8Z9A",
+  "pack_id": "01J9ZS0P2Q3R4S5T6V7W8X9Y0Z",
+  "kind": "cited",
+  "cite_ids": [
+    "d1",
+    "d3"
+  ],
+  "experiment_id": "interleave-2026w39-cc-vs-rrf",
+  "created_at": "2026-09-22T09:00:07.318Z"
+}

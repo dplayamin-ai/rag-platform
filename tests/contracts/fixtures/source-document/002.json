@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "SourceDocument",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_id": "01J9ZQ5C2D3E4F5G6H7J8K9M0N",
+  "producer": {
+    "plugin_id": "parser.format_detector_puremagic",
+    "plugin_version": "1.0.0",
+    "config_hash": "72002b8ec2397e798ef63169a73c85548c3d3e1d5f26dd127ef5ea7b60a1f0e4",
+    "image_digest": null
+  },
+  "quality": "full",
+  "warnings": [],
+  "created_at": "2026-09-22T09:03:11.640Z",
+  "lineage_refs": {},
+  "document_id": "01J9ZQ8R2S3T4V5W6X7Y8Z9A0B",
+  "request_id": "01J9ZQ8M1N2P3Q4R5S6T7V8W9X",
+  "source_uri": "https://www.nts.example.go.kr/press/latest/tax-schedule-2026h2.pdf",
+  "resolved_uri": "https://www.nts.example.go.kr/press/2026/09/15/tax-schedule-2026h2.pdf",
+  "artifact": {
+    "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/sources/12/12ef37752cc4996419c282b5e691c4508ac6294a6a18eeade2219890653dba30",
+    "blake3": "12ef37752cc4996419c282b5e691c4508ac6294a6a18eeade2219890653dba30",
+    "media_type": "application/pdf",
+    "size_bytes": 3145728
+  },
+  "content_hash": "12ef37752cc4996419c282b5e691c4508ac6294a6a18eeade2219890653dba30",
+  "doc_version": "12ef37752cc4996419c282b5e691c4508ac6294a6a18eeade2219890653dba30",
+  "size_bytes": 3145728,
+  "media_type": "application/pdf",
+  "format": "pdf",
+  "format_confidence": 1.0,
+  "container_flags": {
+    "encrypted": false,
+    "distribution": false,
+    "compressed": false,
+    "hwp_version": null
+  },
+  "http_metadata": {
+    "etag": "W/\"68c7a1f0-300000\"",
+    "last_modified": "Tue, 15 Sep 2026 01:20:00 GMT"
+  },
+  "metadata": {
+    "title": "2026년 하반기 세무 일정 안내",
+    "authors": [
+      "국세청 대변인실"
+    ],
+    "doc_date": "2026-09-15",
+    "doc_type": "press_release",
+    "department": "국세청 대변인실",
+    "language_hint": "ko",
+    "tags": [
+      "보도자료",
+      "세무일정"
+    ],
+    "genre": "narrative",
+    "custom": {
+      "press_no": "2026-0915-03",
+      "page_count_hint": 12
+    }
+  },
+  "metadata_hash": "0e72e7bfd2098d98ccf52876dbbeb2d9aedd3a19488ecb72c4eaf6ed23a132b7",
+  "acl": {
+    "allow_principals": [
+      "tenant:*"
+    ],
+    "visibility": "public",
+    "classification": "public"
+  },
+  "acl_hash": "e7b219f54219ad7b9ec8ac12d2aefc00bc171ef78545665c2ce36839e501c23c",
+  "pii_policy": "tokenize",
+  "pii_tokenize_mode": "encrypt",
+  "external_id": "nts-press-2026-0915-03",
+  "external_version": "W/\"68c7a1f0-300000\"",
+  "fetched_at": "2026-09-22T09:03:11.207Z",
+  "fetch_report": {
+    "attempts": 2,
+    "bytes_per_sec": 12582912.0,
+    "redirects": 1,
+    "http_status": 200,
+    "conditional_request": true,
+    "not_modified": false,
+    "duration_ms": 412
+  },
+  "detect_report": {
+    "signals": [
+      "pdf:header=%PDF-1.7",
+      "pdf:trailer=startxref",
+      "pdf:encrypt=absent"
+    ],
+    "hint_media_type": null,
+    "hint_agrees": null,
+    "candidates": [
+      {
+        "format": "pdf",
+        "confidence": 1.0
+      }
+    ]
+  },
+  "dedup_report": {
+    "policy": "skip_if_same_hash",
+    "previous_doc_version": "b803834df454c7767db9932d9fe3040c5deabb9016c5b45bb3c394f058f61414",
+    "content_unchanged": false,
+    "source_bytes_reused": false
+  }
+}

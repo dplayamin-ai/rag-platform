@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0.0",
+  "run_id": "01J9ZR5E3H7K9M2N4P6Q8S0T1V",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "dataset_id": "01J9ZR0D4T7V9W2X4Y6Z8A0B1C",
+  "profile_hash": "db409445c85a60e1d5a8819dcf3d9a5c40b28818c7cdf4497917ae0cc762d055",
+  "query_count": 312,
+  "metrics": {
+    "ndcg@10": 0.812,
+    "recall@20": 0.927,
+    "mrr": 0.744,
+    "span_hit_rate@10": 0.858,
+    "judged@10": 0.79
+  },
+  "comparison": {
+    "baseline_run_id": "01J9ZR1A2B3C4D5E6F7G8H9J0K",
+    "deltas": {
+      "ndcg@10": 0.014,
+      "recall@20": 0.006
+    },
+    "p_values": {
+      "ndcg@10": 0.031,
+      "recall@20": 0.44
+    },
+    "correction": "holm",
+    "stat_test": "fisher_randomization"
+  },
+  "gate_result": {
+    "passed": true,
+    "failed_gates": [],
+    "warned_gates": []
+  },
+  "artifacts_ref": {
+    "uri": "s3://rag-artifacts/eval/runs/01J9ZR5E3H7K9M2N4P6Q8S0T1V/per_query.jsonl",
+    "blake3": "840e07644f0e2b6dff5591e01e9738a14be402bc496b82191bd42cc19a4cd8d6",
+    "media_type": "application/x-ndjson",
+    "size_bytes": 184320
+  },
+  "run_ref": {
+    "uri": "s3://rag-artifacts/eval/runs/01J9ZR5E3H7K9M2N4P6Q8S0T1V/run.trec",
+    "blake3": "5c7bc54635b36027fb6768401e0239be3e6808e371c02529b0f70010545f943c",
+    "media_type": "text/plain",
+    "size_bytes": 1996800
+  },
+  "created_at": "2026-09-22T02:41:17.512Z"
+}

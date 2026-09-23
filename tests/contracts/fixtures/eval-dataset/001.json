@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0.0",
+  "dataset_id": "01J9ZR0D4T7V9W2X4Y6Z8A0B1C",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "name": "ko-public-v1",
+  "content_hash": "0f9fb991f00b5cbf6f450343c1eb9223f85438cdaff9a4c8169dff030569947c",
+  "qrels_ref": {
+    "uri": "s3://rag-artifacts/eval/datasets/01J9ZR0D4T7V9W2X4Y6Z8A0B1C/qrels.jsonl",
+    "blake3": "1d034f5c94e61b636c76f281ae0a3f7988e420cb4eeb4563f2db54d26d0159ae",
+    "media_type": "application/x-ndjson",
+    "size_bytes": 148230
+  },
+  "answer_spans_ref": {
+    "uri": "s3://rag-artifacts/eval/datasets/01J9ZR0D4T7V9W2X4Y6Z8A0B1C/answer_spans.jsonl",
+    "blake3": "fe386b346210b9f4bc55a21ef2dc3ac4d9407ac128fa48e663ccdb48213d0f2c",
+    "media_type": "application/x-ndjson",
+    "size_bytes": 302114
+  },
+  "topics_ref": {
+    "uri": "s3://rag-artifacts/eval/datasets/01J9ZR0D4T7V9W2X4Y6Z8A0B1C/topics.jsonl",
+    "blake3": "e0c02e581d953800f39ebbb71ab5bb3fb4f9c750b7c90b91a969edb25bfe0c4b",
+    "media_type": "application/x-ndjson",
+    "size_bytes": 61440
+  },
+  "corpus_collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+  "judgment_level": "graded",
+  "relevance_max": 3,
+  "label_provenance": "human",
+  "license": "LicenseRef-KOGL-1",
+  "language": "ko",
+  "created_at": "2026-09-22T09:00:00.000Z"
+}

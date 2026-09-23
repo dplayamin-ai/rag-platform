@@ -1,0 +1,53 @@
+{
+  "type": "urn:rag:error:retrieve.unavailable",
+  "title": "Retrieval unavailable",
+  "status": 503,
+  "detail": "all 3 retrieval channels failed for 1 collection; minimum of 1 successful channel not met",
+  "instance": "/v1/query",
+  "code": "retrieve.unavailable",
+  "retryable": true,
+  "trace_id": "c3f1a2b4d5e6f70819a2b3c4d5e6f708",
+  "request_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "retry_after": 5,
+  "errors": [
+    {
+      "code": "retrieve.channel_timeout",
+      "type": "urn:rag:error:retrieve.channel_timeout",
+      "retryable": true,
+      "stage": "retrieve",
+      "plugin_id": "retriever.qdrant_dense",
+      "detail": "channel latency budget of 250 ms exceeded",
+      "message": "Retrieval channel timed out",
+      "location": {
+        "channel": "dense",
+        "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K"
+      }
+    },
+    {
+      "code": "retrieve.channel_timeout",
+      "type": "urn:rag:error:retrieve.channel_timeout",
+      "retryable": true,
+      "stage": "retrieve",
+      "plugin_id": "retriever.qdrant_sparse",
+      "detail": "channel latency budget of 250 ms exceeded",
+      "message": "Retrieval channel timed out",
+      "location": {
+        "channel": "sparse",
+        "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K"
+      }
+    },
+    {
+      "code": "retrieve.backend_error",
+      "type": "urn:rag:error:retrieve.backend_error",
+      "retryable": true,
+      "stage": "retrieve",
+      "plugin_id": "retriever.opensearch_bm25",
+      "detail": "lexical backend returned HTTP 503 (cluster_block_exception)",
+      "message": "Retrieval backend error",
+      "location": {
+        "channel": "lexical",
+        "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K"
+      }
+    }
+  ]
+}

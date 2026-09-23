@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "CollectionSpec",
+  "collection_id": "01JADQ3G5R7T9V2X4Z6B8D0F2H",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "name": "행정안전부 훈령·예규 2026",
+  "profile_id": "korean-gov",
+  "profile_hash": "3c9f1a7e5b2d4c6a8e0f1b3d5a7c9e2f4b6d8a0c2e4f6a8b0d2f4c6e8a0b2d4f",
+  "embedding_space_ids": {
+    "dense": "a1b2c3d4e5f60718293a4b5c6d7e8f901a2b3c4d5e6f708192a3b4c5d6e7f809",
+    "sparse_learned": "b7c8d9e0f1a2b3c4d5e6f70819a2b3c4d5e6f71829a3b4c5d6e7f8192a3b4c5d"
+  },
+  "embedding_profile_hash": "c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1",
+  "analyzer_id": "mecab-ko:1.3.7:ko-dic-2.1.1",
+  "dictionary_hash": "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5",
+  "dictionary_ref": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/derived/dictionaries/d4/d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5.json",
+  "mapping_version": "1",
+  "lexical_profile_hash": "7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+  "tenant_isolation_tier": "index_per_tenant",
+  "backends": [
+    {
+      "backend_id": "index_backend.qdrant",
+      "role": "vector",
+      "physical_name": "rag_vec_c0d1e2f3a4b5_t_01j9zq4k7x2m8n3p5r6s7t8v9w",
+      "alias": "col_01JADQ3G5R7T9V2X4Z6B8D0F2H_vec"
+    },
+    {
+      "backend_id": "index_backend.opensearch",
+      "role": "lexical",
+      "physical_name": "rag_lex_7e8f9a0b1c2d_t_01j9zq4k7x2m8n3p5r6s7t8v9w",
+      "alias": "col_01JADQ3G5R7T9V2X4Z6B8D0F2H_lex"
+    }
+  ],
+  "policies": {
+    "pii_policy": "tokenize",
+    "pii_tokenize_mode": "encrypt",
+    "llm_enrichment_allowed": false,
+    "allow_distribution_documents": true,
+    "enrichment_budget_tokens": 0,
+    "corpus_multiplier_max": 1.5
+  },
+  "filterable_fields": [
+    "custom.ministry_code",
+    "custom.doc_number",
+    "custom.law_id"
+  ],
+  "license_policy": {
+    "max_grade": "B",
+    "territory": [
+      "KR"
+    ]
+  },
+  "calibration_ref": null,
+  "stats": {
+    "document_count": 1284,
+    "leaf_count": 96520,
+    "parent_count": 11834,
+    "bytes_dense": 395345920,
+    "bytes_sparse": 61772800,
+    "bytes_lexical": 188743680
+  },
+  "created_at": "2026-09-22T09:00:00.000Z",
+  "updated_at": "2026-09-22T09:30:00.000Z"
+}

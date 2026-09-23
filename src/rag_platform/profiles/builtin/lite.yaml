@@ -1,0 +1,97 @@
+# `lite` tier (bible §7.1, §11.1 `lite` row): single Qdrant backend, no OpenSearch, `LocalRunner`
+# for dev/CI and a Temporal single binary for light production. `sparse_bm25` plays the `lexical`
+# channel role (bible §5.7 `Channel`: "`sparse_bm25` 벡터(lite)는 항상 `channel=lexical`").
+schema_version: "1.0.0"
+profile_id: lite
+version: "1.0.0"
+extends: base
+tier: lite
+license_policy: {max_grade: B, territory: [KR]}
+runtime:
+  orchestrator: local
+  queues: {fetch: ingest-io, parse: ingest-cpu, ocr: ingest-cpu, normalize: ingest-cpu, chunk: ingest-cpu, enrich: ingest-cpu, enrich_llm: ingest-llm, embed: ingest-gpu-embed, index: ingest-io}
+  tenant_concurrent_jobs_max: 8
+  acl_propagation_slo: 5m
+  outbox_lag_slo: 5s
+  egress:
+    allowed_schemes: [https, s3, gs, az, file]
+    deny_cidrs: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 169.254.0.0/16, 0.0.0.0/8, "::1/128", "fc00::/7", "fe80::/10"]
+    max_redirects: 3
+    resolve_pin: true
+ingest:
+  fetch: {plugin: fetcher.fsspec_httpx, max_bytes: 209715200, policy: {start_to_close: 5m, heartbeat: 30s, max_attempts: 5}}
+  parse:
+    router:
+      hwpx: [parser.hwpx_python_hwpx]
+      hwp5: [{plugin: parser.hwp5_java_sidecar, isolation: sidecar, image: parser-workers}, {plugin: parser.hwp5_unhwp, isolation: helper_process}, {plugin: parser.hwp5_hwp_hwpx_parser}]
+      hwp3: parse.unsupported_variant
+      pdf:  {born_digital: parser.pdf_fast_pdftext, scanned: parser.pdf_docling_standard, mixed: page_route}
+      docx: [parser.docx_docling_docx2python]
+      doc:  parse.unsupported_format
+      rtf:  [parser.rtf_striprtf]
+      odt:  parse.unsupported_format
+      html: [parser.html_trafilatura_docling]
+      txt:  [parser.text_charset_markdown_it]
+      md:   [parser.text_charset_markdown_it]
+      json: {split: json_array, then: txt}
+      unknown: parse.unsupported_format
+    options:
+      pdf: {layout_model: heron, table_model: tableformer_accurate, threads: 2}
+      ocr: {plugin: rapidocr, lang: [korean], version: PPOCRV5, model: MOBILE}
+      page_timeout: {cpu: 60s, gpu: 20s}
+  normalize:
+    analyzer: {plugin: normalizer.mecab_ko, user_dictionary: collection}
+    sentence_splitter: {plugin: normalizer.kss_punct, fallback: normalizer.regex_sentences}
+    pii: {plugin: normalizer.presidio_ko, policy: mask, recognizers: [KR_RRN, KR_PHONE, KR_BANK_ACCOUNT, KR_CARD, KR_PASSPORT]}
+  chunk:
+    plugin: chunker.structure_aware
+    tokenizer: hf:BAAI/bge-m3
+    secondary_tokenizers: [tiktoken:o200k_base]
+    leaf_max_tokens: {value: 512, gate: {metric: ndcg@10, grid: [256, 384, 512, 768], dataset: ko-public-v1}}
+    parent_max_tokens: 2048
+    merge_min_tokens: 64
+    fallback: {plugin: chunker.flat_text, max_tokens: 384, overlap_ratio: {value: 0.10, gate: {grid: [0, 0.10, 0.15]}}, sentence_window_n: 2}
+    table_row_group_tokens: 256
+    genre_rules: {law_article: {heading_regex: "^제\\d+조", split_on: [항]}}
+  enrich:
+    deterministic: [enricher.deterministic_prefix, enricher.korean_keywords, enricher.derived_meta]
+    generated_prefix: {enabled: false, plugin: enricher.llm_context_prefix, gate: {metric: ndcg@10, min_delta: 0.03, max_cost_per_doc_usd: 0.05}}
+    contextual_doc_summary: {enabled: false, plugin: enricher.doc_summary_autocontext}
+    budget: {enrichment_budget_tokens: 0, corpus_multiplier_max: 1.5, queue: ingest-llm}
+  embed:
+    dense:  {plugin: embedder.inprocess_sentence_transformers, model_id: BAAI/bge-m3, revision: "main", dim: 1024, normalized: true, dtype: fp16}
+    sparse: {plugin: embedder.sparse_bm25, vocab_id: xlm-roberta-250k}
+    late_interaction: {enabled: false}
+    equivalence_gate: {cosine_min: 0.9999, sample: 1000}
+  index:
+    backends:
+      - {plugin: index_backend.qdrant, role: vector, named_vectors: [dense, sparse_bm25], tenant_isolation: payload_filter, hnsw: {m: 0, payload_m: 16}, korean_analyzer: platform}
+    commit: {strategy: insert_then_delete, flip_order: [vector], cleanup_delay: 1h}
+query:
+  transform: [query_transformer.korean_normalize, query_transformer.rule_router, query_transformer.regex_self_query]
+  channels:
+    - {channel: dense,   retriever: retriever.qdrant_dense,        top_k: 100, timeout_ms: 250}
+    - {channel: lexical, retriever: retriever.qdrant_sparse_bm25,  top_k: 100, timeout_ms: 250}
+  fusion: {method: rrf, k: 60, weights: {dense: 1.0, lexical: 1.0}, variant_query_weight: 0.5, gate: {promote_to: convex_minmax, min_qrels: 200, tool: ranx.optimize_fusion}}
+  hydrate: {top_n: 100, backend: index_backend.qdrant, with_vectors: false}
+  rerank: {plugin: reranker.flashrank, model_id: BAAI/bge-reranker-v2-m3, response_schema: tei, backend: in_process, top_n_in: 100, top_n_out: 20, max_tokens_per_text: 512, timeout_ms: 300, normalization: sigmoid, gate: {candidate: dragonkue/bge-reranker-v2-m3-ko, min_delta_pt: 2}}
+  postprocess:
+    order: [relevance_gate, dedup, mmr, parent_expand, dedup]
+    relevance_gate: {tau: 0.3}
+    dedup: {cosine_threshold: 0.95, minhash: {num_perm: 128, seed: 42, scheme: affine32, threshold: 0.8}}
+    mmr: {lambda: 0.7}
+    parent_expand: {ratio_threshold: 0.5, max_parent_tokens: 2048, text_store: artifact_store}
+  pack: {k_max: 20, max_context_tokens: 24000, reserved_answer_tokens: 4000, ordering: litm_alternating, renderer: anthropic_search_result, instructions_template_id: rag-answer-ko@1,
+         tokenizer: {provider: anthropic, model: "claude-placeholder", count_method: approximate, calibration_ratio: null, safety_margin: 0.10},
+         table_format_preference: [html, markdown, json], overflow_policy: [downgrade_tables, truncate], confidence_tiers: {high: 0.7, medium: 0.4}}
+  latency_budget_ms: {total: 800, plan: 60, retrieve: 120, rerank: 250, postprocess: 60, pack: 40}
+security:
+  authn: oidc
+  authz: {plugin: cedar, policy_version: "2026-09"}
+  rate_limit: {store: valkey, fail_mode: closed}
+  tenant_isolation_tier: payload_filter
+  tiering: {shard_key_threshold_chunks: 1000000, index_per_tenant: opt_in}
+observability: {content_capture: none, tenant_id_hash: true}
+eval:
+  datasets: [ko-public-v1]
+  gates: {ndcg@10: {min: 0.75, max_regression: 0.01, p: 0.05, correction: holm}, recall@20: {min: 0.88}, judged@10: {warn_below: 0.7}}

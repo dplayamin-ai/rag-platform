@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0.0",
+  "request_id": "01J9ZQ8R2S3T4V5W6X7Y8Z9A0C",
+  "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+  "source_uri": "s3://mois-records/reports/2026/local-data-open-annual-report-2025.pdf",
+  "media_type_hint": "application/pdf",
+  "external_id": "MOIS-RPT-2025-ANNUAL-DATA",
+  "external_version": "2025.12-final",
+  "metadata": {
+    "title": "2025년 지방자치단체 데이터 개방 연차보고서",
+    "authors": [
+      "행정안전부 공공데이터정책과"
+    ],
+    "doc_date": "2025-12-30",
+    "doc_type": "report",
+    "department": "행정안전부",
+    "language_hint": "ko",
+    "tags": [
+      "연차보고서",
+      "공공데이터"
+    ],
+    "genre": "outline_report",
+    "custom": {
+      "fiscal_year": 2025,
+      "program_code": "DATA-OPEN-2025"
+    }
+  },
+  "acl": {
+    "allow_principals": [
+      "group:mois_data_policy",
+      "group:mois_records"
+    ],
+    "deny_principals": [
+      "user:contractor.temp@example.go.kr"
+    ],
+    "visibility": "tenant",
+    "classification": "internal"
+  },
+  "pii_policy": "tokenize",
+  "pii_tokenize_mode": "encrypt",
+  "priority": 3,
+  "requested_at": "2026-09-22T09:05:00.000Z"
+}

@@ -1,0 +1,20 @@
+{
+  "task_queue": "ingest-cpu",
+  "start_to_close": "15m",
+  "heartbeat": "60s",
+  "max_attempts": 3,
+  "backoff": {
+    "initial": "1s",
+    "max": "5m",
+    "coefficient": 2.0
+  },
+  "non_retryable_error_codes": [
+    "parse.document_encrypted",
+    "parse.distribution_document",
+    "parse.unsupported_variant",
+    "parse.corrupt_container",
+    "contract.violation"
+  ],
+  "resumable": true,
+  "isolation": "in_process"
+}

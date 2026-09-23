@@ -1,0 +1,25 @@
+{
+  "specversion": "1.0",
+  "id": "01JAB4F2A3B4C5D6E7F8G9H0J1",
+  "source": "urn:rag:worker",
+  "type": "acl.document.updated",
+  "time": "2026-09-22T10:02:41.007Z",
+  "subject": "tenant/01J9ZQ4K7X2M8N3P5R6S7T8V9W/document/01JAB3C4D5E6F7G8H9JKMNPQRS",
+  "datacontenttype": "application/json",
+  "tenantid": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "data": {
+    "job_id": "01JAB4F0G1H2J3K4M5N6P7Q8R9",
+    "document_id": "01JAB3C4D5E6F7G8H9JKMNPQRS",
+    "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+    "acl_hash": "5d7e9f3a4c1e7b0a5d7e9f3a4c1e7b0a5d7e9f3a4c1e7b0a5d7e9f3a4c1e7b0a",
+    "previous_acl_hash": "9f3a4c1e7b0a5d7e9f3a4c1e7b0a5d7e9f3a4c1e7b0a5d7e9f3a4c1e7b0a5d7e",
+    "visibility": "restricted",
+    "classification": "internal",
+    "backends_updated": [
+      "index_backend.qdrant",
+      "index_backend.opensearch"
+    ],
+    "revocation_hint_recorded": true,
+    "propagation_ms": 1840
+  }
+}

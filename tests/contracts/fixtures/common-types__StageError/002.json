@@ -1,0 +1,24 @@
+{
+  "code": "parse.document_encrypted",
+  "type": "urn:rag:error:parse.document_encrypted",
+  "retryable": false,
+  "stage": "parse",
+  "plugin_id": "parser.hwpx_python_hwpx",
+  "detail": "OWPML package is encrypted (container_flags.encrypted=true) and IngestRequest.credentials_ref is absent",
+  "artifact_ref": {
+    "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/source-document/3f/3f8a9c1e5b7d2f4a6c8e0b1d3f5a7c9e2b4d6f8a0c1e3b5d7f9a2c4e6b8d0f1a.json",
+    "blake3": "9e2b4d6f8a0c1e3b5d7f9a2c4e6b8d0f1a3f8a9c1e5b7d2f4a6c8e0b1d3f5a7c",
+    "media_type": "application/vnd.rag.source-document+json",
+    "schema_type": "SourceDocument",
+    "schema_version": "1.0.0",
+    "size_bytes": 2314,
+    "stage_key": "3f8a9c1e5b7d2f4a6c8e0b1d3f5a7c9e2b4d6f8a0c1e3b5d7f9a2c4e6b8d0f1a"
+  },
+  "message": "Document is encrypted",
+  "occurred_at": "2026-09-22T09:12:33.412Z",
+  "attempt": 1,
+  "location": {
+    "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+    "document_id": "01J9ZQ7D3E4F5G6H7J8K9M0N1P"
+  }
+}

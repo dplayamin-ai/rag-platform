@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "query_id": "01JA0QRY0001A2B3C4D5E6F7G8",
+  "query": "정보공개 청구를 받은 공공기관은 며칠 이내에 공개 여부를 결정해야 하나요?",
+  "collection_ids": [
+    "01J9ZQ5A1B2C3D4E5F6G7H8J9K"
+  ],
+  "top_k": 10,
+  "target_model": {
+    "provider": "anthropic",
+    "model": "<target-model-id>"
+  },
+  "requested_at": "2026-09-22T09:00:00.000Z"
+}

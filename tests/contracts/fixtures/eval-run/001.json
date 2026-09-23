@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "run_id": "01J9ZR5E3H7K9M2N4P6Q8S0T1V",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "dataset_id": "01J9ZR0D4T7V9W2X4Y6Z8A0B1C",
+  "profile_id": "standard",
+  "profile_hash": "db409445c85a60e1d5a8819dcf3d9a5c40b28818c7cdf4497917ae0cc762d055",
+  "index_commit_ids": [
+    "01J9ZR2C3D4E5F6G7H8J9K0M1N",
+    "01J9ZR2D4E5F6G7H8J9K0M1N2P"
+  ],
+  "index_commits_hash": "7f3a9c1e5b2d84f6a0c7e9b3d1f5a8c2e4b6d8f0a2c4e6b8d0f2a4c6e8b0d2f4",
+  "status": "running",
+  "metrics_requested": [
+    "ndcg@10",
+    "recall@20",
+    "mrr",
+    "span_hit_rate@10",
+    "judged@10"
+  ],
+  "started_at": "2026-09-22T02:00:00.000Z",
+  "job_id": "01J9ZRJ0B1C2D3E4F5G6H7J8K9"
+}

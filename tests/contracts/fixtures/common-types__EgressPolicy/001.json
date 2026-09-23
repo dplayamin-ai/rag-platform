@@ -1,0 +1,30 @@
+{
+  "allowed_schemes": [
+    "https",
+    "s3"
+  ],
+  "allowed_hosts": [
+    ".go.kr",
+    "www.law.go.kr",
+    "rag-sources.s3.ap-northeast-2.amazonaws.com"
+  ],
+  "deny_cidrs": [
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16",
+    "127.0.0.0/8",
+    "169.254.0.0/16",
+    "0.0.0.0/8",
+    "::1/128",
+    "fc00::/7",
+    "fe80::/10",
+    "100.64.0.0/10"
+  ],
+  "max_redirects": 2,
+  "resolve_pin": true,
+  "max_bytes": 104857600,
+  "connect_timeout_ms": 3000,
+  "allowed_ports": [
+    443
+  ]
+}

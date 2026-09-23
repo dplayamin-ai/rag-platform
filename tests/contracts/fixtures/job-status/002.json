@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "JobStatus",
+  "job_id": "01J9ZQ7C9D0E1F2G3H4J5K6M7N",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+  "kind": "ingest_document",
+  "state": "failed",
+  "stage": "parse",
+  "progress": {
+    "done": 1,
+    "total": 8,
+    "unit": "stage"
+  },
+  "attempts": 1,
+  "workflow_run_id": "8c2d4e6f-1a3b-4c5d-8e9f-0a1b2c3d4e5f",
+  "workflow_id": "01J9ZQ7C9D0E1F2G3H4J5K6M7N",
+  "idempotency_key": "9f1e2d3c-4b5a-4968-8776-5a4b3c2d1e0f",
+  "request_id": "01J9ZQ7B8C9D0E1F2G3H4J5K6M",
+  "document_id": "01J9ZQ7D3E4F5G6H7J8K9M0N1P",
+  "last_error": {
+    "code": "parse.document_encrypted",
+    "type": "urn:rag:error:parse.document_encrypted",
+    "retryable": false,
+    "stage": "parse",
+    "plugin_id": "parser.hwpx_python_hwpx",
+    "detail": "OWPML package is encrypted (container_flags.encrypted=true) and IngestRequest.credentials_ref is absent",
+    "artifact_ref": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/source-document/3f/3f8a9c1e5b7d2f4a6c8e0b1d3f5a7c9e2b4d6f8a0c1e3b5d7f9a2c4e6b8d0f1a.json",
+      "blake3": "9e2b4d6f8a0c1e3b5d7f9a2c4e6b8d0f1a3f8a9c1e5b7d2f4a6c8e0b1d3f5a7c",
+      "media_type": "application/vnd.rag.source-document+json",
+      "schema_type": "SourceDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 2314,
+      "stage_key": "3f8a9c1e5b7d2f4a6c8e0b1d3f5a7c9e2b4d6f8a0c1e3b5d7f9a2c4e6b8d0f1a"
+    },
+    "message": "Document is encrypted",
+    "occurred_at": "2026-09-22T09:12:33.412Z",
+    "attempt": 1,
+    "location": {
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "document_id": "01J9ZQ7D3E4F5G6H7J8K9M0N1P"
+    }
+  },
+  "degraded": [],
+  "cost": {
+    "llm_tokens_in": 0,
+    "llm_tokens_out": 0,
+    "cost_usd": 0,
+    "gpu_seconds": 0
+  },
+  "priority": 5,
+  "status_url": "https://rag.example.go.kr/v1/jobs/01J9ZQ7C9D0E1F2G3H4J5K6M7N",
+  "events_url": "https://rag.example.go.kr/v1/jobs/01J9ZQ7C9D0E1F2G3H4J5K6M7N/events",
+  "created_at": "2026-09-22T09:12:30.000Z",
+  "started_at": "2026-09-22T09:12:31.105Z",
+  "updated_at": "2026-09-22T09:12:33.900Z",
+  "finished_at": "2026-09-22T09:12:33.900Z"
+}

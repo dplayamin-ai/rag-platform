@@ -1,0 +1,411 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "ParsedDocument",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+  "producer": {
+    "plugin_id": "parser.hwpx_python_hwpx",
+    "plugin_version": "1.0.0",
+    "config_hash": "1ef90db8f43c5af7e81a6f7c1cf997d2c2873b7679b75fcc32b5b1a75bf83d2a",
+    "image_digest": null
+  },
+  "quality": "full",
+  "warnings": [],
+  "created_at": "2026-09-22T09:00:05.120Z",
+  "lineage_refs": {
+    "source": {
+      "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/artifacts/source-document/ab/ab64fa0210edb51498d77678d8850f8baac48d9e21ce2415080d0f33282223c9.json",
+      "blake3": "080015cc438210280a8b2571fc4e7e16ed5d8f268fd2da59ec366701ae80720f",
+      "media_type": "application/vnd.rag.source-document+json",
+      "schema_type": "SourceDocument",
+      "schema_version": "1.0.0",
+      "size_bytes": 6144
+    }
+  },
+  "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+  "doc_version": "3e5f7092b4d6e8f0a1c2e3b4d5f6071829a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8",
+  "source_ref": {
+    "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/sources/3e/3e5f7092b4d6e8f0a1c2e3b4d5f6071829a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8",
+    "blake3": "3e5f7092b4d6e8f0a1c2e3b4d5f6071829a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8",
+    "media_type": "application/hwp+zip",
+    "size_bytes": 1245184
+  },
+  "parser_fingerprint": {
+    "parser_id": "parser.hwpx_python_hwpx",
+    "parser_version": "python-hwpx==6.4.0",
+    "sidecar_image_digest": null,
+    "profile_option": "hwpx_standard"
+  },
+  "parser_chain": [
+    "parser.hwpx_python_hwpx"
+  ],
+  "source_kind": "flow",
+  "page_count": null,
+  "language": "ko",
+  "metadata": {
+    "title": "정보시스템 보안관리 지침 개정 알림",
+    "authors": [
+      "행정안전부 디지털안전정책과"
+    ],
+    "created_at": "2026-09-15T01:30:00.000Z",
+    "modified_at": "2026-09-18T07:12:44.000Z",
+    "page_header_text": [
+      "행정안전부"
+    ],
+    "page_footer_text": [],
+    "has_tracked_changes": false,
+    "genre": "outline_report"
+  },
+  "blocks": [
+    {
+      "block_id": "029cab3717295f7202a7ae25c275e15c",
+      "type": "heading",
+      "parent_block_id": null,
+      "ordinal": 0,
+      "text": "정보시스템 보안관리 지침 개정 알림",
+      "level": 0,
+      "heading_inferred": false,
+      "furniture": false,
+      "container": "body",
+      "source": "text_layer",
+      "confidence": null,
+      "provenance": {
+        "element_path": "/hp:sec[0]/hp:p[0]",
+        "char_start": 0,
+        "char_end": 19,
+        "page": null,
+        "bbox": null,
+        "section_index": 0
+      }
+    },
+    {
+      "block_id": "fb53f6c3911290258d88a0dee170caf3",
+      "type": "list_item",
+      "parent_block_id": "029cab3717295f7202a7ae25c275e15c",
+      "ordinal": 0,
+      "text": "관련: 「정보시스템 보안관리 지침」(행정안전부 훈령 제312호, 2026. 3. 1.)",
+      "level": 0,
+      "numbering_label": "1.",
+      "ordered": true,
+      "furniture": false,
+      "container": "body",
+      "source": "text_layer",
+      "confidence": null,
+      "provenance": {
+        "element_path": "/hp:sec[0]/hp:p[2]",
+        "char_start": 0,
+        "char_end": 48,
+        "page": null,
+        "bbox": null,
+        "section_index": 0
+      }
+    },
+    {
+      "block_id": "fd1ad531ca6f2795ccbd7d3170d1a71e",
+      "type": "list_item",
+      "parent_block_id": "029cab3717295f7202a7ae25c275e15c",
+      "ordinal": 1,
+      "text": "위 호와 관련하여 「정보시스템 보안관리 지침」이 다음과 같이 개정되었음을 알려드리니, 각 기관은 소관 정보시스템에 대한 조치 계획을 수립·시행하여 주시기 바랍니다.",
+      "level": 0,
+      "numbering_label": "2.",
+      "ordered": true,
+      "furniture": false,
+      "container": "body",
+      "source": "text_layer",
+      "confidence": null,
+      "provenance": {
+        "element_path": "/hp:sec[0]/hp:p[3]",
+        "char_start": 0,
+        "char_end": 91,
+        "page": null,
+        "bbox": null,
+        "section_index": 0
+      }
+    },
+    {
+      "block_id": "8c1c20d1884258ad715175fa9a3c0f1d",
+      "type": "list_item",
+      "parent_block_id": "fd1ad531ca6f2795ccbd7d3170d1a71e",
+      "ordinal": 0,
+      "text": "개정 사항",
+      "level": 1,
+      "numbering_label": "가.",
+      "ordered": true,
+      "furniture": false,
+      "container": "body",
+      "source": "text_layer",
+      "confidence": null,
+      "provenance": {
+        "element_path": "/hp:sec[0]/hp:p[4]",
+        "char_start": 0,
+        "char_end": 5,
+        "page": null,
+        "bbox": null,
+        "section_index": 0
+      }
+    },
+    {
+      "block_id": "8d8def472794539da0cb5a95ce7d0563",
+      "type": "list_item",
+      "parent_block_id": "8c1c20d1884258ad715175fa9a3c0f1d",
+      "ordinal": 0,
+      "text": "보안 점검 주기를 반기 1회에서 분기 1회로 조정(제15조)1)",
+      "level": 2,
+      "numbering_label": "○",
+      "ordered": false,
+      "furniture": false,
+      "container": "body",
+      "source": "text_layer",
+      "confidence": null,
+      "provenance": {
+        "element_path": "/hp:sec[0]/hp:p[6]",
+        "char_start": 0,
+        "char_end": 35,
+        "page": null,
+        "bbox": null,
+        "section_index": 0
+      }
+    },
+    {
+      "block_id": "5c31be3fda9e482ec4216758a5536132",
+      "type": "footnote",
+      "parent_block_id": "8c1c20d1884258ad715175fa9a3c0f1d",
+      "ordinal": 1,
+      "text": "「정보시스템 보안관리 지침」 제15조(보안 점검) 제2항. 점검 결과는 분기 종료 후 15일 이내에 제출한다.",
+      "furniture": false,
+      "container": "footnote_body",
+      "source": "text_layer",
+      "confidence": null,
+      "provenance": {
+        "element_path": "/hp:sec[0]/hp:p[6]/hp:ctrl[0]/hp:footNote[0]",
+        "char_start": 0,
+        "char_end": 61,
+        "page": null,
+        "bbox": null,
+        "section_index": 0
+      },
+      "footnote": {
+        "kind": "footnote",
+        "anchor_block_id": "8d8def472794539da0cb5a95ce7d0563",
+        "anchor_char_offset": 33,
+        "marker": "1)"
+      }
+    },
+    {
+      "block_id": "25621801d10af5fd8d039f1a05eef207",
+      "type": "list_item",
+      "parent_block_id": "fd1ad531ca6f2795ccbd7d3170d1a71e",
+      "ordinal": 1,
+      "text": "시행일: 2026. 10. 1.",
+      "level": 1,
+      "numbering_label": "나.",
+      "ordered": true,
+      "furniture": false,
+      "container": "body",
+      "source": "text_layer",
+      "confidence": null,
+      "provenance": {
+        "element_path": "/hp:sec[0]/hp:p[7]",
+        "char_start": 0,
+        "char_end": 17,
+        "page": null,
+        "bbox": null,
+        "section_index": 0
+      }
+    },
+    {
+      "block_id": "35894f9ef35aedd1390169f0cdac30e7",
+      "type": "caption",
+      "parent_block_id": "fd1ad531ca6f2795ccbd7d3170d1a71e",
+      "ordinal": 2,
+      "text": "<표 1> 개정 전후 비교",
+      "furniture": false,
+      "container": "body",
+      "source": "text_layer",
+      "confidence": null,
+      "provenance": {
+        "element_path": "/hp:sec[0]/hp:p[8]/hp:tbl[0]/hp:caption[0]/hp:p[0]",
+        "char_start": 0,
+        "char_end": 14,
+        "page": null,
+        "bbox": null,
+        "section_index": 0
+      },
+      "caption_of": "87060734265f22b7d42164875267947a"
+    },
+    {
+      "block_id": "87060734265f22b7d42164875267947a",
+      "type": "table",
+      "parent_block_id": "fd1ad531ca6f2795ccbd7d3170d1a71e",
+      "ordinal": 3,
+      "text": "구분\t개정 전\t개정 후\n원격 접속 인증\t단일 인증\t이중 인증 의무화\n보안 점검\t주기: 반기 1회\t주기: 분기 1회\n대상: 주요 정보시스템\t대상: 전체 정보시스템",
+      "furniture": false,
+      "container": "body",
+      "source": "text_layer",
+      "confidence": null,
+      "provenance": {
+        "element_path": "/hp:sec[0]/hp:p[8]/hp:tbl[0]",
+        "char_start": 0,
+        "char_end": 89,
+        "page": null,
+        "bbox": null,
+        "section_index": 0
+      },
+      "caption_block_ids": [
+        "35894f9ef35aedd1390169f0cdac30e7"
+      ],
+      "table": {
+        "n_rows": 4,
+        "n_cols": 3,
+        "cells": [
+          {
+            "row": 0,
+            "col": 0,
+            "row_span": 1,
+            "col_span": 1,
+            "text": "구분",
+            "is_header": true,
+            "header_kind": "column"
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "row_span": 1,
+            "col_span": 1,
+            "text": "개정 전",
+            "is_header": true,
+            "header_kind": "column"
+          },
+          {
+            "row": 0,
+            "col": 2,
+            "row_span": 1,
+            "col_span": 1,
+            "text": "개정 후",
+            "is_header": true,
+            "header_kind": "column"
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "row_span": 1,
+            "col_span": 1,
+            "text": "원격 접속 인증",
+            "is_header": true,
+            "header_kind": "row"
+          },
+          {
+            "row": 1,
+            "col": 1,
+            "row_span": 1,
+            "col_span": 1,
+            "text": "단일 인증",
+            "is_header": false,
+            "header_kind": "none"
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "row_span": 1,
+            "col_span": 1,
+            "text": "이중 인증 의무화",
+            "is_header": false,
+            "header_kind": "none"
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "row_span": 2,
+            "col_span": 1,
+            "text": "보안 점검",
+            "is_header": true,
+            "header_kind": "row"
+          },
+          {
+            "row": 2,
+            "col": 1,
+            "row_span": 1,
+            "col_span": 1,
+            "text": "주기: 반기 1회",
+            "is_header": false,
+            "header_kind": "none"
+          },
+          {
+            "row": 2,
+            "col": 2,
+            "row_span": 1,
+            "col_span": 1,
+            "text": "주기: 분기 1회",
+            "is_header": false,
+            "header_kind": "none"
+          },
+          {
+            "row": 3,
+            "col": 1,
+            "row_span": 1,
+            "col_span": 1,
+            "text": "대상: 주요 정보시스템",
+            "is_header": false,
+            "header_kind": "none"
+          },
+          {
+            "row": 3,
+            "col": 2,
+            "row_span": 1,
+            "col_span": 1,
+            "text": "대상: 전체 정보시스템",
+            "is_header": false,
+            "header_kind": "none"
+          }
+        ],
+        "header_row_indices": [
+          0
+        ],
+        "header_inferred": false,
+        "role": "data",
+        "quality": {
+          "merged_cells_preserved": true,
+          "structure_source": "native",
+          "structure_confidence": null
+        },
+        "html_ref": {
+          "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/derived/table_html/3c/3c3bc259aa76309df4a94fbc81f3d8b6737cb3b01123022716a6017f56d4fe1f.html",
+          "blake3": "3c3bc259aa76309df4a94fbc81f3d8b6737cb3b01123022716a6017f56d4fe1f",
+          "media_type": "text/html",
+          "size_bytes": 1362
+        }
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "kind": "table_html",
+      "ref": {
+        "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/derived/table_html/3c/3c3bc259aa76309df4a94fbc81f3d8b6737cb3b01123022716a6017f56d4fe1f.html",
+        "blake3": "3c3bc259aa76309df4a94fbc81f3d8b6737cb3b01123022716a6017f56d4fe1f",
+        "media_type": "text/html",
+        "size_bytes": 1362
+      },
+      "block_id": "87060734265f22b7d42164875267947a"
+    }
+  ],
+  "annotations": [
+    {
+      "kind": "memo",
+      "block_id": "25621801d10af5fd8d039f1a05eef207",
+      "char_start": 0,
+      "char_end": 3,
+      "text": "시행일 재확인 요청"
+    }
+  ],
+  "fields": [
+    {
+      "name": "시행일",
+      "type": "CLICK_HERE",
+      "value": "2026. 10. 1.",
+      "block_id": "25621801d10af5fd8d039f1a05eef207"
+    }
+  ],
+  "text_length": 379,
+  "block_count": 9
+}

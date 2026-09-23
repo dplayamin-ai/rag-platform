@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "JobStatus",
+  "job_id": "01JAB5K0M1N2P3Q4R5S6T7V8W9",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_id": "01J9ZQ5CB7H2K4M6N8P0R2S4T6",
+  "kind": "ingest_document",
+  "state": "running",
+  "stage": "parse",
+  "progress": {
+    "done": 37,
+    "total": 120,
+    "unit": "page"
+  },
+  "attempts": 2,
+  "workflow_run_id": "3f9c1a2e-7b4d-4e8f-9a0b-1c2d3e4f5a6b",
+  "workflow_id": "01JAB5K0M1N2P3Q4R5S6T7V8W9",
+  "idempotency_key": "a3f1c9d2-7b4e-4c8a-9e1f-2d3c4b5a6f70",
+  "request_id": "01JAB5JZ0A1B2C3D4E5F6G7H8J",
+  "document_id": "01JAB5J9Z8Y7X6W5V4T3S2R1Q0",
+  "last_error": {
+    "code": "parse.sidecar_unavailable",
+    "type": "urn:rag:error:parse.sidecar_unavailable",
+    "retryable": true,
+    "stage": "parse",
+    "plugin_id": "parser.pdf_docling_standard",
+    "detail": "ocr-gpu sidecar /healthz returned 503 (model warming up)",
+    "message": "Parser sidecar unavailable",
+    "occurred_at": "2026-09-22T09:01:12.480Z",
+    "attempt": 1,
+    "location": {
+      "collection_id": "01J9ZQ5CB7H2K4M6N8P0R2S4T6",
+      "document_id": "01JAB5J9Z8Y7X6W5V4T3S2R1Q0",
+      "page": 1
+    }
+  },
+  "degraded": [],
+  "cost": {
+    "llm_tokens_in": 0,
+    "llm_tokens_out": 0,
+    "cost_usd": 0,
+    "gpu_seconds": 42.5
+  },
+  "priority": 5,
+  "status_url": "https://rag.example.go.kr/v1/jobs/01JAB5K0M1N2P3Q4R5S6T7V8W9",
+  "events_url": "https://rag.example.go.kr/v1/jobs/01JAB5K0M1N2P3Q4R5S6T7V8W9/events",
+  "created_at": "2026-09-22T09:00:00.000Z",
+  "started_at": "2026-09-22T09:00:02.310Z",
+  "updated_at": "2026-09-22T09:03:11.004Z",
+  "finished_at": null,
+  "deadline_at": "2026-09-22T18:00:00.000Z"
+}

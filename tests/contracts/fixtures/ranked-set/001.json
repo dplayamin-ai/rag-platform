@@ -1,0 +1,795 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "RankedSet",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_ids": [
+    "01J9ZQ5A1B2C3D4E5F6G7H8J9K"
+  ],
+  "producer": {
+    "plugin_id": "reranker.tei_cross_encoder",
+    "plugin_version": "1.0.0",
+    "config_hash": "d16e00ceab33253ecc57f5affeb97976d08192950a2fde24c19082738ea51339",
+    "image_digest": "sha256:21168b4da0a31ca1dc5cd0e3248b83f691cdcdfc3e382cace3615483e37ded56",
+    "model_ids": [
+      "BAAI/bge-reranker-v2-m3@953dc6f"
+    ]
+  },
+  "warnings": [],
+  "degraded": [],
+  "created_at": "2026-09-22T09:00:00.351Z",
+  "ranked_set_id": "01JA0QRS2H4J6K8M0N2P4Q6R8S",
+  "plan_id": "01JA0QPN4N6P8R0S2T4V6W8X0Y",
+  "query_id": "01JA0QRY7M3N5P7R9S1T3V5W7X",
+  "candidate_set_id": "01JA0QCS9K1M3N5P7Q9R1S3T5V",
+  "stage": "reranked",
+  "hydrated": true,
+  "fusion": {
+    "method": "rrf",
+    "k": 60,
+    "weights": {
+      "dense": 1,
+      "sparse": 1,
+      "lexical": 1
+    },
+    "variant_query_weight": 0.5,
+    "candidates_in": 6,
+    "candidates_out": 6
+  },
+  "rerank": {
+    "applied": true,
+    "plugin_id": "reranker.tei_cross_encoder",
+    "model_id": "BAAI/bge-reranker-v2-m3@953dc6f",
+    "backend": "tei",
+    "response_schema": "tei",
+    "normalization": "sigmoid",
+    "top_n_in": 100,
+    "top_n_out": 20,
+    "took_ms": 118
+  },
+  "channel_runs": [
+    {
+      "channel_run_id": "dense:01J9ZQ5A1B2C3D4E5F6G7H8J9K:01JA0QRY7M3N5P7R9S1T3V5W7X",
+      "channel": "dense",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "variant_id": "01JA0QRY7M3N5P7R9S1T3V5W7X",
+      "status": "ok",
+      "returned": 5,
+      "total_hits": 5,
+      "truncated": false,
+      "took_ms": 61,
+      "index_generation_seen": [
+        2,
+        3
+      ]
+    },
+    {
+      "channel_run_id": "sparse:01J9ZQ5A1B2C3D4E5F6G7H8J9K:01JA0QRY7M3N5P7R9S1T3V5W7X",
+      "channel": "sparse",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "variant_id": "01JA0QRY7M3N5P7R9S1T3V5W7X",
+      "status": "ok",
+      "returned": 5,
+      "total_hits": 5,
+      "truncated": false,
+      "took_ms": 58,
+      "index_generation_seen": [
+        2,
+        3
+      ]
+    },
+    {
+      "channel_run_id": "lexical:01J9ZQ5A1B2C3D4E5F6G7H8J9K:01JA0QRY7M3N5P7R9S1T3V5W7X",
+      "channel": "lexical",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "variant_id": "01JA0QRY7M3N5P7R9S1T3V5W7X",
+      "status": "ok",
+      "returned": 5,
+      "total_hits": 5,
+      "truncated": false,
+      "took_ms": 96,
+      "index_generation_seen": [
+        2,
+        3
+      ]
+    }
+  ],
+  "results": [
+    {
+      "record_id": "a2695d15bdf0c6e0426f57d36cbe10fdd9604c50e0b20a0273528afa2c6d8eea",
+      "chunk_id": "99b3c59bde72b6a0b0192424ac34ae4622b593a158cb7c25328e8237f3c5385d",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+      "doc_version": "a1250dd7b7b14fa1657fa03e5fd9982d71dab3dc71ef15caa1e79a964631cc4f",
+      "item_kind": "text",
+      "level": 0,
+      "parent_chunk_id": "f50fab3fa65259876ac96cd2fb2cd157c1e7f40a6d02fde6e8983a900c40ec73",
+      "final_rank": 1,
+      "final_score": 0.9577102281579662,
+      "fused_score": 0.048651507139079855,
+      "fused_rank": 1,
+      "rerank_raw_score": 3.12,
+      "rerank_normalized_score": 0.9577102281579662,
+      "rerank_rank": 1,
+      "score_breakdown": {
+        "dense": {
+          "score": 0.8312,
+          "rank": 1,
+          "contribution": 0.01639344262295082,
+          "variant_ids": [
+            "01JA0QRY7M3N5P7R9S1T3V5W7X"
+          ]
+        },
+        "sparse": {
+          "score": 14.37,
+          "rank": 2,
+          "contribution": 0.016129032258064516,
+          "variant_ids": [
+            "01JA0QRY7M3N5P7R9S1T3V5W7X"
+          ]
+        },
+        "lexical": {
+          "score": 20.15,
+          "rank": 2,
+          "contribution": 0.016129032258064516,
+          "variant_ids": [
+            "01JA0QRY7M3N5P7R9S1T3V5W7X"
+          ]
+        },
+        "graph": null,
+        "tree": null,
+        "visual": null,
+        "late_interaction": null,
+        "fused": 0.048651507139079855,
+        "fused_rank": 1,
+        "rerank_raw": 3.12,
+        "rerank_normalized": 0.9577102281579662,
+        "normalization": "sigmoid"
+      },
+      "channels_hit": [
+        "dense",
+        "sparse",
+        "lexical"
+      ],
+      "variant_ids": [
+        "01JA0QRY7M3N5P7R9S1T3V5W7X"
+      ],
+      "text": "문서는 처리과에서 접수하여야 하며, 접수한 문서에는 접수일시와 접수등록번호를 전자적으로 표시하여야 한다. 처리과는 접수한 문서를 지체 없이 처리담당자에게 배부한다.",
+      "context_prefix": "행정 효율과 협업 촉진에 관한 규정 › 제3장 문서의 접수·처리 › 제18조(문서의 접수·처리)",
+      "heading_path": [
+        "제3장 문서의 접수·처리",
+        "제18조(문서의 접수·처리)"
+      ],
+      "numbering_path": [
+        "3",
+        "18"
+      ],
+      "title": "행정 효율과 협업 촉진에 관한 규정",
+      "source_uri": "s3://mois-records/regulations/2025/admin-efficiency-regulation.hwpx",
+      "external_id": "MOIS-REG-2025-0031",
+      "doc_date": "2025-03-04",
+      "doc_type": "regulation",
+      "page_start": null,
+      "page_end": null,
+      "lang": "ko",
+      "text_source": "text_layer",
+      "ocr_confidence_min": null,
+      "chunk_set_blake3": "e7f2613f638695dec46062dbad3a1e9b16c91c7c7f679f75e944679eae9e2cd3",
+      "acl": {
+        "allow": [
+          "group:mois_records"
+        ],
+        "deny": [],
+        "visibility": "tenant",
+        "classification": "internal",
+        "embargo_until": null,
+        "expires_at": null,
+        "acl_hash": "d059434ec5580f3e2772b5279661b5ffc6cbf636b0671d340c92ebcf3d6c506b"
+      },
+      "block_refs": [
+        {
+          "block_id": "1bd7501790562711b6d464064114b8e6",
+          "element_path": "/hp:sec[0]/hp:p[182]",
+          "char_start": 0,
+          "char_end": 91,
+          "original_char_start": 0,
+          "original_char_end": 91,
+          "page": null,
+          "bbox": null,
+          "section_index": 0
+        }
+      ],
+      "sentence_spans": [
+        [
+          0,
+          58
+        ],
+        [
+          59,
+          91
+        ]
+      ],
+      "explain": [
+        "multi_channel_hit"
+      ]
+    },
+    {
+      "record_id": "d36af022d40a7d1c3ae3b315b4290cffefd8cdf3942675cf672117824650f765",
+      "chunk_id": "f3794b59c626e8cd730f3d85096bfe2df73474d11e41016fd66ebf6eb9bd6671",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "document_id": "01J9ZQ7D2F4G6H8J0K2M4N6P8Q",
+      "doc_version": "6abf4fec5e440a6d9623a128c7d108275b99f7d49ef2658021baa3ef231b8261",
+      "item_kind": "text",
+      "level": 0,
+      "parent_chunk_id": "0238b2d9fbbe0bd5196a9fe4f7b892422c6a388d0de5f831500fff5c4ac4bca9",
+      "final_rank": 2,
+      "final_score": 0.9220117648706336,
+      "fused_score": 0.047907090265630725,
+      "fused_rank": 3,
+      "rerank_raw_score": 2.47,
+      "rerank_normalized_score": 0.9220117648706336,
+      "rerank_rank": 2,
+      "score_breakdown": {
+        "dense": {
+          "score": 0.8107,
+          "rank": 2,
+          "contribution": 0.016129032258064516,
+          "variant_ids": [
+            "01JA0QRY7M3N5P7R9S1T3V5W7X"
+          ]
+        },
+        "sparse": {
+          "score": 14.92,
+          "rank": 1,
+          "contribution": 0.01639344262295082,
+          "variant_ids": [
+            "01JA0QRY7M3N5P7R9S1T3V5W7X"
+          ]
+        },
+        "lexical": {
+          "score": 16.88,
+          "rank": 5,
+          "contribution": 0.015384615384615385,
+          "variant_ids": [
+            "01JA0QRY7M3N5P7R9S1T3V5W7X"
+          ]
+        },
+        "graph": null,
+        "tree": null,
+        "visual": null,
+        "late_interaction": null,
+        "fused": 0.047907090265630725,
+        "fused_rank": 3,
+        "rerank_raw": 2.47,
+        "rerank_normalized": 0.9220117648706336,
+        "normalization": "sigmoid"
+      },
+      "channels_hit": [
+        "dense",
+        "sparse",
+        "lexical"
+      ],
+      "variant_ids": [
+        "01JA0QRY7M3N5P7R9S1T3V5W7X"
+      ],
+      "text": "접수 담당자는 문서관리시스템에서 문서를 접수하고 접수등록번호를 부여한다. 접수된 문서는 처리과 배부함으로 자동 배부되며, 처리과 담당자는 배부 목록을 확인한다.",
+      "context_prefix": "행정업무 운영 편람(2025) › 제4장 문서의 접수 › 4.2 접수 절차",
+      "heading_path": [
+        "제4장 문서의 접수",
+        "4.2 접수 절차"
+      ],
+      "numbering_path": [
+        "4",
+        "4.2"
+      ],
+      "title": "행정업무 운영 편람(2025)",
+      "source_uri": "s3://mois-records/manuals/2025/admin-operations-handbook.pdf",
+      "external_id": null,
+      "doc_date": "2025-06-30",
+      "doc_type": "manual",
+      "page_start": 45,
+      "page_end": 45,
+      "lang": "ko",
+      "text_source": "text_layer",
+      "ocr_confidence_min": null,
+      "chunk_set_blake3": "bccfa6a62d58c57e80920fc23e5d3f363e360ce865171992b5d2a6841e3cb284",
+      "acl": {
+        "allow": [
+          "group:mois_records"
+        ],
+        "deny": [],
+        "visibility": "tenant",
+        "classification": "internal",
+        "embargo_until": null,
+        "expires_at": null,
+        "acl_hash": "e99ad153286918e090e10394f656df6eb0e275de5431840463a0b807ec00cf8c"
+      },
+      "block_refs": [
+        {
+          "block_id": "ef6fdaeb081840f7efeba3318398d2c1",
+          "element_path": "/page[45]/block[3]",
+          "char_start": 0,
+          "char_end": 89,
+          "original_char_start": 0,
+          "original_char_end": 89,
+          "page": 45,
+          "bbox": [
+            72,
+            210.4,
+            523.2,
+            268.9
+          ]
+        }
+      ],
+      "sentence_spans": [
+        [
+          0,
+          40
+        ],
+        [
+          41,
+          89
+        ]
+      ],
+      "explain": [
+        "multi_channel_hit"
+      ]
+    },
+    {
+      "record_id": "bf4b1318da8e6eb0c227e466374a2cd2ff3e051ceba175d96e94e24601559c95",
+      "chunk_id": "8357174596f358ddaf53909b0f4cb464eabaa7254d583faf328637eca689bb0d",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+      "doc_version": "a1250dd7b7b14fa1657fa03e5fd9982d71dab3dc71ef15caa1e79a964631cc4f",
+      "item_kind": "text",
+      "level": 0,
+      "parent_chunk_id": "f50fab3fa65259876ac96cd2fb2cd157c1e7f40a6d02fde6e8983a900c40ec73",
+      "final_rank": 3,
+      "final_score": 0.8859476187202091,
+      "fused_score": 0.04813947436898257,
+      "fused_rank": 2,
+      "rerank_raw_score": 2.05,
+      "rerank_normalized_score": 0.8859476187202091,
+      "rerank_rank": 3,
+      "score_breakdown": {
+        "dense": {
+          "score": 0.7964,
+          "rank": 3,
+          "contribution": 0.015873015873015872,
+          "variant_ids": [
+            "01JA0QRY7M3N5P7R9S1T3V5W7X"
+          ]
+        },
+        "sparse": {
+          "score": 13.05,
+          "rank": 3,
+          "contribution": 0.015873015873015872,
+          "variant_ids": [
+            "01JA0QRY7M3N5P7R9S1T3V5W7X"
+          ]
+        },
+        "lexical": {
+          "score": 21.73,
+          "rank": 1,
+          "contribution": 0.01639344262295082,
+          "variant_ids": [
+            "01JA0QRY7M3N5P7R9S1T3V5W7X"
+          ]
+        },
+        "graph": null,
+        "tree": null,
+        "visual": null,
+        "late_interaction": null,
+        "fused": 0.04813947436898257,
+        "fused_rank": 2,
+        "rerank_raw": 2.05,
+        "rerank_normalized": 0.8859476187202091,
+        "normalization": "sigmoid"
+      },
+      "channels_hit": [
+        "dense",
+        "sparse",
+        "lexical"
+      ],
+      "variant_ids": [
+        "01JA0QRY7M3N5P7R9S1T3V5W7X"
+      ],
+      "text": "처리담당자는 배부받은 문서를 검토하여 처리기한을 정하고, 공람이 필요한 문서는 관계 직원이 공람할 수 있도록 하여야 한다.",
+      "context_prefix": "행정 효율과 협업 촉진에 관한 규정 › 제3장 문서의 접수·처리 › 제18조(문서의 접수·처리)",
+      "heading_path": [
+        "제3장 문서의 접수·처리",
+        "제18조(문서의 접수·처리)"
+      ],
+      "numbering_path": [
+        "3",
+        "18"
+      ],
+      "title": "행정 효율과 협업 촉진에 관한 규정",
+      "source_uri": "s3://mois-records/regulations/2025/admin-efficiency-regulation.hwpx",
+      "external_id": "MOIS-REG-2025-0031",
+      "doc_date": "2025-03-04",
+      "doc_type": "regulation",
+      "page_start": null,
+      "page_end": null,
+      "lang": "ko",
+      "text_source": "text_layer",
+      "ocr_confidence_min": null,
+      "chunk_set_blake3": "e7f2613f638695dec46062dbad3a1e9b16c91c7c7f679f75e944679eae9e2cd3",
+      "acl": {
+        "allow": [
+          "group:mois_records"
+        ],
+        "deny": [],
+        "visibility": "tenant",
+        "classification": "internal",
+        "embargo_until": null,
+        "expires_at": null,
+        "acl_hash": "d059434ec5580f3e2772b5279661b5ffc6cbf636b0671d340c92ebcf3d6c506b"
+      },
+      "block_refs": [
+        {
+          "block_id": "ebb6ec35b531ca83e3c70c1843a0b660",
+          "element_path": "/hp:sec[0]/hp:p[183]",
+          "char_start": 0,
+          "char_end": 68,
+          "original_char_start": 0,
+          "original_char_end": 68,
+          "page": null,
+          "bbox": null,
+          "section_index": 0
+        }
+      ],
+      "sentence_spans": [
+        [
+          0,
+          68
+        ]
+      ],
+      "explain": [
+        "multi_channel_hit"
+      ]
+    },
+    {
+      "record_id": "34a36f0746144d763292131eb8b501ec3f332dad47ec00bdfb792354073ebc91",
+      "chunk_id": "a518fa9d29b6b226df63308e56556e235df2a5ceb32c74f6bf41590999bea1ef",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "document_id": "01J9ZQ7D2F4G6H8J0K2M4N6P8Q",
+      "doc_version": "6abf4fec5e440a6d9623a128c7d108275b99f7d49ef2658021baa3ef231b8261",
+      "item_kind": "text",
+      "level": 0,
+      "parent_chunk_id": "678b4d0774ed9d7934e416c17eaf07704146d6855dd79b8a1b079d560d22ec22",
+      "final_rank": 4,
+      "final_score": 0.4061268970658573,
+      "fused_score": 0.03149801587301587,
+      "fused_rank": 4,
+      "rerank_raw_score": -0.38,
+      "rerank_normalized_score": 0.4061268970658573,
+      "rerank_rank": 4,
+      "score_breakdown": {
+        "dense": null,
+        "sparse": {
+          "score": 11.48,
+          "rank": 4,
+          "contribution": 0.015625,
+          "variant_ids": [
+            "01JA0QRY7M3N5P7R9S1T3V5W7X"
+          ]
+        },
+        "lexical": {
+          "score": 18.62,
+          "rank": 3,
+          "contribution": 0.015873015873015872,
+          "variant_ids": [
+            "01JA0QRY7M3N5P7R9S1T3V5W7X"
+          ]
+        },
+        "graph": null,
+        "tree": null,
+        "visual": null,
+        "late_interaction": null,
+        "fused": 0.03149801587301587,
+        "fused_rank": 4,
+        "rerank_raw": -0.38,
+        "rerank_normalized": 0.4061268970658573,
+        "normalization": "sigmoid"
+      },
+      "channels_hit": [
+        "sparse",
+        "lexical"
+      ],
+      "variant_ids": [
+        "01JA0QRY7M3N5P7R9S1T3V5W7X"
+      ],
+      "text": "배부받은 문서는 처리담당자가 지정된 후 공람 대상자를 설정하여 전자적으로 공람한다. 공람이 끝난 문서는 접수 문서 대장에 처리 결과를 기록한다.",
+      "context_prefix": "행정업무 운영 편람(2025) › 제4장 문서의 접수 › 4.3 배부 및 공람",
+      "heading_path": [
+        "제4장 문서의 접수",
+        "4.3 배부 및 공람"
+      ],
+      "numbering_path": [
+        "4",
+        "4.3"
+      ],
+      "title": "행정업무 운영 편람(2025)",
+      "source_uri": "s3://mois-records/manuals/2025/admin-operations-handbook.pdf",
+      "external_id": null,
+      "doc_date": "2025-06-30",
+      "doc_type": "manual",
+      "page_start": 46,
+      "page_end": 46,
+      "lang": "ko",
+      "text_source": "text_layer",
+      "ocr_confidence_min": null,
+      "chunk_set_blake3": "bccfa6a62d58c57e80920fc23e5d3f363e360ce865171992b5d2a6841e3cb284",
+      "acl": {
+        "allow": [
+          "group:mois_records"
+        ],
+        "deny": [],
+        "visibility": "tenant",
+        "classification": "internal",
+        "embargo_until": null,
+        "expires_at": null,
+        "acl_hash": "e99ad153286918e090e10394f656df6eb0e275de5431840463a0b807ec00cf8c"
+      },
+      "block_refs": [
+        {
+          "block_id": "91fd533a722679f8bad88efb736ecf67",
+          "element_path": "/page[46]/block[1]",
+          "char_start": 0,
+          "char_end": 80,
+          "original_char_start": 0,
+          "original_char_end": 80,
+          "page": 46,
+          "bbox": [
+            72,
+            96.5,
+            523.2,
+            150.2
+          ]
+        }
+      ],
+      "sentence_spans": [
+        [
+          0,
+          46
+        ],
+        [
+          47,
+          80
+        ]
+      ],
+      "explain": [
+        "multi_channel_hit"
+      ]
+    },
+    {
+      "record_id": "72b499b28def7e6ecc900076bd16132f622e451bd0a198458b432dcda8d5004c",
+      "chunk_id": "3ece32701125c43955fd020ddf3fa75e5a33eb8791e182df671a4f82362d3a30",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+      "doc_version": "a1250dd7b7b14fa1657fa03e5fd9982d71dab3dc71ef15caa1e79a964631cc4f",
+      "item_kind": "text",
+      "level": 0,
+      "parent_chunk_id": "7f8e26747f3408f164d41604c2bdbf13f9177b0c0e805f58b817f34d784fdddf",
+      "final_rank": 5,
+      "final_score": 0.22970105095339813,
+      "fused_score": 0.031009615384615385,
+      "fused_rank": 5,
+      "rerank_raw_score": -1.21,
+      "rerank_normalized_score": 0.22970105095339813,
+      "rerank_rank": 5,
+      "score_breakdown": {
+        "dense": {
+          "score": 0.7421,
+          "rank": 4,
+          "contribution": 0.015625,
+          "variant_ids": [
+            "01JA0QRY7M3N5P7R9S1T3V5W7X"
+          ]
+        },
+        "sparse": {
+          "score": 10.91,
+          "rank": 5,
+          "contribution": 0.015384615384615385,
+          "variant_ids": [
+            "01JA0QRY7M3N5P7R9S1T3V5W7X"
+          ]
+        },
+        "lexical": null,
+        "graph": null,
+        "tree": null,
+        "visual": null,
+        "late_interaction": null,
+        "fused": 0.031009615384615385,
+        "fused_rank": 5,
+        "rerank_raw": -1.21,
+        "rerank_normalized": 0.22970105095339813,
+        "normalization": "sigmoid"
+      },
+      "channels_hit": [
+        "dense",
+        "sparse"
+      ],
+      "variant_ids": [
+        "01JA0QRY7M3N5P7R9S1T3V5W7X"
+      ],
+      "text": "행정기관은 접수한 문서에 형식상의 흠이 있으면 그 문서를 발송한 행정기관에 반송할 수 있다. 접수한 문서가 다른 행정기관의 소관 사항인 경우에는 지체 없이 이송하여야 한다.",
+      "context_prefix": "행정 효율과 협업 촉진에 관한 규정 › 제3장 문서의 접수·처리 › 제19조(문서의 반송 및 이송)",
+      "heading_path": [
+        "제3장 문서의 접수·처리",
+        "제19조(문서의 반송 및 이송)"
+      ],
+      "numbering_path": [
+        "3",
+        "19"
+      ],
+      "title": "행정 효율과 협업 촉진에 관한 규정",
+      "source_uri": "s3://mois-records/regulations/2025/admin-efficiency-regulation.hwpx",
+      "external_id": "MOIS-REG-2025-0031",
+      "doc_date": "2025-03-04",
+      "doc_type": "regulation",
+      "page_start": null,
+      "page_end": null,
+      "lang": "ko",
+      "text_source": "text_layer",
+      "ocr_confidence_min": null,
+      "chunk_set_blake3": "e7f2613f638695dec46062dbad3a1e9b16c91c7c7f679f75e944679eae9e2cd3",
+      "acl": {
+        "allow": [
+          "group:mois_records"
+        ],
+        "deny": [],
+        "visibility": "tenant",
+        "classification": "internal",
+        "embargo_until": null,
+        "expires_at": null,
+        "acl_hash": "d059434ec5580f3e2772b5279661b5ffc6cbf636b0671d340c92ebcf3d6c506b"
+      },
+      "block_refs": [
+        {
+          "block_id": "c0ffec70312d30819822944743dbbb1b",
+          "element_path": "/hp:sec[0]/hp:p[191]",
+          "char_start": 0,
+          "char_end": 96,
+          "original_char_start": 0,
+          "original_char_end": 96,
+          "page": null,
+          "bbox": null,
+          "section_index": 0
+        }
+      ],
+      "sentence_spans": [
+        [
+          0,
+          51
+        ],
+        [
+          52,
+          96
+        ]
+      ],
+      "explain": [
+        "multi_channel_hit"
+      ]
+    },
+    {
+      "record_id": "8939f7fc5963865747ee8a544e5971b69eea766d42b90abde71df15a694c92bb",
+      "chunk_id": "d9ec3b981f97bf90300da2e8430130eab040fa1cc173596fe917bee8fb8c529b",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "document_id": "01J9ZQ6M0N1P2Q3R4S5T6V7W8X",
+      "doc_version": "a1250dd7b7b14fa1657fa03e5fd9982d71dab3dc71ef15caa1e79a964631cc4f",
+      "item_kind": "text",
+      "level": 0,
+      "parent_chunk_id": "8369686b0d3132a09237c249833e09733c9d83bc8e611ff674a0196146f1b9e8",
+      "final_rank": 6,
+      "final_score": 0.1624650625806961,
+      "fused_score": 0.031009615384615385,
+      "fused_rank": 6,
+      "rerank_raw_score": -1.64,
+      "rerank_normalized_score": 0.1624650625806961,
+      "rerank_rank": 6,
+      "score_breakdown": {
+        "dense": {
+          "score": 0.7188,
+          "rank": 5,
+          "contribution": 0.015384615384615385,
+          "variant_ids": [
+            "01JA0QRY7M3N5P7R9S1T3V5W7X"
+          ]
+        },
+        "sparse": null,
+        "lexical": {
+          "score": 17.04,
+          "rank": 4,
+          "contribution": 0.015625,
+          "variant_ids": [
+            "01JA0QRY7M3N5P7R9S1T3V5W7X"
+          ]
+        },
+        "graph": null,
+        "tree": null,
+        "visual": null,
+        "late_interaction": null,
+        "fused": 0.031009615384615385,
+        "fused_rank": 6,
+        "rerank_raw": -1.64,
+        "rerank_normalized": 0.1624650625806961,
+        "normalization": "sigmoid"
+      },
+      "channels_hit": [
+        "dense",
+        "lexical"
+      ],
+      "variant_ids": [
+        "01JA0QRY7M3N5P7R9S1T3V5W7X"
+      ],
+      "text": "문서는 처리과에서 발송하되, 전자문서는 행정정보시스템 또는 업무관리시스템상에서 발송하여야 한다.",
+      "context_prefix": "행정 효율과 협업 촉진에 관한 규정 › 제2장 문서의 작성 및 발송 › 제17조(문서의 발송)",
+      "heading_path": [
+        "제2장 문서의 작성 및 발송",
+        "제17조(문서의 발송)"
+      ],
+      "numbering_path": [
+        "2",
+        "17"
+      ],
+      "title": "행정 효율과 협업 촉진에 관한 규정",
+      "source_uri": "s3://mois-records/regulations/2025/admin-efficiency-regulation.hwpx",
+      "external_id": "MOIS-REG-2025-0031",
+      "doc_date": "2025-03-04",
+      "doc_type": "regulation",
+      "page_start": null,
+      "page_end": null,
+      "lang": "ko",
+      "text_source": "text_layer",
+      "ocr_confidence_min": null,
+      "chunk_set_blake3": "e7f2613f638695dec46062dbad3a1e9b16c91c7c7f679f75e944679eae9e2cd3",
+      "acl": {
+        "allow": [
+          "group:mois_records"
+        ],
+        "deny": [],
+        "visibility": "tenant",
+        "classification": "internal",
+        "embargo_until": null,
+        "expires_at": null,
+        "acl_hash": "d059434ec5580f3e2772b5279661b5ffc6cbf636b0671d340c92ebcf3d6c506b"
+      },
+      "block_refs": [
+        {
+          "block_id": "389174f1813f3154b04ad79cfb4789fd",
+          "element_path": "/hp:sec[0]/hp:p[171]",
+          "char_start": 0,
+          "char_end": 53,
+          "original_char_start": 0,
+          "original_char_end": 53,
+          "page": null,
+          "bbox": null,
+          "section_index": 0
+        }
+      ],
+      "sentence_spans": [
+        [
+          0,
+          53
+        ]
+      ],
+      "explain": [
+        "multi_channel_hit"
+      ]
+    }
+  ],
+  "omitted": [],
+  "stats": {
+    "n_in": 6,
+    "n_out": 6,
+    "hydrated_n": 6,
+    "gate_passed": null
+  },
+  "timings_ms": {
+    "retrieve": 96,
+    "fuse": 2,
+    "hydrate": 11,
+    "rerank": 118
+  }
+}

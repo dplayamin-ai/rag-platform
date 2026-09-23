@@ -2,7 +2,7 @@
 title: 코딩 표준
 status: active
 owner: architecture
-version: 0.1.1
+version: 0.1.3
 last_updated: 2026-09-23
 depends_on:
   - ../00-vision/00-design-brief.md
@@ -129,8 +129,8 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "D", "ANN", "PLR2004", "ARG", "FBT", "INP001", "TID251"]
-"tools/**" = ["T201", "TID251", "INP001", "D"]
+"tests/**" = ["S101", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D2", "D3", "D4", "ANN", "PLR2004", "ARG", "FBT", "INP001", "TID251"]  # D100(모듈 첫 줄 헤더)은 무시하지 않는다 — §18
+"tools/**" = ["T201", "TID251", "INP001", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D2", "D3", "D4"]  # D100(모듈 첫 줄 헤더)은 무시하지 않는다 — §18
 # 셸·진입점·인프라 계층(L4~L10)에서만 시계·난수·환경 변수 직접 접근 허용(§5·§9·§10)
 "src/rag_platform/orchestration/**" = ["TID251"]
 "src/rag_platform/api/**" = ["TID251"]
@@ -658,7 +658,7 @@ from kiwipiepy import Kiwi  # [kiwi] extra; 미설치 시 ImportError는 레지�
 
 ### 12.1 언어 정책
 
-**결정:** 설계 문서(`docs/`)는 한국어, **코드 docstring과 코드 주석은 영어**다(D-03 "기술 용어·식별자는 영문"; 오픈소스 기여자 범위). 한국어가 코드에 나타나는 곳은 (a) 테스트 픽스처·골든 데이터의 문서 본문, (b) `ProblemDetails.title` 한국어 사전(`ERROR_CATALOG.title_ko`), (c) CLI 사용자 메시지 지역화 리소스만이다. 로그 이벤트·오류 `detail`·예외 메시지는 영어(13 §9).
+**결정:** 설계 문서(`docs/`)는 한국어, **코드 주석(인라인)은 영어**다(D-03 "기술 용어·식별자는 영문"; 오픈소스 기여자 범위). **모듈 첫 줄의 설명 헤더(모듈 docstring)는 한국어**이며, 그 밖의 함수·클래스 docstring은 영어 또는 한국어를 허용한다 — 코드 파일 상단 한글 설명 주석 규칙(§18; 사용자 지시 2026-09-23; `CLAUDE.md` §2-1 동일 규칙)이 모듈 헤더 범위에서 이 절의 기존 "코드 docstring은 영어" 결정보다 우선한다. 한국어가 코드에 나타나는 곳은 (a) 모든 소스 파일 첫 줄의 모듈 헤더(§18), (b) 함수·클래스 docstring(선택), (c) 테스트 픽스처·골든 데이터의 문서 본문, (d) `ProblemDetails.title` 한국어 사전(`ERROR_CATALOG.title_ko`), (e) CLI 사용자 메시지 지역화 리소스다. 로그 이벤트·오류 `detail`·예외 메시지는 영어(13 §9).
 
 ### 12.2 스타일
 
@@ -791,9 +791,60 @@ async def run(self, inp: ParsedDocument, ctx: StageContext) -> NormalizedDocumen
 | Pydantic v1 API(`@validator`, `.dict()`, `class Config`) | v2 계약 | v2 API | ruff `UP`, 리뷰 |
 | `try: import x except ImportError: x = None` | 기능 조용히 비활성 | 모듈 최상위 임포트 + `profile.invalid` | `S110`, 리뷰 |
 | 주석 처리된 코드, `FIXME`/`XXX`/`HACK`, 이슈 없는 `TODO` | 이력·추적 불가 | 삭제; `TODO(issue)` | `ERA001`, `TD`, `FIX` |
-| 한국어 docstring·주석 | 언어 정책(§12.1) | 영어 | 리뷰 |
+| 한국어 docstring·주석(모듈 첫 줄 헤더 제외 — §18) | 언어 정책(§12.1) | 영어(모듈 헤더는 한국어, §18) | 리뷰 |
 | 생성물 직접 편집 | 재생성 diff 실패 | 정본 수정 | CI diff |
 | `main` 직접 푸시, 머지 커밋 동기화, 이슈 없는 `!` | 브랜치·정본 절차 위반 | §15 | 브랜치 보호 |
+
+## 18. 코드 파일 상단 한글 설명 주석(필수)
+
+**결정:** 이 저장소의 모든 소스 파일(`src/**/*.py`, `tests/**/*.py`, `tools/**/*.py`, `tools/**/*.mjs`, `tools/**/*.js`, `sdk/**/*.ts`, 생성기가 만드는 파일 포함)은 첫 줄부터 **한국어** 설명 헤더로 시작한다. 이 규칙의 출처는 사용자 지시(2026-09-23) "코드 상단에 코드에 대한 설명 주석을 한글로, 개발자가 이해하기 쉽게"이며, 전문(全文)은 `tools/phase6/CODE-HEADER-RULE.md`가 정본이다. `CLAUDE.md` §2-1이 같은 규칙을 요약해 싣는다 — 두 문서의 서술이 어긋나면 `tools/phase6/CODE-HEADER-RULE.md`를 따른다.
+
+§12.1의 "코드 docstring·주석은 영어" 결정은 이 규칙과 겹치는 범위(모듈 첫 줄 헤더)에서 **모듈 헤더는 한국어, 함수·클래스 docstring은 영어 또는 한국어 허용**으로 좁아졌다(§12.1 참조). 인라인 코드 주석(§12.3)의 언어 정책은 그대로 영어다.
+
+### 18.1 위치·언어·분량
+
+- **위치**: 파일 첫 줄부터. Python은 모듈 docstring(`"""..."""`)으로, JS/TS는 `//` 또는 `/** ... */` 블록으로 쓴다. shebang·인코딩 선언이 있으면 그 바로 아래에 둔다.
+- **언어**: 본문은 한국어. 클래스·함수·필드·열거값·경로·명령 같은 식별자는 영문 그대로 백틱으로 표기한다. 기술 용어는 처음 한 번만 `한국어(English)`로 병기한다.
+- **분량**: 6~15줄. 파일이 하는 일이 한 줄로 끝나면 짧게, 알고리즘·불변식이 있으면 길게 쓴다. 본문 코드 주석을 대신하지 않는다(코드 주석은 §12.3을 따른다).
+
+### 18.2 필수 항목(순서 고정)
+
+1. **역할** — 이 파일이 무엇을 하는지, 파이프라인·아키텍처의 어디에 놓이는지 한 문장으로 적는다.
+2. **설계 근거** — 따르는 정본 절과 결정. 예: `바이블 §4.2, §6.2 / ADR-0037 / 계약 03-contracts/05`. 계약 타입을 다루면 타입명을 명시한다.
+3. **구성** — 공개 클래스·함수 목록을 한 줄씩(`이름 — 하는 일`). 3개 이하면 문장으로 적어도 된다.
+4. **불변식·주의** — 멱등성, 철자 정본, 보안 필터, 금지 사항 중 이 파일에 해당하는 규칙.
+5. **검증 계층** — `1층(여기서 검증)` / `2층 needs_docker` / `2b needs_model` / `3층 needs_gpu` 중 하나. 보류된 검증이 있으면 `DEFERRED:` 한 줄을 덧붙인다(검증에 드는 실제 경과 시간이 긴 계층 — 예: `needs_gpu` — 일수록 `DEFERRED:` 표기가 흔하다).
+
+### 18.3 생성 파일·테스트 파일
+
+- **생성 파일**: 생성기가 헤더를 자동으로 넣는다. 첫 줄에 `GENERATED — 수정 금지. 재생성: <명령>`을 한국어 설명과 함께 포함한다.
+- **테스트 파일**: 무엇을 검증하는지와 픽스처 출처(예: `docs/03-contracts/05 §예시`)를 적는다.
+
+### 18.4 금지
+
+이모지, 영어 전용 헤더, 코드를 그대로 옮겨 적은 설명("이 함수는 x를 반환한다"만 있는 것), 변경 이력 나열(git이 담당) 금지.
+
+### 18.5 검사
+
+`ruff`의 `D100`(모듈 docstring 필수)을 켜서 헤더 존재를 기계 검사한다. §2.2 발췌의 `select`는 이미 `"D"`(pydocstyle 전체, `D100` 포함)를 켜지만, 이 규칙을 §12.1처럼 정하기 전에는 `per-file-ignores`의 `"tests/**"`·`"tools/**"` 항목이 `"D"`를 통째로 무시해 `D100`까지 함께 꺼져 있었다. 이 규칙이 `tests/**/*.py`·`tools/**/*.py`에도 적용되므로 §2.2 발췌를 `D100`은 남기고 `D101`~`D107`(공개 클래스·함수·메서드 docstring 요구)·`D2xx`(스타일)·`D3xx`·`D4xx`(내용)만 무시하도록 좁혔다(위 §2.2 `[tool.ruff.lint.per-file-ignores]` 참고). 한국어 여부·필수 항목 5개·순서는 `tools/verify/check-headers.mjs`(6B에서 작성)가 검사한다.
+
+### 18.6 예시 — Python
+
+```python
+"""RRF 융합기 — 채널별 후보 목록을 Reciprocal Rank Fusion으로 합쳐 `RankedSet(stage=fused)`를 만든다.
+
+설계 근거: 바이블 §8.1 7단계·§3.2 O-01(k=60, 채널 가중 1:1:1, 변형 질의 0.5), ADR-0013.
+계약: 입력 `CandidateSet.channel_runs[]`(03-contracts/10), 출력 `RankedSet.results[].score_breakdown`.
+
+구성:
+- `RrfFuser` — `Fuser` 프로토콜 구현. `fuse(runs, config) -> list[RankedResult]`
+- `contribution(rank, weight, k)` — 단일 런의 기여 점수 `w / (k + rank)`
+- `tie_break(results)` — 동점 시 `record_id` 오름차순(§8.1 불변식)
+
+불변식: 각 결과의 `Σ contribution == fused_score`(허용 오차 1e-9). 서버 측 융합(Qdrant prefetch)은 쓰지 않는다 — 점수 분해가 사라진다.
+검증 계층: 1층(여기서 검증) — `tests/unit/retrieval/test_rrf.py`, 골든 벡터 `tests/fixtures/fusion/rrf_small.json`.
+"""
+```
 
 ## 결정 사항 요약
 
@@ -805,7 +856,8 @@ async def run(self, inp: ParsedDocument, ctx: StageContext) -> NormalizedDocumen
 - **결정:** 로그는 structlog JSON 정본 7필드, 문맥은 셸이 바인딩, 플러그인은 `structlog.get_logger()`만. 스팬·메트릭은 셸 자동 계측 + 외부 호출 `@instrumented_call`(제안), 속성·메트릭 이름은 `telemetry` 상수만, `tenant_id` 평문·본문·비밀은 어디에도 없다([ADR-0022](../06-adr/0022-observability-genai-semconv-pin-and-license-boundary.md)).
 - **결정:** `Settings`는 조립 지점에서 1회 생성해 주입하고 L0~L3은 환경 변수를 읽지 않는다. 시간은 `ctx.now()`/`datetime.now(UTC)`/`workflow.now()`, 발급형 ID는 셸·워크플로우·API의 ULID, 콘텐츠 키는 `sdk`의 `hash_of`(라벨 없는 `content_hash`는 `blake3_hex`)만이다([ADR-0004](../06-adr/0004-deterministic-chunk-id-scoped-record-id-and-ulid-exception.md), [ADR-0037](../06-adr/0037-artifact-cache-scope-and-stage-key-composition.md), [ADR-0031](../06-adr/0031-profile-schema-extends-and-quality-gates.md)).
 - **결정:** 의존성은 A 등급 인프로세스만, pin-and-bump, 3.12·3.13 동시 지원, C 등급·sunset·외부 앱 SDK 인프로세스 금지([ADR-0001](../06-adr/0001-license-grade-table-and-d02-interpretation.md), [ADR-0020](../06-adr/0020-default-chunker-structure-aware-and-dependency-locks.md)).
-- **결정:** docstring·주석은 영어(Google 스타일), 테스트는 `test_{대상}_{조건}_{기대}`·불변식 ID 1:1이다. 커밋 메시지·브랜치 전략의 정본은 [기여 가이드](./07-contributing.md) §7·§5이며(완전성 #194), 이 문서는 스코프 철자(바이블 §12)와 정본 변경 순서(ADR → 바이블·브리프 → 코드)만 더한다. pytest 마커 정본은 [테스트 전략](./04-testing-strategy.md) §21이다(완전성 #187). 릴리스 브랜치 생성·수명은 [릴리스 프로세스](./08-release-process.md)가 확정한다.
+- **결정:** 인라인 코드 주석은 영어, 함수·클래스 docstring은 영어 또는 한국어(Google 스타일 선택 시), 모듈 첫 줄 헤더는 한국어(§18)다. 테스트는 `test_{대상}_{조건}_{기대}`·불변식 ID 1:1이다. 커밋 메시지·브랜치 전략의 정본은 [기여 가이드](./07-contributing.md) §7·§5이며(완전성 #194), 이 문서는 스코프 철자(바이블 §12)와 정본 변경 순서(ADR → 바이블·브리프 → 코드)만 더한다. pytest 마커 정본은 [테스트 전략](./04-testing-strategy.md) §21이다(완전성 #187). 릴리스 브랜치 생성·수명은 [릴리스 프로세스](./08-release-process.md)가 확정한다.
+- **결정:** 모든 소스 파일(`src`·`tests`·`tools`·`sdk` 포함, 생성 파일 포함)은 첫 줄부터 한국어 설명 헤더로 시작하며 역할·설계 근거·구성·불변식·주의·검증 계층 5항목을 고정 순서로 담는다 — `ruff D100`과 `tools/verify/check-headers.mjs`로 검사한다(§18; 출처는 사용자 지시 2026-09-23이며 `CLAUDE.md` §2-1에 같은 규칙이 있다).
 
 ## 미해결 이슈
 

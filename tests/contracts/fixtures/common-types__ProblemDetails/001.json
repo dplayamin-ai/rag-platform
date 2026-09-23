@@ -1,0 +1,22 @@
+{
+  "type": "urn:rag:error:contract.violation",
+  "title": "Contract violation",
+  "status": 400,
+  "detail": "IngestRequest failed schema validation (1 error)",
+  "instance": "/v1/ingest",
+  "code": "contract.violation",
+  "retryable": false,
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "errors": [
+    {
+      "code": "contract.violation",
+      "type": "urn:rag:error:contract.violation",
+      "retryable": false,
+      "stage": "api",
+      "detail": "acl.visibility: value is not one of Visibility [public, tenant, restricted]",
+      "location": {
+        "pointer": "/acl/visibility"
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "feedback_id": "01J9ZS1G3H4J5K6M7N8P9Q0R1S",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "query_id": "01J9ZS0Q1R2S3T4V5W6X7Y8Z9A",
+  "pack_id": "01J9ZS0P2Q3R4S5T6V7W8X9Y0Z",
+  "kind": "rated",
+  "cite_ids": [
+    "d2"
+  ],
+  "rating": 2,
+  "comment": "d2 항목의 처리 기한이 고시 원문과 다릅니다. 담당자 <KR_PHONE> 로 확인 요청했습니다.",
+  "pii_policy_applied": "mask",
+  "created_at": "2026-09-22T09:03:41.020Z"
+}

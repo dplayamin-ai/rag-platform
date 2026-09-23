@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "entry_id": "01J9ZQ9D1E2F3G4H5J6K7M8N9P",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_id": null,
+  "surface": "행정안전부",
+  "pos": "NNP",
+  "synonyms": [
+    "행안부"
+  ],
+  "weight": 0.0,
+  "source": "manual",
+  "updated_at": "2026-09-22T08:30:00.000Z"
+}

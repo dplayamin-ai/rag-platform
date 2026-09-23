@@ -1,0 +1,11 @@
+{
+  "query_id": "kopub-0001",
+  "query": "행정안전부 고시 제2026-12호에서 정보공개 청구서의 처리 기한은 며칠인가?",
+  "language": "ko",
+  "metadata": {
+    "domain": "public_admin",
+    "genre": "outline_report",
+    "multi_hop": false,
+    "difficulty": 2
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "SourceDocument",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+  "producer": {
+    "plugin_id": "parser.format_detector_puremagic",
+    "plugin_version": "1.0.0",
+    "config_hash": "1b41e45fc3b068edc65b50e4260430130d8ac379003700d27344876b5a85ad8d",
+    "image_digest": null
+  },
+  "quality": "full",
+  "warnings": [],
+  "created_at": "2026-09-22T09:00:05.120Z",
+  "lineage_refs": {},
+  "document_id": "01J9ZQ7D3E4F5G6H7J8K9M0N1P",
+  "request_id": "01J9ZQ7B8C9D0E1F2G3H4J5K6M",
+  "source_uri": "s3://mois-records/2026/09/foia-handling-guideline-v3.hwpx",
+  "resolved_uri": "s3://mois-records/2026/09/foia-handling-guideline-v3.hwpx",
+  "artifact": {
+    "uri": "s3://rag-artifacts/tenants/01J9ZQ4K7X2M8N3P5R6S7T8V9W/sources/9f/9f8f5e872d699a6378530d75c39a429381fb10d1a979dafc8d7facc671d6e85a",
+    "blake3": "9f8f5e872d699a6378530d75c39a429381fb10d1a979dafc8d7facc671d6e85a",
+    "media_type": "application/hwp+zip",
+    "size_bytes": 1843200
+  },
+  "content_hash": "9f8f5e872d699a6378530d75c39a429381fb10d1a979dafc8d7facc671d6e85a",
+  "doc_version": "9f8f5e872d699a6378530d75c39a429381fb10d1a979dafc8d7facc671d6e85a",
+  "size_bytes": 1843200,
+  "media_type": "application/hwp+zip",
+  "format": "hwpx",
+  "format_confidence": 1.0,
+  "container_flags": {
+    "encrypted": false,
+    "distribution": false,
+    "compressed": true
+  },
+  "http_metadata": {
+    "etag": "\"3d0f2b9c8a7e6d5c4b3a291807f6e5d4\"",
+    "last_modified": "Tue, 15 Sep 2026 00:12:41 GMT"
+  },
+  "metadata": {
+    "title": "정보공개 청구 처리 지침(2026년 개정)",
+    "authors": [
+      "행정안전부 정보공개정책과"
+    ],
+    "doc_date": "2026-09-15",
+    "doc_type": "regulation",
+    "department": "행정안전부 정보공개정책과",
+    "language_hint": "ko",
+    "tags": [
+      "정보공개",
+      "지침",
+      "2026"
+    ],
+    "genre": "law_article",
+    "custom": {
+      "doc_no": "정보공개정책과-2026-1187",
+      "revision": 3,
+      "is_public_notice": false
+    }
+  },
+  "metadata_hash": "73f16425b0d6425f7f5b2cc43ee27de52bc25142f629808cc1680b4179a48854",
+  "acl": {
+    "allow_principals": [
+      "group:mois_records",
+      "user:kim.minsu@example.go.kr"
+    ],
+    "deny_principals": [],
+    "visibility": "restricted",
+    "classification": "internal",
+    "embargo_until": "2026-10-01T00:00:00.000Z",
+    "expires_at": null
+  },
+  "acl_hash": "142b6eb77f251c867e0981c5018aa07ba5b0c5c0844235e55a66a38356fbcf3b",
+  "pii_policy": "mask",
+  "external_id": "MOIS-FOIA-2026-1187",
+  "external_version": "\"3d0f2b9c8a7e6d5c4b3a291807f6e5d4\"",
+  "fetched_at": "2026-09-22T09:00:04.512Z",
+  "fetch_report": {
+    "attempts": 1,
+    "bytes_per_sec": 48512000.0,
+    "redirects": 0,
+    "conditional_request": false,
+    "not_modified": false,
+    "duration_ms": 38
+  },
+  "detect_report": {
+    "signals": [
+      "zip:local_file_header",
+      "zip:mimetype=application/hwp+zip",
+      "zip:entry=Contents/content.hpf",
+      "owpml:entry=version.xml"
+    ],
+    "hint_media_type": "application/hwp+zip",
+    "hint_agrees": true,
+    "candidates": [
+      {
+        "format": "hwpx",
+        "confidence": 1.0
+      }
+    ]
+  },
+  "dedup_report": {
+    "policy": "skip_if_same_hash",
+    "previous_doc_version": null,
+    "content_unchanged": false,
+    "source_bytes_reused": false
+  }
+}

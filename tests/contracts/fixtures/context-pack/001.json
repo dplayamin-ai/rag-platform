@@ -1,0 +1,434 @@
+{
+  "schema_version": "1.0.0",
+  "schema_type": "ContextPack",
+  "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+  "collection_ids": [
+    "01J9ZQ5A1B2C3D4E5F6G7H8J9K"
+  ],
+  "producer": {
+    "plugin_id": "packer.standard",
+    "plugin_version": "1.0.0",
+    "config_hash": "c757bc7be27a2ad3aec04e5ec048eafad2292265104845ab331ca81c9c57424b",
+    "image_digest": null,
+    "model_ids": []
+  },
+  "warnings": [],
+  "degraded": [],
+  "created_at": "2026-09-22T09:00:00.412Z",
+  "pack_id": "01JAC5F6G7H8J9KMNPQRSTVWXY",
+  "query_id": "01JAC5F6G7H8J9KMNPQRSTVWX0",
+  "plan_id": "01JAC5F6G7H8J9KMNPQRSTVWX1",
+  "profile_id": "standard",
+  "profile_hash": "1c1a5d766b33cd0554d49322f946c0a3842334e21e9d70628c2f73fec6bc3e5c",
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "budget": {
+    "tokenizer": {
+      "provider": "anthropic",
+      "model": "claude-opus-5",
+      "name": "anthropic:claude-opus-5"
+    },
+    "count_method": "exact_api",
+    "calibration_ratio": null,
+    "safety_margin": 0.1,
+    "max_context_tokens": 24000,
+    "used_tokens": 402,
+    "reserved_answer_tokens": 4000,
+    "k_max": 20,
+    "overflow_policy": [
+      "downgrade_tables",
+      "truncate"
+    ]
+  },
+  "ordering": {
+    "strategy": "litm_alternating",
+    "applied": true
+  },
+  "items": [
+    {
+      "cite_id": "d2",
+      "rank": 2,
+      "position": 0,
+      "record_id": "d6d669cb5c1a91012233a32982cc05767f39f77e965ba63a020a9b0f872d2c26",
+      "chunk_id": "f6a4f7525c9009834fe92b46aec3b77ecfb002e2a511cca1ad79847bf2dbf50c",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "document_id": "01JAD0C0000000000000000B02",
+      "doc_version": "3484d7e1dd69096cadb9f5487328decdc83bd2842e4c3f3b63070a7e20f4858a",
+      "parent_chunk_id": null,
+      "item_kind": "text",
+      "level": 0,
+      "confidence_tier": "medium",
+      "header": {
+        "title": "기록물 보존기간 책정 실무 안내",
+        "section_path": [
+          "3. 보존기간 책정 기준"
+        ],
+        "numbering_path": [
+          "3"
+        ],
+        "source_uri": "s3://nak-records/guides/2024/records-retention-practice-guide.pdf",
+        "external_id": "NAK-2024-GUIDE-07",
+        "doc_date": "2024-11-15",
+        "doc_type": "manual",
+        "page_start": 7,
+        "page_end": 7,
+        "lang": "ko"
+      },
+      "text": "보존기간 책정 시에는 업무의 기능과 기록물의 증거적 가치를 함께 고려한다. 회계 관련 기록물은 회계연도 종료 후 5년 이상 보존하는 것을 원칙으로 한다.",
+      "text_format": "plain",
+      "text_source": "ocr",
+      "ocr_confidence_min": 0.87,
+      "segments": [
+        {
+          "index": 0,
+          "text": "보존기간 책정 시에는 업무의 기능과 기록물의 증거적 가치를 함께 고려한다.",
+          "char_start": 0,
+          "char_end": 41,
+          "block_id": "180a9ffb0883a38c6352f623e78fe589"
+        },
+        {
+          "index": 1,
+          "text": "회계 관련 기록물은 회계연도 종료 후 5년 이상 보존하는 것을 원칙으로 한다.",
+          "char_start": 42,
+          "char_end": 85,
+          "block_id": "180a9ffb0883a38c6352f623e78fe589"
+        }
+      ],
+      "context_prefix": "기록물 보존기간 책정 실무 안내 › 3. 보존기간 책정 기준",
+      "provenance": [
+        {
+          "element_path": "/pages/7/blocks/3",
+          "char_start": 0,
+          "char_end": 85,
+          "page": 7,
+          "bbox": [
+            72,
+            412.5,
+            523.4,
+            468.2
+          ]
+        }
+      ],
+      "acl": {
+        "classification": "internal",
+        "checked": true,
+        "checked_at": "2026-09-22T09:00:00.000Z",
+        "source": "payload"
+      },
+      "token_count": 96
+    },
+    {
+      "cite_id": "d3",
+      "rank": 3,
+      "position": 1,
+      "record_id": "06567c0eb681d9119a7be4035b752c4f86ff2fe76fff3123ac71c2273f505173",
+      "chunk_id": "bedea35165997cf6f83427d4fd5c7cc6af351540e5a9c15c92c02378f3fb3a64",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "document_id": "01JAD0C0000000000000000C03",
+      "doc_version": "bb89cf09449eb776d2c642d601bc7434005de4a3b15247f961cba41ecbe1ad79",
+      "parent_chunk_id": null,
+      "item_kind": "text",
+      "level": 0,
+      "confidence_tier": "medium",
+      "header": {
+        "title": "공공기록물 관리 지침(2021)",
+        "section_path": [
+          "제3장 기록물의 보존",
+          "제12조 보존기간 책정"
+        ],
+        "numbering_path": [
+          "제3장",
+          "제12조"
+        ],
+        "source_uri": "s3://mois-records/regulations/2021/records-management-guideline-2021.pdf",
+        "external_id": "MOIS-2021-0042",
+        "doc_date": "2021-06-30",
+        "doc_type": "regulation",
+        "page_start": 5,
+        "page_end": 5,
+        "lang": "ko",
+        "doc_version_label": "2021-06-30 제정"
+      },
+      "text": "제12조(보존기간 책정) ① 처리과의 장은 기록물철 생산 시 보존기간을 책정한다.\n② 보존기간은 영구, 준영구, 30년, 10년, 5년, 3년, 1년으로 구분한다.",
+      "text_format": "markdown",
+      "text_source": "text_layer",
+      "ocr_confidence_min": null,
+      "segments": [
+        {
+          "index": 0,
+          "text": "제12조(보존기간 책정) ① 처리과의 장은 기록물철 생산 시 보존기간을 책정한다.",
+          "char_start": 0,
+          "char_end": 45,
+          "block_id": "850100a91f059bd27aa8e1fa19cdd1f0"
+        },
+        {
+          "index": 1,
+          "text": "② 보존기간은 영구, 준영구, 30년, 10년, 5년, 3년, 1년으로 구분한다.",
+          "char_start": 46,
+          "char_end": 91,
+          "block_id": "e802a213a857d2f8e33018ca00a53af4"
+        }
+      ],
+      "context_prefix": "공공기록물 관리 지침(2021) › 제3장 기록물의 보존 › 제12조 보존기간 책정",
+      "conflicts_with": [
+        {
+          "cite_id": "d1",
+          "kind": "source",
+          "note": "same section_path in a different document; superseded by the 2026-03-01 edition (d1)"
+        }
+      ],
+      "provenance": [
+        {
+          "element_path": "/pages/5/blocks/2",
+          "char_start": 0,
+          "char_end": 45,
+          "page": 5,
+          "bbox": [
+            72,
+            210,
+            523.4,
+            236.8
+          ]
+        },
+        {
+          "element_path": "/pages/5/blocks/3",
+          "char_start": 0,
+          "char_end": 45,
+          "page": 5,
+          "bbox": [
+            72,
+            240.1,
+            523.4,
+            266.9
+          ]
+        }
+      ],
+      "acl": {
+        "classification": "internal",
+        "checked": true,
+        "checked_at": "2026-09-22T09:00:00.000Z",
+        "source": "payload"
+      },
+      "token_count": 104
+    },
+    {
+      "cite_id": "d1",
+      "rank": 1,
+      "position": 2,
+      "record_id": "81e0587752d14a69eca7850e6196b0bc1942120d867f7a46cc861ae060196dd3",
+      "chunk_id": "9dd42a210fd232cd678522b46f76adf364beca52441279a7272357a497f905e8",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "document_id": "01JAD0C0000000000000000A01",
+      "doc_version": "d580f1b278463ba9562425beb04378a9baa7ff5c12a4a0b150466e9e9580b711",
+      "parent_chunk_id": null,
+      "item_kind": "text",
+      "level": 0,
+      "confidence_tier": "high",
+      "header": {
+        "title": "공공기록물 관리 지침",
+        "section_path": [
+          "제3장 기록물의 보존",
+          "제12조 보존기간 책정"
+        ],
+        "numbering_path": [
+          "제3장",
+          "제12조"
+        ],
+        "source_uri": "s3://mois-records/regulations/2026/records-management-guideline.hwpx",
+        "external_id": "MOIS-2026-0117",
+        "doc_date": "2026-03-01",
+        "doc_type": "regulation",
+        "lang": "ko",
+        "doc_version_label": "2026-03-01 개정"
+      },
+      "text": "제12조(보존기간 책정) ① 처리과의 장은 기록물철을 생산한 때에 기록물분류기준표에 따라 보존기간을 책정하여야 한다.\n② 보존기간은 영구, 준영구, 30년, 10년, 5년, 3년, 1년의 7종으로 구분한다.",
+      "text_format": "markdown",
+      "text_source": "text_layer",
+      "ocr_confidence_min": null,
+      "segments": [
+        {
+          "index": 0,
+          "text": "제12조(보존기간 책정) ① 처리과의 장은 기록물철을 생산한 때에 기록물분류기준표에 따라 보존기간을 책정하여야 한다.",
+          "char_start": 0,
+          "char_end": 65,
+          "block_id": "3ee18b622c785f849061cae5f8d47887"
+        },
+        {
+          "index": 1,
+          "text": "② 보존기간은 영구, 준영구, 30년, 10년, 5년, 3년, 1년의 7종으로 구분한다.",
+          "char_start": 66,
+          "char_end": 115,
+          "block_id": "01a3a6218335a6198d92ac23d11366a7"
+        }
+      ],
+      "context_prefix": "공공기록물 관리 지침 › 제3장 기록물의 보존 › 제12조 보존기간 책정",
+      "conflicts_with": [
+        {
+          "cite_id": "d3",
+          "kind": "source",
+          "note": "same section_path in a different document; d3 is the 2021-06-30 edition"
+        }
+      ],
+      "provenance": [
+        {
+          "element_path": "/hp:sec[0]/hp:p[41]",
+          "char_start": 0,
+          "char_end": 65,
+          "page": null,
+          "bbox": null,
+          "section_index": 0
+        },
+        {
+          "element_path": "/hp:sec[0]/hp:p[42]",
+          "char_start": 0,
+          "char_end": 49,
+          "page": null,
+          "bbox": null,
+          "section_index": 0
+        }
+      ],
+      "acl": {
+        "classification": "internal",
+        "checked": true,
+        "checked_at": "2026-09-22T09:00:00.000Z",
+        "source": "payload"
+      },
+      "token_count": 118
+    }
+  ],
+  "omitted": [
+    {
+      "chunk_id": "c04ed2c55ba6f36520c0d8416ab8cab1d8263995370292dda6ba9e652501687b",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "document_id": "01JAD0C0000000000000000A01",
+      "reason": "duplicate"
+    },
+    {
+      "chunk_id": "6119de91d04e6b5316aa8e342df6547bad7257a2dcac9f193248024bef32e188",
+      "collection_id": "01J9ZQ5A1B2C3D4E5F6G7H8J9K",
+      "document_id": "01JAD0C0000000000000000B02",
+      "reason": "below_threshold"
+    }
+  ],
+  "sufficiency": {
+    "status": "sufficient",
+    "coverage": 0.75,
+    "confidence": "high",
+    "missing_aspects": [
+      "hypothetical"
+    ],
+    "method": "rule"
+  },
+  "stop_signal": {
+    "sufficient": true,
+    "coverage_estimate": 0.75,
+    "reason": "relevance_gate passed; max final_score in high tier"
+  },
+  "redaction_summary": {
+    "pii_policy": "mask",
+    "entity_counts": {}
+  },
+  "classification_max": "internal",
+  "render_hints": {
+    "preferred_renderer": "anthropic_search_result",
+    "citation_style": "native",
+    "instructions_template_id": "rag-answer-ko@1",
+    "table_format_preference": [
+      "html",
+      "markdown",
+      "json"
+    ],
+    "language": "ko",
+    "expose_confidence": true,
+    "data_marking": "delimit"
+  },
+  "diagnostics": {
+    "dedup_removed": 1,
+    "parent_expansions": 0,
+    "mmr_lambda": 0.7,
+    "filters_applied": {
+      "security": {
+        "tenant_id": "01J9ZQ4K7X2M8N3P5R6S7T8V9W",
+        "collection_ids": [
+          "01J9ZQ5A1B2C3D4E5F6G7H8J9K"
+        ],
+        "principals": [
+          "user:kim.minsu@example.go.kr",
+          "group:mois_records",
+          "tenant:*"
+        ],
+        "visible_set": [
+          "public",
+          "tenant"
+        ],
+        "as_of": "2026-09-22T09:00:00.000Z",
+        "is_current": true,
+        "classification_max": "confidential"
+      },
+      "strategy": {
+        "level_in": [
+          0
+        ],
+        "item_kinds": [
+          "text",
+          "list_group",
+          "code",
+          "table",
+          "table_part",
+          "figure"
+        ]
+      },
+      "user": {
+        "field": "doc_type",
+        "op": "in",
+        "value": [
+          "regulation",
+          "manual"
+        ]
+      },
+      "self_query": null,
+      "effective_hash": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90"
+    },
+    "latency_ms": {
+      "plan": 18,
+      "retrieve": 96,
+      "fuse": 3,
+      "hydrate": 11,
+      "rerank": 210,
+      "postprocess": 41,
+      "pack": 27
+    },
+    "index_generations_seen": [
+      3,
+      7
+    ],
+    "count_method_fallback": false,
+    "pack_steps": [
+      {
+        "step": "acl_recheck",
+        "removed": 0,
+        "took_ms": 2
+      },
+      {
+        "step": "budget_cut",
+        "removed": 0,
+        "took_ms": 19
+      },
+      {
+        "step": "reorder",
+        "removed": 0,
+        "took_ms": 1
+      },
+      {
+        "step": "citation_align",
+        "removed": 0,
+        "took_ms": 5
+      }
+    ],
+    "acl_recheck": {
+      "checked": 3,
+      "denied": 0,
+      "hint_hits": 0
+    }
+  },
+  "content_hash": "f6e16d3c6cd35228d5964c1a83251fdb216c9f3ff30e95cea8437ac14b9d3ef3"
+}
