@@ -1,9 +1,12 @@
 ---
 title: "WP-404 렌더러와 질의 파이프라인"
 status: active
+owner: implementation
 version: 0.1.0
+last_updated: 2026-09-24
+implementation_status: done
+depends_on: ["../README.md", "../../12-appendix/10-implementation-design-gaps.md"]
 ---
-
 # WP-404 렌더러와 질의 파이프라인 (F4-04, render-and-query-pipeline)
 
 ## 0. 실행 배경(병렬 배치 주의)

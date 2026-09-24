@@ -1,9 +1,12 @@
 ---
 title: "WP-502 MCP 서버"
 status: active
+owner: implementation
 version: 0.1.0
+last_updated: 2026-09-24
+implementation_status: done
+depends_on: ["../README.md", "../../12-appendix/10-implementation-design-gaps.md"]
 ---
-
 # WP-502 MCP 서버 (F5-02, mcp-server)
 
 ## 0. 실행 배경(병렬 배치 주의)

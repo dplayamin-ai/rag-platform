@@ -1,9 +1,13 @@
 ---
 title: "WP-104 parse-html-trafilatura"
-status: implemented
+status: active
+owner: implementation
+version: 1.0.0
+last_updated: 2026-09-23
+implementation_status: done
+depends_on: ["../README.md", "../../12-appendix/10-implementation-design-gaps.md"]
 task: F1-04
 ---
-
 # WP-104 — `parser.html_trafilatura_docling` (HTML)
 
 ## 목표

@@ -1,9 +1,13 @@
 ---
 title: "WP-103 parse-text-markdown-csv"
-status: implemented
+status: active
+owner: implementation
+version: 1.0.0
+last_updated: 2026-09-23
+implementation_status: done
+depends_on: ["../README.md", "../../12-appendix/10-implementation-design-gaps.md"]
 task: F1-03
 ---
-
 # WP-103 — `parser.text_charset_markdown_it` (TXT·Markdown·CSV)
 
 ## 목표

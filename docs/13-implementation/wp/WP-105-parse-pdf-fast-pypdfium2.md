@@ -1,9 +1,13 @@
 ---
 title: "WP-105 parse-pdf-fast-pypdfium2"
-status: implemented
+status: active
+owner: implementation
+version: 1.0.0
+last_updated: 2026-09-23
+implementation_status: done
+depends_on: ["../README.md", "../../12-appendix/10-implementation-design-gaps.md"]
 task: F1-05
 ---
-
 # WP-105 — `parser.pdf_fast_pdftext`(빠른 경로, `pdf_fast_cpu`)
 
 ## 목표

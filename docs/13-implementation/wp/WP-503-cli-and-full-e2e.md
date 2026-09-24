@@ -1,9 +1,12 @@
 ---
 title: "WP-503 CLI와 전체 e2e"
 status: active
+owner: implementation
 version: 0.1.0
+last_updated: 2026-09-24
+implementation_status: done
+depends_on: ["../README.md", "../../12-appendix/10-implementation-design-gaps.md"]
 ---
-
 # WP-503 CLI와 전체 e2e (F5-03, cli-and-full-e2e)
 
 ## 0. 실행 배경(병렬 배치 주의)

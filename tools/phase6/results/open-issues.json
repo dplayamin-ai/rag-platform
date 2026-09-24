@@ -1,0 +1,1610 @@
+{
+ "generated_at": "2026-09-24",
+ "source": "Workflow journals (subagents/workflows/<run>/journal.jsonl) — result.open_issues / result.findings",
+ "runs": [
+  "wf_0755d3ae-470",
+  "wf_52b111c5-c82",
+  "wf_6681bb3d-290",
+  "wf_9a81fe63-40d",
+  "wf_a6cb70da-507",
+  "wf_b7ec72fc-7e3"
+ ],
+ "items": [
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-01:fetch-fsspec-httpx",
+   "phase": "Implement",
+   "wp": "WP-101-fetch-fsspec-httpx.md",
+   "text": "requires_lineage=(\"SourceDocument\",)를 fetch 스테이지에 선언했는데, 이는 04-pipelines/02 §7.1의 '제안'이며 바이블 §4.1 현재 문구('index만 requires_lineage 사용')와 어긋난다 — 바이블 patch 또는 이 선언 철회가 필요."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-01:fetch-fsspec-httpx",
+   "phase": "Implement",
+   "wp": "WP-101-fetch-fsspec-httpx.md",
+   "text": "이전 SourceDocument 공급 경로(§7.1 lineage_source=\"ledger_current\")가 셸/오케스트레이션에 아직 배선되지 않았다 — 이 WP는 ctx.lineage[\"SourceDocument\"]를 직접 구조적으로 읽도록만 구현했고, 실제 원장 현재 세대 조회는 후속 WP(06 orchestration) 과제로 남는다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-01:fetch-fsspec-httpx",
+   "phase": "Implement",
+   "wp": "WP-101-fetch-fsspec-httpx.md",
+   "text": "pii_policy/pii_tokenize_mode의 컬렉션·테넌트 기본값 해소 포트(ctx.policies 등, §7.3 미해결 이슈 4)가 없어 요청에 값이 없으면 바이블 §7.1 예시 컬렉션 기본(mask)으로 근사했다 — 셸이 실제 정책 해소값을 ctx로 제공하게 되면 이 근사를 교체해야 한다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-01:fetch-fsspec-httpx",
+   "phase": "Implement",
+   "wp": "WP-101-fetch-fsspec-httpx.md",
+   "text": "metadata_hash/acl_hash의 canonical_json은 00-contract-overview §7 전문(이번 읽기 예산 밖)을 참조하지 않고 정렬 키 + 압축 구분자로만 근사했다 — 계약 확정 시 정확한 canonical_json 알고리즘과 맞춰야 한다(골든 해시 벡터 테스트는 tests/contracts 몫)."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-01:fetch-fsspec-httpx",
+   "phase": "Implement",
+   "wp": "WP-101-fetch-fsspec-httpx.md",
+   "text": "sdk.context.DerivedArtifacts.put_source(data: bytes, *, media_type)가 완성 바이트만 받아 스트리밍 중 크기 초과를 감지해도 최종적으로 전체 버퍼를 메모리에 쌓아야 한다(04-pipelines/02 §5.1 미해결 이슈 17과 동일 갭) — 파일 경로/바이트 스트림을 받는 오버로드가 sdk/context.py·storage에 추가되면 이 어댑터도 갱신이 필요하다(공용 파일 변경 요청)."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-01:fetch-fsspec-httpx",
+   "phase": "Implement",
+   "wp": "WP-101-fetch-fsspec-httpx.md",
+   "text": "DerivedArtifacts.put_source가 '이미 존재해서 쓰기를 생략했는지' 신호를 반환하지 않아, 200 다운로드 경로의 dedup_report.source_bytes_reused는 항상 False로 근사했다(304 재사용만 True) — 정확한 판정이 필요하면 포트에 반환값 확장이 필요하다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-01:fetch-fsspec-httpx",
+   "phase": "Implement",
+   "wp": "WP-101-fetch-fsspec-httpx.md",
+   "text": "FetchConfig.file_allowed_roots는 배포 설정 RAG_FETCH__FILE__ALLOWED_ROOTS(운영자 전용, settings 계층 소유)의 스탠드인으로 config_schema에 임시 수용했다 — settings 배선이 생기면 이 필드를 config_schema에서 제거하고 배포 설정 주입 경로로 옮겨야 한다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-06:normalize-korean",
+   "phase": "Implement",
+   "wp": "WP-106-normalize-korean.md",
+   "text": "설계 갭: sdk/context.py의 StageContext에 '이 스테이지 자신의 입력 산출물 ArtifactRef'를 받는 표준 멤버가 없다 (parse의 ctx.source_bytes처럼 normalize는 ctx.parsed_ref를 기대하도록 구현했으나 공용 파일은 건드리지 않았다) — 배치 차원에서 StageContext에 정식 멤버를 추가할지, 셸이 run() 이후 후처리로 parsed_ref/lineage_refs.parsed를 주입할지 합의가 필요하다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-06:normalize-korean",
+   "phase": "Implement",
+   "wp": "WP-106-normalize-korean.md",
+   "text": "범위 이월(DEFERRED, WP 본문에 상세 기재): N3 pii(presidio_ko 미배선, policy_applied=keep 고정), N10 genre 휴리스틱 본체(파서 힌트만 반영), N11 한자 독음/띄어쓰기 교정 본체(훅만 배선), N12 derived_meta, N13 sentence_splitter(kss/정규식 미구현 — 문서마다 normalize.segmenter_fallback 경고로 quality=degraded 고정), N14 table_views, N15 상세 리포트 플래그 — 모두 별도 WP로 넘겨야 한다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-06:normalize-korean",
+   "phase": "Implement",
+   "wp": "WP-106-normalize-korean.md",
+   "text": "U+00AD(소프트 하이픈) 삭제 로그와 N2 라틴 하이픈 결합의 상호작용(원문 설계는 N1 삭제 로그를 N2가 참조)은 이 WP에서 리터럴 '-'(U+002D) 줄끝 결합만 구현했고 소프트 하이픈 인지 결합은 이월했다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-04:parse-html-trafilatura",
+   "phase": "Implement",
+   "wp": "WP-104-parse-html-trafilatura.md",
+   "text": "cssselect 미설치(이 작업에 허용된 신규 패키지 목록 밖)로 사이트 규칙(`html.site_rules`) 선택자를 07 §4.5가 요구하는 CSS 대신 XPath로 구현했다 — cssselect를 정식 의존성으로 추가하는 후속 결정이 필요하다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-04:parse-html-trafilatura",
+   "phase": "Implement",
+   "wp": "WP-104-parse-html-trafilatura.md",
+   "text": "스파이크 결과 Trafilatura 2.2.0의 output_format=xml 결과는 짧은/구조화된 표본에서 heading·table 구조를 보존하지 않고 한 문단으로 합친다(보일러플레이트 제거만 남고 구조 손실). 이 때문에 이 WP는 블록 정본 경로를 07 §7.1의 '정제 XML 경로'가 아니라 '전처리된 DOM 경로'로 바꿨다 — 04-pipelines/07 문서의 §7.1·§10 element_path 정본 문구와 실제 구현이 어긋나므로, 설계 문서 쪽 patch(§10 HTML 행에 'DOM 직접 경로'를 병기)가 필요한지 아키텍처 검토가 필요하다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-04:parse-html-trafilatura",
+   "phase": "Implement",
+   "wp": "WP-104-parse-html-trafilatura.md",
+   "text": "폴백 사다리(readability-lxml, html2txt, docling_direct 별도 모드), MHTML·프레임 처리, JS 렌더링 감지, 첨부파일 분류(vendor_json attachments[]), 중첩 표, JSON-LD 메타데이터, mode별 favor_recall/precision 휴리스틱은 이번 WP 범위 밖으로 남겨두었다(사양 요지에 없음) — 후속 WP 대상."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-04:parse-html-trafilatura",
+   "phase": "Implement",
+   "wp": "WP-104-parse-html-trafilatura.md",
+   "text": "알려진 좁은 한계: 순수 인라인 텍스트만 담아야 하는 <div> 안에 래핑 없이 bare <img>가 섞이면(예: text<img>text 패턴) 이미지가 조용히 드러난다 — 현재 두 픽스처에는 없는 패턴이라 테스트로 드러나지 않았다. figcaption도 직전 data: URI figure가 없으면 이전 figure에 잘못 연결될 수 있는 좁은 엣지 케이스가 있다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-02:format-detector-and-parse-router",
+   "phase": "Implement",
+   "wp": "WP-102-format-detector-and-parse-router.md",
+   "text": "sdk/context.py의 StageContext에 바이블 §4.2·§9 의사코드가 전제하는 substages(별도 stage_key 캐싱을 갖는 detect 서브스테이지 실행) 포트가 없어, FormatDetectorStage를 별도 캐시 계층 없이 인프로세스로 직접 호출했다 — 공용 파일(sdk/context.py) 확장 요청(설계 갭)."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-02:format-detector-and-parse-router",
+   "phase": "Implement",
+   "wp": "WP-102-format-detector-and-parse-router.md",
+   "text": "라우터가 후보 산출을 채택하기 전에 03 계약 불변식(P-1~P-14, 04-pipelines/03 §7.1)을 재검증하는 절차를 구현하지 않았다 — 후보 어댑터의 출력을 그대로 신뢰한다(설계 갭, 후속 WP 권장)."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-02:format-detector-and-parse-router",
+   "phase": "Implement",
+   "wp": "WP-102-format-detector-and-parse-router.md",
+   "text": "PDF는 source_kind(born_digital/scanned/mixed) 프로브·PdfRoute·page_route·OCR 라우팅 없이 단일 후보(parser.pdf_fast_pdftext)로 단순화했다 — 스캔 PDF도 같은 경로를 탄다(의도적 축소, 모델·GPU 금지 환경과 일치하지만 PDF/OCR WP 필요)."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-02:format-detector-and-parse-router",
+   "phase": "Implement",
+   "wp": "WP-102-format-detector-and-parse-router.md",
+   "text": "라우터 fingerprint()가 04-pipelines/03 §7.2가 요구하는 '체인 멤버 각각의 fingerprint() 합성'을 구현하지 않고 라우팅 표 구조만 해시한다 — stage_key 재현성 보강이 후속 과제."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-02:format-detector-and-parse-router",
+   "phase": "Implement",
+   "wp": "WP-102-format-detector-and-parse-router.md",
+   "text": "이 WP가 쓴 plugin_id 'parser.html_trafilatura'(태스크 지시 명명)가 04-pipelines/03 §3.2 정본 명칭 'parser.html_trafilatura_docling'과 다르다 — HTML 파서 WP와 이름을 맞추거나 문서 갱신이 필요(계약 충돌 후보)."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-02:format-detector-and-parse-router",
+   "phase": "Implement",
+   "wp": "WP-102-format-detector-and-parse-router.md",
+   "text": "SplitRoute(§4.7, JSON 배열 분할)를 구현하지 않아 json은 txt와 같은 후보로 라우팅한다(의도적 축소, split_hint=none만 정확히 반영)."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-02:format-detector-and-parse-router",
+   "phase": "Implement",
+   "wp": "WP-102-format-detector-and-parse-router.md",
+   "text": "HWP 5.0 FileHeader 비트 위치·HWP 3.0 매직 문자열은 원문서가 '확인 필요(as of 2026-09)'로 표시한 값 그대로 구현했다 — 실물 표본 대조는 04 HWPX/HWP WP 몫으로 남긴다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-05:parse-pdf-fast-pypdfium2",
+   "phase": "Implement",
+   "wp": "WP-105-parse-pdf-fast-pypdfium2.md",
+   "text": "pdftext(PyPI) 미사용 결정: pdftext>=0.7.1이 pypdfium2==5.10.1을 정확히 고정 요구하는데 프로젝트는 pypdfium2>=5.13.0(다른 어댑터 의존)으로 고정돼 있어 uv add pdftext가 즉시 해결 불가(직접 실행해 확인, pyproject.toml/uv.lock 변경 없음). 대신 pypdfium2 raw API로 동등 기능을 구현했고 parser_fingerprint.parser_version도 'pypdfium2==<ver>'로 썼다 — 04-pipelines/05 문서·바이블 §13이 전제하는 'pdftext==0.7.1' 표기와 다르다. 이 결정을 유지할지, 문서/ADR-0006을 갱신할지는 설계 승인 필요."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-05:parse-pdf-fast-pypdfium2",
+   "phase": "Implement",
+   "wp": "WP-105-parse-pdf-fast-pypdfium2.md",
+   "text": "ParsedDocument 계약에 'ocr_required' 전용 필드나 전용 경고 코드가 없어(§5.7 카탈로그에 없음) 저밀도 페이지는 page_status=skipped + Warning(parse.page_skipped) 조합으로만 표현했다 — 계약 갭 후보(신규 경고 코드 또는 page_status enum 확장 검토 필요)."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-05:parse-pdf-fast-pypdfium2",
+   "phase": "Implement",
+   "wp": "WP-105-parse-pdf-fast-pypdfium2.md",
+   "text": "의도적으로 이번 WP 범위 밖으로 둔 것: 표(TableData)·그림(figure)·목록(list_item)·머리말/꼬리말 블록, outline(북마크) heading 보정(§7.2 규칙 1), invisible_ratio/pua_ratio/control_ratio/no_tounicode_ratio 기반 garbled/pre_ocr 페이지 분류(§3.1·§3.2 전체), 암호 PDF 복호화(credentials_ref 소비), shard·재개(ResumeCursor). 후속 WP가 필요하다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-05:parse-pdf-fast-pypdfium2",
+   "phase": "Implement",
+   "wp": "WP-105-parse-pdf-fast-pypdfium2.md",
+   "text": "§7.2 규칙4의 보조 마커(가./(N)/①) '상위 패턴+1' 근사를 패턴 계열별 상태가 아니라 문서 전역 단일 last_level 상태로 구현했다 — 여러 상위 패턴 계열이 교차하는 실제 문서에서는 부정확할 수 있어, 필요하면 계열별 스택 기반 재설계가 필요하다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-03:parse-text-markdown-csv",
+   "phase": "Implement",
+   "wp": "WP-103-parse-text-markdown-csv.md",
+   "text": "설계 갭(charset-normalizer 우선순위): 04 §3.1 표는 '감지기 > UTF-8 strict' 순서를 명시하지만, 유효한 UTF-8(비ASCII 포함) 바이트열을 감지기가 다른 단일 바이트 코드페이지(예 cp874)로 오판해도 그 오판은 strict 디코딩에 '성공'하므로 문자 그대로의 순서를 따르면 정상 UTF-8이 깨진다(회귀로 재현). 이 구현은 '바이트열이 이미 유효 UTF-8이면 감지기를 건너뛴다'는 국소 결정으로 수정했다 — 04 문서 §3.1에 이 예외 조건을 patch로 반영할지 논의 필요."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-03:parse-text-markdown-csv",
+   "phase": "Implement",
+   "wp": "WP-103-parse-text-markdown-csv.md",
+   "text": "공용 파일 변경 없음(pyproject.toml·sdk/ports.py·testing/doubles 무편집) — charset-normalizer·markdown-it-py는 이미 pyproject 의존성에 등재돼 있어 추가 uv add 불필요했다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-03:parse-text-markdown-csv",
+   "phase": "Implement",
+   "wp": "WP-103-parse-text-markdown-csv.md",
+   "text": "범위 축소(후속 WP 후보): JSON/JSONL/XML 하위 경로(04 §7·§8), ftfy 기반 모지바케 재투표(§3.3), mdit_py_plugins 의존 MD 기능(footnote·tasklists·dollarmath), 대용량 스트리밍·문단 병합 모드(§3.6, merge_min_blocks_for_coarsening), TXT 고정폭/구분자 표 감지(§4.4), 블록 크기 초과 시 /part[n] 분할(§3.1 한계), TXT P5(setext) heading 패턴 — 모두 이번 WP-103의 '사양 요지'와 허용 패키지 목록 밖이라 미구현이며 config_schema에서도 노출하지 않았다(정직성 위해 필드 자체를 생략)."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1-03:parse-text-markdown-csv",
+   "phase": "Implement",
+   "wp": "WP-103-parse-text-markdown-csv.md",
+   "text": "TXT P2-level1(아라비아 온점 '1.') vs list_item 경계 규칙은 04 §4.3 표의 '바로 뒤에 같은 부류 항목이 옴' 조건을 단순화해 'run 내 모든 항목이 종결부호 없이 끝나면 heading'만으로 구현했다(전체 규칙의 run-이후 항목 검사는 생략) — 실제 공문 예시와 일치하지만 완전한 사양 재현은 아니다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "requires_lineage=(\"SourceDocument\",) 선언(fsspec_httpx.py:273-274)이 바이블 §4.1 현재 문구('index만 requires_lineage 사용')와 어긋난다 — WP가 이미 코드 주석으로 이 충돌을 명시했다. 바이블 patch 또는 이 선언 제거 중 하나를 결정해야 한다(검증자는 판단하지 않고 그대로 둠)."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "pyproject.toml [[tool.mypy.overrides]] 블록에 pypdfium2.*·lxml.* 를 blake3.* 옆에 추가했다(공용 파일 변경, 기존 'Vendor stubs missing' 패턴을 그대로 적용한 최소 변경). settings/스텁 정책이 바뀌면 이 override도 함께 재검토할 것."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "router.py DEFAULT_ROUTE_TABLE의 html 항목을 'parser.html_trafilatura' → 'parser.html_trafilatura_docling'으로 정정했다(정본 plugin_id 불일치, 실제 라우팅 시 KeyError로 후보 소실 가능한 실결함). 다른 포맷(hwp5/doc/rtf/odt 등)의 라우팅 표 엔트리도 실제 등록된 plugin_id와 한 번 더 대조가 필요할 수 있다(이번 검증에서는 html만 실제 불일치 확인)."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "라우터가 후보 채택 전 03 계약 불변식(P-1~P-14, 04-pipelines/03 §7.1)을 재검증하지 않는다(설계 갭, 어댑터 출력을 그대로 신뢰) — 후속 WP 권장, 이번 배치에서는 손대지 않음."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "sdk.context.DerivedArtifacts.put_source가 스트리밍 중 크기 초과 감지 후에도 전체 버퍼를 메모리에 쌓아야 하고, '이미 존재해서 쓰기를 생략했는지' 신호를 반환하지 않는다(04-pipelines/02 §5.1 미해결 이슈 17과 동일 갭) — SDK 포트 시그니처 확장이 필요하며 공용 파일(sdk 계층)이라 이번 배치에서 변경하지 않았다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "metadata_hash/acl_hash의 canonical_json이 00-contract-overview §7 전문을 참조하지 않고 정렬 키+구분자로만 근사됐다 — 계약 확정 시 정확한 canonical_json 알고리즘·골든 해시 벡터와 맞춰야 한다."
+  },
+  {
+   "batch": "F1",
+   "run": "wf_b7ec72fc-7e3",
+   "label": "F1:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "그 외 배치 워커들이 남긴 나머지 open_issues(HWP 5.0/3.0 매직 값 확인 필요, PDF 스캔 라우팅 단순화, charset-normalizer 오판 설계 갭, cssselect 대신 XPath 사용, TXT heading 규칙 단순화, StageContext substages/ArtifactRef 포트 부재 등)는 모두 원 WP가 의도적 축소 또는 설계 갭으로 이미 명시한 항목이며, 코드 결함이 아니라 후속 설계 결정이 필요한 사안이라 이번 검증 배치에서는 수정하지 않고 그대로 이관한다."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2-01:chunk-structure-aware",
+   "phase": "Implement",
+   "wp": "WP-201-chunk-structure-aware.md",
+   "text": "공용 파일 sdk/context.py의 StageContext에 스테이지 자신의 입력 ArtifactRef를 읽는 표준 포트가 없다(WP-106이 ctx.parsed_ref로 이미 지적한 공백) — 이번 WP는 ctx.normalized_ref를 같은 방식으로 방어적 처리(contract.violation)만 하고 공용 파일은 손대지 않았다."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2-01:chunk-structure-aware",
+   "phase": "Implement",
+   "wp": "WP-201-chunk-structure-aware.md",
+   "text": "StageContext에 secondary tokenizer용 ctx.token_counters(복수) 포트가 없다(04-pipelines/10 §2.10 의사코드는 이를 전제) — 이 WP는 secondary_tokenizers마다 default_token_counter로 독자적 기본 카운터를 만들어 대체했다."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2-01:chunk-structure-aware",
+   "phase": "Implement",
+   "wp": "WP-201-chunk-structure-aware.md",
+   "text": "ADR-0019 코드 리뷰 체크리스트 (a)는 스테이지 코드가 tiktoken을 직접 임포트하지 않아야 한다고 명시하는데, 이번 WP의 파일 제약(structure_aware.py·테스트만 생성)상 default_token_counter 팩토리(tiktoken optional import)가 같은 파일에 있다 — 후속 WP에서 sdk/token_counters.py(신규)로 옮기는 것을 권장한다."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2-01:chunk-structure-aware",
+   "phase": "Implement",
+   "wp": "WP-201-chunk-structure-aware.md",
+   "text": "표 청킹(table_rows.py)·genre_rules(조/항 경계)·캡션·각주·목록·그림·코드 세분·flat_text 폴백 라우팅·ctx.lineage[\"ParsedDocument\"] 배선은 Block.type이 필요해 이번 WP 범위 밖으로 명시적으로 축소했다 — 후속 F2 WP(표 청킹, ParsedDocument 연동)가 이 갭을 메워야 계약이 완전해진다."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2-01:chunk-structure-aware",
+   "phase": "Implement",
+   "wp": "WP-201-chunk-structure-aware.md",
+   "text": "BlockRef.element_path는 \"/blocks/{doc_order_index}\" 자리표시자다 — 실제 값(Block.provenance.element_path)은 ParsedDocument 연동이 있어야 나온다."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2-03:enrich-deterministic",
+   "phase": "Implement",
+   "wp": "WP-203-enrich-deterministic.md",
+   "text": "enricher.pipeline(Stage 5멤버 run(), EnrichedChunkSet 조립·enricher_fingerprint·stats)과 enricher.gliner2_entities, 플랫폼 합성(pii_entity_counts/risk_flags/risk_score/status)은 F2-03 범위 밖 — 별도 WP 필요."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2-03:enrich-deterministic",
+   "phase": "Implement",
+   "wp": "WP-203-enrich-deterministic.md",
+   "text": "derived_meta가 04-pipelines/11 §4.1 정본 경로(NormalizedDocument.derived_meta.entities_normalized[] 투영) 대신 Chunk.text/context_prefix.deterministic에 대한 자체 정규식 추출을 쓴다 — 업스트림 N12(WP-106에서 DEFERRED)가 구현되면 투영 우선·정규식 폴백으로 재작성 필요(설계 갭, 계약 04-pipelines/11 §4.1과의 불일치)."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2-03:enrich-deterministic",
+   "phase": "Implement",
+   "wp": "WP-203-enrich-deterministic.md",
+   "text": "korean_keywords가 sdk.ports.KoreanAnalyzer(POS 태그 없는 tokenize())를 우회해 kiwipiepy를 직접 import한다 — KoreanAnalyzer 프로토콜이 품사 태그를 노출하지 않아 생긴 갭이며, 포트 확장(태그 포함 tokenize) 여부는 아키텍처 검토 필요."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2-03:enrich-deterministic",
+   "phase": "Implement",
+   "wp": "WP-203-enrich-deterministic.md",
+   "text": "KoreanKeywordsConfig.stopwords_ref(아티팩트 로딩)와 user_dict_entries(UserDictEntry/synonyms/dictionary_hash 배선)는 스키마 자리만 있고 실제 로딩·연동은 DEFERRED."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2-03:enrich-deterministic",
+   "phase": "Implement",
+   "wp": "WP-203-enrich-deterministic.md",
+   "text": "공용 파일 변경 요청: pyproject.toml [[tool.mypy.overrides]] module 목록에 'kiwipiepy.*'를 추가했다(기존 blake3.*/pypdfium2.*/lxml.*와 동일한 vendor-stub-missing 패턴, 한 줄 최소 변경) — mypy strict의 kiwipiepy import-untyped 오류 해결 목적."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2-02:chunk-table-rows-and-recount",
+   "phase": "Implement",
+   "wp": "WP-202-chunk-table-rows-and-recount.md",
+   "text": "recount 스테이지의 Producer.plugin_id를 'recount.token_counter'로 정했으나, 바이블 §6.1의 14개 ExtensionPoint 목록에 'token_counter'가 없다 — 바이블 개정 또는 정본 명명 규칙 확인이 필요하다(설계 갭)."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2-02:chunk-table-rows-and-recount",
+   "phase": "Implement",
+   "wp": "WP-202-chunk-table-rows-and-recount.md",
+   "text": "§5.7 오류 코드 카탈로그에 recount 전용 코드가 없어 chunk.tokenizer_missing(토크나이저 불일치)·chunk.count_exceeded(escalation 실패)를 재사용했다 — 전용 코드를 새로 등재할지 이 재사용을 정본으로 삼을지 결정이 필요하다."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2-02:chunk-table-rows-and-recount",
+   "phase": "Implement",
+   "wp": "WP-202-chunk-table-rows-and-recount.md",
+   "text": "표 부모(level 1)가 parent_max_tokens(2048)를 넘는 극단적으로 큰 표에 대한 '표 부모도 run 분할'(04-pipelines/10 §4.1)은 구현하지 않고 경고만 남겼다 — 완전 구현은 후속 WP로 이월(WP 문서 DEFERRED 참조)."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2-02:chunk-table-rows-and-recount",
+   "phase": "Implement",
+   "wp": "WP-202-chunk-table-rows-and-recount.md",
+   "text": "table_rows.py는 NormalizedDocument.table_cell_views vs TableData.cells[].text(policy_applied=keep) 선택과 Chunk.block_refs의 원문 char 오프셋(offset_map) 사상을 호출자 책임으로 설계했다(cell_texts 오버레이 계약) — structure_aware(F2-01, 같은 배치에서 이미 파일이 존재) 통합 시 이 계약을 지켜야 하며, 현재 structure_aware.py는 아직 표 블록을 처리하지 않는다(table_rows.py 미호출 상태)."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "StageContext(sdk/context.py)에 스테이지 자신의 입력 ArtifactRef를 읽는 표준 포트(ctx.parsed_ref/ctx.normalized_ref)가 없다 — WP-106과 WP-201이 각각 독립적으로 getattr 방어 처리로 우회했다. 여러 WP가 같은 공백을 반복 지적하므로, 다음 배치에서 StageContext 프로토콜에 정식 포트를 추가할지(및 LocalContext.build_stage_context 배선) 결정이 필요하다."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "StageContext에 secondary tokenizer용 ctx.token_counters(복수) 포트가 없다(04-pipelines/10 §2.10 의사코드는 이를 전제) — WP-201은 secondary_tokenizers마다 default_token_counter로 독자적 기본값을 만들어 우회했다. 포트 추가 여부 결정 필요."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "ADR-0019 코드 리뷰 체크리스트 (a)는 스테이지 코드가 tiktoken을 직접 임포트하지 않아야 한다고 명시하는데, structure_aware.py의 default_token_counter 팩토리가 tiktoken을 optional import한다(WP-201 파일 제약상 별도 모듈로 뺄 수 없었음). 후속 WP에서 sdk 또는 adapters 공용 위치로 이전할지 결정 필요."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "표 청킹(table_rows.py)·genre_rules(조/항 경계)·캡션·각주·목록·그림·코드 세분·flat_text 폴백 라우팅·ctx.lineage[\"ParsedDocument\"] 배선은 Block.type이 필요해 WP-201 범위 밖으로 축소됐다 — 후속 F2 WP에서 ParsedDocument 연동 후 구현 필요."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "BlockRef.element_path는 현재 \"/blocks/{doc_order_index}\" 자리표시자다 — 실제 값(Block.provenance.element_path)은 ParsedDocument 연동이 있어야 나온다."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "recount 스테이지의 Producer.plugin_id를 'recount.token_counter'로 정했으나 바이블 §6.1의 14개 ExtensionPoint 목록에 'token_counter'가 없다 — 바이블 개정 또는 정본 명명 규칙 확인 필요(설계 갭)."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "§5.7 오류 코드 카탈로그에 recount 전용 코드가 없어 chunk.tokenizer_missing·chunk.count_exceeded를 재사용했다 — 전용 코드를 새로 등재할지 이 재사용을 정본으로 삼을지 결정 필요."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "표 부모(level 1)가 parent_max_tokens(2048)를 넘는 극단적으로 큰 표에 대한 '표 부모도 run 분할'(04-pipelines/10 §4.1)은 경고만 남기고 미구현 — 후속 WP로 이월."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "table_rows.py는 NormalizedDocument.table_cell_views vs TableData.cells[].text(policy_applied=keep) 선택과 Chunk.block_refs의 원문 char 오프셋(offset_map) 사상을 호출자 책임으로 설계했다 — 호출자(파이프라인 배선) 확정 필요."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "enricher.pipeline과 enricher.gliner2_entities, 플랫폼 합성(pii_entity_counts/risk_flags/risk_score) 관련 범위/배선 노트가 WP-203 open_issues에 남아 있다 — 세부 원문이 잘려 전달됐으므로 원 WP 문서(WP-203) 확인 후 후속 조치 필요."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "derived_meta가 04-pipelines/11 §4.1 정본 경로(NormalizedDocument.derived_meta.entities_normalized[] 투영) 대신 Chunk.text/context_prefix.deterministic에 대한 자체 정규식 추출을 쓴다 — 정본 경로로 교체할지 이 방식을 정본화할지 결정 필요."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "korean_keywords가 sdk.ports.KoreanAnalyzer(POS 태그 없는 tokenize())를 우회해 kiwipiepy를 직접 import한다 — KoreanAnalyzer 프로토콜에 태그 포함 tokenize를 추가하는 포트 확장이 필요한지 결정 필요."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "KoreanKeywordsConfig.stopwords_ref(아티팩트 로딩)와 user_dict_entries(UserDictEntry/synonyms/dictionary_hash 배선)는 스키마 자리만 있고 실제 로딩·연동은 DEFERRED로 남아 있다."
+  },
+  {
+   "batch": "F2",
+   "run": "wf_9a81fe63-40d",
+   "label": "F2:verify",
+   "phase": "Verify",
+   "wp": "",
+   "text": "gen-deferred-ledger.mjs가 두 건의 코드 규약 위반을 보고한다: tests/adapters/index/test_qdrant_local.py:401(needs_docker)과 tests/adapters/parse/test_hwpx.py:513(needs_network) 마커에 인접한 `# DEFERRED:` 주석이 없다 — F1 배치 파일이라 이번 F2 검증 범위 밖으로 두었으나 다음 배치에서 주석 보강 필요."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3-01:embed-stage-and-sparse-bm25",
+   "phase": "Implement",
+   "wp": "WP-301-embed-stage-and-sparse-bm25.md",
+   "text": "ctx.enriched_ref (이 스테이지 자기 입력 ArtifactRef 조회 관례)가 StageContext(sdk/context.py)에 공식 필드로 없다 — WP-106의 ctx.parsed_ref와 같은 임시 관례를 그대로 반복 적용했다. sdk/context.py를 고치는 것은 공용 파일 변경이라 이번 WP 범위 밖이며, 여러 WP에서 같은 패턴이 반복되고 있어 StageContext에 '자기 산출물 ref' 멤버를 정식 추가하는 후속 결정이 필요하다."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3-01:embed-stage-and-sparse-bm25",
+   "phase": "Implement",
+   "wp": "WP-301-embed-stage-and-sparse-bm25.md",
+   "text": "sdk.ports.Embedder 포트(dense 전용, embedding_space_id/dim/normalized/embed_documents/embed_query만)가 04-pipelines/12 §2.1이 제안하는 더 풍부한 Embedder/EmbeddingSpace 포트(model_id/revision/spaces 노출, 이미 문서의 미해결 이슈 17)를 구현하지 않는다. 그 결과 Producer.model_ids는 항상 비고, FakeEmbedder처럼 embedding_space_id가 Hex64가 아닌 플레이스홀더면 스테이지가 임시 변환식으로 유효 Hex64를 합성한다 — 정식 해결은 새 sdk/embedder.py 모듈 추가(공용 파일 신설)가 필요해 범위 밖으로 남겨둔다."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3-01:embed-stage-and-sparse-bm25",
+   "phase": "Implement",
+   "wp": "WP-301-embed-stage-and-sparse-bm25.md",
+   "text": "vectors_ref를 실 npz/parquet이 아니라 JSON 파생물로 저장했다(이번 작업 지시가 명시한 패키지 외에는 uv add 금지 규율에 따라 numpy를 새로 추가하지 않음). vector_layout 필드도 그래서 None으로 남겼다 — numpy 도입이 승인되면 후속 WP에서 실 직렬화로 교체해야 한다."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3-01:embed-stage-and-sparse-bm25",
+   "phase": "Implement",
+   "wp": "WP-301-embed-stage-and-sparse-bm25.md",
+   "text": "04-pipelines/12 §9(2)는 BM25 토큰화·해시·포화 로직을 sdk/의 단일 구현으로 embedder.sparse_bm25·retriever.qdrant_sparse_bm25가 공유하라고 제안하지만, 현재 그 로직은 adapters/index/qdrant/bm25_sparse.py에 있고 이번 WP는 그 공개 심볼을 import해 재사용했을 뿐 sdk/로 옮기지 않았다(공용 파일 변경 회피). 후속 리팩터 WP에서 sdk 승격을 검토할 필요가 있다."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3-01:embed-stage-and-sparse-bm25",
+   "phase": "Implement",
+   "wp": "WP-301-embed-stage-and-sparse-bm25.md",
+   "text": "청크 임베딩 캐시 백엔드(H(\"embed\", space, \"document\", embed_text) 조회·기록, Valkey embc: 색인)와 ResumeCursor/partial_ref 배치 재개(§6.3)는 배선하지 않았다 — cache_hits는 항상 0이고 capabilities().supports_resumable=False로 정직하게 신고했다. sparse_learned(BGE-M3 단일 패스)·late_interaction·ko-quality SparseEncoder 슬롯도 이번 WP 범위 밖이다."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3-03:ingest-pipeline-e2e",
+   "phase": "Implement",
+   "wp": "a",
+   "text": "x"
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3-02:index-stage-and-commit-saga",
+   "phase": "Implement",
+   "wp": "WP-302-index-stage-and-commit-saga.md",
+   "text": "설계 갭 — adapters는 rag_platform.ledger를 import할 수 없어(import-linter pipelines-orchestrator-neutral 계약) saga.py가 ledger.repo.DocumentRecord/CommitRecord와 같은 필드 모양의 로컬 미러 dataclass(_DocumentState/_CommitState)를 정의해 구조적으로만 호환시켰다. sdk/ports.py에 Embedder/IndexBackend처럼 Ledger-shaped 구조적 프로토콜을 추가하는 편이 정합적일 수 있으나 공용 파일이라 이번 WP에서는 건드리지 않았다."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3-02:index-stage-and-commit-saga",
+   "phase": "Implement",
+   "wp": "WP-302-index-stage-and-commit-saga.md",
+   "text": "계약 충돌/공백 — Ledger 포트(ledger/repo.py)에 문서별 index_commits 이력 조회(max(index_generation) 또는 list_commits)가 없어 index_generation을 documents.current_generation + 1로 근사했다. ADR-0026이 명시적으로 경계한 '폐기·롤백된 세대 번호 재사용' 위험이 이 근사에서는 완전히 제거되지 않는다 — 실 PostgreSQL Ledger 구현 시 해당 조회 메서드 추가가 필요하다."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3-02:index-stage-and-commit-saga",
+   "phase": "Implement",
+   "wp": "WP-302-index-stage-and-commit-saga.md",
+   "text": "설계 갭 — embed 스테이지가 산출하는 EmbeddedChunkSet.vectors_ref(npz)의 실물 역참조 메커니즘이 StageContext 관례로 아직 정의되어 있지 않다(structure_aware.py의 ctx.parsed_ref 선례와 동일한 공백). 이번 WP는 이미 역참조된 dense_vectors 매핑을 build_index_records/IndexSaga.commit의 명시 인자로 받는 임시 경계를 썼다. 같은 배치에서 F3-01(WP-301 embed 스테이지)이 병행 완료된 것으로 보이므로, adapters/embed/stage.py의 실제 산출물 형태와 맞춰 이 경계를 통합·정리하는 후속 확인이 필요하다."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3-02:index-stage-and-commit-saga",
+   "phase": "Implement",
+   "wp": "WP-302-index-stage-and-commit-saga.md",
+   "text": "설계 갭 — IndexStage.run()이 필요로 하는 commit_id/index_generation/embedded_ref/profile_id/profile_hash/dense_vectors용 표준 StageContext 필드가 sdk/context.py에 아직 없어 getattr(ctx, ...) 임시 관례로 처리했다(WP 문서 DEFERRED에 기록)."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3-02:index-stage-and-commit-saga",
+   "phase": "Implement",
+   "wp": "WP-302-index-stage-and-commit-saga.md",
+   "text": "구현 단순화 — 04-pipelines/13 §9 텍스트 절단 규칙은 '마지막 완결 문장 경계에서 단일 블록 클리핑'만 구현했다(다중 블록에 걸친 절단, text_preview 코너 케이스 등 전수 규칙은 미검증)."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3:verify",
+   "phase": "Verify",
+   "wp": "WP-301-embed-stage-and-sparse-bm25.md",
+   "text": "sdk.ports.Embedder is dense-only (embedding_space_id/dim/normalized/embed_documents/embed_query) vs the richer Embedder/EmbeddingSpace port sketched in 04-pipelines/12 §2.1 -- an architecture-level port-shape decision, not actioned (would need a ports.py redesign + new adapter surface, out of verifier scope)."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3:verify",
+   "phase": "Verify",
+   "wp": "WP-301-embed-stage-and-sparse-bm25.md",
+   "text": "EmbeddedChunkSet.vectors_ref is a JSON derivative, not real npz/parquet, because numpy was not added (batch rule: no uv add beyond what a WP explicitly names) -- vector_layout stays None. Left DEFERRED pending an explicit decision to introduce numpy; not actioned here."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3:verify",
+   "phase": "Verify",
+   "wp": "WP-301-embed-stage-and-sparse-bm25.md",
+   "text": "04-pipelines/12 §9(2)'s proposal to move BM25 tokenize/hash/saturate into a single sdk/ implementation shared by embedder.sparse_bm25 and retriever.qdrant_sparse_bm25: verified there is no actual duplication today (only adapters/index/qdrant/bm25_sparse.py has the arithmetic; embedder.sparse_bm25 already imports it, retriever.qdrant_sparse_bm25 is only a plugin_id string, not yet implemented). No action needed now; revisit (possibly move to sdk/) once a retrieval-side BM25 consumer actually exists."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3:verify",
+   "phase": "Verify",
+   "wp": "WP-301-embed-stage-and-sparse-bm25.md",
+   "text": "Chunk-embedding cache backend (H(\"embed\", space, \"document\", embed_text) lookup/write, Valkey embc: index) and ResumeCursor/partial_ref batch resume (§6.3) are not wired -- cache_hits is always 0 and capabilities().supports_resumable is honestly reported False. Left DEFERRED (needs a real cache backend design), not actioned."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3:verify",
+   "phase": "Verify",
+   "wp": "WP-301-embed-stage-and-sparse-bm25.md",
+   "text": "adapters/index/saga.py cannot import rag_platform.ledger (import-linter pipelines-orchestrator-neutral contract), so it mirrors ledger.repo.DocumentRecord/CommitRecord shape locally in _DocumentState/_CommitState and takes ledger as a structurally-duck-typed Any. Reviewed: this is the architecturally correct workaround for the layering rule, not a bug -- no action taken."
+  },
+  {
+   "batch": "F3",
+   "run": "wf_52b111c5-c82",
+   "label": "F3:verify",
+   "phase": "Verify",
+   "wp": "WP-301-embed-stage-and-sparse-bm25.md",
+   "text": "04-pipelines/13 §9 text-truncation rule: only 'clip at the last complete sentence boundary within a single block' is implemented; multi-block-spanning truncation and all text_preview corner cases remain unverified. Implementation simplification acknowledged by WP-302 itself; out of scope for a lint/type/test-passing verification pass (would need a dedicated follow-up WP if full-spec truncation is required)."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-04:render-and-query-pipeline",
+   "phase": "Implement",
+   "wp": "WP-404-render-and-query-pipeline.md",
+   "text": "공용 파일 testing/renderer_citation_roundtrip.py의 _field()가 str(value)로 값을 읽어 pydantic RootModel(CiteId/Hex64/Ulid) 실인스턴스를 넘기면 \"root='d2'\"처럼 값이 깨진다(순수 dict/JSON을 넘길 때만 정상 동작). 내 테스트는 model_dump(mode='json')으로 덤프해 우회했지만, 근본 수정(.root 추출 또는 문서화)이 필요하다 — 내 파일 목록 밖이라 직접 고치지 않았다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-04:render-and-query-pipeline",
+   "phase": "Implement",
+   "wp": "WP-404-render-and-query-pipeline.md",
+   "text": "uv run lint-imports로 F4-01/F4-02 사일 파일의 계층 위반을 발견했다(내 파일 아님, 배치 검증자 조치 필요): rag_platform.adapters.retrieve.qdrant_dense/qdrant_sparse_bm25 -> rag_platform.retrieval.channels, rag_platform.retrieval.planner -> rag_platform.adapters.query.rule_router/korean_normalize, rag_platform.retrieval.hydrate -> rag_platform.adapters.index.qdrant.filters."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-04:render-and-query-pipeline",
+   "phase": "Implement",
+   "wp": "WP-404-render-and-query-pipeline.md",
+   "text": "pipelines/query.py의 6-Protocol과 F4-01~03 실 시그니처 사이 격차(실측): retrieve=channels.retrieve_once(plan, query_vectors: Mapping[str,QueryVectors], ctx: StageContext, *, retrievers: Mapping[str,Retriever]); fuse=fusion.fuse(cs, plan, *, now: datetime); hydrate=hydrate.hydrate(rs, plan, backend: HydrateBackend, *, now: datetime); postprocess.{relevance_gate,dedup,mmr,parent_expand}.apply()는 RankedSet이 아닌 Sequence[RankedResult]+단계별 파라미터(tau/vectors/lam/ChunkTextStore/TokenCounter/budgets)를 받고 StepResult를 반환; pack.packer.pack(ranked, cfg: PackConfig, *, now: datetime)은 QueryPlan이 아닌 PackConfig를 받는다. 이 배선은 pipelines가 retrieval/render를 임포트할 수 없어 F5(api/mcp/cli) 또는 F4 배치 검증자가 상위 계층에서 완성해야 실 F3 샘플 기반 e2e가 통과한다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-04:render-and-query-pipeline",
+   "phase": "Implement",
+   "wp": "WP-404-render-and-query-pipeline.md",
+   "text": "citation_map.py의 §4.6 map_back 다단락/다블록 세그먼트-provenance 좁히기는 ContextItem 계약에 block_refs가 없어 근사치다(len(provenance)==len(segments) 또는 단일 provenance뿐인 리프 항목만 정확히 좁힌다). 계약에 block_refs를 추가하거나 §4.6 문서 쪽 조정이 필요할 수 있다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-04:render-and-query-pipeline",
+   "phase": "Implement",
+   "wp": "WP-404-render-and-query-pipeline.md",
+   "text": "§4.2 지시문 템플릿(citation_rule/sufficiency_clause/data_boundary_clause 슬롯 채우기, rag-answer-ko@1 본문)은 이 WP 범위 밖이라 두 렌더러 모두 호출자가 준 system_text/instructions_text 문자열만 받는다(markdown은 최소 기본 문구 포함) — 별도 WP로 전체 템플릿 엔진을 구현할 필요가 있다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-03:postprocess-and-pack",
+   "phase": "Implement",
+   "wp": "WP-403-postprocess-and-pack.md",
+   "text": "계약 갭: RankedResult에 content_hash·text_format·risk_score(Enrichment.risk_flags)·figure 메타데이터 필드가 없다. dedup의 완전중복 판정은 chunk_id(콘텐츠 파생 키)로 대체했고, citation_align.ContextItem.text_format은 markdown 고정, budget_cut의 ContextItem.figures는 항상 None, packer의 L1 위험 제외는 risk_flagged 콜백 주입식(기본 미적용)으로 처리했다. 6A/6B 계약 재생성 시 이 필드들의 승격 여부 검토 필요."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-03:postprocess-and-pack",
+   "phase": "Implement",
+   "wp": "WP-403-postprocess-and-pack.md",
+   "text": "ChunkTextStore 포트를 sdk/ports.py(공용 파일, 동시 편집 대상)에 추가하지 않고 src/rag_platform/retrieval/postprocess/parent_expand.py에 로컬 Protocol로 정의했다. 바이블 §13.2가 정식 SDK 포트로 승격을 의도한다면 추후 sdk/ports.py에 옮기는 별도 변경이 필요하다(이번 배치에서는 공용 파일 최소 변경 원칙을 지키기 위해 보류)."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-03:postprocess-and-pack",
+   "phase": "Implement",
+   "wp": "WP-403-postprocess-and-pack.md",
+   "text": "04-pipelines/17 §2.5의 parent_expand 조건(a)(n_children 부재 시): 절 본문 결정문(\"|C|≥2로 대체\")과 그 절의 의사코드(`ratio_ok = n_children is not None and ...`)가 서로 다르다. 이 구현은 결정문을 우선했다(WP-403 §6.4에 기록) — 문서 03/04 팀이 04-pipelines/17 §2.5의 의사코드 또는 결정문 중 하나로 patch해 불일치를 해소해야 한다(미해결 이슈 3)."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-03:postprocess-and-pack",
+   "phase": "Implement",
+   "wp": "WP-403-postprocess-and-pack.md",
+   "text": "packer.pack()은 QueryPlan/Profile 계약이 아니라 이 WP가 정의한 로컬 PackConfig dataclass를 받는다(읽기 예산상 QueryPlan을 열지 않음). WP-404가 기대하는 `Postprocessor`/`Packer` 콜러블 시그니처(`(ranked, plan[, security]) -> RankedSet|ContextPack`)와 맞추려면 F4 배치 검증자가 QueryPlan.pack/SecurityContext 실 값을 PackConfig로 변환하는 어댑터와, retrieval/postprocess/__init__.py·retrieval/pack/__init__.py 셸(둘 다 이 WP 파일 목록 밖, 플랫폼/배치 검증자 소유)에서 이 단계 함수들을 고정 순서로 호출하는 조립 코드를 작성해야 한다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-03:postprocess-and-pack",
+   "phase": "Implement",
+   "wp": "WP-403-postprocess-and-pack.md",
+   "text": "정보용 mypy 사전 점검(배치 검증자가 별도로 1회 수행할 항목, 이번 완료 기준에는 없음) 결과 8건의 타입 경고가 나왔다 — 대부분 Hex64/Ulid 등 RootModel 필드에 pydantic이 런타임에 자동 코어션하는 원시 str/int를 정적으로는 타입 불일치로 보는 패턴이다(예: reorder.py의 PackedItem.position: int|None, packer.py의 missing_aspects/index_generations_seen에 plain list 전달). 런타임 정확성은 16개 단위 테스트로 확인했으나, 배치 mypy 패스에서 필요하면 캐스팅·타입힌트 보강을 검토해야 한다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-02:channels-fusion-hydrate",
+   "phase": "Implement",
+   "wp": "WP-402-channels-fusion-hydrate.md",
+   "text": "필터 빌더 미통합: channels.py는 PlanFilters/exclude_ids를 각 Retriever에 그대로 전달하고 어댑터가 직접 from_plan_filters로 변환한다 — 다중 백엔드(OpenSearch 포함) 통합 필터 빌더(retrieval/filters.py 등)는 별도 WP 범위로 남겼다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-02:channels-fusion-hydrate",
+   "phase": "Implement",
+   "wp": "WP-402-channels-fusion-hydrate.md",
+   "text": "retrieve()의 0건 완화 재검색(§4.4, filters.relaxable_keys 1회 제거)과 plan 단계의 채널 팬아웃 구성은 이 WP 범위 밖이다 — retrieve_once(단일 병렬 실행)만 구현했고, 상위 코디네이터 래퍼는 planner/조정자 WP가 맡아야 한다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-02:channels-fusion-hydrate",
+   "phase": "Implement",
+   "wp": "WP-402-channels-fusion-hydrate.md",
+   "text": "fusion.fuse는 RRF만 구현한다 — convex_minmax/convex_zscore/dbsf/combmnz, downgraded_from 강등 판정, late_interaction_rerank(MaxSim) 순서 필터는 미구현(§6.3·§6.4·§3.6, open issue로 문서화)."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-02:channels-fusion-hydrate",
+   "phase": "Implement",
+   "wp": "WP-402-channels-fusion-hydrate.md",
+   "text": "hydrate.QdrantHydrateBackend와 두 리트리버는 동기 QdrantClient 위에 async def를 얹은 것이라 실 서버 대상 논블로킹 I/O가 아니다 — AsyncQdrantClient로의 전환은 후속 과제."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-02:channels-fusion-hydrate",
+   "phase": "Implement",
+   "wp": "WP-402-channels-fusion-hydrate.md",
+   "text": "retriever.opensearch_bm25(standard lexical)·retriever.qdrant_sparse(sparse_learned) 어댑터는 작업 지시 범위(qdrant_dense·qdrant_sparse_bm25만) 밖이라 구현하지 않았다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-02:channels-fusion-hydrate",
+   "phase": "Implement",
+   "wp": "WP-402-channels-fusion-hydrate.md",
+   "text": "PluginRegistry 연동 없음: retrievers는 channels.retrieve_once에 명시적 Mapping[str, Retriever]로 주입받는다 — 실제 plugins.registry.PluginRegistry 조회로 바꾸는 배선은 별도 WP다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-01:planner-and-filters",
+   "phase": "Implement",
+   "wp": "WP-401-planner-and-filters.md",
+   "text": "import-linter '계층' 계약 위반: retrieval/planner.py가 adapters/query/korean_normalize.py·rule_router.py를 직접 임포트한다(바이블 §12상 retrieval과 adapters는 독립 형제 계층). uv run lint-imports로 확인한 결과 같은 F4 배치의 F4-02(retrieval.hydrate -> adapters.index.qdrant.filters)·F4-04(pipelines.query -> retrieval/adapters/render)도 이미 같은 종류의 위반을 갖고 있어, 이 WP가 새로 만든 문제가 아니라 배치 전체의 설계 공백이다. F4 배치 검증자가 DI 경계 도입 또는 ADR 개정으로 정리해야 한다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-01:planner-and-filters",
+   "phase": "Implement",
+   "wp": "WP-401-planner-and-filters.md",
+   "text": "sdk/context.py의 StageContext 독스트링은 'security'가 query측 멤버로 선언돼 있다고 말하지만 실제 Protocol/_LocalStageContext에는 security 필드가 없다(문서-코드 불일치). 이 WP는 planner.plan()이 security를 명시적 파라미터로 받게 해 이 gap을 피했지만, 향후 ctx.security를 표면화하려면 sdk/context.py(공용 파일) 수정이 필요하다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-01:planner-and-filters",
+   "phase": "Implement",
+   "wp": "WP-401-planner-and-filters.md",
+   "text": "sdk/ports.py의 KoreanAnalyzer.tokenize()는 형태소 문자열만 반환하고 품사 태그를 주지 않아 lexical_terms(NNG/NNP/SL/SN 태그 필요)를 만들 수 없다. 이 WP는 adapters/enrich/korean_keywords.py와 같은 관례로 kiwipiepy를 직접 임포트(옵션)해 우회했다 — ctx.analyzer 경로를 쓰려면 포트 확장이 필요하다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-01:planner-and-filters",
+   "phase": "Implement",
+   "wp": "WP-401-planner-and-filters.md",
+   "text": "retrieval/filters.py의 _ALLOWED_OPS(필드별 허용 연산자)는 정본 03-contracts/09-query-request-and-query-plan.md §4.3(이 WP 읽기 예산 밖)을 읽지 않고 만든 보수적 초안이다. 정본과 대조해 값을 맞춰야 한다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-01:planner-and-filters",
+   "phase": "Implement",
+   "wp": "WP-401-planner-and-filters.md",
+   "text": "query_plan.PackPlan.tokenizer.name(TokenizerId, 접두 hf|tiktoken|anthropic|gemini)과 QueryRequest/PackPlan의 tokenizer.provider 열거(anthropic|openai|google|local)가 어긋난다 — provider=openai/google/local이면 TokenizerId 패턴을 만족하는 name을 만들 수 없다(계약 간 불일치, 정본 확인 필요)."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-01:planner-and-filters",
+   "phase": "Implement",
+   "wp": "WP-401-planner-and-filters.md",
+   "text": "CollectionSpec/IndexBackendCapabilities/profiles.loader가 배선되지 않아 PlannerDefaults가 lite.yaml 값을 하드코딩한 사본이고 embedding_profile_hash/profile_hash/embedding_space_id/cache_keys.query_embedding은 플레이스홀더(null)다. 실제 컬렉션 레지스트리·프로파일 로더가 준비되면 retrieval/planner.py(또는 F4-02가 만들 채널 모듈)로 이관해야 한다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-01:planner-and-filters",
+   "phase": "Implement",
+   "wp": "WP-401-planner-and-filters.md",
+   "text": "src/rag_platform/profiles/builtin/lite.yaml의 pack.k_max=20이 docs/04-pipelines/14-query-understanding.md §9.2 표가 말하는 'lite 기본 10'과 다르다 — 문서와 프로파일 파일 중 어느 쪽이 정본인지 확인이 필요하다(이 WP는 실제 YAML 값 20을 그대로 썼다)."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4-01:planner-and-filters",
+   "phase": "Implement",
+   "wp": "WP-401-planner-and-filters.md",
+   "text": "self_query(정규식/LLM) 추출, LLM 재작성/multi_query/HyDE/분해, 소형 분류기·LLM 라우터, §9.3의 4단계 지연 사전 저하 사다리(멀티쿼리 끔→리랭크 절반→리랭크 끔→채널 축소)는 이 WP 범위 밖으로 모두 DEFERRED 처리했다(플러그인 자리만 남김, budget.llm_calls_allowed=false 고정)."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4:verify",
+   "phase": "Verify",
+   "wp": "gen-deferred-ledger 실행 후 실패를 원인 파일에서 최소 수정으로 해소했다.",
+   "text": "pipelines/query.py의 실 F4-01~03 모듈+렌더러 배선(WP-404 §0·§9의 자체 DEFERRED 주석이 F4 배치 검증자/F5에 위임)은 이번 범위에서 하지 않았다 — pipelines는 바이블 §12상 retrieval·render를 import할 수 없어 api/mcp/cli 계층의 별도 WP가 필요하다. 현재 e2e는 페이크 QueryPipelineDeps로 체인 순서·렌더러 선택만 검증한다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4:verify",
+   "phase": "Verify",
+   "wp": "gen-deferred-ledger 실행 후 실패를 원인 파일에서 최소 수정으로 해소했다.",
+   "text": "packer.pack()이 WP-404가 기대하는 QueryPlan/Profile 기반 Postprocessor/Packer 콜러블 시그니처가 아니라 로컬 PackConfig dataclass를 받는 문제는 위 배선 미완료와 같은 근본 원인이라 함께 남는다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4:verify",
+   "phase": "Verify",
+   "wp": "gen-deferred-ledger 실행 후 실패를 원인 파일에서 최소 수정으로 해소했다.",
+   "text": "sdk/ports.py의 KoreanAnalyzer.tokenize()는 형태소 문자열만 반환하고 품사 태그가 없어 lexical_terms(NNG/NNP/SL/SN) 생성에 못 쓰는 문제는 손대지 않았다(구조 변경 리스크 대비 이번 범위 밖으로 판단)."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4:verify",
+   "phase": "Verify",
+   "wp": "gen-deferred-ledger 실행 후 실패를 원인 파일에서 최소 수정으로 해소했다.",
+   "text": "query_plan.PackPlan.tokenizer.name(TokenizerId 접두 hf|tiktoken|anthropic|gemini)과 QueryRequest/PackPlan tokenizer.provider 열거(anthropic|openai|google|local)의 불일치는 계약 생성물 문제라 손대지 않았다 — 스키마·생성기 조정이 필요하다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4:verify",
+   "phase": "Verify",
+   "wp": "gen-deferred-ledger 실행 후 실패를 원인 파일에서 최소 수정으로 해소했다.",
+   "text": "CollectionSpec/IndexBackendCapabilities/profiles.loader 미배선(PlannerDefaults가 lite.yaml 값을 하드코딩한 사본으로 남는 구조적 원인)은 손대지 않았다."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4:verify",
+   "phase": "Verify",
+   "wp": "gen-deferred-ledger 실행 후 실패를 원인 파일에서 최소 수정으로 해소했다.",
+   "text": "testing/renderer_citation_roundtrip.py의 _field() 수정은 최상위 필드의 RootModel만 .root로 벗긴다 — segment_range처럼 원소 각각이 RootModel인 컨테이너 필드는 아직 안 벗겨져 tests/retrieval/test_query_e2e.py는 여전히 model_dump(mode=\"json\") 우회를 쓴다. 완전한 고수준 수정은 별도 후속 과제."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4:verify",
+   "phase": "Verify",
+   "wp": "gen-deferred-ledger 실행 후 실패를 원인 파일에서 최소 수정으로 해소했다.",
+   "text": "lite.yaml에서 pack.{k_max,max_context_tokens,reserved_answer_tokens} 외의 다른 query 하위 값들(channels[].top_k/timeout_ms=100/250, hydrate.top_n=100, rerank.top_n_in/out=100/20, latency_budget_ms.total=800)도 바이블 §7.2 lite 열(각 50/400, 30, 30/10, 1500)과 다르다 — 이번엔 명시적으로 open_issue로 지목된 k_max 계열만 정정했고 나머지는 확신이 부족해 그대로 두었다. 전체 대조가 필요하면 별도 WP로 진행 권장."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4:verify",
+   "phase": "Verify",
+   "wp": "gen-deferred-ledger 실행 후 실패를 원인 파일에서 최소 수정으로 해소했다.",
+   "text": "fusion.fuse의 RRF 전용 구현, hydrate의 QdrantHydrateBackend가 동기 클라이언트 위 async 래핑(AsyncQdrantClient 미전환), retriever.opensearch_bm25/qdrant_sparse 미구현, PluginRegistry 미연동, RankedResult의 content_hash/text_format/risk_score/figure 메타데이터 계약 갭 등 원 WP들이 이미 명시적으로 DEFERRED/범위 밖으로 남긴 항목들은 그대로 두었다(이번 배치 검증 대상 아님)."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4:review-fix",
+   "phase": "Review",
+   "wp": "WP-405-review-fixes-retrieve-acl-filters.md",
+   "text": "tests/api and tests/mcp do not exist in this repository (only src/rag_platform/api and src/rag_platform/mcp source dirs exist, no test dirs yet) -- ran `uv run pytest -q tests/retrieval tests/security` instead of the full 4-path command; all 93 tests pass (22 new + 71 pre-existing, 1 of which was corrected to match the fixed OR semantics)."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4:review-fix",
+   "phase": "Review",
+   "wp": "WP-405-review-fixes-retrieve-acl-filters.md",
+   "text": "qdrant_dense.py and qdrant_sparse_bm25.py now both implement an identical `collection_id` pin in `_build_query_filter` -- duplicated because `retrieval` and `adapters` are sibling layers per bible §12 and cannot share a helper without a new shared-layer location (e.g. under `sdk`), which is out of this fix batch's scope."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4:review-fix",
+   "phase": "Review",
+   "wp": "WP-405-review-fixes-retrieve-acl-filters.md",
+   "text": "The review's optional suggestion to add a defensive assert in fusion (`_fuse_runs`) that a record_id never appears twice in the same channel/variant run was not added -- the root cause (missing collection_id pin) is now fixed at the adapter level, and adding cross-channel assertions felt better scoped to a WP that reviews all channels together."
+  },
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4:review-fix",
+   "phase": "Review",
+   "wp": "WP-405-review-fixes-retrieve-acl-filters.md",
+   "text": "Real-Qdrant-server enforcement of the §8.1 step-7 channel timeout (asyncio.wait_for actually interrupting a slow server round-trip) remains a needs_docker DEFERRED item -- this batch only verified (with a real wall-clock concurrency test, no Docker) that the synchronous backend calls no longer block the event loop."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-02:mcp-server",
+   "phase": "Implement",
+   "wp": "WP-502-mcp-server.md",
+   "text": "pyproject.toml/uv.lock(공용 파일)에 `mcp>=2,<3` 의존성 한 줄을 추가했다 — 지시문 본문의 제안값 `mcp>=1,<3`보다 ADR-0025가 확정한 `mcp>=2,<3`을 정본으로 우선했다(계약 충돌 아님, 정본 우선순위 적용). 다른 배치 에이전트가 동시에 pyproject.toml을 건드리면 병합 확인 필요."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-02:mcp-server",
+   "phase": "Implement",
+   "wp": "WP-502-mcp-server.md",
+   "text": "render.mcp_tool_result/render.xml_documents 전용 렌더러 모듈이 아직 없어 슬림 팩 조립·XML 텍스트 렌더 로직을 mcp/tools.py 내부 헬퍼(_slim_item/_xml_documents)로 임시 구현했다. 후속 WP가 이를 render/ 패키지로 승격하고 tools.py는 그 렌더러를 호출하도록 리팩터링해야 한다(바이블 §12 module map과 완전히 일치시키기 위함)."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-02:mcp-server",
+   "phase": "Implement",
+   "wp": "WP-502-mcp-server.md",
+   "text": "search/get_document/list_collections의 실 서비스 배선(QueryRunner→retrieval.* 실 파이프라인, DocumentReader→문서조회 서비스, CollectionLister→컬렉션 레지스트리, PrincipalResolver 기반 SecurityContext 해석)은 이 WP 범위 밖으로 남겨 Protocol 경계만 정의했다 — pipelines/query.py 자신의 주석과 동일하게 'F5 api/mcp/cli 상위 계층 또는 배치 검증자' 몫으로 open_issue화했다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-02:mcp-server",
+   "phase": "Implement",
+   "wp": "WP-502-mcp-server.md",
+   "text": "get_document 커서의 §6.3 주체 바인딩은 CursorRecord에 저장된 collection_ids 집합이 없어(05 §6.2 표에 없음) search 커서처럼 '현재 allowed ∩ 저장' 교집합을 계산하지 않고 현재 SecurityContext.collection_ids를 그대로 사용하는 단순화를 적용했다 — 설계 문서가 이 경우를 명시하지 않아 취한 실용적 해석이며, 05-api/05가 get_document 커서의 정확한 바인딩 집합을 명문화하면 조정이 필요하다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-02:mcp-server",
+   "phase": "Implement",
+   "wp": "WP-502-mcp-server.md",
+   "text": "ADR-0025/05-api/05가 요구하는 코드젠 inputSchema/outputSchema(schemas/*.schema.json에서 인라인 번들, tools/list 스냅샷 정본)는 이번 WP에 없다 — server.py는 SDK가 Python 타입 힌트에서 자동 생성한 스키마를 그대로 쓴다. 스키마 코드젠은 별도 도구(tools/contracts_gen.py류) WP가 맡아야 한다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-02:mcp-server",
+   "phase": "Implement",
+   "wp": "WP-502-mcp-server.md",
+   "text": "리소스(rag://...) 템플릿과 rag-answer 프롬프트(05 §10)는 이 작업의 읽기 범위(§도구 정의·§커서·§결과 크기)에 포함되지 않아 구현하지 않았다 — v1.1 이후 별도 WP 대상."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-01:api-ingest-jobs-query",
+   "phase": "Implement",
+   "wp": "WP-501-api-ingest-jobs-query.md",
+   "text": "공용 파일 변경: fastapi가 pyproject.toml에 없어 `uv add fastapi`로 추가했다(pyproject.toml/uv.lock 변경) — 동시 배치의 다른 에이전트도 pyproject.toml을 만질 수 있어 병합 시 확인 필요."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-01:api-ingest-jobs-query",
+   "phase": "Implement",
+   "wp": "WP-501-api-ingest-jobs-query.md",
+   "text": "설계 갭: rag_platform.api는 import-linter `testing-not-in-production` 규칙 때문에 testing.doubles.InMemoryLedger를 쓸 수 없어 api.jobs.JobStore(자체 인메모리 대역)를 새로 만들었다. 실 PostgreSQL Ledger로 교체할 때 rag_platform.ledger.repo.JobRecord에는 GET /v1/jobs/{job_id} 응답이 필요로 하는 progress/cost/시각 필드가 없어 그대로 못 쓴다 — Ledger.JobRecord 확장이 필요하다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-01:api-ingest-jobs-query",
+   "phase": "Implement",
+   "wp": "WP-501-api-ingest-jobs-query.md",
+   "text": "의도된 범위 축소(WP §9 DEFERRED): POST /v1/query·POST /v1/render는 F4 retrieval.planner/channels/fusion/hydrate/postprocess.*/pack.packer + render.markdown/anthropic_search_result를 배선하지 않아 항상 items=[]인 빈 ContextPack만 반환한다. pipelines/query.py 자신의 독스트링도 이 배선을 'F5 또는 F4 배치 검증자의 몫'이라 적어 두었다 — 후속 WP 또는 배치 검증자가 QueryPipelineDeps를 실 모듈로 채워야 한다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-01:api-ingest-jobs-query",
+   "phase": "Implement",
+   "wp": "WP-501-api-ingest-jobs-query.md",
+   "text": "의도된 범위 축소: POST /v1/ingest는 계약 IngestRequest 전체(ACL·profile_overrides·콜백 등)를 검증하지 않고 collection_id/source_uri만 받는 축소 본문이며, LocalRunner는 fetch~embed 실 어댑터 대신 index 스텁 1단만 실행한다 — orchestration/context.py(ArtifactRef → Pydantic 검증 셸)와 profile → StagePolicy 해석기가 없어서다(둘 다 이 WP 대상 파일 밖). document_id 기반 재잡 대기열(waiting_for)·dedup_policy도 구현하지 않았다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-01:api-ingest-jobs-query",
+   "phase": "Implement",
+   "wp": "WP-501-api-ingest-jobs-query.md",
+   "text": "범위 밖(문서화만): GET /v1/jobs(목록)·GET /v1/jobs/{job_id}/events(SSE)·POST /v1/ingest/batch·ETag/If-None-Match 304·레이트리밋(E3)·실 Cedar 인가(E2)·OIDC JWT(E1)는 구현하지 않았다 — API 키 헤더 → 정적 ApiKeyRegistry 조회로 인증/인가를 근사했다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-01:api-ingest-jobs-query",
+   "phase": "Implement",
+   "wp": "WP-501-api-ingest-jobs-query.md",
+   "text": "테넌트 격리 세부: GET /v1/jobs/{job_id}에서 다른 테넌트의 job_id는 05-api/02 §2.2가 명시한 403 auth.forbidden이 아니라 404 api.not_found로 응답한다(존재 비노출은 동일하게 달성하지만 상태 코드가 문서와 다르다) — 단순화."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-03:cli-and-full-e2e",
+   "phase": "Implement",
+   "wp": "WP-503-cli-and-full-e2e.md",
+   "text": "공용 파일 변경 요청: pyproject.toml [project.scripts]의 `rag = \"rag_platform.cli:main\"`이 여전히 `cli/__init__.py`의 자리표시자 main()을 가리킨다 — `cli/__init__.py`를 `from rag_platform.cli.main import main`으로 위임하도록(또는 pyproject의 엔트리포인트를 `rag_platform.cli.main:main`으로) 최소 변경해야 새 하위 명령이 `rag` 실행 파일로 노출된다. 이 WP는 지정 파일(cli/main.py)만 써서 __init__.py는 건드리지 않았다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-03:cli-and-full-e2e",
+   "phase": "Implement",
+   "wp": "WP-503-cli-and-full-e2e.md",
+   "text": "이름 충돌 주의: `rag_platform.cli.__init__`이 이미 `main`이라는 함수 속성을 갖고 있어 `from rag_platform.cli import main`은 그 함수를 가져온다(내 새 모듈이 아님) — 반드시 `import rag_platform.cli.main as cli_main`처럼 서브모듈을 명시적으로 import해야 한다. 위 pyproject 수정과 함께 해소하는 편이 낫다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-03:cli-and-full-e2e",
+   "phase": "Implement",
+   "wp": "WP-503-cli-and-full-e2e.md",
+   "text": "`--profile lite-dev`는 `profiles/builtin/lite-dev.yaml`이 실재하지 않아 CLI 레벨 별칭(`resolve_profile_id`)으로 `lite`에 매핑했다 — profiles/builtin은 이 WP의 대상 파일이 아니라 진짜 lite-dev 프로파일 문서를 만들지 않았다. 필요하면 별도 WP로 `profiles/builtin/lite-dev.yaml`을 추가해야 한다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-03:cli-and-full-e2e",
+   "phase": "Implement",
+   "wp": "WP-503-cli-and-full-e2e.md",
+   "text": "설계 갭: `src/rag_platform/api/query.py`(F5-01)는 자신의 모듈 docstring에 명시된 대로 `pipelines.query.run_query`의 6-Protocol을 아직 배선하지 않아 `POST /v1/query`가 항상 빈 ContextPack을 반환한다(`_build_empty_context_pack`) — CLI/API 결과 동등성은 그 배선이 끝난 뒤 후속 WP 또는 배치 검증자가 `tests/e2e/test_full_e2e.py::test_api_testclient_query_reaches_shared_tenant`를 확장해 확인해야 한다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-03:cli-and-full-e2e",
+   "phase": "Implement",
+   "wp": "WP-503-cli-and-full-e2e.md",
+   "text": "의존성 공백: `rag serve api`가 `python -m uvicorn ...`을 서브프로세스로 띄우는데 `uvicorn`이 pyproject.toml에 선언돼 있지 않다(이 작업 지시에 명시된 패키지가 아니라 `uv add`하지 않았다) — 실 기동을 원하면 별도로 uvicorn을 추가해야 한다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-03:cli-and-full-e2e",
+   "phase": "Implement",
+   "wp": "WP-503-cli-and-full-e2e.md",
+   "text": "구현 결정: lite.yaml 채널 기본 `timeout_ms=250`(서버 Qdrant 기준)이 이 WP의 '매 질의마다 온디스크 Qdrant를 새로 여는' 개발 편의와 맞지 않아 콜드 스타트 시 간헐적으로 retrieve.unavailable을 냈다 — CLI 전용 PlannerDefaults(채널 timeout_ms=5000)로 완화했다(lite.yaml 자체는 변경하지 않음); 이 온디스크 재오픈 패턴을 api/mcp 쪽 워커가 재사용할 경우 같은 튜닝이 필요할 수 있다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-03:cli-and-full-e2e",
+   "phase": "Implement",
+   "wp": "WP-503-cli-and-full-e2e.md",
+   "text": "compose.lite.yaml 해석: 작업 지시 요약문은 'PostgreSQL·Qdrant·Valkey·api·worker' 5개를 언급했지만 바이블 §7.1('컨테이너 4(개발)')과 배포 가이드 §3.4 compose 스케치는 dev 모드에서 app(API+LocalRunner 동거) 하나뿐이다 — 정본 문서를 따라 4개 서비스(app/postgres/qdrant/valkey)로 작성했다. worker를 별도 컨테이너로 원하면 compose.lite-durable.yaml(운영 오버레이, 이 WP 범위 밖) 쪽 검토가 필요하다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5-03:cli-and-full-e2e",
+   "phase": "Implement",
+   "wp": "WP-503-cli-and-full-e2e.md",
+   "text": "compose.lite.yaml은 이미지 digest가 모두 `<digest>` 자리표시자이고 저장소에 Dockerfile이 없다 — 이미지 빌드/CI 파이프라인은 별도 작업이 필요하다(needs_docker, DEFERRED)."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5:verify",
+   "phase": "Verify",
+   "wp": " DEFERRED n' 줄 보유).",
+   "text": "GET /v1/jobs/{job_id}는 다른 테넌트의 job_id에 403 대신 404를 반환한다(존재 비노출 관점에서는 더 보수적) — 검토 후 변경하지 않기로 결정, 05-api/02 §2.2 문서와의 상태 코드 불일치는 여전히 남아 있음."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5:verify",
+   "phase": "Verify",
+   "wp": " DEFERRED n' 줄 보유).",
+   "text": "api/query.py(F5-01)는 여전히 pipelines.query.run_query의 6-Protocol을 배선하지 않아 POST /v1/query·POST /v1/render가 빈 ContextPack을 반환한다(WP-501/503 양쪽에 DEFERRED로 기록됨, 배치 워커의 의도된 범위 축소) — 후속 WP 대상."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5:verify",
+   "phase": "Verify",
+   "wp": " DEFERRED n' 줄 보유).",
+   "text": "`rag serve api`가 서브프로세스로 띄우는 uvicorn이 pyproject.toml에 없다(WP-503 DEFERRED 2, 이번 작업 지시 패키지 목록 밖이라 uv add하지 않음) — 실 기동을 원하면 별도 WP에서 추가해야 한다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5:verify",
+   "phase": "Verify",
+   "wp": " DEFERRED n' 줄 보유).",
+   "text": "deploy/compose/compose.lite.yaml의 이미지 digest가 전부 `<digest>` 자리표시자이고 Dockerfile이 없다(needs_docker, WP-503 DEFERRED 3) — 도커 있는 머신에서 별도 검증 필요."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5:verify",
+   "phase": "Verify",
+   "wp": " DEFERRED n' 줄 보유).",
+   "text": "kiwipiepy 0.23.2(LGPL 정적 링크)가 Apache-2.0 0.24 출시 전까지 opt-in extra로 남아 있다(pyproject.toml 자체 기록, 라이선스 검토자 확인 필요) — 이번 작업 범위 밖."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5:review-fix",
+   "phase": "Review",
+   "wp": "WP-504",
+   "text": "_pack_security_context_hash (api/query.py) duplicates mcp.cursor_store.security_context_hash's formula independently because api and mcp sit in the same import-linter layer and cannot import each other; a future batch should promote a shared implementation into the security package and update both call sites (touches mcp/cursor_store.py, outside this batch's 3 designated files)."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5:review-fix",
+   "phase": "Review",
+   "wp": "WP-504",
+   "text": "app.state.pack_cache remains an in-process Python dict, not the Valkey pack:{tenant}:{pack_id} key the design calls for (05-api/03 §4.4) — this fix only added subject-binding hash + TTL + size-bound semantics on top of the existing in-memory store; migrating the storage backend itself is unchanged open_issues scope."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "s0:deps",
+   "phase": "S0 Deps",
+   "wp": "",
+   "text": "License policy conflict on the `[kiwi]` extra: the task instruction classifies kiwipiepy as an acceptable B-grade LGPL *dynamic-link* opt-in extra, but the only PyPI release available (0.23.2, confirmed via the PyPI JSON API — no 0.24.0+ release exists as of 2026-09-23) is the LGPL *statically-bundled* wheel that docs/02-architecture/00-design-bible.md sec. 7.1 explicitly says is forbidden for default install under D-02 grade B and gates behind an Apache-2.0 kiwipiepy>=0.24.0 wheel (10-development/02 sec. 2.2, 01 open issue 15, issue #233). I added kiwipiepy>=0.23.2 to the `kiwi` extra as instructed (it is opt-in, not default/runtime), documented the discrepancy in the pyproject.toml comment, but a license reviewer needs to explicitly confirm/override the bible's static-linkage gate before this extra is considered release-ready."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "s0:deps",
+   "phase": "S0 Deps",
+   "wp": "",
+   "text": "No packages needed removal for missing Windows wheels — python-hwpx, qdrant-client, fsspec, lxml, charset-normalizer, markdown-it-py, trafilatura, pypdfium2, kiwipiepy, and respx all installed from prebuilt Windows wheels without any source build failures."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6b:kit-2",
+   "phase": "6B Conformance",
+   "wp": "",
+   "text": "uv run mypy src (전체) 결과 src/rag_platform/adapters/index/qdrant/filters.py:191,197에 기존(내 변경과 무관한) DatetimeRange 인자 타입 오류 2건이 있음 — 내 3개 파일은 mypy strict 통과, 이 오류는 범위 밖이라 손대지 않음."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6b:kit-2",
+   "phase": "6B Conformance",
+   "wp": "",
+   "text": "동시 작업 중인 다른 세션이 src/rag_platform/testing/conformance/{base.py,kits.py}를 생성했고 ruff INP001·D205 위반이 있음 — 내 담당(2/3) 범위 밖이라 수정하지 않았으니 해당 작업자 확인 필요."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6b:kit-2",
+   "phase": "6B Conformance",
+   "wp": "",
+   "text": "fuser_equivalence.py는 아직 존재하지 않는 실제 Fuser 플러그인 구현과의 통합을 위해 fuse(channel_runs, *, k, weights, variant_query_weight) 형태의 최소 어댑터 시그니처를 자체 정의했다 — 향후 실제 CandidateSet.channel_runs[] -> 이 형태 투영 어댑터가 필요하다."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6b:kit-3",
+   "phase": "6B Conformance",
+   "wp": "",
+   "text": "evaluator extension point has no cataloged stage name in sdk.stage.STAGE_NAMES yet (matches bible open issue 05-#19); StageErrorCatalogConformance skips its StageError-code check for evaluator until the catalog is amended."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6b:kit-3",
+   "phase": "6B Conformance",
+   "wp": "",
+   "text": "The other 12 Stage-protocol base classes (fetcher, parser, normalizer, chunker, enricher, query_transformer, retriever, fuser, reranker, postprocessor, packer, evaluator) have no concrete plugin wired yet since no real adapters exist beyond the two doubles — they are ready-to-inherit scaffolding for 6D/6F adapter work, verified indirectly via the in-test _EchoStage dummy."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6b:kit-3",
+   "phase": "6B Conformance",
+   "wp": "",
+   "text": "A separate concurrent agent is building function-style conformance helpers (fuser_equivalence.py, litm_order.py, renderer_citation_roundtrip.py under src/rag_platform/testing/, tests under tests/unit/testing/) — these are complementary to, not integrated with, this class-based kit; a future pass may want to cross-reference them from the relevant per-extension-point classes (e.g. FuserConformance/PackerConformance docstrings already point at them by module name)."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:qdrant",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "Server-mode checks not run (needs_docker): payload index effects (is_tenant subgraph, prefix index size and latency, #65), per-query IDF performance, payload-only points and insert-only behaviour on the server, server vector-size limit, server RRF rank base. The one-time Windows qdrant.exe v1.19.1 run was blocked by the permission policy on running external binaries."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:qdrant",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "RRF rank base: local Qdrant scores 1/(k+rank0). If platform fuser.rrf ranks from 1 (bible §8.1), the equivalent server request is k=61; confirm with fuser_equivalence before enabling server fusion."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:qdrant",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "filters.py copies the doc 13 §4.3 example for the ACL condition: acl_visibility IN visible_set OR acl_allow match. If visible_set can include 'restricted', restricted records would pass without an acl_allow entry; the policy owner (bible §10.2) should confirm."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:qdrant",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "QdrantIndexBackend does not implement the sdk.ports.IndexBackend Protocol (tenant-only search signature with no ACL); aligning the port with the doc 13 §2.1 signatures is open issue 1 in doc 13."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:qdrant",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "The bm25s top-k rank match (ADR-0012 compliance check (b)) needs a MIRACL-ko sample; deferred to tier 2."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:qdrant",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "Existing code in adapters/embed/tei_dense.py and vllm_pooling_bge_m3.py fails ruff EM101 (outside this task's scope)."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:qdrant",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "Kiwi analyzer_id is recorded as 'kiwi:0.23.2:default'; the bible §6.1 example is 'kiwi:0.24.0:cong'. The dictionary/model label should be settled under ADR-0021."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:qdrant",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "The docs/12-appendix/09 deferred-verification ledger has not been regenerated to include the new DEFERRED comments (tools/verify/gen-deferred-ledger.mjs)."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:embedder",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "docs/04-pipelines/12-embedding.md의 '확인 필요' 7곳(vLLM truncate_prompt_tokens 파라미터명, /pooling 응답 스키마·--io-processor-plugin 인터페이스, XLM-R 특수 토큰 id·vocab_size=250002, vLLM/TEI 이미지 태그, 처리량·지연 실측치, KURE-v2 token_embed 서빙 가능성)는 모두 실 서버·실 모델·실측이 필요해 이번 스파이크에서 미확정 상태로 남았다 — needs_docker/needs_gpu/needs_model 환경에서 후속 검증 필요."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:embedder",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "vllm_pooling_bge_m3.py의 /pooling 요청·응답 스키마는 코드가 가정한 제안 형태(예: {\"input\":[...]} -> [{\"dense\":[...],\"sparse\":{...}}])이며 실 vLLM 0.29 --runner pooling 서버로 계약 테스트 코퍼스(카세트) 검증 전까지 골격이다."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:embedder",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "sparse_bm25.py/pylate_late_interaction.py/inprocess_sentence_transformers.py 등 __init__.py가 예고한 나머지 계획 모듈은 이번 스파이크 범위 밖(과제가 지정한 3개 어댑터만 구현)."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6b:kit-1",
+   "phase": "6B Conformance",
+   "wp": "",
+   "text": "tests/contracts/test_contract_roundtrip.py에 xfail 27건이 남아있음: 대부분은 §8.1 'N(nullable)은 생략·null 동등 표기'인데 문서가 명시적 null을 택한 경우(예: Acl.expires_at, UserDictEntry.reading, IndexRecord.acl_embargo_until/acl_expires_at, JobStatus.finished_at 등) — dump_contract()의 정본 표기(생략)와 문서 표기(null)가 의미상 동치지만 엄격 dict 비교라 xfail로 남음(설계상 정상, 버그 아님). common-types__ArtifactRef/001.json 1건은 실제 스키마(source/parsed 미허용 필드·필수 필드 누락)와 문서 예시가 어긋난 진짜 문서 오류."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6b:kit-1",
+   "phase": "6B Conformance",
+   "wp": "",
+   "text": "§8.1 표의 'N 필드에 명시적 null이 오면 contract.violation으로 거부'하는 입력측 before-validator는 이번 과제(0) 범위(exclude_none 버그 수정)를 벗어나 구현하지 않았음 — 필요하면 별도 ADR/바이블 minor 절차로 후속 처리 권장."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6b:kit-1",
+   "phase": "6B Conformance",
+   "wp": "",
+   "text": "src/rag_platform/testing/security_invariants.py의 _TENANT_FIELD_CANDIDATES/_ACL_PREFILTER_FIELD_CANDIDATES는 현재 생성물(tenant_id / acl_allow·principals)에 맞춘 하드코딩 표 — 계약 필드명이 바뀌면 이 표도 같이 갱신 필요(모듈 docstring에 명시)."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:hwpx",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "The contract makes `Figure.artifact` required, but §3.1 says to omit `figure.artifact` when an image exceeds `max_bindata_bytes`. Both cannot hold. The adapter currently drops the figure block, sets quality=degraded and records it in vendor_json. Needs a contract or doc decision."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:hwpx",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "The source-bytes port `ctx.source_bytes()` is not in the sdk `StageContext` protocol (proposal in 04 open issue 18). `run()` looks it up with getattr and raises `parse.conversion_failed` if it is missing."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:hwpx",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "`repeatHeader=\"1\"` is the Hancom default (24 of 24 tables), so under the spec rule almost every multi-row table gets header row 0 with `header_inferred=false`. Needs a decision on whether to treat it as inferred instead."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:hwpx",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "`opf:title` is junk in 공문 templates (\"3\", \"□ 포럼개요\") yet becomes `metadata.title`, the fallback title source. Needs a trust policy."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:hwpx",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "Genre and table-role heuristics misfire on the press releases. All three are classified genre=form because their 1×3 banner tables satisfy n_form_tbl≥1 and n_body≤20, and the 1×3 banner tables themselves get role=form. The TOC rule was tightened beyond the spec (it now requires dot leaders or a page-number column), so §3.6 needs updating and golden-set tuning."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:hwpx",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "Not implemented in the spike: promoting adjacent \"<표 N>\" or \"그림 N\" paragraphs to captions; the header_kind=row rule; TOC-style blocks; memo anchors (memos are attached to the preceding block at offset 0); fields inside table cells (only counted); footnotes in cells use the cell start as offset; the figure_ocr, formula_latex and page_map_render options; checks on real dutmal/compose content."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:hwpx",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "Merged caption blocks use the `element_path` `.../hp:caption[0]`. The §3.3 grammar only defines caption paragraph paths, so this needs confirming."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:hwpx",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "Text boxes (rect/drawText) and shape groups (hp:container) are implemented but not covered by any sample. A Hancom-saved sample with text boxes, tracked changes, memos, hyperlinks and encryption is needed."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:hwpx",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "Encryption detection uses the ODF convention element `encryption-data`, which is an assumption. It is unverified because no encrypted HWPX sample was available."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:hwpx",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "`config_hash` is approximated with `json.dumps(sort_keys)` because the sdk has no `canonical_json`. `PLUGIN_VERSION` is hard-coded to 0.1.0."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "6d:hwpx",
+   "phase": "6D Spikes",
+   "wp": "",
+   "text": "'ㅇ' (Hangul jamo) is common as a bullet in 공문 but is not in the §3.4/§3.5 marker set."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "verify:all",
+   "phase": "Verify",
+   "wp": "",
+   "text": "보류 원장이 이미 보고 중인 코드 규약 위반 2건(tests/adapters/index/test_qdrant_local.py:399, tests/adapters/parse/test_hwpx.py:511 — needs_docker/needs_network 마커에 인접한 `# DEFERRED:` 주석 없음)은 이번 과제 범위 밖이라 그대로 두었다. 다음 세션에서 해당 주석을 보강하고 재생성 권장."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "verify:all",
+   "phase": "Verify",
+   "wp": "",
+   "text": "check-headers.mjs의 '역할' 판정은 명시 라벨이 없어도 다른 4개 마커 앞의 비어있지 않은 한국어 서술(>=8자)로 대체 인정하는 완화 규칙을 썼다 — CODE-HEADER-RULE.md 자체 예시가 '역할:' 라벨을 쓰지 않는 것과 일치시키기 위함이며, 더 엄격한 라벨 강제가 필요하면 tools/verify/check-headers.mjs의 hasRole()을 조정하면 된다."
+  },
+  {
+   "batch": "6BD",
+   "run": "wf_0755d3ae-470",
+   "label": "verify:all",
+   "phase": "Verify",
+   "wp": "",
+   "text": "src/rag_platform·docs 트리 안에 이전 세션(6B/6D)에서 만든 다수의 파일이 아직 git에 커밋되지 않은 상태(untracked/modified)로 남아 있다 — 이번 과제는 커밋을 지시받지 않아 그대로 두었다."
+  }
+ ],
+ "reviews": [
+  {
+   "batch": "F4",
+   "run": "wf_a6cb70da-507",
+   "label": "F4:opus-review",
+   "verdict": "revise",
+   "findings": [
+    {
+     "file": "src/rag_platform/retrieval/pack/acl_recheck.py",
+     "severity": "major",
+     "problem": "E9/§9.1: a revocation hint with deleted=true is only honoured when hint.acl_hash differs from the payload acl_hash (line 127). Deleting a document does not change its ACL, so the delete.document.v1 hint keeps the same acl_hash. The hint is then ignored and the deleted document is still returned during the propagation window. Reproduced: hint(acl_hash=payload hash, deleted=True) gives passed. This breaks the golden scenario 'ACL 회수(또는 삭제) → 전파 전 질의 → 미반환', and the module's own docstring ('deleted=True면 무조건 거부').",
+     "fix": "Check for deletion before comparing hashes: `if hint is not None and hint.deleted: deny; explain += acl_revoked_hint`. Only use the hint ACL when acl_hash differs. Add a test for a deletion hint with the same acl_hash."
+    },
+    {
+     "file": "src/rag_platform/retrieval/pack/acl_recheck.py",
+     "severity": "major",
+     "problem": "_evaluate uses AND semantics (principal must be in allow AND visibility must be in visible_set). §10.2(a) and §10.1 define `(acl_visibility IN visible_set OR acl_allow ANY principals)`. public skips only the allow check, tenant covers every authenticated user, and restricted means allow only. Result: every visibility=restricted document is always dropped with acl_denied, because restricted is never in visible_set, even when the principal is in allow. Public/tenant documents whose allow list lacks the caller are also dropped even though the pre-filter admitted them. Reproduced: restricted+allow=[user:alice] denied; public+allow=[group:other] denied; tenant+allow=[group:other] denied. This fails closed (no leak), but whole classes of documents never reach the ContextPack. Existing tests only use visibility=tenant with allow=[user:alice].",
+     "fix": "Mirror §10.2(a) exactly. First, deny if any deny entry matches (including tenant:*). Otherwise pass if visibility is in security.visible_set, or if any allow entry is literally in security.principals. Drop the unconditional `pattern == 'tenant:*'` match on the allow side, or it will leak to service-only principals once OR semantics are in place. Then check embargo/expires/classification. Add table-driven tests for public/tenant/restricted x user/service principals x hint/payload paths."
+    },
+    {
+     "file": "src/rag_platform/retrieval/filters.py",
+     "severity": "major",
+     "problem": "build_security_filter copies security.collection_ids (all allowed collections), not the planner's intersection with the request. Qdrant aliases col_{cid}_vec point at the shared physical collection rag_vec_{hash12} (§13.4) and add no filtering. The retriever adapters also never pin collection_id to the run's channel.collection_id. Consequences: (1) a request for [A] returns records from other allowed collections B — this stays inside the tenant, but the request scope leaks and CandidateSet.collection_ids is wrong. (2) With [A,B], each B record comes back in both the A-run and the B-run of the same channel. _fuse_runs adds both into one channel bucket, so the contribution doubles, violating §8.1 ('후보는 한 컬렉션에만 속해 컬렉션 차원이 중복 기여하지 않음'). Reproduced: plan.collection_ids=[A] but the Qdrant must clause has collection_id any=[A,B].",
+     "fix": "Pass the intersected collection_ids into the SecurityFilter (build_plan_filters(..., collection_ids=selected)) so filters.security equals :collection_ids in §10.2. In qdrant_dense and qdrant_sparse_bm25 _build_query_filter, add must `collection_id == inp.channel.collection_id` for each run. Optionally assert in fusion that a record_id never appears in two runs of the same channel and variant. Add a two-collection test that checks fused_score."
+    },
+    {
+     "file": "src/rag_platform/retrieval/channels.py",
+     "severity": "major",
+     "problem": "retrieve_once raises retrieve.unavailable (503, retryable) when there are no enabled runs. For route=no_retrieval the planner disables every channel, and pipelines/query.run_query always calls retrieve. So any chitchat query ('안녕하세요') fails with 503 instead of producing a pack with sufficiency=not_needed. Reproduced with planner.plan + retrieve_once.",
+     "fix": "If `runs` is empty (plan.route == no_retrieval, or every channel disabled), return an empty CandidateSet (disabled runs only, total_unique=0) and do not raise. Keep retrieve.unavailable only for 'at least one run attempted and none succeeded'. Add a test."
+    },
+    {
+     "file": "src/rag_platform/retrieval/filters.py",
+     "severity": "major",
+     "problem": "User-filter validation checks only field and operator, not value shape. Bad values pass plan and then fail in the Qdrant builder with contract.violation (stage=index): tags contains_all 'x', doc_type in [], exists 'yes'. retrieve_once turns each of these StageErrors into a failed run, so every run fails and the client gets 503 retrieve.unavailable (retryable, Retry-After) for its own input error. That is the wrong RFC 9457 status/type and invites retry storms. Reproduced for all three cases.",
+     "fix": "In _validate_leaf, check value shape per operator: in/not_in/contains_* need a non-empty list; exists needs a bool; prefix needs a non-empty string; range ops need a scalar number or date. Raise plan.filter_field_forbidden (422) or the catalog's validation code. Also, in retrieve_once, re-raise non-retryable contract.violation instead of masking it as a partial channel failure."
+    },
+    {
+     "file": "src/rag_platform/adapters/retrieve/qdrant_dense.py",
+     "severity": "major",
+     "problem": "Both retrievers (dense and sparse_bm25) call the synchronous QdrantClient (backend.search_dense / search_sparse -> self._client.query_points) inside `async def run`. The event loop is blocked, so asyncio.gather runs channels one after another. asyncio.wait_for(timeout=channel.timeout_ms) cannot interrupt the call, so the §8.1 step 7 rule '채널 타임아웃 시 제외, 250ms' is not enforceable against a real server, and one slow channel stalls the whole request. Hydrate has the same limitation (it is documented there, but not here).",
+     "fix": "Wrap backend calls in `await asyncio.to_thread(...)` for now, or move to AsyncQdrantClient. Record it in open_issues and mark the real-server timeout test `needs_docker` with `# DEFERRED`."
+    },
+    {
+     "file": "src/rag_platform/retrieval/hydrate.py",
+     "severity": "minor",
+     "problem": "_alias_by_collection builds {collection_id: alias} from every channel, and the last one wins. In standard (lexical on OpenSearch, alias col_X_lex) the Qdrant hydrate backend would be handed the _lex alias, and every hydrate would fail with hydrate.backend_error. Lite is unaffected (both channels use _vec). Also, the §4.3 rule 'hydrate.backend_error → 1회 재시도 후 503 retrieve.unavailable' is implemented neither here nor in pipelines/query.py.",
+     "fix": "Choose the alias from channels whose backend_id == plan.hydrate.backend_id, or derive col_{cid}_vec directly. Add one retry and the mapping to retrieve.unavailable, in hydrate or in the query pipeline."
+    },
+    {
+     "file": "src/rag_platform/retrieval/pack/acl_recheck.py",
+     "severity": "minor",
+     "problem": "Embargo and expiry are compared as raw strings (`as_of < embargo_until`). DateTime allows 0–9 fractional digits, and '.' sorts before 'Z'. So with as_of=...10:00:00.300Z and expires_at=...10:00:00Z the document counts as not expired (reproduced). This is a sub-second leak window, and the order is wrong for any mixed-precision inputs.",
+     "fix": "Parse both sides with datetime.fromisoformat (as filters._security_parts already does) and compare datetimes."
+    },
+    {
+     "file": "src/rag_platform/retrieval/pack/citation_align.py",
+     "severity": "minor",
+     "problem": "If item.acl2 is missing, it makes up `Acl2(classification=internal, checked=True, source=payload)`. That produces false ACL-check evidence and feeds a possibly wrong classification_max. The acl2 map is also keyed by chunk_id, which is content-derived and can repeat across collections. Separately, version/source conflict markers are attached without checking header.doc_date and doc_version_label (always None), which contradicts §9.1 ('값이 없으면 표지를 생략하고 pack.conflict_unlabeled').",
+     "fix": "Key acl2 by record_id, or by (collection_id, chunk_id). Raise contract.violation when acl2 is missing instead of inventing it. Apply the doc_date/doc_version_label guard to every conflict kind."
+    },
+    {
+     "file": "src/rag_platform/retrieval/postprocess/mmr.py",
+     "severity": "minor",
+     "problem": "MMR reorders the list but leaves final_rank alone ('셸이 매긴다', per WP-403), and no such shell exists. budget_cut, reorder and citation_align all sort by final_rank, so MMR diversification has no effect on which K items are kept or on the litm/cite order. mmr also mutates the input results' explain in place.",
+     "fix": "Add the postprocess runner that renumbers final_rank 1..n from list order after each step, or have pack preserve the input list order instead of re-sorting by final_rank. Copy results before appending explain codes."
+    },
+    {
+     "file": "src/rag_platform/retrieval/pack/budget_cut.py",
+     "severity": "minor",
+     "problem": "The budget limit is max_context_tokens − reserved_answer_tokens with no calibration_ratio or 10% safety_margin for count_method=approximate (§9.1 이중 카운트). PackConfig carries both values but they are only reported, so approximate counting can overflow the target LLM context.",
+     "fix": "When count_method is approximate, scale counts by calibration_ratio and apply (1 − safety_margin) to the limit."
+    },
+    {
+     "file": "src/rag_platform/retrieval/channels.py",
+     "severity": "minor",
+     "problem": "_security_context_hash sorts visible_set (the §6.2 formula joins it as-is) and formats as_of with str() instead of the canonical RFC 3339 form. _failed_run builds ErrorCodeCatalog(code) from any StageError code, so a non-catalog code raises ValueError out of the result loop. `isinstance(outcome, BaseException)` also swallows CancelledError/KeyboardInterrupt as backend_error.",
+     "fix": "Follow the §6.2 field order and serialization exactly (or fix §6.2). Map unknown codes to retrieve.backend_error. Re-raise non-Exception BaseExceptions."
+    },
+    {
+     "file": "src/rag_platform/retrieval/pack/packer.py",
+     "severity": "minor",
+     "problem": "_default_filters_applied invents a strategy filter ([0],[text]) and an effective_hash when cfg.filters_applied is absent. _redaction_summary defaults pii_policy to keep. The diagnostics can therefore misstate what was actually enforced. pack also never checks ranked.tenant_id == cfg.security.tenant_id, or that each result's collection_id is in security.collection_ids (a cheap defense-in-depth check for E9).",
+     "fix": "Require filters_applied (copy CandidateSet.filters_applied). Leave redaction_summary unknown or omitted when no policy is known. Deny items whose tenant or collection falls outside the SecurityContext."
+    }
+   ]
+  },
+  {
+   "batch": "F5",
+   "run": "wf_6681bb3d-290",
+   "label": "F5:opus-review",
+   "verdict": "revise",
+   "findings": [
+    {
+     "file": "src/rag_platform/security/security_context.py",
+     "severity": "major",
+     "problem": "derive_security_context gives every API-key caller `principals=[\"user:{subject}\", \"tenant:*\"]` and `visible_set=[\"public\",\"tenant\"]`, and also sets `auth_method=\"api_key\"`. ADR-0027 (SecurityContext bullet) and 05-api/03 §2 (principal-string row) say an API-key/M2M/mTLS caller is a service principal. Its principals must be `[\"service:{client_id}\"]` only, with no `tenant:*`, and its `visible_set` must be `[public]`. As written, once retrieval is wired, any API key can see every `acl_visibility=tenant` document in its tenant even when its service principal is not in `acl_allow`. The MCP resolve_security path is expected to reuse this function, so the same over-grant would reach MCP.",
+     "fix": "When `auth_method=api_key`, emit `principals=[\"service:{record.subject}\"]` (sorted, deduped, capped at 1,024, raising `auth.too_many_principals` if exceeded) and `visible_set=[\"public\"]`. Keep `user:`/`group:`/`tenant:*` for OIDC user principals only. Add a test: an api_key context has no `tenant:*` and `visible_set == [\"public\"]`."
+    },
+    {
+     "file": "src/rag_platform/api/query.py",
+     "severity": "major",
+     "problem": "The result cache has no principal binding and no TTL. `post_query` stores the full ContextPack in `app.state.pack_cache[(tenant_id, pack_id)]` without a `security_context_hash`. `post_render` then serves any same-tenant caller who presents the `pack_id`, and never checks the caller's allowed collections against `pack.collection_ids`. 05-api/03 §4.4 requires storing `{context_pack, security_context_hash}` with a 10-minute TTL and recomputing the hash on lookup (current principals / classification_max / visible_set, `allowed ∩ pack.collection_ids`, `as_of` fixed to the pack's value). A mismatch must return 404 `api.not_found`. Today the pack is empty, but once F4 retrieval is wired, a key limited to collection A could render a pack produced for collection B in the same tenant. Packs would also stay past the ACL-revocation window, which defeats E9, and the dict grows without bound (memory DoS). The module docstring lists this as open_issues, but it is a security-invariant bypass, not just a missing feature.",
+     "fix": "Store `(pack, security_context_hash(...), expires_at)` using the same hash helper as `mcp.cursor_store.security_context_hash`, ideally moved to a shared `security` function. In `post_render` (pack_id path), recompute the hash against the current SecurityContext with `collection_ids' = allowed ∩ pack.collection_ids` and the stored `as_of`. Return 404 `api.not_found` on mismatch or expiry, and evict expired entries or bound the size. Add a cross-principal test: key1 queries, key2 in the same tenant with different `allowed_collection_ids` renders by pack_id, and the expected result is 404."
+    },
+    {
+     "file": "src/rag_platform/mcp/tools.py",
+     "severity": "major",
+     "problem": "`search` and `_fit_search_page_to_budget` treat `pack.items` as if it were in relevance order, but ContextPack.items is in `position` (render) order. Under the default `litm_alternating` ordering (the 05 §4.2 example shows index d2, d3, d1), three things go wrong. (1) `pack.items[:top_k]` cuts by position, not relevance. (2) The budget loop's `working[:-1]` drops the last-positioned item, which under litm is often a top-ranked one such as d1 or d2, not the lowest rank. The result has a cite_id gap (for example d2, d3 without d1), which breaks the 05 §5.1 rule 'remove from the lowest rank; cite_id d1..dM stays contiguous'. (3) The single-item fallback takes `items[0]` by position, not d1. Tests only use relevance_desc (position == rank), so this is not caught.",
+     "fix": "Sort by rank first: `by_rank = sorted(pack.items, key=lambda it: int(it.cite_id.root[1:]))` (or by `rank`). Pick `min(top_k, K)` by rank, and when over budget remove the item with the highest cite_id number. Then emit the survivors in their original `position` order so the ordering strategy is preserved. The fallback item must be d1. Add a test with litm positions (d1 first, d2 last, ...) and a tight budget, asserting the returned cite_ids are contiguous d1..dM."
+    },
+    {
+     "file": "src/rag_platform/mcp/tools.py",
+     "severity": "minor",
+     "problem": "`list_collections` returns whatever the injected `CollectionLister` returns, with no defence-in-depth intersection against `security.collection_ids` or `tenant_id` (E14: only `allowed_collections`). It is also not wrapped in try, so a lister exception escapes as a non-isError failure. Separately, `search` passes the full SecurityContext (all allowed collections) to `query_runner` rather than one narrowed to the intersected `collection_ids`. Correctness therefore depends on the runner intersecting again.",
+     "fix": "Filter specs to `spec.collection_id in security.collection_ids`. Wrap lister/runner/reader exceptions into an `isError` ProblemDetails with a catalog code (e.g. `retrieve.unavailable`). Pass `security.model_copy` with `collection_ids` narrowed to the request, or document that the runner must intersect."
+    },
+    {
+     "file": "src/rag_platform/mcp/tools.py",
+     "severity": "minor",
+     "problem": "`_fit_search_page_to_budget` can still exceed `max_result_tokens`: the single concise fallback item is returned without checking whether it fits. In `get_document`, the first fragment is always included even if it exceeds the budget. If a cursor's `block_offset` is at or past `len(items)`, the guidance reports `first > last`. In the cursor path, `args.document_id` and `args.query` are silently ignored in favour of the stored record.",
+     "fix": "Truncate the fallback's `text_preview` or the first fragment until it fits. Return `contract.violation /cursor` when `block_offset` is out of range. Optionally reject a cursor whose stored `document_id`/`query` differs from the args."
+    },
+    {
+     "file": "src/rag_platform/api/problems.py",
+     "severity": "minor",
+     "problem": "Problem `detail` echoes request content and internal messages, contrary to the module's own invariant ('no request content in detail', E13 spirit). `detail=str(exc)` for pydantic ValidationError, both here and in `query.py` / `post_render`, includes `input_value=...`, i.e. query text and inline pack text. `_handle_unexpected` puts `f\"unexpected error: {exc}\"` into a 500 body.",
+     "fix": "Build detail from `exc.errors()` using only `loc` → JSON pointer plus `msg`, without `input`. For 500, return a fixed detail and log the exception server-side with `trace_id`."
+    },
+    {
+     "file": "src/rag_platform/security/security_context.py",
+     "severity": "minor",
+     "problem": "`allowed_collection_ids=None` means every requested collection id is allowed, with no catalog or tenant-ownership check. This is fail-open, while E2 requires fail-closed, and it is the default of `ApiKeyRegistry.register`. Ingest accepts any string as `collection_id`. `policy_version` is a constant.",
+     "fix": "Make the default an empty tuple (deny), or require an explicit allow-all sentinel that is resolved against a tenant collection catalog. Validate the `collection_id` ULID format at ingest."
+    },
+    {
+     "file": "src/rag_platform/api/ingest.py",
+     "severity": "minor",
+     "problem": "Four smaller issues. (1) The `Idempotency-Key` header is validated before authentication, so an unauthenticated request gets 400 instead of 401 (E1 order). (2) The `stub-fail://` test sentinel ships in production code and fails with `index.security_fields_missing`, a security-signal code (E5) used for a non-security failure; this pollutes security alerting. (3) Only `tenant_id`/`request_id` are rejected: a client-sent `security_context`/`principals` is silently accepted and forwarded into the stage body. (4) `tenant_id` returns 422 `contract.violation`, while 05-api/03 notes the catalog allows only 400/500 for that code. Keep this consistent with query.py (400) or document the 05-api/02 exception.",
+     "fix": "Authenticate first. Move the failure sentinel behind an injected test stage, or use a neutral code such as `index.backend_error` if it exists in the catalog. Reject server-assigned security keys, mirroring `_SERVER_ASSIGNED_FIELDS` in query.py. Align the status code with the §5.7/13 §7.1 catalog."
+    },
+    {
+     "file": "src/rag_platform/api/jobs.py",
+     "severity": "minor",
+     "problem": "`GET /v1/jobs/{job_id}` checks only the tenant. A key restricted to collection A can read job status (`document_id`, `last_error`) for collection B in the same tenant.",
+     "fix": "Return 404 `api.not_found` when `job.collection_id` is outside the record's `allowed_collection_ids`."
+    },
+    {
+     "file": "src/rag_platform/api/query.py",
+     "severity": "minor",
+     "problem": "Nothing checked in this batch implements RRF or Σcontribution, and nothing needs litm order checks: `POST /v1/query` returns a fabricated empty pack and never calls `pipelines.query.run_query`. The deferral does not bypass tenant/ACL pre-filtering today, because no backend is reached. However, the response advertises `diagnostics.filters_applied.security.is_current=True` and `pack_steps` `acl_recheck`, which no step executed. `POST /v1/render` also lacks `Cache-Control: no-store` and does not re-check inline-pack invariants (cite_id d1..dK contiguous, position permutation, items ≤ 20; 05-api/03 §4.1).",
+     "fix": "When the F4 wiring lands, it must receive the server-injected SecurityContext and verify `CandidateSet.security_context_hash`; add an e2e check that the backend request carries the `tenant_id` filter. Until then, mark diagnostics as stub or degraded. Add `no-store` to render. Validate cite_id contiguity and the position permutation for inline packs, returning 400 `contract.violation` on failure."
+    }
+   ]
+  }
+ ]
+}

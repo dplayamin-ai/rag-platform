@@ -2,8 +2,8 @@
 title: 진행 보고서 (Progress Report)
 status: active
 owner: architecture
-version: 0.6.0
-last_updated: 2026-09-23
+version: 0.7.0
+last_updated: 2026-09-24
 depends_on: ["../00-vision/00-design-brief.md", "../02-architecture/00-design-bible.md", "../07-tech-landscape/00-summary-and-selection-matrix.md"]
 ---
 
@@ -62,7 +62,7 @@ depends_on: ["../00-vision/00-design-brief.md", "../02-architecture/00-design-bi
 | `09-operations/` | 8 | active | 8건 전부 경량 리뷰·수정 완료 |
 | `10-development/` | 8 | active | 05 CI/CD 신규 작성 |
 | `11-roadmap/` | 3 | active | 02·03 신규 작성 |
-| `12-appendix/` | 10 + sources | 참고 | 진행 보고서, 완전성 검토([01](01-phase3-completeness-review.md), 누락 12건), 4·5단계 계획, 통합 목록, 원장, 6단계 계획, 제안서 A/B/C |
+| `12-appendix/` | 10 + sources | 참고 | 진행 보고서, 완전성 검토([01](01-phase3-completeness-review.md), 누락 12건), 4·5단계 계획, 통합 목록, 원장, 6단계 계획, 제안서 A/B/C. (6단계 이후 06~10 추가: 추적성·트리아지 결정·전파 지시서·보류 검증 원장·[구현 설계 갭 원장](10-implementation-design-gaps.md)) |
 | **합계** | **151**(부속 15 포함) | | **99,572행**, 미해결 이슈 누적 480건(바이블 관련 200건) |
 
 마무리 실행(`wf_7b7b22c8-830`) 결과: 문서 37건 처리(신규 6, 리뷰 사이클 31), 드롭 0, 경량 수정 20건(심각 이슈 합계 39건 수정, 독립 검증 없음), minor만 수정 17건, 미해결 이슈 126건 추가. 기계 감사(`--fix`) 결과: 깨진 링크 0, 900행 초과 비계약 문서 11건, 기각 명칭 문맥 검토 필요 123곳, 인용 무결성 6건, "확인 필요" 1,284곳(122문서), 자동 수정 1건.
@@ -90,6 +90,32 @@ depends_on: ["../00-vision/00-design-brief.md", "../02-architecture/00-design-bi
 | **합계** | **144**(설계 문서 129 + 부속 15) | **96,316** | | 12.2MB |
 
 루트에 남아 있던 검증용 코드 블록 추출 파일 9개(`json_5~8.json`, `mermaid_0/1/3/4.mmd`, `yaml_2.yaml`; 04-pipelines/06의 코드 블록과 동일 내용)는 2026-09-23에 삭제했다.
+
+### 3.2 6단계 코드 실측(2026-09-24 03:13, 6F-F5 커밋 `835feb2` 후)
+
+`uv run pytest -q`·`uv run mypy src`·`uv run lint-imports`·`node tools/verify/check-headers.mjs`·`node tools/verify/gen-deferred-ledger.mjs` 실행 결과 기준. **M1 lite 코어(층 1)가 이 VDI에서 구현·검증 완료**됐다. 층 2(Docker)·2b(모델 가중치)·3(GPU)은 미검증이며 [보류 검증 원장](09-deferred-verification-ledger.md)과 루트 `HANDOFF.md`로 이관됐다.
+
+| 항목 | 값 |
+|------|----|
+| `src/rag_platform/` | 224 파일, 40,819행(생성 계약 모델 `contracts/` 포함) |
+| `tests/` | 55 파일, 14,891행(`adapters`·`api`·`contracts`·`e2e`·`mcp`·`retrieval`·`security`·`unit` 등) |
+| 작업 패키지 `docs/13-implementation/wp/` | 21건 — WP-101~106(수집 전단), 201~203(청킹·보강), 301~303(임베딩·인덱스·수집 e2e), 401~405(검색 경로 + 리뷰 수정), 501~504(API·MCP·CLI·e2e + 리뷰 수정). 색인은 [13-implementation/README.md](../13-implementation/README.md) |
+| pytest | **886 통과 · 27 xfail · 4 deselected**(`needs_docker`·`needs_model`) — xfail은 전부 계약 왕복(문서 예시 오류·중첩 nullable) |
+| mypy strict | 224 파일 0 오류 |
+| import-linter | 6 계약 유지(바이블 §12 계층 + 오케스트레이터 중립 + adapters-no-storage + contracts-pure + no-c-grade + testing 격리) |
+| ruff check / format | 통과 / 301 파일 정렬 |
+| 한국어 헤더 규칙 | 307 파일 위반 0 |
+| 보류 검증 원장 | 5건(docker 1 · model 1 · network 1 · 미분류 2) |
+| 표본 | 공공누리 제1유형 HWPX 3건 + 합성 1건(`samples/hwpx/`, `MANIFEST.json` sha256) |
+| CLI | `uv run rag {ingest,query,serve,profile}` |
+
+바이블 §12 모듈 맵 대비 구현 범위:
+
+| 구분 | 모듈 |
+|------|------|
+| 구현·검증(lite) | `contracts`(생성), `sdk`, `storage`(file:// 아티팩트 저장소·Valkey 포트+인메모리), `plugins`, `profiles`(내장 5종), `orchestration/local`(`LocalRunner`), `pipelines/{ingest,query}`, `adapters/fetch`(fsspec·httpx), `adapters/parse`(포맷 판별·라우터·HWPX·TXT/MD/CSV·HTML·PDF 고속 경로), `adapters/normalize/korean`, `adapters/chunk`(구조 인식·표 행·recount), `adapters/enrich`(결정적 접두어·형태소 키워드·파생 메타), `adapters/embed`(`FakeEmbedder`·플랫폼 BM25 sparse; TEI·vLLM 골격), `adapters/index/qdrant`(로컬 모드·커밋 사가), `adapters/retrieve`(dense·sparse_bm25), `adapters/query`, `retrieval/{planner,filters,channels,fusion,hydrate,postprocess/*,pack/*}`, `render/{markdown,anthropic_search_result,citation_map}`, `security/security_context`, `api`(FastAPI, RFC 9457), `mcp`(커서 페이지네이션), `cli`, `korean`, `testing`(적합성 키트·대역) |
+| 포트만/스텁 | `ledger`(포트만, PostgreSQL 미연결), `orchestration/{outbox,temporal}`, `adapters/{rerank,llm}`, `eval`, `telemetry`, `settings`, OpenSearch 채널, HWP5 사이드카·DOCX·OCR 파서 |
+| 작성만(미검증) | `deploy/compose/compose.lite.yaml`(`needs_docker`), `.github/workflows/ci.yml`(GitHub Actions 미실행) |
 
 ## 4. 핵심 결정 요약
 
@@ -283,6 +309,28 @@ RRF k=60 → convex 2단계(O-01), BGE-M3 sparse + lexical 유지(O-02), GraphRA
 
 토큰: 6A 2차 0.44B(초기 보고의 1.9B는 알림의 출력 토큰 필드를 오독한 값이며 PAYMENT.MD 기준으로 정정), 헤더 패스 0.06B, 6B·6D 0.26B → 6단계 누적 0.76B(검문선 1B 이하, 축소 없이 진행). 전체 누적 **9.74B**. 6E·6F는 "작업 패키지 우선 구현"(한 에이전트가 WP 문서를 쓰고 바로 구현·테스트)으로 합쳐 배치 F1~F5로 실행한다(`tools/phase6/wf-6f.js`, 배치마다 커밋).
 
+### 7.2h 6E·6F 배치 F1~F5 완료(2026-09-23 18:48 → 2026-09-24 03:13, 5 Run, 에이전트 28, 실패 0, 1.82B 토큰)
+
+6E(작업 패키지 작성)와 6F(M1 lite 구현)를 "WP 우선 구현"으로 합쳐 `tools/phase6/wf-6f.js --batch F1..F5`로 실행했다. 배치마다 구현 에이전트(Sonnet, WP 문서 작성 → 구현 → 테스트; 읽기 예산 = WP + 대상 파일 + 테스트 출력) → 검증 에이전트(ruff/format/mypy/lint-imports/pytest/check-headers/deferred 원장) → F4·F5는 Opus 보안·수식 리뷰 → Sonnet 수정 순서다. 배치 결과는 `tools/phase6/results/f1..f5.json`, 배치마다 커밋했다.
+
+| 배치 | Run | 경과 | 에이전트 | 토큰 | 내용 | 게이트(누적 테스트) |
+|------|-----|-----:|--------:|-----:|------|------|
+| F1 수집 전단 | `wf_b7ec72fc-7e3` | 1h 13m | 7 | 0.41B | WP-101~106: fetch(fsspec·httpx, 허용 루트·`max_bytes`), 포맷 판별·파서 라우터, TXT/MD/CSV, HTML(trafilatura, 표 native 재구성), PDF 고속 경로(pypdfium2), 한국어 정규화(유니코드·공백·표 셀) | 636 통과 · 27 xfail(커밋 `bcedbb0`) |
+| F2 청킹·보강 | `wf_9a81fe63-40d` | 49m | 4 | 0.16B | WP-201~203: 구조 인식 계층 청킹(512/2048/64, 결정적 `chunk_id`), 표 행 그룹·recount, 결정적 문맥 접두어·형태소 키워드·파생 메타 | 692 통과(`9ab5dae`) |
+| F3 임베딩·인덕스 → 인덱스·수집 e2e | `wf_52b111c5-c82` | 1h 13m | 4 | 0.29B | WP-301~303: embed 스테이지(`FakeEmbedder` + 플랫폼 BM25 `sparse_bm25`), `IndexRecord` 변환·단일 백엔드 `IndexCommit` 사가, lite 수집 파이프라인 `LocalRunner` 종단 실행(HWPX 표본 3건) | 733 통과(`3a79118`) |
+| F4 검색 경로 | `wf_a6cb70da-507` | 2h 38m | 7 | 0.55B | WP-401~404: 규칙 플래너·3층 필터(tenant/acl 사전 필터 필수), 병렬 채널(dense·sparse_bm25)·RRF(k=60, 가중 1:1:1, 변형 0.5)·hydrate(Qdrant payload), 후처리 `relevance_gate → dedup → mmr → parent_expand → dedup`, 패킹 `acl_recheck → budget_cut → reorder(litm) → citation_align`, 렌더러(markdown·anthropic `search_result`), 질의 파이프라인. **Opus 리뷰 13건(심각 6)** → WP-405: `acl_recheck` 삭제 플래그 우선·§10.2 OR 의미론·`tenant:*` allow 측 제거, 컬렉션 교집합 필터, 필터 값 검증(`plan.filter_field_forbidden`), `route=no_retrieval` 빈 CandidateSet, import-linter 계층 위반 5건 해소(순수 로직을 `korean/`로 이동) | 804 통과(`18b0ca9`) |
+| F5 API·MCP·CLI·e2e | `wf_6681bb3d-290` | 2h 13m | 6 | 0.41B | WP-501~503: FastAPI 수집 접수·잡 조회·질의·렌더(RFC 9457 `problem+json`, `SecurityContext` 서버 주입, 결과 캐시 없음), MCP 서버(도구 3종, 커서 페이지네이션 `cursor_store`), `rag` CLI(ingest/query/serve/profile), 수집→질의→렌더 전 구간 e2e. **Opus 리뷰 10건(심각 3)** → WP-504: API 키 주체를 `service:{subject}`·`visible_set=[public]`로 고정(ADR-0027), `pack_id` 캐시에 주체 해시·TTL 600s 바인딩(불일치 시 404), MCP `search` 페이지를 렌더 순서가 아닌 `rank` 순으로 절단 | **886 통과 · 27 xfail**(`835feb2`) |
+
+오케스트레이터 마무리(F5 후): `ruff format` 1건, 헤더 위반 1건(`tests/security/test_security_context.py` "구성" 항목) 수정 후 게이트 재통과. 6단계 누적 토큰 **2.58B**(6A 0.44B, 헤더 패스 0.06B, 6B·6D 0.26B, F1~F5 1.82B) — 검문선 1B를 넘었지만 배치별 소모가 계획(0.2~0.5B)과 같은 규모여서 축소 없이 완주했다. 전체 누적 **11.61B**(PAYMENT.MD 2026-09-24 03:10 재집계, 에이전트 861).
+
+**설계 갭·후속 백로그**(다음 바이블 패치 입력, 전체 목록은 [구현 설계 갭 원장](10-implementation-design-gaps.md) — `tools/phase6/results/open-issues.json`에서 `gen-design-gaps.mjs`가 생성):
+
+- 미해결 항목 **180건**(6B·6D 36 — 예: `Figure.artifact` 필수 vs 생략 규칙, `StageContext.source_bytes` 포트 부재, `IndexBackend` 포트 ↔ 문서 13 시그니처, 서버 RRF k=61 등가, Hancom `repeatHeader` 기본값; F1 36 · F2 28 · F3 17 · F4 36 · F5 27 — 예: fetch의 `requires_lineage` 선언 vs 바이블 §4.1 문구, `canonical_json` 근사, 정책 해소 포트 부재). Opus 리뷰 발견 23건(F4 13·F5 10)은 WP-405·504에서 수정 완료.
+- 계약 왕복 xfail 27건: 계약 문서 예시 오류(문서 수정 대상)와 중첩 nullable 보존(생성기 확장 대상)으로 분류해 처리.
+- `kiwipiepy 0.23.2`(LGPL 정적 휠) 라이선스 등급 결정 — Apache 전환판(0.24) 출시 전까지 extra `kiwi`로 격리.
+- 층 2·2b·3 검증 5건(원장), `compose.lite.yaml` 기동, GitHub Actions 첫 실행 — `HANDOFF.md` 절차로 다른 머신에서.
+- 6C 미니 골든셋(표본 3건 기준 질의·`answer_spans` 초안, 사람 검수 필수), 6G 공개 준비(CONTRIBUTING·SECURITY, 내부 기록 분리)는 미착수.
+
 ### 7.3 재개 절차(새 세션)
 
 1. 파일 상태를 먼저 본다: `docs/03-contracts/*.md`의 `status`(review = 리뷰 통과·미수정 또는 리뷰 대기, active = 수정 완료), `schemas/*.json` 수, `docs/06-adr/README.md` 존재 여부, `docs/04-pipelines/*.md` 수. `node tools/validate-contracts.mjs --root C:\Workspaces\rag-platform`로 오류 수를 확인.
@@ -290,6 +338,7 @@ RRF k=60 → convex 2단계(O-01), BGE-M3 sparse + lexical 유지(O-02), GraphRA
 3. 순서: `contracts`·`adrs` 완료 확인 → `contracts-audit`(기계 검증 → 의미 감사 3방향 → 파일별 수정 → 재검증) → `api-eval` ∥ `ops-dev-roadmap`(`pipelines`가 아직이면 함께) → `openapi` → `critic`(`docs/12-appendix/01-phase3-completeness-review.md` 생성).
 4. 그룹이 끝날 때마다 결과 JSON을 `tools/phase3/results/<group>.json`에 저장하고 `openIssues` 중 바이블 개정 요청을 §6 표에 누적한다.
 5. 4단계: 바이블 개정 요청 일괄 처리(§1.2 절차, 버전 1.2.x/1.3.0), ID 접두 정리, 링크·필드명·열거 grep 감사, `status: review` → `active`, 900행 초과 문서 절 이관. 5단계: 루트 `README.md`(한/영), `CLAUDE.md`, `docs/README.md` 확정, 브리프 §8 최종 갱신.
+6. 6단계(코드) 재개: `git log --oneline -10`으로 마지막 배치 커밋을 확인하고 `uv sync --all-extras --group dev` → `uv run pytest -q`(886 통과·27 xfail 기대) → `uv run mypy src` → `uv run lint-imports` → `node tools/verify/check-headers.mjs`로 게이트를 재현한다. 새 구현은 `docs/13-implementation/wp/`에 WP 문서를 먼저 쓰고(`tools/phase6/wf-6f.js`의 배치 정의를 본보기로) 구현·테스트를 같은 커밋에 넣는다. Docker·모델·GPU가 있는 머신이면 `HANDOFF.md` 첫 30분 절차 → `tools/verify/run-deferred.sh`로 [보류 원장](09-deferred-verification-ledger.md) 5건을 먼저 검증한다.
 
 ## 8. 통계
 
@@ -302,17 +351,23 @@ RRF k=60 → convex 2단계(O-01), BGE-M3 sparse + lexical 유지(O-02), GraphRA
 | 경량 모드 실측 단가 | ADR 사이클 2.8M/에이전트, 마무리 4.3M/에이전트(3단계 표준 모드 7~10M 대비 절반 이하) |
 | **4단계 실측(2026-09-23)** | **1.46B 토큰**, 에이전트 36(평균 40M) — 계획 추정 0.18~0.25B의 약 6배. 원인: P1 전파 22묶음이 지시서(525항목)·바이블 절·대상 문서를 광범위하게 읽고 Edit를 반복(캐시 쓰기 지배). 5단계 32M(4 에이전트). 6A 2차는 진행 중 0.4B(5 에이전트; uv·pytest 실행 루프가 문맥을 키움). 누적 **9.33B** |
 | 6단계 예산 규율(재설정) | 구현 에이전트는 **작업 패키지(WP) 문서 + 직접 편집 파일 + 테스트 출력만** 읽고 바이블·설계 문서를 열지 않는다(WP가 필요한 발췌를 담는다). 한 에이전트당 파일 3개 이하, 테스트 재실행 최대 3회. 6B+6D 종료 시 소모를 재측정해 1B 초과면 6E는 코어 WP만, 6F는 F1~F5 최소 경로로 축소. 재예측: 6A 잔여 0.1B, 헤더 패스 0.1B, 6B 0.2B, 6D 0.2B, 6E 0.3B, 6C 0.1B, 6F 1.0~1.5B → **추가 2.0~2.5B**(공시가 기준 약 $2,500~3,500) |
-| 소요 시간 | 1단계 3.7h, 1b 1.5h, 2단계 2.3h, 3단계 2026-09-22 13:37~20:20(그룹 병렬) + 2026-09-23 마무리 실행 |
+| **6단계 실측(2026-09-24 03:10)** | 6A 0.44B(6) · 헤더 패스 0.06B(5) · 6B·6D 0.26B(8) · F1 0.41B(7) · F2 0.16B(4) · F3 0.29B(4) · F4 0.55B(7) · F5 0.41B(6) = **2.58B**, 에이전트 47(괄호). 구현 에이전트 평균 70~110M(uv·pytest 실행 루프가 캐시 읽기를 키움), 검증 에이전트 120~150M, Opus 리뷰 2~10M |
+| **전체 누적(2026-09-24)** | **11.61B** 토큰, 에이전트 861, API 호출 64,722, 도구 호출 46,257(입력 1.42M · 캐시 쓰기 1.27B · 캐시 읽기 10.30B · 출력 39.6M). 상세 `PAYMENT.MD` |
+| 코드(6F-F5 후) | `src/` 224 파일 40,819행 · `tests/` 55 파일 14,891행 · WP 21건 · pytest 886 통과/27 xfail · 보류 5건 |
+| 소요 시간 | 1단계 3.7h, 1b 1.5h, 2단계 2.3h, 3단계 2026-09-22 13:37~20:20(그룹 병렬) + 2026-09-23 마무리 실행, 4단계 3h 35m, 5단계 26m, 6A 2h 21m, 헤더 패스 21m, 6B·6D 1h 26m, 6F F1~F5 8h 6m(2026-09-23 18:48 → 09-24 03:02) |
 
 ## 결정 사항 요약
 
 - 설계 브리프 v1.2.1과 설계 바이블 v1.2.0이 앵커. 우선순위: 브리프 > 바이블 > ADR > 개별 문서. 개별 문서가 바이블과 어긋나면 문서를 고치고, 바이블 오류는 "미해결 이슈"로 개정 요청만 남긴다(§1.2).
 - 3단계 문서는 작성·2렌즈 리뷰·수정·검증·2차 수정을 거쳐 `status: active`가 된다. 계약·스키마는 `tools/validate-contracts.mjs`가 0 오류여야 한다.
 - 워크플로우는 그룹 단위로 병렬 실행하고(CPU 8코어 → 워크플로우당 동시 에이전트 6), 결과 JSON을 `tools/phase3/results/`에 보존한다.
+- 6단계는 3층 검증(층 1 VDI 검증, 층 2·2b·3 대역+마커로 작성 후 보류 원장 이관, 모델 가중치 다운로드 금지)으로 진행했고, 6E·6F는 "WP 우선 구현"(한 에이전트가 WP 문서 → 구현 → 테스트)으로 합쳐 배치 F1~F5·커밋 단위로 실행했다. 모든 코드 파일은 한국어 설명 헤더 규칙(`tools/phase6/CODE-HEADER-RULE.md`)을 따르고 `check-headers.mjs`가 게이트다.
+- 구현 중 발견한 설계 갭은 코드가 바이블을 앞서 바꾸지 않고 WP `## 미해결 이슈`와 결과 JSON에 기록해 다음 바이블 패치 입력으로 모은다(§7.2h).
 
 ## 미해결 이슈
 
 - §6 표 참조. 3단계 완료 후 완전성 비평(`critic`) 결과와 각 그룹 `openIssues`를 4단계 입력으로 통합한다.
+- 6단계 후속 백로그는 §7.2h 끝의 목록(설계 갭 180건 → [10-implementation-design-gaps.md](10-implementation-design-gaps.md), xfail 27건, 보류 검증 5건, kiwipiepy 라이선스, 6C·6G 미착수)을 따른다.
 
 ## 참조
 

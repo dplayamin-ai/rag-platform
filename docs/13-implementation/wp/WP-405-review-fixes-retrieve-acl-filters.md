@@ -1,9 +1,12 @@
 ---
 title: "WP-405 리뷰 수정 — retrieve/acl_recheck/filters"
-status: done
+status: active
+owner: implementation
 version: 0.1.0
+last_updated: 2026-09-24
+implementation_status: done
+depends_on: ["../README.md", "../../12-appendix/10-implementation-design-gaps.md"]
 ---
-
 # WP-405 리뷰 수정 — retrieve·acl_recheck·filters (F4-05, review-fixes)
 
 ## 1. 목표

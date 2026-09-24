@@ -1,9 +1,12 @@
 ---
 title: "WP-203 enrich-deterministic"
-status: done
+status: active
 owner: implementation
+version: 1.0.0
+last_updated: 2026-09-23
+implementation_status: done
+depends_on: ["../README.md", "../../12-appendix/10-implementation-design-gaps.md"]
 ---
-
 # WP-203 enrich-deterministic (F2-03)
 
 ## 목표

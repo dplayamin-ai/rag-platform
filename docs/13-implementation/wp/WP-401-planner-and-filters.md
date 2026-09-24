@@ -1,9 +1,12 @@
 ---
 title: "WP-401 규칙 경로 플래너와 필터"
 status: active
+owner: implementation
 version: 0.1.0
+last_updated: 2026-09-24
+implementation_status: done
+depends_on: ["../README.md", "../../12-appendix/10-implementation-design-gaps.md"]
 ---
-
 # WP-401 규칙 경로 플래너와 필터 (F4-01, planner-and-filters)
 
 ## 0. 실행 배경(병렬 배치 주의)

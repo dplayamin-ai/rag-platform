@@ -1,9 +1,12 @@
 ---
 title: "WP-501 API — 수집 접수·잡 조회·질의·렌더"
 status: active
+owner: implementation
 version: 0.1.0
+last_updated: 2026-09-24
+implementation_status: done
+depends_on: ["../README.md", "../../12-appendix/10-implementation-design-gaps.md"]
 ---
-
 # WP-501 API — 수집 접수·잡 조회·질의·렌더 (F5-01, api-ingest-jobs-query)
 
 ## 0. 실행 배경(병렬 배치 주의)

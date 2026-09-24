@@ -1,9 +1,12 @@
 ---
 title: "WP-302 index-stage-and-commit-saga"
-status: done
+status: active
 owner: implementation
+version: 1.0.0
+last_updated: 2026-09-23
+implementation_status: done
+depends_on: ["../README.md", "../../12-appendix/10-implementation-design-gaps.md"]
 ---
-
 # WP-302 index-stage-and-commit-saga (F3-02)
 
 ## 목표

@@ -1,9 +1,13 @@
 ---
 title: "WP-102 format-detector-and-parse-router"
-status: implemented
+status: active
+owner: implementation
+version: 1.0.0
+last_updated: 2026-09-23
+implementation_status: done
+depends_on: ["../README.md", "../../12-appendix/10-implementation-design-gaps.md"]
 task: F1-02
 ---
-
 # WP-102 — `parser.format_detector` + `parser.router`(포맷 판별·파싱 라우터)
 
 ## 목표

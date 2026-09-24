@@ -1,9 +1,12 @@
 ---
 title: "WP-504 리뷰 수정 — API 키 서비스 주체, pack_id 캐시 주체 바인딩, MCP search 관련도순 절단"
-status: done
+status: active
+owner: implementation
 version: 0.1.0
+last_updated: 2026-09-24
+implementation_status: done
+depends_on: ["../README.md", "../../12-appendix/10-implementation-design-gaps.md"]
 ---
-
 # WP-504 리뷰 수정 — 서비스 주체·pack_id 캐시·MCP 순위 정렬 (F5-04, review-fixes)
 
 ## 1. 목표

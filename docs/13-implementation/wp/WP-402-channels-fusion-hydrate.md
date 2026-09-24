@@ -1,9 +1,12 @@
 ---
 title: "WP-402 channels-fusion-hydrate"
-status: done
+status: active
 owner: implementation
+version: 1.0.0
+last_updated: 2026-09-24
+implementation_status: done
+depends_on: ["../README.md", "../../12-appendix/10-implementation-design-gaps.md"]
 ---
-
 # WP-402 channels-fusion-hydrate (F4-02)
 
 ## 목표

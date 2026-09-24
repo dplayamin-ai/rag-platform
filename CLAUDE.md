@@ -4,7 +4,7 @@ RAG Platform은 수집된 문서(HWPX·HWP·PDF·DOC/DOCX·TXT·HTML)의 URI·�
 파싱 → 정규화 → 의미 청킹 → 보강 → 임베딩 → 하이브리드 인덱싱을 수행하고,
 LLM이 바로 참고할 Top-K Context Pack을 리트리벌 API와 MCP로 제공하는 오픈소스(Apache-2.0) 플랫폼이다.
 
-**현재 상태(2026-09-23): 설계 완료, 6단계 6A(레퍼런스 골격)·6B(적합성 키트)·6D(어댑터 스파이크) 완료.**
+**현재 상태(2026-09-24): 설계 완료, 6단계 6A·6B·6D·6E·6F 완료 — M1 lite 코어가 층 1(순수 Python·Qdrant 로컬 모드·`FakeEmbedder`·`TestClient`)에서 구현·검증됨(pytest 886 통과·27 xfail). 층 2(Docker)·2b(모델)·3(GPU)은 미검증(`HANDOFF.md`).**
 저장소에는 `docs/`(설계 문서)·`schemas/`(JSON Schema 정본) 외에 실행·검증되는 코드가 있다:
 `contracts/`(스키마에서 생성한 Pydantic v2 계약 모델), `sdk/`·`storage/`·`plugins/`·`profiles/`·
 `orchestration/local/`(코어 프레임워크와 로컬 실행기), `testing/`(적합성 키트 + 인메모리 테스트 대역),
@@ -143,7 +143,7 @@ LLM이 바로 참고할 Top-K Context Pack을 리트리벌 API와 MCP로 제공�
 이 저장소는 `docs/`·`schemas/`·`tools/`·`.claude/`에 더해 `src/rag_platform/`·`tests/`·`deploy/`·`plugins/`·
 `samples/`·`sidecars/`가 이미 있다.
 
-**현재 구현 범위(6A+6B+6D, `src/rag_platform/` 기준)**는 바이블 §12 모듈 맵의 일부다:
+**현재 구현 범위(6A+6B+6D+6E/6F F1~F5, `src/rag_platform/` 기준, 2026-09-24)** — 바이블 §12 모듈 맵 중 `lite` 프로파일 전 구간(상세 표는 진행 보고서 §3.2):
 - `contracts/`(GENERATED — `tools/contracts_gen.py`가 `schemas/*.schema.json`에서 생성한 Pydantic v2 모델
   93개 파일, 손편집 금지)
 - `sdk/`(`stage.py`·`context.py`·`policy.py`·`ports.py`·`hashing.py` — `Stage`/`PipelineContext`/
@@ -154,15 +154,29 @@ LLM이 바로 참고할 Top-K Context Pack을 리트리벌 API와 MCP로 제공�
 - `testing/`(적합성 키트 — `conformance/base.py`·`conformance/kits.py` + `doubles/`의 인메모리 대역 4종
   `FakeEmbedder`/`InMemoryIndexBackend`/`InMemoryKV`/`InMemoryLedger`, 그 외 `contract_roundtrip`·
   `idempotency`·`fuser_equivalence`·`litm_order`·`renderer_citation_roundtrip`·`security_invariants`)
-- `adapters/`의 3종 스파이크 — `parse/`(HWPX 파서 `hwpx_python_hwpx.py`+`owpml_adapter.py`),
-  `index/qdrant/`(`backend.py`·`filters.py`·`point_id.py`·`bm25_sparse.py`, Qdrant lite),
-  `embed/`(`tei_dense.py`·`vllm_pooling_bge_m3.py`·`inprocess_fake.py`, BGE-M3 계열 — 모델 가중치
-  없이 결정적 가짜로 검증)
+- `adapters/` 수집 어댑터 — `fetch/fsspec_httpx.py`; `parse/`(`format_detector.py`·`router.py`,
+  HWPX `hwpx_python_hwpx.py`+`owpml_adapter.py`, `text_charset_markdown_it.py`, `html_trafilatura_docling.py`,
+  `pdf_fast_pdftext.py`); `normalize/korean/*`+`normalize/stage.py`; `chunk/`(`structure_aware.py`·
+  `table_rows.py`·`recount.py`); `enrich/`(`deterministic_prefix.py`·`korean_keywords.py`·`derived_meta.py`);
+  `embed/`(`stage.py`·`sparse_bm25.py`·`inprocess_fake.py`, TEI·vLLM 골격 — 모델 가중치 없이 결정적
+  가짜로 검증); `index/`(`stage.py`·`saga.py`·`qdrant/*`, Qdrant 로컬 모드)
+- 검색 경로 — `adapters/retrieve/`(`qdrant_dense.py`·`qdrant_sparse_bm25.py`), `adapters/query/`,
+  `retrieval/`(`planner.py`·`filters.py`·`channels.py`·`fusion.py`·`hydrate.py`, `postprocess/`
+  `relevance_gate`·`dedup`·`mmr`·`parent_expand`, `pack/` `acl_recheck`·`budget_cut`·`reorder`·
+  `citation_align`·`packer`), `render/`(`markdown.py`·`anthropic_search_result.py`·`citation_map.py`),
+  `korean/`(정규화·규칙 라우터·유니코드 — 순수 로직)
+- 파이프라인·표면 — `pipelines/{ingest,query}`, `security/security_context.py`, `api/`(`app.py`·`ingest.py`·
+  `jobs.py`·`query.py`·`problems.py`), `mcp/`(`server.py`·`tools.py`·`cursor_store.py`), `cli/main.py`
+  (`rag ingest|query|serve|profile`)
 
-그 밖의 §12 모듈 — `api`·`cli`(`--version`만)·`eval`·`korean`·`ledger`·`mcp`·`pipelines`·`render`·
-`retrieval/{pack,postprocess}`·`security`·`settings`·`telemetry`·`orchestration/{outbox,temporal}`,
-`adapters/`의 나머지 확장 지점(`chunk`/`enrich`/`fetch`/`llm`/`normalize`/`query`/`rerank`/`retrieve`) —
-은 아직 패키지 스텁(docstring뿐, 실 구현 없음)이다.
+**아직 포트/스텁인 §12 모듈** — `ledger`(포트만, PostgreSQL 미연결)·`orchestration/{outbox,temporal}`·
+`adapters/{rerank,llm}`·`eval`·`telemetry`·`settings`, OpenSearch 채널, HWP5 사이드카·DOCX·OCR 파서.
+`deploy/compose/compose.lite.yaml`과 `.github/workflows/ci.yml`은 작성만 됐고 이 VDI에서 실행하지 못했다.
+
+**작업 패키지(WP)**: 구현 단위 문서는 `docs/13-implementation/wp/WP-nnn-<slug>.md`(21건, 색인
+`docs/13-implementation/README.md`)이며, 새 구현은 WP 문서를 먼저 쓰고 같은 커밋에 코드·테스트를 넣는다.
+구현 중 발견한 설계 갭은 코드가 바이블을 앞서 바꾸지 않고 결과 `open_issues`(또는 WP 끝 미해결 항목)에 기록해
+`node tools/phase6/gen-design-gaps.mjs`로 `docs/12-appendix/10-implementation-design-gaps.md`(180건)에 모은다.
 
 아래는 전체 구현 완료 시 바이블 §12 목표 트리다:
 
@@ -224,10 +238,11 @@ GPL/AGPL(C 등급) 이미지·플러그인(`lo-sidecar`, pyhwp/pymupdf 사이드
 - **6B** 적합성 키트 — 계약 왕복 테스트, 확장 지점 14종별 플러그인 적합성 테스트, 결정적 키 벡터(`H()`/`record_id`/`point_id`), 프로파일 검증.
 - **6C** 표본 코퍼스·미니 골든셋 — 공공누리 제1유형 문서 20~50건, 질의 50~100개(TREC qrels + `answer_spans`), 검수는 반드시 사람.
 - **6D** 어댑터 스파이크 3종 — HWPX 파서, Qdrant lite 백엔드, 임베더 골격(모델 가중치 다운로드는 보류, `FakeEmbedder`로 1층 검증).
-- **6E** 구현 작업 패키지(WP) 60~80개 생성 — `docs/13-implementation/wp/WP-nnn-<slug>.md` + 테스트 동봉.
-- **6F** M1 lite 레퍼런스 구현 —
+- **6E** 구현 작업 패키지(WP) — `docs/13-implementation/wp/WP-nnn-<slug>.md` + 테스트 동봉.
+  (실행은 6F와 합쳐 "WP 우선 구현" 배치 F1~F5로 진행, 21건 완료 — `tools/phase6/wf-6f.js`.)
+- **6F** M1 lite 레퍼런스 구현 — **완료(2026-09-24, 층 1)**:
   contracts/core → fetch/parse/normalize → chunk/enrich → embed/index(Qdrant) →
-  plan/retrieve/fuse/hydrate/postprocess/pack/render → API/MCP → compose 기동까지 순서대로.
+  plan/retrieve/fuse/hydrate/postprocess/pack/render → API/MCP/CLI. compose 기동은 `needs_docker`로 보류.
 - **6G** 공개 준비 — LICENSE/NOTICE/CONTRIBUTING, README(한/영), 내부 기록(`PAYMENT.MD`, 진행 보고서, `tools/phase3/results/`) 분리, 잔여 "확인 필요"를 GitHub 이슈로 전환.
 
 **M1 lite 범위(끄는 것)**: `lite` 프로파일만 구현한다.
