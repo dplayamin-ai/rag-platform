@@ -1,5 +1,8 @@
 # RAG Platform — 프로젝트 지침
 
+> 이 파일은 Claude Code가 자동으로 읽는 형식이다. 다른 코드 에이전트(Codex·Cursor·Gemini CLI 등)는 같은 규칙의
+> 에이전트 중립 요약본 `AGENTS.md`를 먼저 읽는다 — 두 파일이 어긋나면 이 파일(더 상세)이 정본이다.
+
 RAG Platform은 수집된 문서(HWPX·HWP·PDF·DOC/DOCX·TXT·HTML)의 URI·메타데이터를 API로 받아
 파싱 → 정규화 → 의미 청킹 → 보강 → 임베딩 → 하이브리드 인덱싱을 수행하고,
 LLM이 바로 참고할 Top-K Context Pack을 리트리벌 API와 MCP로 제공하는 오픈소스(Apache-2.0) 플랫폼이다.

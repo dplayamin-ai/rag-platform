@@ -7,13 +7,13 @@
 // 불변식: 상태 열은 이 스크립트가 절대 낮추지 않는다(항상 신규 행만 "미검증"으로 시작하고, 기존 검증 결과는
 // 사람이 손으로 갱신). 마커 없는 `# DEFERRED:`는 "미분류"로, 마커만 있고 인접 주석이 없으면 규약 위반으로 표시.
 // 검증 계층: 1층(여기서 검증) — 산출 문서는 `tools/audit-docs.mjs`로 별도 감사.
-// 실행: node tools/verify/gen-deferred-ledger.mjs [--root C:\Workspaces\rag-platform] [--date 2026-09-23]
+// 실행: node tools/verify/gen-deferred-ledger.mjs [--root <repo>] [--date 2026-09-23]
 import fs from 'node:fs'
 import path from 'node:path'
 
 const argv = process.argv.slice(2)
 const opt = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d }
-const ROOT = opt('--root', 'C:\\Workspaces\\rag-platform')
+const ROOT = opt('--root', process.cwd())
 const DATE = opt('--date', new Date().toISOString().slice(0, 10))
 const OUT = path.join(ROOT, 'docs', '12-appendix', '09-deferred-verification-ledger.md')
 

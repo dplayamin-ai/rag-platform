@@ -7,13 +7,13 @@
 //   - `checkHeader` — Hangul 존재 여부 + 필수 항목 5개(역할/설계 근거/구성/불변식/검증 계층) 부분 문자열 포함 여부 판정
 //   - `finish` — 위반 파일 목록·사유 출력, `--json` 저장, 오류 유무로 종료 코드 결정
 // 불변식·주의: 정본은 `CODE-HEADER-RULE.md`이며, 이 스크립트는 그 규칙의 필수 항목 존재만 기계적으로 확인한다(문장 품질·정확성은 사람이 판단). 헤더를 고치지 않는다(읽기 전용 검사).
-// 검증 계층: 1층(여기서 검증). 실행: `node tools/verify/check-headers.mjs [--root C:\Workspaces\rag-platform] [--json out.json] [--quiet]`
+// 검증 계층: 1층(여기서 검증). 실행: `node tools/verify/check-headers.mjs [--root <repo>] [--json out.json] [--quiet]`
 import fs from 'node:fs'
 import path from 'node:path'
 
 const argv = process.argv.slice(2)
 const opt = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d }
-const ROOT = opt('--root', 'C:\\Workspaces\\rag-platform')
+const ROOT = opt('--root', process.cwd())
 const JSON_OUT = opt('--json', null)
 const QUIET = argv.includes('--quiet')
 

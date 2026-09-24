@@ -13,7 +13,7 @@ import path from 'node:path'
 
 const argv = process.argv.slice(2)
 const opt = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d }
-const ROOT = opt('--root', 'C:\\Workspaces\\rag-platform')
+const ROOT = opt('--root', process.cwd())
 const JSON_OUT = opt('--json', null)
 const QUIET = argv.includes('--quiet')
 const SCHEMAS = path.join(ROOT, 'schemas')

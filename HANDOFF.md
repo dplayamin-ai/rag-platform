@@ -136,11 +136,57 @@ VDI에서는 사용자 결정으로 모델 가중치를 내려받지 않았다. 
   다른 디렉터리를 편집 중일 수 있으므로, 커밋 전에는 반드시 `git status`·`git log`로 충돌 여부를 확인
   하고 관련 없는 변경까지 함께 커밋하지 않는다.
 
+## 다른 머신·다른 코드 에이전트로 개발을 이어가기
+
+위 절차는 "Docker가 있는 머신에서 층 2를 검증"하는 인수인계다. **개발 자체를 다른 머신·다른 코드 에이전트(Claude Code, Codex, Cursor 등)로 옮기려면** 아래를 추가로 지킨다.
+
+### 저장소 옮기기 (원격이 없다)
+
+이 저장소에는 아직 `git remote`가 없다. 둘 중 하나로 옮긴다.
+
+```bash
+# (a) 원격을 만들어 푸시
+git remote add origin <git-url> && git push -u origin master
+
+# (b) 원격 없이 번들 파일로 옮기기(약 10MB)
+git bundle create ../rag-platform.bundle --all
+# 받는 쪽:
+git clone ../rag-platform.bundle rag-platform && cd rag-platform && git log --oneline -5
+```
+
+zip으로 작업 트리만 복사하면 `.git` 이력·`.gitattributes`(LF 규약)가 빠지므로 권장하지 않는다. `.rag/`(로컬 상태)·`.venv/`·`__pycache__/`는 무시 대상이라 옮길 필요가 없다.
+
+### 새 에이전트가 읽는 순서
+
+1. [AGENTS.md](AGENTS.md) — 에이전트 중립 진입 지침(규칙 요약, 시작 절차, 다음 작업 우선순위). Codex는 자동으로 읽고, Claude Code는 같은 내용의 [CLAUDE.md](CLAUDE.md)를 자동으로 읽는다. 다른 도구는 첫 프롬프트에 "AGENTS.md를 먼저 읽어라"를 넣는다.
+2. [DEVELOPER.md](DEVELOPER.md) — 전체 흐름과 코드 지도(사람용 강좌지만 에이전트에게도 가장 빠른 지도다).
+3. [진행 보고서](docs/12-appendix/00-progress-report.md) §3.2·§7.2h·§7.3 — 실측 상태와 재개 절차.
+4. 이 문서의 "첫 30분"(층 1 재확인 → 층 2 검증).
+
+### 넘어가지 않는 것 (미리 알아야 당황하지 않는다)
+
+| 항목 | 상태 | 대응 |
+|------|------|------|
+| `tools/phase3~6/wf-*.js` | Claude Code `Workflow` 도구 전용 오케스트레이션 스크립트 | 실행 불가. 프롬프트·절차 기록으로만 읽는다. 같은 일은 WP 우선 절차를 손으로 수행 |
+| `PAYMENT.MD`, `tools/usage-report.mjs` | Claude Code 세션 트랜스크립트 기반 토큰 집계 | 다른 머신에서 재생성 불가. 파일은 기록으로 보존 |
+| 에이전트 메모리(`~/.claude/...`) | 저장소 밖 | 필요한 상태는 진행 보고서·git 로그·AGENTS.md에 전부 있다 |
+| `.claude/settings.local.json` | 머신별 권한 캐시 | 무시 대상(`.gitignore`) — 새 머신에서 새로 생긴다 |
+| 검증 환경 | 층 1은 **Windows 11 + Python 3.12에서만** 통과 확인 | Linux/macOS 첫 실행에서 경로·`file://` URI·인코딩 차이로 실패가 날 수 있다. 코드를 고치기 전에 진행 보고서 §6에 원인을 기록하고, 고친 뒤 Windows에서도 통과하는지 CI(`.github/workflows/ci.yml`, 아직 한 번도 실행 안 됨)로 확인 |
+| Node 검증 스크립트 | `--root` 기본값이 현재 디렉터리 | 항상 저장소 루트에서 실행한다(`node tools/verify/check-headers.mjs`) |
+
+### 첫 작업 셋 (AGENTS.md §5와 같다)
+
+1. 층 2 검증(이 문서 "첫 30분") → 보류 원장 상태 열 갱신 → 커밋.
+2. WP-601: `cli/main.py`의 실 배선(`ingest_paths`·`run_query_lite`·`build_query_deps`)을 `api`·`mcp`가 공유하는 서비스 계층으로 옮기고, API 키 외부 설정과 MCP stdio 진입점을 만든다.
+3. WP-602: `rag ingest`의 경로별 실패 처리(`status: failed`), 단일 파일 확장자 검사, 메타 파일 제외.
+
+에이전트가 이 셋 이상을 스스로 정해야 한다면 [설계 갭 원장](docs/12-appendix/10-implementation-design-gaps.md)의 "바이블 개정 후보"를 ADR 절차로 처리하는 일이 그다음이다.
+
 ## 자주 하는 실수
 
 - `uv sync`에서 `--frozen`을 빼면 `uv.lock`이 갱신될 수 있다. 인터넷이 열려 있으면 그 자체는 안전하지만
   diff가 생기므로 리뷰 없이 커밋하지 않는다.
-- `deploy/compose/compose.lite.yaml`이 아직 없을 수 있다(6단계 작업 패키지가 아직 도착하지 않은
+- `deploy/compose/compose.lite.yaml`은 작성돼 있지만 이 VDI에서 한 번도 기동하지 못했다(첫 기동에서 이미지 태그·볼륨 오류가 나올 수 있다 — 고치고 커밋한다). 과거 문구: 아직 없을 수 있다(6단계 작업 패키지가 아직 도착하지 않은
   경우). 이때 `run-deferred.sh`는 경고만 내고 계속 진행한다 — 정상 동작이며 오류가 아니다.
 - `needs_model` 마커 테스트는 모델을 실제로 내려받지 않고는 통과하지 않는다. 실패로 취급해 억지로
   고치려 하지 말고 "모델 가중치" 절의 절차를 따른다.

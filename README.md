@@ -4,7 +4,7 @@
 
 **`설계 완료`** · **`6A·6B·6D 완료`** · **`Apache-2.0`**
 
-> 설계는 완료됐고, **M1 lite 코어가 구현·검증된 상태**다(2026-09-24, 6단계 6A·6B·6D·6E·6F 완료). 수집(fetch → parse → normalize → chunk → enrich → embed → index) → 검색(plan → retrieve → fuse → hydrate → postprocess → pack → render) → API·MCP·CLI까지 `lite` 프로파일 전 구간이 결정적 가짜 임베더와 Qdrant 로컬 모드로 동작한다(pytest 886 통과). Docker·실제 모델·GPU가 필요한 층은 Windows VDI에서 실행하지 못해 미검증이다(`HANDOFF.md`). 아래 "현재 상태와 로드맵"을 먼저 읽는다. **사용법은 [MANUAL.md](MANUAL.md), 개발자 입문 강좌는 [DEVELOPER.md](DEVELOPER.md)**.
+> 설계는 완료됐고, **M1 lite 코어가 구현·검증된 상태**다(2026-09-24, 6단계 6A·6B·6D·6E·6F 완료). 수집(fetch → parse → normalize → chunk → enrich → embed → index) → 검색(plan → retrieve → fuse → hydrate → postprocess → pack → render) → API·MCP·CLI까지 `lite` 프로파일 전 구간이 결정적 가짜 임베더와 Qdrant 로컬 모드로 동작한다(pytest 886 통과). Docker·실제 모델·GPU가 필요한 층은 Windows VDI에서 실행하지 못해 미검증이다(`HANDOFF.md`). 아래 "현재 상태와 로드맵"을 먼저 읽는다. **사용법은 [MANUAL.md](MANUAL.md), 개발자 입문 강좌는 [DEVELOPER.md](DEVELOPER.md), 코드 에이전트(Claude Code·Codex·Cursor 등)로 이어가려면 [AGENTS.md](AGENTS.md)와 [HANDOFF.md](HANDOFF.md)**.
 
 ## 1. 왜 이 플랫폼인가
 

@@ -11,7 +11,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 const argv = process.argv.slice(2)
 const opt = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d }
-const ROOT = opt('--root', 'C:\\Workspaces\\rag-platform')
+const ROOT = opt('--root', process.cwd())
 const DATE = opt('--date', new Date().toISOString().slice(0, 10))
 const DOCS = path.join(ROOT, 'docs')
 const TARGET = path.join(DOCS, '12-appendix', '06-traceability-matrix.md')

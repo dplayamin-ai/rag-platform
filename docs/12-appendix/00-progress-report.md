@@ -105,7 +105,7 @@ depends_on: ["../00-vision/00-design-brief.md", "../02-architecture/00-design-bi
 | import-linter | 6 계약 유지(바이블 §12 계층 + 오케스트레이터 중립 + adapters-no-storage + contracts-pure + no-c-grade + testing 격리) |
 | ruff check / format | 통과 / 301 파일 정렬 |
 | 한국어 헤더 규칙 | 307 파일 위반 0 |
-| 보류 검증 원장 | 5건(docker 1 · model 1 · network 1 · 미분류 2) |
+| 보류 검증 원장 | 7건(docker 2 · model 1 · gpu 1 · network 1 · 미분류 3; LF 정규화 후 재스캔에서 2건 추가 발견) |
 | 표본 | 공공누리 제1유형 HWPX 3건 + 합성 1건(`samples/hwpx/`, `MANIFEST.json` sha256) |
 | CLI | `uv run rag {ingest,query,serve,profile}` |
 
@@ -328,7 +328,7 @@ RRF k=60 → convex 2단계(O-01), BGE-M3 sparse + lexical 유지(O-02), GraphRA
 - 미해결 항목 **186건**(6B·6D 36 — 예: `Figure.artifact` 필수 vs 생략 규칙, `StageContext.source_bytes` 포트 부재, `IndexBackend` 포트 ↔ 문서 13 시그니처, 서버 RRF k=61 등가, Hancom `repeatHeader` 기본값; F1 36 · F2 28 · F3 17 · F4 36 · F5 33(매뉴얼 검증 6 포함) — 예: fetch의 `requires_lineage` 선언 vs 바이블 §4.1 문구, `canonical_json` 근사, 정책 해소 포트 부재). Opus 리뷰 발견 23건(F4 13·F5 10)은 WP-405·504에서 수정 완료.
 - 계약 왕복 xfail 27건: 계약 문서 예시 오류(문서 수정 대상)와 중첩 nullable 보존(생성기 확장 대상)으로 분류해 처리.
 - `kiwipiepy 0.23.2`(LGPL 정적 휠) 라이선스 등급 결정 — Apache 전환판(0.24) 출시 전까지 extra `kiwi`로 격리.
-- 층 2·2b·3 검증 5건(원장), `compose.lite.yaml` 기동, GitHub Actions 첫 실행 — `HANDOFF.md` 절차로 다른 머신에서.
+- 층 2·2b·3 검증 7건(원장), `compose.lite.yaml` 기동, GitHub Actions 첫 실행 — `HANDOFF.md` 절차로 다른 머신에서.
 - 6C 미니 골든셋(표본 3건 기준 질의·`answer_spans` 초안, 사람 검수 필수), 6G 공개 준비(CONTRIBUTING·SECURITY, 내부 기록 분리)는 미착수.
 
 ### 7.3 재개 절차(새 세션)
@@ -353,7 +353,7 @@ RRF k=60 → convex 2단계(O-01), BGE-M3 sparse + lexical 유지(O-02), GraphRA
 | 6단계 예산 규율(재설정) | 구현 에이전트는 **작업 패키지(WP) 문서 + 직접 편집 파일 + 테스트 출력만** 읽고 바이블·설계 문서를 열지 않는다(WP가 필요한 발췌를 담는다). 한 에이전트당 파일 3개 이하, 테스트 재실행 최대 3회. 6B+6D 종료 시 소모를 재측정해 1B 초과면 6E는 코어 WP만, 6F는 F1~F5 최소 경로로 축소. 재예측: 6A 잔여 0.1B, 헤더 패스 0.1B, 6B 0.2B, 6D 0.2B, 6E 0.3B, 6C 0.1B, 6F 1.0~1.5B → **추가 2.0~2.5B**(공시가 기준 약 $2,500~3,500) |
 | **6단계 실측(2026-09-24 03:10)** | 6A 0.44B(6) · 헤더 패스 0.06B(5) · 6B·6D 0.26B(8) · F1 0.41B(7) · F2 0.16B(4) · F3 0.29B(4) · F4 0.55B(7) · F5 0.41B(6) = **2.58B**, 에이전트 47(괄호). 구현 에이전트 평균 70~110M(uv·pytest 실행 루프가 캐시 읽기를 키움), 검증 에이전트 120~150M, Opus 리뷰 2~10M |
 | **전체 누적(2026-09-24)** | **11.61B** 토큰, 에이전트 861, API 호출 64,722, 도구 호출 46,257(입력 1.42M · 캐시 쓰기 1.27B · 캐시 읽기 10.30B · 출력 39.6M). 상세 `PAYMENT.MD` |
-| 코드(6F-F5 후) | `src/` 224 파일 40,819행 · `tests/` 55 파일 14,891행 · WP 21건 · pytest 886 통과/27 xfail · 보류 5건 |
+| 코드(6F-F5 후) | `src/` 224 파일 40,819행 · `tests/` 55 파일 14,891행 · WP 21건 · pytest 886 통과/27 xfail · 보류 7건 |
 | 소요 시간 | 1단계 3.7h, 1b 1.5h, 2단계 2.3h, 3단계 2026-09-22 13:37~20:20(그룹 병렬) + 2026-09-23 마무리 실행, 4단계 3h 35m, 5단계 26m, 6A 2h 21m, 헤더 패스 21m, 6B·6D 1h 26m, 6F F1~F5 8h 6m(2026-09-23 18:48 → 09-24 03:02) |
 
 ## 결정 사항 요약
@@ -367,7 +367,7 @@ RRF k=60 → convex 2단계(O-01), BGE-M3 sparse + lexical 유지(O-02), GraphRA
 ## 미해결 이슈
 
 - §6 표 참조. 3단계 완료 후 완전성 비평(`critic`) 결과와 각 그룹 `openIssues`를 4단계 입력으로 통합한다.
-- 6단계 후속 백로그는 §7.2h 끝의 목록(설계 갭 186건 → [10-implementation-design-gaps.md](10-implementation-design-gaps.md), xfail 27건, 보류 검증 5건, kiwipiepy 라이선스, 6C·6G 미착수)을 따른다.
+- 6단계 후속 백로그는 §7.2h 끝의 목록(설계 갭 186건 → [10-implementation-design-gaps.md](10-implementation-design-gaps.md), xfail 27건, 보류 검증 7건, kiwipiepy 라이선스, 6C·6G 미착수)을 따른다.
 
 ## 참조
 

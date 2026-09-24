@@ -8,7 +8,7 @@ import path from 'node:path'
 const argv = process.argv.slice(2)
 const opt = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d }
 const FIX = argv.includes('--fix')
-const ROOT = opt('--root', 'C:\\Workspaces\\rag-platform')
+const ROOT = opt('--root', process.cwd())
 const DOCS = path.join(ROOT, 'docs'), SCHEMAS = path.join(ROOT, 'schemas'), RES = path.join(ROOT, 'tools', 'phase3', 'results')
 const rel = (p) => path.relative(DOCS, p).split(path.sep).join('/')
 function walk(d, out = []) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p, out); else if (p.endsWith('.md')) out.push(p) } return out }
