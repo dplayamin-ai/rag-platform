@@ -1489,6 +1489,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """`rag` 진입점 — 하위 명령을 파싱해 실행한다."""
+    # Windows 콘솔(CP949)에서 한국어 출력이 `UnicodeEncodeError`로 죽지 않도록 UTF-8로 재설정한다
+    # (MANUAL.md §8; 파이프·리다이렉트에서도 동일하게 UTF-8).
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
     parser = build_arg_parser()
     args = parser.parse_args(argv)
     handler: Callable[[argparse.Namespace], int] = args.handler

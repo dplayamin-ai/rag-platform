@@ -325,7 +325,7 @@ RRF k=60 → convex 2단계(O-01), BGE-M3 sparse + lexical 유지(O-02), GraphRA
 
 **설계 갭·후속 백로그**(다음 바이블 패치 입력, 전체 목록은 [구현 설계 갭 원장](10-implementation-design-gaps.md) — `tools/phase6/results/open-issues.json`에서 `gen-design-gaps.mjs`가 생성):
 
-- 미해결 항목 **180건**(6B·6D 36 — 예: `Figure.artifact` 필수 vs 생략 규칙, `StageContext.source_bytes` 포트 부재, `IndexBackend` 포트 ↔ 문서 13 시그니처, 서버 RRF k=61 등가, Hancom `repeatHeader` 기본값; F1 36 · F2 28 · F3 17 · F4 36 · F5 27 — 예: fetch의 `requires_lineage` 선언 vs 바이블 §4.1 문구, `canonical_json` 근사, 정책 해소 포트 부재). Opus 리뷰 발견 23건(F4 13·F5 10)은 WP-405·504에서 수정 완료.
+- 미해결 항목 **186건**(6B·6D 36 — 예: `Figure.artifact` 필수 vs 생략 규칙, `StageContext.source_bytes` 포트 부재, `IndexBackend` 포트 ↔ 문서 13 시그니처, 서버 RRF k=61 등가, Hancom `repeatHeader` 기본값; F1 36 · F2 28 · F3 17 · F4 36 · F5 33(매뉴얼 검증 6 포함) — 예: fetch의 `requires_lineage` 선언 vs 바이블 §4.1 문구, `canonical_json` 근사, 정책 해소 포트 부재). Opus 리뷰 발견 23건(F4 13·F5 10)은 WP-405·504에서 수정 완료.
 - 계약 왕복 xfail 27건: 계약 문서 예시 오류(문서 수정 대상)와 중첩 nullable 보존(생성기 확장 대상)으로 분류해 처리.
 - `kiwipiepy 0.23.2`(LGPL 정적 휠) 라이선스 등급 결정 — Apache 전환판(0.24) 출시 전까지 extra `kiwi`로 격리.
 - 층 2·2b·3 검증 5건(원장), `compose.lite.yaml` 기동, GitHub Actions 첫 실행 — `HANDOFF.md` 절차로 다른 머신에서.
@@ -367,7 +367,7 @@ RRF k=60 → convex 2단계(O-01), BGE-M3 sparse + lexical 유지(O-02), GraphRA
 ## 미해결 이슈
 
 - §6 표 참조. 3단계 완료 후 완전성 비평(`critic`) 결과와 각 그룹 `openIssues`를 4단계 입력으로 통합한다.
-- 6단계 후속 백로그는 §7.2h 끝의 목록(설계 갭 180건 → [10-implementation-design-gaps.md](10-implementation-design-gaps.md), xfail 27건, 보류 검증 5건, kiwipiepy 라이선스, 6C·6G 미착수)을 따른다.
+- 6단계 후속 백로그는 §7.2h 끝의 목록(설계 갭 186건 → [10-implementation-design-gaps.md](10-implementation-design-gaps.md), xfail 27건, 보류 검증 5건, kiwipiepy 라이선스, 6C·6G 미착수)을 따른다.
 
 ## 참조
 

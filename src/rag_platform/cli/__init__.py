@@ -2,9 +2,9 @@
 
 설계 근거: 바이블 §12(모듈 맵), 10-development/02(CLI 명령 사양); `docs/13-implementation/wp/
 WP-503-cli-and-full-e2e.md`(F5-03이 하위 명령 실 구현을 `cli/main.py`에 추가).
-구성: `main(argv)` — `--version`/빈 인자/`-h`·`--help`는 6A 시절 그대로 처리하고, 그 외 인자가
-등록된 하위 명령(`ingest`/`query`/`serve`/`profile`)으로 시작하면 `cli.main.main`(argparse 실
-구현, 아래 `_dispatch`)에 위임한다.
+구성: `main(argv)` — `--version`/빈 인자는 6A 시절 그대로 처리하고, `-h`·`--help`와 등록된 하위
+명령(`ingest`/`query`/`serve`/`profile`)으로 시작하는 인자는 `cli.main.main`(argparse 실 구현, 아래
+`_dispatch`)에 위임한다(`rag --help`가 하위 명령을 보여주도록; MANUAL.md §1).
 불변식·주의: 이 파일과 `cli/main.py`는 같은 이름 `main`을 두고 경쟁한다 — 파이썬은 서브모듈이
 처음 로드되는 순간 부모 패키지의 동명 속성을 그 모듈 객체로 덮어쓴다(임포트 구문 종류와 무관한
 부작용). 그래서 이 파일이 "이 패키지가 처음 임포트될 때" 그 부작용을 스스로 일으키고 곧바로
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 
 __all__ = ["main"]
 
-_USAGE = "usage: rag [--version]\n"
+_USAGE = "usage: rag [--version] {ingest,query,serve,profile} ... (rag --help)\n"
 _SUBCOMMANDS = ("ingest", "query", "serve", "profile")
 
 
@@ -56,7 +56,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args == ["--version"]:
         sys.stdout.write(f"rag-platform {rag_platform.__version__}\n")
         return 0
-    if args and args[0] in _SUBCOMMANDS:
-        return _dispatch(args)
+    if args in (["-h"], ["--help"]) or (args and args[0] in _SUBCOMMANDS):
+        try:
+            return _dispatch(args)
+        except SystemExit as exc:  # argparse의 --help/오류 종료를 종료 코드로 돌려준다
+            code = exc.code
+            return code if isinstance(code, int) else (0 if code is None else 2)
     sys.stderr.write(_USAGE)
-    return 0 if not args or args in (["-h"], ["--help"]) else 2
+    return 0 if not args else 2

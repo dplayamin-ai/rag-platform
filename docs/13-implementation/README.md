@@ -77,7 +77,7 @@ depends_on: ["../12-appendix/05-phase6-implementation-kit-plan.md", "../12-appen
 | [WP-504](wp/WP-504-review-fixes-security-context-pack-cache-mcp-ordering.md) | WP-504 리뷰 수정 — API 키 서비스 주체, pack_id 캐시 주체 바인딩, MCP search 관련도순 절단 | F5-01/02(`WP-501`/`WP-502`) 코드 리뷰의 major 3건을 고친다. 새 기능이 아니라 기존 모듈의 버그 수정이므로 파일·계약(생성물)은 그대로다. 대상: | 2 |
 
 
-합계: WP 21건, 설계 갭 109건(원장 전체 180건 중 WP 출처가 식별된 것; 나머지는 검증 에이전트·6B/6D 스파이크 출처).
+합계: WP 21건, 설계 갭 109건(원장 전체 186건 중 WP 출처가 식별된 것; 나머지는 검증 에이전트·6B/6D 스파이크 출처).
 
 ## 규약
 
@@ -93,7 +93,7 @@ depends_on: ["../12-appendix/05-phase6-implementation-kit-plan.md", "../12-appen
 ## 미해결 이슈
 
 - WP 문서의 frontmatter·절 번호 형식이 배치별로 조금 다르다(F1~F3는 영문 슬러그 제목·번호 없는 절, F4~F5는 한국어 제목·번호 절; WP-101은 frontmatter 없음). 6G 공개 준비에서 통일한다.
-- 설계 갭 180건의 처리 순서는 [구현 설계 갭 원장](../12-appendix/10-implementation-design-gaps.md) "미해결 이슈" 절을 따른다.
+- 설계 갭 186건의 처리 순서는 [구현 설계 갭 원장](../12-appendix/10-implementation-design-gaps.md) "미해결 이슈" 절을 따른다.
 
 ## 참조
 

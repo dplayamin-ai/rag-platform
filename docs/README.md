@@ -36,7 +36,7 @@ last_updated: 2026-09-23
 | `10-development/` | 저장소 구조, 개발 환경, 코딩 표준, 테스트, CI/CD, 플러그인 개발, 기여, 릴리스 | 완료 |
 | `11-roadmap/` | 마일스톤, 에픽·백로그, 리스크 | 완료 |
 | `12-appendix/` | [진행 보고서](12-appendix/00-progress-report.md)(단일 진행 원천), [3단계 완전성 검토](12-appendix/01-phase3-completeness-review.md), [4·5단계 계획](12-appendix/02-phase4-5-plan.md), [바이블 개정 요청 통합 목록](12-appendix/03-bible-amendment-triage-input.md), [3단계 문서 원장](12-appendix/04-phase3-document-ledger.md), [6단계 구현 킷 계획](12-appendix/05-phase6-implementation-kit-plan.md), [추적성 매트릭스](12-appendix/06-traceability-matrix.md), [바이블 트리아지 결정](12-appendix/07-bible-amendment-triage-decisions.md), [전파 지시서](12-appendix/08-propagation-directives.md), [보류 검증 원장](12-appendix/09-deferred-verification-ledger.md), [구현 설계 갭 원장](12-appendix/10-implementation-design-gaps.md), 설계 경쟁 제안서 A/B/C, `sources/`(업스트림 참고 사본) | 참고 |
-| `13-implementation/` | [작업 패키지 색인](13-implementation/README.md) — WP 21건(수집 전단 101~106, 청킹·보강 201~203, 임베딩·인덱스 301~303, 검색 경로 401~405, API·MCP·CLI 501~504). 구현 중 발견한 설계 갭 180건은 [구현 설계 갭 원장](12-appendix/10-implementation-design-gaps.md) | M1 lite 완료(층 1) |
+| `13-implementation/` | [작업 패키지 색인](13-implementation/README.md) — WP 21건(수집 전단 101~106, 청킹·보강 201~203, 임베딩·인덱스 301~303, 검색 경로 401~405, API·MCP·CLI 501~504). 구현 중 발견한 설계 갭 186건은 [구현 설계 갭 원장](12-appendix/10-implementation-design-gaps.md) | M1 lite 완료(층 1) |
 
 주의: 3단계 후반 문서 43건(문서 37 + ADR 6)은 경량 모드로 수정되어 독립 검증이 없다. 미해결 이슈 480건(바이블 개정 요청 후보 200건)은 4단계 입력이며, 그 전까지 문서 간 필드명이 어긋나면 **바이블과 `schemas/`가 정본**이다.
 

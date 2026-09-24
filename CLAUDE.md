@@ -29,7 +29,7 @@ LLM이 바로 참고할 Top-K Context Pack을 리트리벌 API와 MCP로 제공�
 - ADR: `docs/06-adr/0001-…` ~ `0039-…`(38건 + 인덱스).
   목록·상태값·발의 절차는 `docs/06-adr/README.md`.
   ADR은 바이블 표를 바꾸지 못한다 — 근거와 대안을 기록하는 문서일 뿐이다.
-- 그 밖의 진입점: `docs/README.md`(문서 지도, 읽기 순서), `docs/12-appendix/00-progress-report.md`(진행 상황의 단일 원천).
+- 그 밖의 진입점: `docs/README.md`(문서 지도, 읽기 순서), `docs/12-appendix/00-progress-report.md`(진행 상황의 단일 원천), `DEVELOPER.md`(개발자 입문 강좌 — 전체 흐름·코드 지도·게이트), `MANUAL.md`(사용자 매뉴얼 — CLI·API·MCP 계약·문제 해결).
 
 ## 1. 작업 유형별로 무엇을 먼저 읽나
 
@@ -167,7 +167,9 @@ LLM이 바로 참고할 Top-K Context Pack을 리트리벌 API와 MCP로 제공�
   `korean/`(정규화·규칙 라우터·유니코드 — 순수 로직)
 - 파이프라인·표면 — `pipelines/{ingest,query}`, `security/security_context.py`, `api/`(`app.py`·`ingest.py`·
   `jobs.py`·`query.py`·`problems.py`), `mcp/`(`server.py`·`tools.py`·`cursor_store.py`), `cli/main.py`
-  (`rag ingest|query|serve|profile`)
+  (`rag ingest|query|serve|profile`). **주의**: 실 파이프라인 배선은 `cli/main.py`(`ingest_paths`·`run_query_lite`)에만 있다.
+  `api/`는 스텁 스테이지·스텁 팩, `mcp/server.py`의 `main()`은 `ToolDeps` 미조립(`NotImplementedError`) — 인증·오류·
+  캐시·커서는 실제. API/MCP를 "동작한다"고 쓰지 마라.
 
 **아직 포트/스텁인 §12 모듈** — `ledger`(포트만, PostgreSQL 미연결)·`orchestration/{outbox,temporal}`·
 `adapters/{rerank,llm}`·`eval`·`telemetry`·`settings`, OpenSearch 채널, HWP5 사이드카·DOCX·OCR 파서.
@@ -176,7 +178,7 @@ LLM이 바로 참고할 Top-K Context Pack을 리트리벌 API와 MCP로 제공�
 **작업 패키지(WP)**: 구현 단위 문서는 `docs/13-implementation/wp/WP-nnn-<slug>.md`(21건, 색인
 `docs/13-implementation/README.md`)이며, 새 구현은 WP 문서를 먼저 쓰고 같은 커밋에 코드·테스트를 넣는다.
 구현 중 발견한 설계 갭은 코드가 바이블을 앞서 바꾸지 않고 결과 `open_issues`(또는 WP 끝 미해결 항목)에 기록해
-`node tools/phase6/gen-design-gaps.mjs`로 `docs/12-appendix/10-implementation-design-gaps.md`(180건)에 모은다.
+`node tools/phase6/gen-design-gaps.mjs`로 `docs/12-appendix/10-implementation-design-gaps.md`(186건)에 모은다.
 
 아래는 전체 구현 완료 시 바이블 §12 목표 트리다:
 

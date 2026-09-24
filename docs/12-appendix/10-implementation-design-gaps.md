@@ -27,14 +27,14 @@ generated_by: tools/phase6/gen-design-gaps.mjs
 | F2 청킹·보강 | 28 |
 | F3 임베딩·인덱스 커밋·수집 e2e | 17 |
 | F4 검색 경로(플래너·채널·융합·후처리·패킹·렌더) | 36 |
-| F5 API·MCP·CLI·전체 e2e | 27 |
-| **합계** | **180** |
+| F5 API·MCP·CLI·전체 e2e | 33 |
+| **합계** | **186** |
 
 | 분류(휴리스틱) | 건수 |
 |------|-----:|
-| 바이블 개정 후보 | 83 |
-| 기타(구현 메모) | 32 |
-| SDK 포트·공용 파일 | 28 |
+| 바이블 개정 후보 | 87 |
+| 기타(구현 메모) | 33 |
+| SDK 포트·공용 파일 | 29 |
 | 계약·스키마 | 19 |
 | 후속 마일스톤(M2+) | 9 |
 | 보류 검증(층 2·2b·3) | 9 |
@@ -221,7 +221,7 @@ Opus 리뷰 발견 23건(F4 13건 — major 6, minor 7; F5 10건 — major 3, mi
 | 116 | F4:review-fix · WP-405-review-fixes-retrieve-acl-filters.md | The review's optional suggestion to add a defensive assert in fusion (`_fuse_runs`) that a record_id never appears twice in the same channel/variant run was not added -- the root cause (missing collection_id pin) is now fixed at the adapter level, and adding cross-channel assertions felt better scoped to a WP that reviews all channels together. | 기타(구현 메모) |
 | 117 | F4:review-fix · WP-405-review-fixes-retrieve-acl-filters.md | Real-Qdrant-server enforcement of the §8.1 step-7 channel timeout (asyncio.wait_for actually interrupting a slow server round-trip) remains a needs_docker DEFERRED item -- this batch only verified (with a real wall-clock concurrency test, no Docker) that the synchronous backend calls no longer block the event loop. | 바이블 개정 후보 |
 
-### 2.6 F5 API·MCP·CLI·전체 e2e (27건)
+### 2.6 F5 API·MCP·CLI·전체 e2e (33건)
 
 | # | 출처(에이전트 · WP) | 내용 | 분류 |
 |--:|------|------|------|
@@ -252,6 +252,12 @@ Opus 리뷰 발견 23건(F4 13건 — major 6, minor 7; F5 10건 — major 3, mi
 | 142 | F5:verify · DEFERRED n' 줄 보유). | kiwipiepy 0.23.2(LGPL 정적 링크)가 Apache-2.0 0.24 출시 전까지 opt-in extra로 남아 있다(pyproject.toml 자체 기록, 라이선스 검토자 확인 필요) — 이번 작업 범위 밖. | SDK 포트·공용 파일 |
 | 143 | F5:review-fix · WP-504 | _pack_security_context_hash (api/query.py) duplicates mcp.cursor_store.security_context_hash's formula independently because api and mcp sit in the same import-linter layer and cannot import each other; a future batch should promote a shared implementation into the security package and update both call sites (touches mcp/cursor_store.py, outside this batch's 3 designated files). | SDK 포트·공용 파일 |
 | 144 | F5:review-fix · WP-504 | app.state.pack_cache remains an in-process Python dict, not the Valkey pack:{tenant}:{pack_id} key the design calls for (05-api/03 §4.4) — this fix only added subject-binding hash + TTL + size-bound semantics on top of the existing in-memory store; migrating the storage backend itself is unchanged open_issues scope. | 바이블 개정 후보 |
+| 181 | manual-verify:cli · WP-503-cli-and-full-e2e.md | `cli/main.py` `ingest_paths`: 스테이지 `StageError`(예: 포맷 판별 `binary:no_signature`)와 fetch의 파일 부재 예외가 경로 루프에서 잡히지 않아 CLI 전체가 트레이스백·exit 1로 죽는다 — 경로별 `status: failed` + `error.code` 항목으로 정리하고 나머지 경로는 계속 처리해야 한다(05-api/02 §6.2 `partial` 의미론과 정합). | 바이블 개정 후보 |
+| 182 | manual-verify:cli · WP-503-cli-and-full-e2e.md | `cli/main.py` `_discover_paths`: 확장자 필터가 디렉터리 재귀에만 적용돼 단일 파일 인자(`.hwp`, `.xyz`)는 그대로 파이프라인에 들어간다. 빈 `.hwp`는 `committed, record_count=0`으로 조용히 성공한다 — 지원 포맷 검사·빈 산출물 경고(`parse.unsupported_format` 또는 `status: skipped`)가 필요하다. | SDK 포트·공용 파일 |
+| 183 | manual-verify:cli · WP-503-cli-and-full-e2e.md | `cli/main.py` `_discover_paths`: 디렉터리 수집이 `samples/hwpx/MANIFEST.json` 같은 메타 파일(`.json`)까지 문서로 색인한다 — `.json`은 `split: json_array` 프로파일 규칙 확인 후 기본 제외 또는 명시 opt-in이 맞는지 결정 필요. | 기타(구현 메모) |
+| 184 | manual-verify:cli · WP-503-cli-and-full-e2e.md | `cli/main.py` `_cmd_serve mcp`: `python -m rag_platform.mcp.server`에는 `__main__` 진입점이 없어 아무 일 없이 exit 0 — `ToolDeps`(`run_query_lite`/문서 조회)·`resolve_security` 조립과 stdio 기동을 `cli`가 직접 하거나 서버 모듈에 진입점을 두어야 한다(MANUAL.md §3.4·§7). | 바이블 개정 후보 |
+| 185 | manual-verify:cli · WP-503-cli-and-full-e2e.md | `api/app.py`: `ApiKeyRegistry`가 프로세스 내 빈 레지스트리로만 생성돼 외부 설정(파일·환경 변수)으로 키를 넣을 방법이 없다 — `rag serve api`가 실사용 불가. 설정 파일 또는 `settings` 모듈 경유 로딩이 필요하다(MANUAL.md §6). | 바이블 개정 후보 |
+| 186 | manual-verify:cli · WP-503-cli-and-full-e2e.md | `cli/__init__.py` 레거시 셤이 `rag --help`를 가로채 `usage: rag [--version]`만 보여주고 하위 명령을 숨긴다 — 실제 파서(`cli/main.py build_arg_parser`)로 위임해야 한다(MANUAL.md §1). | 바이블 개정 후보 |
 
 ## 3. Opus 리뷰 발견(수정 완료)
 
@@ -295,7 +301,7 @@ Opus 리뷰 발견 23건(F4 13건 — major 6, minor 7; F5 10건 — major 3, mi
 
 ## 미해결 이슈
 
-- 본문 §2 전체(180건)가 미해결이다. 다음 바이블 패치 트리아지에서 "바이블 개정 후보"와 "계약·스키마" 분류를 먼저 다루고, "SDK 포트·공용 파일"은 6단계 후속 WP(6xx)로, "보류 검증"은 [보류 검증 원장](09-deferred-verification-ledger.md)과 합쳐 다른 머신에서 처리한다.
+- 본문 §2 전체(186건)가 미해결이다. 다음 바이블 패치 트리아지에서 "바이블 개정 후보"와 "계약·스키마" 분류를 먼저 다루고, "SDK 포트·공용 파일"은 6단계 후속 WP(6xx)로, "보류 검증"은 [보류 검증 원장](09-deferred-verification-ledger.md)과 합쳐 다른 머신에서 처리한다.
 - 휴리스틱 분류의 오탐·누락은 트리아지 결과 문서에서 바로잡고 이 문서는 재생성만 한다.
 
 ## 참조

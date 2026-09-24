@@ -1449,6 +1449,54 @@
    "phase": "Verify",
    "wp": "",
    "text": "src/rag_platform·docs 트리 안에 이전 세션(6B/6D)에서 만든 다수의 파일이 아직 git에 커밋되지 않은 상태(untracked/modified)로 남아 있다 — 이번 과제는 커밋을 지시받지 않아 그대로 두었다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_be5c8534-62d",
+   "label": "manual-verify:cli",
+   "phase": "Verify",
+   "wp": "WP-503-cli-and-full-e2e.md",
+   "text": "`cli/main.py` `ingest_paths`: 스테이지 `StageError`(예: 포맷 판별 `binary:no_signature`)와 fetch의 파일 부재 예외가 경로 루프에서 잡히지 않아 CLI 전체가 트레이스백·exit 1로 죽는다 — 경로별 `status: failed` + `error.code` 항목으로 정리하고 나머지 경로는 계속 처리해야 한다(05-api/02 §6.2 `partial` 의미론과 정합)."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_be5c8534-62d",
+   "label": "manual-verify:cli",
+   "phase": "Verify",
+   "wp": "WP-503-cli-and-full-e2e.md",
+   "text": "`cli/main.py` `_discover_paths`: 확장자 필터가 디렉터리 재귀에만 적용돼 단일 파일 인자(`.hwp`, `.xyz`)는 그대로 파이프라인에 들어간다. 빈 `.hwp`는 `committed, record_count=0`으로 조용히 성공한다 — 지원 포맷 검사·빈 산출물 경고(`parse.unsupported_format` 또는 `status: skipped`)가 필요하다."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_be5c8534-62d",
+   "label": "manual-verify:cli",
+   "phase": "Verify",
+   "wp": "WP-503-cli-and-full-e2e.md",
+   "text": "`cli/main.py` `_discover_paths`: 디렉터리 수집이 `samples/hwpx/MANIFEST.json` 같은 메타 파일(`.json`)까지 문서로 색인한다 — `.json`은 `split: json_array` 프로파일 규칙 확인 후 기본 제외 또는 명시 opt-in이 맞는지 결정 필요."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_be5c8534-62d",
+   "label": "manual-verify:cli",
+   "phase": "Verify",
+   "wp": "WP-503-cli-and-full-e2e.md",
+   "text": "`cli/main.py` `_cmd_serve mcp`: `python -m rag_platform.mcp.server`에는 `__main__` 진입점이 없어 아무 일 없이 exit 0 — `ToolDeps`(`run_query_lite`/문서 조회)·`resolve_security` 조립과 stdio 기동을 `cli`가 직접 하거나 서버 모듈에 진입점을 두어야 한다(MANUAL.md §3.4·§7)."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_be5c8534-62d",
+   "label": "manual-verify:cli",
+   "phase": "Verify",
+   "wp": "WP-503-cli-and-full-e2e.md",
+   "text": "`api/app.py`: `ApiKeyRegistry`가 프로세스 내 빈 레지스트리로만 생성돼 외부 설정(파일·환경 변수)으로 키를 넣을 방법이 없다 — `rag serve api`가 실사용 불가. 설정 파일 또는 `settings` 모듈 경유 로딩이 필요하다(MANUAL.md §6)."
+  },
+  {
+   "batch": "F5",
+   "run": "wf_be5c8534-62d",
+   "label": "manual-verify:cli",
+   "phase": "Verify",
+   "wp": "WP-503-cli-and-full-e2e.md",
+   "text": "`cli/__init__.py` 레거시 셤이 `rag --help`를 가로채 `usage: rag [--version]`만 보여주고 하위 명령을 숨긴다 — 실제 파서(`cli/main.py build_arg_parser`)로 위임해야 한다(MANUAL.md §1)."
   }
  ],
  "reviews": [
